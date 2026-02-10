@@ -1,0 +1,57 @@
+import { NavLink } from "react-router-dom";
+import { Home, Dumbbell, History, User, LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+
+const navItems = [
+  { to: "/", icon: Home, label: "Inicio" },
+  { to: "/exercises", icon: Dumbbell, label: "Ejercicios" },
+  { to: "/history", icon: History, label: "Historial" },
+  { to: "/profile", icon: User, label: "Perfil" },
+];
+
+export function DesktopSidebar() {
+  const { signOut } = useAuth();
+
+  return (
+    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-card h-screen sticky top-0">
+      <div className="flex h-16 items-center gap-2 px-6 border-b border-border">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+          <Dumbbell className="h-5 w-5 text-primary-foreground" />
+        </div>
+        <span className="text-lg font-bold">TrackGym</span>
+      </div>
+      <nav className="flex-1 space-y-1 p-4">
+        {navItems.map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === "/"}
+            className={({ isActive }) =>
+              cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )
+            }
+          >
+            <Icon className="h-5 w-5" />
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+      <div className="border-t border-border p-4">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 text-muted-foreground"
+          onClick={signOut}
+        >
+          <LogOut className="h-5 w-5" />
+          Cerrar Sesión
+        </Button>
+      </div>
+    </aside>
+  );
+}
