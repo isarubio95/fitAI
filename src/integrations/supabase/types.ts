@@ -80,6 +80,78 @@ export type Database = {
           },
         ]
       }
+      rutina: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          usuario_id?: string
+        }
+        Relationships: []
+      }
+      rutina_ejercicio: {
+        Row: {
+          created_at: string
+          id: string
+          orden: number
+          repes_max: number
+          repes_min: number
+          rutina_id: string
+          series_objetivo: number
+          tipo_ejercicio_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          orden?: number
+          repes_max?: number
+          repes_min?: number
+          rutina_id: string
+          series_objetivo?: number
+          tipo_ejercicio_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          orden?: number
+          repes_max?: number
+          repes_min?: number
+          rutina_id?: string
+          series_objetivo?: number
+          tipo_ejercicio_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rutina_ejercicio_rutina_id_fkey"
+            columns: ["rutina_id"]
+            isOneToOne: false
+            referencedRelation: "rutina"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rutina_ejercicio_tipo_ejercicio_id_fkey"
+            columns: ["tipo_ejercicio_id"]
+            isOneToOne: false
+            referencedRelation: "tipo_ejercicio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       serie: {
         Row: {
           created_at: string

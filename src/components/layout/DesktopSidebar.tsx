@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, Dumbbell, History, User, LogOut } from "lucide-react";
+import { Home, Dumbbell, History, User, LogOut, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
+  { to: "/routines", icon: ClipboardList, label: "Rutinas" },
   { to: "/exercises", icon: Dumbbell, label: "Ejercicios" },
   { to: "/history", icon: History, label: "Historial" },
   { to: "/profile", icon: User, label: "Perfil" },
