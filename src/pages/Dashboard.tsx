@@ -1,34 +1,29 @@
 import { useState } from "react";
-import { useLastWorkout, useWeeklyWorkouts, useMonthWorkoutDates, useWorkoutsForDate } from "@/hooks/useWorkouts";
+import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts } from "@/hooks/useWorkouts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
-import { format, isSameDay } from "date-fns";
+import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 const Dashboard = () => {
   const [loggerOpen, setLoggerOpen] = useState(false);
   const [editWorkoutId, setEditWorkoutId] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [prefillDate, setPrefillDate] = useState<string | undefined>(undefined);
 
   const { data: lastWorkout, isLoading: loadingLast } = useLastWorkout();
   const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyWorkouts();
-  const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
-  const { data: dateWorkouts, isLoading: loadingDateWorkouts } = useWorkoutsForDate(selectedDate);
+  const { data: monthWorkouts } = useMonthWorkouts(calendarMonth);
 
   const totalSets = lastWorkout?.ejercicios.reduce(
     (acc, ej) => acc + ej.series.length,
     0
   ) ?? 0;
-
-  // Modifiers for calendar dots
-  const workoutDays = workoutDates?.map((d) => new Date(d)) ?? [];
 
   const openNew = (date?: string) => {
     setEditWorkoutId(null);
@@ -43,7 +38,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-2xl mx-auto">
+    <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">TrackGym</h1>
@@ -87,78 +82,14 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Calendar */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Calendario</CardTitle>
-        </CardHeader>
-        <CardContent className="flex justify-center">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-            month={calendarMonth}
-            onMonthChange={setCalendarMonth}
-            locale={es}
-            className="pointer-events-auto"
-            modifiers={{ hasWorkout: workoutDays }}
-            modifiersClassNames={{ hasWorkout: "workout-dot" }}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Workouts for selected date */}
-      {selectedDate && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">
-              {format(selectedDate, "d 'de' MMMM yyyy", { locale: es })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingDateWorkouts ? (
-              <Skeleton className="h-16 w-full" />
-            ) : dateWorkouts && dateWorkouts.length > 0 ? (
-              <div className="space-y-3">
-                {dateWorkouts.map((w) => {
-                  const sets = w.ejercicios.reduce((a, ej) => a + ej.series.length, 0);
-                  return (
-                    <div key={w.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                      <div>
-                        <p className="font-semibold">{w.titulo}</p>
-                        <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1">
-                            <Dumbbell className="h-3 w-3" />
-                            {w.ejercicios.length} ejercicios
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Hash className="h-3 w-3" />
-                            {sets} series
-                          </span>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(w.id)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-4 space-y-3">
-                <p className="text-sm text-muted-foreground">No hay entrenamientos registrados.</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openNew(format(selectedDate, "yyyy-MM-dd"))}
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Registrar entrenamiento
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Monthly Planner */}
+      <MonthlyPlanner
+        month={calendarMonth}
+        onMonthChange={setCalendarMonth}
+        workouts={monthWorkouts ?? []}
+        onDayClick={(date) => openNew(format(date, "yyyy-MM-dd"))}
+        onWorkoutClick={(id) => openEdit(id)}
+      />
 
       {/* Last Workout */}
       <Card>
