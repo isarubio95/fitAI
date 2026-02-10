@@ -1,12 +1,22 @@
+import { useState } from "react";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Dumbbell, Hash } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Dumbbell, Hash, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 
 const WorkoutHistory = () => {
   const { data: workouts, isLoading } = useWorkoutHistory();
+  const [editId, setEditId] = useState<string | null>(null);
+  const [loggerOpen, setLoggerOpen] = useState(false);
+
+  const openEdit = (id: string) => {
+    setEditId(id);
+    setLoggerOpen(true);
+  };
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-2xl mx-auto">
@@ -66,6 +76,14 @@ const WorkoutHistory = () => {
                         </div>
                       </div>
                     ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => openEdit(w.id)}
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar
+                    </Button>
                   </section>
                 </AccordionContent>
               </AccordionItem>
@@ -73,6 +91,12 @@ const WorkoutHistory = () => {
           })}
         </Accordion>
       )}
+
+      <WorkoutLogger
+        open={loggerOpen}
+        onOpenChange={setLoggerOpen}
+        workoutId={editId}
+      />
     </div>
   );
 };

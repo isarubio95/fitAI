@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
+import { useWorkoutById } from "@/hooks/useWorkouts";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,19 +17,51 @@ import type { ExerciseFormData, SetFormData } from "@/types/workout";
 interface WorkoutLoggerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  workoutId?: string | null;
+  defaultDate?: string;
 }
 
-export function WorkoutLogger({ open, onOpenChange }: WorkoutLoggerProps) {
+export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDate }: WorkoutLoggerProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: catalog } = useExerciseCatalog();
+  const { data: existingWorkout } = useWorkoutById(workoutId);
 
   const [titulo, setTitulo] = useState("");
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(defaultDate || new Date().toISOString().slice(0, 10));
   const [exercises, setExercises] = useState<ExerciseFormData[]>([]);
   const [saving, setSaving] = useState(false);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
+
+  const isEdit = !!workoutId;
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (isEdit && existingWorkout && open) {
+      setTitulo(existingWorkout.titulo);
+      setFecha(new Date(existingWorkout.fecha).toISOString().slice(0, 10));
+      setExercises(
+        existingWorkout.ejercicios.map((ej) => ({
+          tipo_ejercicio_id: ej.tipo_ejercicio_id,
+          nombre: ej.tipo_ejercicio.nombre,
+          id: ej.id,
+          sets: ej.series
+            .sort((a, b) => a.numero_serie - b.numero_serie)
+            .map((s) => ({ repeticiones: s.repeticiones, peso_kg: Number(s.peso_kg), id: s.id })),
+        }))
+      );
+    }
+  }, [isEdit, existingWorkout, open]);
+
+  // Reset form when opening for new workout
+  useEffect(() => {
+    if (open && !isEdit) {
+      setTitulo("");
+      setFecha(defaultDate || new Date().toISOString().slice(0, 10));
+      setExercises([]);
+    }
+  }, [open, isEdit, defaultDate]);
 
   const addExercise = (tipoId: string, nombre: string) => {
     setExercises((prev) => [
@@ -82,6 +115,15 @@ export function WorkoutLogger({ open, onOpenChange }: WorkoutLoggerProps) {
     );
   };
 
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["lastWorkout"] });
+    queryClient.invalidateQueries({ queryKey: ["weeklyWorkouts"] });
+    queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
+    queryClient.invalidateQueries({ queryKey: ["monthWorkoutDates"] });
+    queryClient.invalidateQueries({ queryKey: ["workoutsForDate"] });
+    queryClient.invalidateQueries({ queryKey: ["workout"] });
+  };
+
   const handleSave = async () => {
     if (!user || !titulo.trim() || exercises.length === 0) {
       toast({ title: "Completa el formulario", description: "Agrega título y al menos un ejercicio.", variant: "destructive" });
@@ -90,54 +132,14 @@ export function WorkoutLogger({ open, onOpenChange }: WorkoutLoggerProps) {
 
     setSaving(true);
     try {
-      // 1. Create actividad
-      const { data: actividad, error: actError } = await supabase
-        .from("actividad")
-        .insert({ titulo: titulo.trim(), fecha: new Date(fecha).toISOString(), usuario_id: user.id })
-        .select("id")
-        .single();
-
-      if (actError) throw actError;
-
-      // 2. Create ejercicios
-      const ejercicioInserts = exercises.map((ex) => ({
-        actividad_id: actividad.id,
-        tipo_ejercicio_id: ex.tipo_ejercicio_id,
-        usuario_id: user.id,
-      }));
-
-      const { data: ejercicios, error: ejError } = await supabase
-        .from("ejercicio")
-        .insert(ejercicioInserts)
-        .select("id");
-
-      if (ejError) throw ejError;
-
-      // 3. Create series
-      const serieInserts = exercises.flatMap((ex, i) =>
-        ex.sets.map((s, si) => ({
-          ejercicio_id: ejercicios[i].id,
-          usuario_id: user.id,
-          numero_serie: si + 1,
-          repeticiones: s.repeticiones,
-          peso_kg: s.peso_kg,
-        }))
-      );
-
-      if (serieInserts.length > 0) {
-        const { error: sError } = await supabase.from("serie").insert(serieInserts);
-        if (sError) throw sError;
+      if (isEdit && workoutId) {
+        await handleUpdate(workoutId);
+      } else {
+        await handleCreate();
       }
 
-      toast({ title: "¡Entrenamiento guardado!" });
-      queryClient.invalidateQueries({ queryKey: ["lastWorkout"] });
-      queryClient.invalidateQueries({ queryKey: ["weeklyWorkouts"] });
-      queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
-
-      // Reset
-      setTitulo("");
-      setFecha(new Date().toISOString().slice(0, 10));
-      setExercises([]);
+      toast({ title: isEdit ? "¡Entrenamiento actualizado!" : "¡Entrenamiento guardado!" });
+      invalidateAll();
       onOpenChange(false);
     } catch (error: any) {
       toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
@@ -146,15 +148,102 @@ export function WorkoutLogger({ open, onOpenChange }: WorkoutLoggerProps) {
     }
   };
 
+  const handleCreate = async () => {
+    const { data: actividad, error: actError } = await supabase
+      .from("actividad")
+      .insert({ titulo: titulo.trim(), fecha: new Date(fecha).toISOString(), usuario_id: user!.id })
+      .select("id")
+      .single();
+    if (actError) throw actError;
+
+    const ejercicioInserts = exercises.map((ex) => ({
+      actividad_id: actividad.id,
+      tipo_ejercicio_id: ex.tipo_ejercicio_id,
+      usuario_id: user!.id,
+    }));
+
+    const { data: ejercicios, error: ejError } = await supabase
+      .from("ejercicio")
+      .insert(ejercicioInserts)
+      .select("id");
+    if (ejError) throw ejError;
+
+    const serieInserts = exercises.flatMap((ex, i) =>
+      ex.sets.map((s, si) => ({
+        ejercicio_id: ejercicios[i].id,
+        usuario_id: user!.id,
+        numero_serie: si + 1,
+        repeticiones: s.repeticiones,
+        peso_kg: s.peso_kg,
+      }))
+    );
+
+    if (serieInserts.length > 0) {
+      const { error: sError } = await supabase.from("serie").insert(serieInserts);
+      if (sError) throw sError;
+    }
+  };
+
+  const handleUpdate = async (actId: string) => {
+    // Update actividad
+    const { error: actError } = await supabase
+      .from("actividad")
+      .update({ titulo: titulo.trim(), fecha: new Date(fecha).toISOString() })
+      .eq("id", actId);
+    if (actError) throw actError;
+
+    // Delete old ejercicios + series (cascade via foreign key not guaranteed, so delete series first)
+    const { data: oldEjercicios } = await supabase
+      .from("ejercicio")
+      .select("id")
+      .eq("actividad_id", actId);
+
+    if (oldEjercicios?.length) {
+      const oldIds = oldEjercicios.map((e) => e.id);
+      await supabase.from("serie").delete().in("ejercicio_id", oldIds);
+      await supabase.from("ejercicio").delete().eq("actividad_id", actId);
+    }
+
+    // Re-insert ejercicios + series
+    const ejercicioInserts = exercises.map((ex) => ({
+      actividad_id: actId,
+      tipo_ejercicio_id: ex.tipo_ejercicio_id,
+      usuario_id: user!.id,
+    }));
+
+    const { data: ejercicios, error: ejError } = await supabase
+      .from("ejercicio")
+      .insert(ejercicioInserts)
+      .select("id");
+    if (ejError) throw ejError;
+
+    const serieInserts = exercises.flatMap((ex, i) =>
+      ex.sets.map((s, si) => ({
+        ejercicio_id: ejercicios[i].id,
+        usuario_id: user!.id,
+        numero_serie: si + 1,
+        repeticiones: s.repeticiones,
+        peso_kg: s.peso_kg,
+      }))
+    );
+
+    if (serieInserts.length > 0) {
+      const { error: sError } = await supabase.from("serie").insert(serieInserts);
+      if (sError) throw sError;
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[95vh] overflow-y-auto rounded-t-2xl p-0">
         <SheetHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
           <div className="flex items-center justify-between">
-            <SheetTitle className="text-lg">Nuevo Entrenamiento</SheetTitle>
+            <SheetTitle className="text-lg">
+              {isEdit ? "Editar Entrenamiento" : "Nuevo Entrenamiento"}
+            </SheetTitle>
             <Button onClick={handleSave} disabled={saving} size="sm">
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Guardar
+              {isEdit ? "Actualizar" : "Guardar"}
             </Button>
           </div>
         </SheetHeader>
