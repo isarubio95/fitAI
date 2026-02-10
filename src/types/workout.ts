@@ -9,12 +9,14 @@ export type Serie = Tables<"serie">;
 export interface SetFormData {
   repeticiones: number;
   peso_kg: number;
+  id?: string;
 }
 
 export interface ExerciseFormData {
   tipo_ejercicio_id: string;
   nombre: string;
   sets: SetFormData[];
+  id?: string;
 }
 
 export interface WorkoutFormData {
