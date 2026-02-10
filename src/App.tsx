@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Exercises from "./pages/Exercises";
 import WorkoutHistory from "./pages/WorkoutHistory";
 import Profile from "./pages/Profile";
+import Routines from "./pages/Routines";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/exercises" element={<Exercises />} />
+              <Route path="/routines" element={<Routines />} />
               <Route path="/history" element={<WorkoutHistory />} />
               <Route path="/profile" element={<Profile />} />
             </Route>

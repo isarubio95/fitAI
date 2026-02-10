@@ -19,9 +19,11 @@ interface WorkoutLoggerProps {
   onOpenChange: (open: boolean) => void;
   workoutId?: string | null;
   defaultDate?: string;
+  templateExercises?: ExerciseFormData[];
+  templateTitle?: string;
 }
 
-export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDate }: WorkoutLoggerProps) {
+export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDate, templateExercises, templateTitle }: WorkoutLoggerProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -54,14 +56,19 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
     }
   }, [isEdit, existingWorkout, open]);
 
-  // Reset form when opening for new workout
+  // Reset form when opening for new workout or pre-fill from template
   useEffect(() => {
     if (open && !isEdit) {
-      setTitulo("");
+      if (templateExercises && templateTitle) {
+        setTitulo(templateTitle);
+        setExercises(templateExercises);
+      } else {
+        setTitulo("");
+        setExercises([]);
+      }
       setFecha(defaultDate || new Date().toISOString().slice(0, 10));
-      setExercises([]);
     }
-  }, [open, isEdit, defaultDate]);
+  }, [open, isEdit, defaultDate, templateExercises, templateTitle]);
 
   const addExercise = (tipoId: string, nombre: string) => {
     setExercises((prev) => [
@@ -308,7 +315,7 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
                         updateSet(ei, si, "repeticiones", Number(e.target.value))
                       }
                       className="h-11"
-                      placeholder="0"
+                      placeholder={ex.repRange || "0"}
                     />
                     <Input
                       type="number"

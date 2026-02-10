@@ -17,6 +17,7 @@ export interface ExerciseFormData {
   nombre: string;
   sets: SetFormData[];
   id?: string;
+  repRange?: string;
 }
 
 export interface WorkoutFormData {

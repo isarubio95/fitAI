@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Home, Dumbbell, History, User } from "lucide-react";
+import { Home, Dumbbell, History, User, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/ModeToggle";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
+  { to: "/routines", icon: ClipboardList, label: "Rutinas" },
   { to: "/exercises", icon: Dumbbell, label: "Ejercicios" },
   { to: "/history", icon: History, label: "Historial" },
   { to: "/profile", icon: User, label: "Perfil" },
