@@ -10,6 +10,7 @@ export interface SetFormData {
   repeticiones: number;
   peso_kg: number;
   rir?: number | null;
+  descanso?: number; // rest time in seconds
   id?: string;
 }
 
@@ -20,6 +21,7 @@ export interface ExerciseFormData {
   id?: string;
   repRange?: string;
   targetRir?: number | null;
+  descanso?: number; // default rest time in seconds for this exercise
 }
 
 export interface WorkoutFormData {

@@ -157,6 +157,7 @@ const Routines = () => {
         nombre: ej.tipo_ejercicio.nombre,
         repRange: `${ej.repes_min}-${ej.repes_max}`,
         targetRir: (ej as any).rir ?? 1,
+        descanso: (ej as any).descanso ?? 120,
         sets: Array.from({ length: ej.series_objetivo }, () => ({
           repeticiones: 0,
           peso_kg: 0,

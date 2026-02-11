@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { formatMSS, parseMSS } from "@/hooks/useRestTimer";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -75,6 +76,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
           rir: (ej as any).rir ?? 1,
           orden: ej.orden,
           superset_id: (ej as any).superset_id ?? null,
+          descanso: (ej as any).descanso ?? 120,
         }))
       );
     }
@@ -108,6 +110,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
             rir: 1,
             orden: 0,
             superset_id: supersetId,
+            descanso: 120,
           };
           // Insert after afterIndex
           const result = [
@@ -130,6 +133,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
             rir: 1,
             orden: prev.length,
             superset_id: null,
+            descanso: 120,
           },
         ]);
       }
@@ -198,6 +202,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
         rir: ej.rir,
         orden: i,
         superset_id: ej.superset_id || null,
+        descanso: ej.descanso,
       }));
 
       if (inserts.length > 0) {
@@ -371,7 +376,7 @@ function ExerciseRow({
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-5 gap-2">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Series</Label>
           <Input
@@ -418,7 +423,45 @@ function ExerciseRow({
             </SelectContent>
           </Select>
         </div>
+        <RestTimeInput
+          value={ej.descanso}
+          onChange={(val) => onUpdate(i, "descanso", val)}
+        />
       </div>
+    </div>
+  );
+}
+
+/** M:SS rest time input */
+function RestTimeInput({ value, onChange }: { value: number; onChange: (seconds: number) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [display, setDisplay] = useState(formatMSS(value));
+
+  useEffect(() => {
+    setDisplay(formatMSS(value));
+  }, [value]);
+
+  const handleBlur = () => {
+    const parsed = parseMSS(display);
+    if (parsed != null) {
+      onChange(parsed);
+      setDisplay(formatMSS(parsed));
+    } else {
+      setDisplay(formatMSS(value));
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground">Descanso</Label>
+      <Input
+        ref={inputRef}
+        value={display}
+        onChange={(e) => setDisplay(e.target.value)}
+        onBlur={handleBlur}
+        className="h-10 text-center"
+        placeholder="2:00"
+      />
     </div>
   );
 }
