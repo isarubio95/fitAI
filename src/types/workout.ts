@@ -9,6 +9,7 @@ export type Serie = Tables<"serie">;
 export interface SetFormData {
   repeticiones: number;
   peso_kg: number;
+  rir?: number | null;
   id?: string;
 }
 
@@ -18,6 +19,7 @@ export interface ExerciseFormData {
   sets: SetFormData[];
   id?: string;
   repRange?: string;
+  targetRir?: number | null;
 }
 
 export interface WorkoutFormData {
