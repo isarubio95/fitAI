@@ -17,6 +17,7 @@ export interface RoutineExerciseFormData {
   series_objetivo: number;
   repes_min: number;
   repes_max: number;
+  rir: number;
   orden: number;
 }
 
