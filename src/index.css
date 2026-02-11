@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide scrollbars globally – native app feel */
+html,
+body,
+#root {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar {
+  display: none; /* Webkit */
+}
+
+/* Prevent rubber-banding / overscroll */
+body {
+  overscroll-behavior-y: none;
+}
+
+/* Reusable utility */
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   :root {
     --background: 220 14% 96%;
