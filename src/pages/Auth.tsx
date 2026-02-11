@@ -60,8 +60,8 @@ const Auth = () => {
         });
         if (error) throw error;
         toast({
-          title: "Cuenta creada",
-          description: "Revisa tu email para confirmar tu cuenta.",
+          title: "¡Comprueba tu correo!",
+          description: "Si este email no está registrado, te hemos enviado un enlace mágico. Si ya tienes cuenta, por favor inicia sesión.",
         });
       }
     } catch (error: any) {
