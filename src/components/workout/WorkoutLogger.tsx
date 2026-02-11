@@ -2,15 +2,14 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
+
 import { useWorkoutById } from "@/hooks/useWorkouts";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, Search } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import { ExerciseCard } from "./ExerciseCard";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
@@ -28,7 +27,7 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: catalog } = useExerciseCatalog();
+  
   const { data: existingWorkout } = useWorkoutById(workoutId);
 
   const [titulo, setTitulo] = useState("");
@@ -298,33 +297,11 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
             ))}
 
             {/* Add Exercise Button */}
-            <Popover open={exercisePickerOpen} onOpenChange={setExercisePickerOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full h-12">
-                  <Search className="h-4 w-4 mr-2" /> Agregar Ejercicio
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Buscar ejercicio..." />
-                  <CommandList>
-                    <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
-                    <CommandGroup>
-                      {catalog?.map((tipo) => (
-                        <CommandItem
-                          key={tipo.id}
-                          value={tipo.nombre}
-                          onSelect={() => addExercise(tipo.id, tipo.nombre)}
-                          className="cursor-pointer"
-                        >
-                          {tipo.nombre}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <ExerciseSelector
+              open={exercisePickerOpen}
+              onOpenChange={setExercisePickerOpen}
+              onSelect={addExercise}
+            />
           </div>
         </div>
       </SheetContent>

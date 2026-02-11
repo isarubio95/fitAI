@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
+
 import { useRoutineById } from "@/hooks/useRoutines";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -10,11 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
-import { Trash2, Loader2, Search, GripVertical, Link, Unlink, User, Globe } from "lucide-react";
+import { Trash2, Loader2, GripVertical, Link, Unlink } from "lucide-react";
+import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import type { RoutineExerciseFormData } from "@/types/routine";
 
@@ -50,7 +47,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: catalog } = useExerciseCatalog();
+  
   const { data: existingRoutine } = useRoutineById(routineId);
 
   const [nombre, setNombre] = useState("");
@@ -58,7 +55,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   const [ejercicios, setEjercicios] = useState<RoutineExerciseFormData[]>([]);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [onlyMine, setOnlyMine] = useState(false);
+
   // When linking a superset, we store the index + generated superset_id
   const [supersetLink, setSupersetLink] = useState<{ afterIndex: number; supersetId: string } | null>(null);
 
@@ -268,10 +265,8 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                 return (
                   <div key={group.supersetId} className="relative rounded-xl border-2 border-primary/40 bg-primary/5">
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />
-                    <div className="px-3 pt-2 pb-1">
-                      <Badge variant="secondary" className="text-xs">
-                        🔗 Superserie
-                      </Badge>
+                     <div className="px-3 pt-2 pb-1">
+                      <span className="text-xs font-medium text-primary">🔗 Superserie</span>
                     </div>
                     <div className="divide-y divide-border">
                       {group.items.map(({ exercise: ej, originalIndex: i }) => (
@@ -307,51 +302,11 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
               );
             })}
 
-            <Popover open={pickerOpen} onOpenChange={(o) => { setPickerOpen(o); if (!o) setSupersetLink(null); }}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full h-12">
-                  <Search className="h-4 w-4 mr-2" /> Agregar Ejercicio
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[320px] p-0" align="start">
-                <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-                  <Label className="text-xs text-muted-foreground">Solo mis ejercicios</Label>
-                  <Switch checked={onlyMine} onCheckedChange={setOnlyMine} />
-                </div>
-                <Command>
-                  <CommandInput placeholder="Buscar ejercicio..." />
-                  <CommandList>
-                    <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
-                    <CommandGroup>
-                      {catalog
-                        ?.filter((tipo) => !onlyMine || (tipo as any).usuario_id === user?.id)
-                        .map((tipo) => {
-                          const isOwn = (tipo as any).usuario_id === user?.id;
-                          return (
-                            <CommandItem
-                              key={tipo.id}
-                              value={tipo.nombre}
-                              onSelect={() => addExercise(tipo.id, tipo.nombre)}
-                              className="cursor-pointer flex items-center justify-between"
-                            >
-                              <span>{tipo.nombre}</span>
-                              {isOwn ? (
-                                <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 ml-2">
-                                  <User className="h-2.5 w-2.5 mr-0.5" /> Personal
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 ml-2">
-                                  <Globe className="h-2.5 w-2.5 mr-0.5" /> Global
-                                </Badge>
-                              )}
-                            </CommandItem>
-                          );
-                        })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <ExerciseSelector
+              open={pickerOpen}
+              onOpenChange={(o) => { setPickerOpen(o); if (!o) setSupersetLink(null); }}
+              onSelect={addExercise}
+            />
           </div>
         </div>
       </SheetContent>
