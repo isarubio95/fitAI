@@ -2,16 +2,16 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
+
 import { useWorkoutById } from "@/hooks/useWorkouts";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Loader2, Search } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
+import { ExerciseCard } from "./ExerciseCard";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
 interface WorkoutLoggerProps {
@@ -27,7 +27,7 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: catalog } = useExerciseCatalog();
+  
   const { data: existingWorkout } = useWorkoutById(workoutId);
 
   const [titulo, setTitulo] = useState("");
@@ -182,11 +182,12 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
         numero_serie: si + 1,
         repeticiones: s.repeticiones,
         peso_kg: s.peso_kg,
+        ...(s.rir != null || ex.targetRir != null ? { rir: s.rir ?? ex.targetRir } : {}),
       }))
     );
 
     if (serieInserts.length > 0) {
-      const { error: sError } = await supabase.from("serie").insert(serieInserts);
+      const { error: sError } = await supabase.from("serie").insert(serieInserts as any);
       if (sError) throw sError;
     }
   };
@@ -231,11 +232,12 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
         numero_serie: si + 1,
         repeticiones: s.repeticiones,
         peso_kg: s.peso_kg,
+        ...(s.rir != null || ex.targetRir != null ? { rir: s.rir ?? ex.targetRir } : {}),
       }))
     );
 
     if (serieInserts.length > 0) {
-      const { error: sError } = await supabase.from("serie").insert(serieInserts);
+      const { error: sError } = await supabase.from("serie").insert(serieInserts as any);
       if (sError) throw sError;
     }
   };
@@ -283,101 +285,23 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
           {/* Exercises */}
           <div className="space-y-4">
             {exercises.map((ex, ei) => (
-              <div key={ei} className="rounded-xl border border-border bg-card p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{ex.nombre}</h3>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive"
-                    onClick={() => removeExercise(ei)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Sets header */}
-                <div className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1">
-                  <span>#</span>
-                  <span>Reps</span>
-                  <span>Peso (kg)</span>
-                  <span />
-                </div>
-
-                {ex.sets.map((s, si) => (
-                  <div key={si} className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 items-center">
-                    <span className="text-sm text-muted-foreground text-center">{si + 1}</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={s.repeticiones || ""}
-                      onChange={(e) =>
-                        updateSet(ei, si, "repeticiones", Number(e.target.value))
-                      }
-                      className="h-11"
-                      placeholder={ex.repRange || "0"}
-                    />
-                    <Input
-                      type="number"
-                      min={0}
-                      step={0.5}
-                      value={s.peso_kg || ""}
-                      onChange={(e) =>
-                        updateSet(ei, si, "peso_kg", Number(e.target.value))
-                      }
-                      className="h-11"
-                      placeholder="0"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeSet(ei, si)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ))}
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => addSet(ei)}
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Agregar Serie
-                </Button>
-              </div>
+              <ExerciseCard
+                key={ei}
+                exercise={ex}
+                exerciseIndex={ei}
+                onRemoveExercise={() => removeExercise(ei)}
+                onAddSet={() => addSet(ei)}
+                onRemoveSet={(si) => removeSet(ei, si)}
+                onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
+              />
             ))}
 
             {/* Add Exercise Button */}
-            <Popover open={exercisePickerOpen} onOpenChange={setExercisePickerOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full h-12">
-                  <Search className="h-4 w-4 mr-2" /> Agregar Ejercicio
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Buscar ejercicio..." />
-                  <CommandList>
-                    <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
-                    <CommandGroup>
-                      {catalog?.map((tipo) => (
-                        <CommandItem
-                          key={tipo.id}
-                          value={tipo.nombre}
-                          onSelect={() => addExercise(tipo.id, tipo.nombre)}
-                          className="cursor-pointer"
-                        >
-                          {tipo.nombre}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <ExerciseSelector
+              open={exercisePickerOpen}
+              onOpenChange={setExercisePickerOpen}
+              onSelect={addExercise}
+            />
           </div>
         </div>
       </SheetContent>

@@ -17,7 +17,10 @@ export interface RoutineExerciseFormData {
   series_objetivo: number;
   repes_min: number;
   repes_max: number;
+  rir: number;
   orden: number;
+  superset_id?: string | null;
+  descanso: number; // seconds, default 120
 }
 
 export interface RoutineFormData {

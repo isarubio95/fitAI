@@ -1,24 +1,31 @@
-import { useState } from "react";
-import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts } from "@/hooks/useWorkouts";
+import { useState, useMemo } from "react";
+import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates, useWorkoutsForDate } from "@/hooks/useWorkouts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
-import { format } from "date-fns";
+import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
+import { WeekDayDetail } from "@/components/dashboard/WeekDayDetail";
+import { format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 
 const Dashboard = () => {
   const [loggerOpen, setLoggerOpen] = useState(false);
   const [editWorkoutId, setEditWorkoutId] = useState<string | null>(null);
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [prefillDate, setPrefillDate] = useState<string | undefined>(undefined);
+  const [calendarView, setCalendarView] = useState<"month" | "week">("month");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
 
   const { data: lastWorkout, isLoading: loadingLast } = useLastWorkout();
   const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyWorkouts();
   const { data: monthWorkouts } = useMonthWorkouts(calendarMonth);
+  const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
+  const { data: dayWorkouts } = useWorkoutsForDate(calendarView === "week" ? selectedDate : undefined);
 
   const totalSets = lastWorkout?.ejercicios.reduce(
     (acc, ej) => acc + ej.series.length,
@@ -35,6 +42,16 @@ const Dashboard = () => {
     setEditWorkoutId(id);
     setPrefillDate(undefined);
     setLoggerOpen(true);
+  };
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    // Sync month when selecting a date
+    setCalendarMonth(startOfMonth(date));
+  };
+
+  const handleMonthChange = (month: Date) => {
+    setCalendarMonth(month);
   };
 
   return (
@@ -82,14 +99,47 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Monthly Planner */}
-      <MonthlyPlanner
-        month={calendarMonth}
-        onMonthChange={setCalendarMonth}
-        workouts={monthWorkouts ?? []}
-        onDayClick={(date) => openNew(format(date, "yyyy-MM-dd"))}
-        onWorkoutClick={(id) => openEdit(id)}
-      />
+      {/* Calendar View Switcher */}
+      <div className="space-y-4">
+        <div className="flex justify-center">
+          <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
+            <TabsList className="h-9 rounded-full bg-muted p-1">
+              <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-sm">
+                Mes
+              </TabsTrigger>
+              <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-sm">
+                Semana
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {calendarView === "month" ? (
+          <MonthlyPlanner
+            month={calendarMonth}
+            onMonthChange={handleMonthChange}
+            workouts={monthWorkouts ?? []}
+            onDayClick={(date) => {
+              handleDateSelect(date);
+              openNew(format(date, "yyyy-MM-dd"));
+            }}
+            onWorkoutClick={(id) => openEdit(id)}
+          />
+        ) : (
+          <div>
+            <WeekCalendar
+              selectedDate={selectedDate}
+              onDateSelect={handleDateSelect}
+              workoutDates={workoutDates ?? []}
+            />
+            <WeekDayDetail
+              workouts={dayWorkouts ?? []}
+              dateKey={format(selectedDate, "yyyy-MM-dd")}
+              onWorkoutClick={(id) => openEdit(id)}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Last Workout */}
       <Card>

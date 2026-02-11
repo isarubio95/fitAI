@@ -1,4 +1,21 @@
 import { useState } from "react";
+
+function translateAuthError(msg: string, isLogin: boolean): { title: string; description: string } {
+  const lower = msg.toLowerCase();
+  if (lower.includes("user already registered"))
+    return { title: "Cuenta ya registrada", description: "Este correo ya tiene cuenta. Por favor, inicia sesión." };
+  if (lower.includes("invalid login credentials"))
+    return { title: "Error de inicio de sesión", description: "Email o contraseña incorrectos." };
+  if (lower.includes("password should be at least"))
+    return { title: "Contraseña muy corta", description: "La contraseña debe tener al menos 6 caracteres." };
+  if (lower.includes("email not confirmed"))
+    return { title: "Email no confirmado", description: "Revisa tu bandeja de entrada y confirma tu email antes de iniciar sesión." };
+  if (lower.includes("email rate limit exceeded") || lower.includes("rate limit"))
+    return { title: "Demasiados intentos", description: "Has realizado demasiados intentos. Espera unos minutos e inténtalo de nuevo." };
+  if (lower.includes("signup is disabled"))
+    return { title: "Registro deshabilitado", description: "El registro de nuevos usuarios está deshabilitado temporalmente." };
+  return { title: "Error", description: msg };
+}
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,11 +65,8 @@ const Auth = () => {
         });
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      const translated = translateAuthError(error.message ?? "", isLogin);
+      toast({ title: translated.title, description: translated.description, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }

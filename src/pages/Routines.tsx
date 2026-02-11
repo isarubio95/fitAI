@@ -1,12 +1,34 @@
-import { useState } from "react";
-import { useRoutines, useDeleteRoutine } from "@/hooks/useRoutines";
-import { useRoutineById } from "@/hooks/useRoutines";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useMemo } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { useRoutines, useDeleteRoutine, useUpdateRoutineOrder } from "@/hooks/useRoutines";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Play, Pencil, Trash2, Dumbbell } from "lucide-react";
+import { Plus, Dumbbell, ArrowUpDown, Calendar, ArrowDownAZ, Hand, Check } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { RoutineForm } from "@/components/routine/RoutineForm";
 import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
+import { SortableRoutineCard } from "@/components/routine/SortableRoutineCard";
 import { useToast } from "@/hooks/use-toast";
 import type { RutinaWithDetails } from "@/types/routine";
 import type { ExerciseFormData } from "@/types/workout";
@@ -21,19 +43,90 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type SortMode = "date" | "name" | "custom";
+type SortDir = "asc" | "desc";
+
 const Routines = () => {
   const { data: routines, isLoading } = useRoutines();
   const deleteRoutine = useDeleteRoutine();
+  const updateOrder = useUpdateRoutineOrder();
   const { toast } = useToast();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const [sortMode, setSortMode] = useState<SortMode>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  // Local reordered list for custom mode
+  const [customOrder, setCustomOrder] = useState<RutinaWithDetails[] | null>(null);
+
   // Start workout from routine
   const [loggerOpen, setLoggerOpen] = useState(false);
   const [templateExercises, setTemplateExercises] = useState<ExerciseFormData[] | undefined>();
   const [templateTitle, setTemplateTitle] = useState<string | undefined>();
+
+  const isDragMode = sortMode === "custom";
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const sortedRoutines = useMemo(() => {
+    if (!routines?.length) return [];
+
+    if (isDragMode && customOrder) return customOrder;
+
+    const sorted = [...routines];
+    switch (sortMode) {
+      case "date":
+        sorted.sort((a, b) => {
+          const d = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return sortDir === "asc" ? d : -d;
+        });
+        break;
+      case "name":
+        sorted.sort((a, b) => {
+          const c = a.nombre.localeCompare(b.nombre);
+          return sortDir === "asc" ? c : -c;
+        });
+        break;
+      case "custom":
+        sorted.sort((a, b) => ((a as any).orden ?? 0) - ((b as any).orden ?? 0));
+        break;
+    }
+    return sorted;
+  }, [routines, sortMode, sortDir, customOrder, isDragMode]);
+
+  const selectSort = (mode: SortMode, dir: SortDir) => {
+    setSortMode(mode);
+    setSortDir(dir);
+    if (mode === "custom" && routines) {
+      // Initialize custom order from current DB orden or fallback to current list order
+      const ordered = [...routines].sort(
+        (a, b) => ((a as any).orden ?? 0) - ((b as any).orden ?? 0)
+      );
+      setCustomOrder(ordered);
+    } else {
+      setCustomOrder(null);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !customOrder) return;
+
+    const oldIndex = customOrder.findIndex((r) => r.id === active.id);
+    const newIndex = customOrder.findIndex((r) => r.id === over.id);
+    const reordered = arrayMove(customOrder, oldIndex, newIndex);
+    setCustomOrder(reordered);
+
+    // Persist
+    const updates = reordered.map((r, i) => ({ id: r.id, orden: i }));
+    updateOrder.mutate(updates);
+  };
 
   const openCreate = () => {
     setEditId(null);
@@ -63,6 +156,8 @@ const Routines = () => {
         tipo_ejercicio_id: ej.tipo_ejercicio_id,
         nombre: ej.tipo_ejercicio.nombre,
         repRange: `${ej.repes_min}-${ej.repes_max}`,
+        targetRir: (ej as any).rir ?? 1,
+        descanso: (ej as any).descanso ?? 120,
         sets: Array.from({ length: ej.series_objetivo }, () => ({
           repeticiones: 0,
           peso_kg: 0,
@@ -74,6 +169,12 @@ const Routines = () => {
     setLoggerOpen(true);
   };
 
+  const sortLabel = () => {
+    if (sortMode === "date") return sortDir === "desc" ? "Más recientes" : "Más antiguas";
+    if (sortMode === "name") return sortDir === "asc" ? "A-Z" : "Z-A";
+    return "Orden manual";
+  };
+
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-2xl mx-auto">
       <header className="flex items-center justify-between">
@@ -81,6 +182,46 @@ const Routines = () => {
           <h1 className="text-2xl font-bold">Rutinas</h1>
           <p className="text-sm text-muted-foreground">Tus plantillas de entrenamiento</p>
         </div>
+        {!!routines?.length && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <ArrowUpDown className="h-4 w-4" />
+                <span className="hidden sm:inline">{sortLabel()}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-popover">
+              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                <Calendar className="h-3.5 w-3.5" /> Fecha
+              </DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => selectSort("date", "desc")}>
+                Más recientes {sortMode === "date" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => selectSort("date", "asc")}>
+                Más antiguas {sortMode === "date" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                <ArrowDownAZ className="h-3.5 w-3.5" /> Nombre
+              </DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => selectSort("name", "asc")}>
+                A → Z {sortMode === "name" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => selectSort("name", "desc")}>
+                Z → A {sortMode === "name" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                <Hand className="h-3.5 w-3.5" /> Personalizado
+              </DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => selectSort("custom", "asc")}>
+                Orden manual {sortMode === "custom" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </header>
 
       {isLoading ? (
@@ -98,40 +239,22 @@ const Routines = () => {
           </Button>
         </div>
       ) : (
-        <div className="grid gap-3">
-          {routines.map((r) => (
-            <Card key={r.id} className="overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="font-semibold text-base">{r.nombre}</h2>
-                    {r.descripcion && (
-                      <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{r.descripcion}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                      <Dumbbell className="h-3 w-3" />
-                      {r.ejercicios.length} ejercicio{r.ejercicios.length !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r.id)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(r.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <Button
-                  className="w-full mt-3"
-                  onClick={() => startRoutine(r)}
-                >
-                  <Play className="h-4 w-4 mr-2" /> Iniciar Entrenamiento
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={sortedRoutines.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+            <div className="grid gap-3">
+              {sortedRoutines.map((r) => (
+                <SortableRoutineCard
+                  key={r.id}
+                  routine={r}
+                  isDragMode={isDragMode}
+                  onEdit={openEdit}
+                  onDelete={setDeleteId}
+                  onStart={startRoutine}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* FAB */}
