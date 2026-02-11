@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useState, useMemo } from "react";
 import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates } from "@/hooks/useWorkouts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -113,42 +112,24 @@ const Dashboard = () => {
           </Tabs>
         </div>
 
-        <AnimatePresence mode="wait">
-          {calendarView === "month" ? (
-            <motion.div
-              key="month"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-            >
-              <MonthlyPlanner
-                month={calendarMonth}
-                onMonthChange={handleMonthChange}
-                workouts={monthWorkouts ?? []}
-                onDayClick={(date) => {
-                  handleDateSelect(date);
-                  openNew(format(date, "yyyy-MM-dd"));
-                }}
-                onWorkoutClick={(id) => openEdit(id)}
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="week"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-            >
-              <WeekCalendar
-                selectedDate={selectedDate}
-                onDateSelect={handleDateSelect}
-                workoutDates={workoutDates ?? []}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {calendarView === "month" ? (
+          <MonthlyPlanner
+            month={calendarMonth}
+            onMonthChange={handleMonthChange}
+            workouts={monthWorkouts ?? []}
+            onDayClick={(date) => {
+              handleDateSelect(date);
+              openNew(format(date, "yyyy-MM-dd"));
+            }}
+            onWorkoutClick={(id) => openEdit(id)}
+          />
+        ) : (
+          <WeekCalendar
+            selectedDate={selectedDate}
+            onDateSelect={handleDateSelect}
+            workoutDates={workoutDates ?? []}
+          />
+        )}
       </div>
 
       {/* Last Workout */}
