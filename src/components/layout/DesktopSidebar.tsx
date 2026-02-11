@@ -3,7 +3,6 @@ import { Home, Dumbbell, History, User, LogOut, ClipboardList } from "lucide-rea
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/ModeToggle";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
@@ -45,10 +44,6 @@ export function DesktopSidebar() {
         ))}
       </nav>
       <div className="border-t border-border p-4 space-y-2">
-        <div className="flex items-center justify-between px-3">
-          <span className="text-sm text-muted-foreground">Tema</span>
-          <ModeToggle />
-        </div>
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-muted-foreground"
