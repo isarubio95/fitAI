@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, Plus, User, Globe, Trash2, Loader2 } from "lucide-react";
+import { Search, Dumbbell, Plus, User, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Exercises = () => {
@@ -118,15 +118,7 @@ const Exercises = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-semibold truncate">{ex.nombre}</p>
-                        {isOwn ? (
-                          <Badge variant="default" className="text-[10px] px-1.5 py-0 h-5 shrink-0">
-                            <User className="h-3 w-3 mr-0.5" /> Personal
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 shrink-0">
-                            <Globe className="h-3 w-3 mr-0.5" /> Global
-                          </Badge>
-                        )}
+                        {isOwn && <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2">
                         {ex.descripcion || "Sin descripción"}
