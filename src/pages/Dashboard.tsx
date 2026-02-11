@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates } from "@/hooks/useWorkouts";
+import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates, useWorkoutsForDate } from "@/hooks/useWorkouts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts
 import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
 import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
+import { WeekDayDetail } from "@/components/dashboard/WeekDayDetail";
 import { format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyWorkouts();
   const { data: monthWorkouts } = useMonthWorkouts(calendarMonth);
   const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
+  const { data: dayWorkouts } = useWorkoutsForDate(calendarView === "week" ? selectedDate : undefined);
 
   const totalSets = lastWorkout?.ejercicios.reduce(
     (acc, ej) => acc + ej.series.length,
@@ -124,11 +126,18 @@ const Dashboard = () => {
             onWorkoutClick={(id) => openEdit(id)}
           />
         ) : (
-          <WeekCalendar
-            selectedDate={selectedDate}
-            onDateSelect={handleDateSelect}
-            workoutDates={workoutDates ?? []}
-          />
+          <div>
+            <WeekCalendar
+              selectedDate={selectedDate}
+              onDateSelect={handleDateSelect}
+              workoutDates={workoutDates ?? []}
+            />
+            <WeekDayDetail
+              workouts={dayWorkouts ?? []}
+              dateKey={format(selectedDate, "yyyy-MM-dd")}
+              onWorkoutClick={(id) => openEdit(id)}
+            />
+          </div>
         )}
       </div>
 
