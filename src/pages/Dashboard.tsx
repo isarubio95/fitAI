@@ -3,8 +3,8 @@ import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDat
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil } from "lucide-react";
+import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
@@ -100,16 +100,27 @@ const Dashboard = () => {
       {/* Calendar View Switcher */}
       <div className="space-y-4">
         <div className="flex justify-center">
-          <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
-            <TabsList className="h-9 rounded-full bg-muted p-1">
-              <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-sm">
-                Mes
-              </TabsTrigger>
-              <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-sm">
-                Semana
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="inline-flex h-9 items-center rounded-full bg-muted p-1 gap-0">
+            {(["month", "week"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setCalendarView(tab)}
+                className={`relative rounded-full px-5 py-1 text-sm font-medium transition-colors ${
+                  calendarView === tab ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
+                }`}
+              >
+                {calendarView === tab && (
+                  <motion.div
+                    layoutId="active-tab-indicator"
+                    className="absolute inset-0 rounded-full bg-background shadow-sm"
+                    style={{ zIndex: -1 }}
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <span className="relative z-10">{tab === "month" ? "Mes" : "Semana"}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {calendarView === "month" ? (
