@@ -19,6 +19,7 @@ export interface RoutineExerciseFormData {
   repes_max: number;
   rir: number;
   orden: number;
+  superset_id?: string | null;
 }
 
 export interface RoutineFormData {
