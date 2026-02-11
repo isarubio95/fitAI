@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,7 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Loader2, Search, GripVertical } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Loader2, Search, GripVertical, Link, Unlink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { RoutineExerciseFormData } from "@/types/routine";
 
@@ -20,6 +21,28 @@ interface RoutineFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   routineId?: string | null;
+}
+
+function generateUUID(): string {
+  return crypto.randomUUID();
+}
+
+/** Group consecutive exercises that share the same superset_id */
+function groupExercises(ejercicios: RoutineExerciseFormData[]) {
+  const groups: { supersetId: string | null; items: { exercise: RoutineExerciseFormData; originalIndex: number }[] }[] = [];
+
+  ejercicios.forEach((ej, i) => {
+    const sid = ej.superset_id || null;
+    const lastGroup = groups[groups.length - 1];
+
+    if (sid && lastGroup && lastGroup.supersetId === sid) {
+      lastGroup.items.push({ exercise: ej, originalIndex: i });
+    } else {
+      groups.push({ supersetId: sid, items: [{ exercise: ej, originalIndex: i }] });
+    }
+  });
+
+  return groups;
 }
 
 export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFormProps) {
@@ -34,6 +57,8 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   const [ejercicios, setEjercicios] = useState<RoutineExerciseFormData[]>([]);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // When linking a superset, we store the index + generated superset_id
+  const [supersetLink, setSupersetLink] = useState<{ afterIndex: number; supersetId: string } | null>(null);
 
   const isEdit = !!routineId;
 
@@ -50,6 +75,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
           repes_max: ej.repes_max,
           rir: (ej as any).rir ?? 1,
           orden: ej.orden,
+          superset_id: (ej as any).superset_id ?? null,
         }))
       );
     }
@@ -60,16 +86,58 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
       setNombre("");
       setDescripcion("");
       setEjercicios([]);
+      setSupersetLink(null);
     }
   }, [open, isEdit]);
 
-  const addExercise = (tipoId: string, nombre: string) => {
-    setEjercicios((prev) => [
-      ...prev,
-      { tipo_ejercicio_id: tipoId, nombre, series_objetivo: 3, repes_min: 8, repes_max: 12, rir: 1, orden: prev.length },
-    ]);
-    setPickerOpen(false);
-  };
+  const addExercise = useCallback(
+    (tipoId: string, nombreEj: string) => {
+      if (supersetLink) {
+        // Insert immediately after the linking exercise with same superset_id
+        const { afterIndex, supersetId } = supersetLink;
+        setEjercicios((prev) => {
+          // Also ensure the source exercise has the superset_id
+          const updated = prev.map((ej, i) =>
+            i === afterIndex ? { ...ej, superset_id: supersetId } : ej
+          );
+          const newExercise: RoutineExerciseFormData = {
+            tipo_ejercicio_id: tipoId,
+            nombre: nombreEj,
+            series_objetivo: 3,
+            repes_min: 8,
+            repes_max: 12,
+            rir: 1,
+            orden: 0,
+            superset_id: supersetId,
+          };
+          // Insert after afterIndex
+          const result = [
+            ...updated.slice(0, afterIndex + 1),
+            newExercise,
+            ...updated.slice(afterIndex + 1),
+          ].map((ej, i) => ({ ...ej, orden: i }));
+          return result;
+        });
+        setSupersetLink(null);
+      } else {
+        setEjercicios((prev) => [
+          ...prev,
+          {
+            tipo_ejercicio_id: tipoId,
+            nombre: nombreEj,
+            series_objetivo: 3,
+            repes_min: 8,
+            repes_max: 12,
+            rir: 1,
+            orden: prev.length,
+            superset_id: null,
+          },
+        ]);
+      }
+      setPickerOpen(false);
+    },
+    [supersetLink]
+  );
 
   const removeExercise = (index: number) => {
     setEjercicios((prev) => prev.filter((_, i) => i !== index).map((ej, i) => ({ ...ej, orden: i })));
@@ -78,6 +146,19 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   const updateExercise = (index: number, field: keyof RoutineExerciseFormData, value: number) => {
     setEjercicios((prev) =>
       prev.map((ej, i) => (i === index ? { ...ej, [field]: value } : ej))
+    );
+  };
+
+  const startSupersetLink = (index: number) => {
+    const existing = ejercicios[index].superset_id;
+    const supersetId = existing || generateUUID();
+    setSupersetLink({ afterIndex: index, supersetId });
+    setPickerOpen(true);
+  };
+
+  const breakSuperset = (index: number) => {
+    setEjercicios((prev) =>
+      prev.map((ej, i) => (i === index ? { ...ej, superset_id: null } : ej))
     );
   };
 
@@ -98,8 +179,6 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
           .eq("id", routineId);
         if (error) throw error;
         rutinaId = routineId;
-
-        // Delete old exercises (cascade not needed since we delete directly)
         await supabase.from("rutina_ejercicio").delete().eq("rutina_id", routineId);
       } else {
         const { data, error } = await supabase
@@ -119,6 +198,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
         repes_max: ej.repes_max,
         rir: ej.rir,
         orden: i,
+        superset_id: ej.superset_id || null,
       }));
 
       if (inserts.length > 0) {
@@ -136,6 +216,8 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
       setSaving(false);
     }
   };
+
+  const groups = groupExercises(ejercicios);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -177,70 +259,53 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
           </div>
 
           <div className="space-y-4">
-            {ejercicios.map((ej, i) => (
-              <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <GripVertical className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="font-semibold">{ej.nombre}</h3>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeExercise(i)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+            {groups.map((group, gIdx) => {
+              const isSuperset = !!group.supersetId && group.items.length > 1;
 
-                <div className="grid grid-cols-4 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Series</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={ej.series_objetivo}
-                      onChange={(e) => updateExercise(i, "series_objetivo", Number(e.target.value))}
-                      className="h-10"
-                    />
+              if (isSuperset) {
+                return (
+                  <div key={group.supersetId} className="relative rounded-xl border-2 border-primary/40 bg-primary/5">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />
+                    <div className="px-3 pt-2 pb-1">
+                      <Badge variant="secondary" className="text-xs">
+                        🔗 Superserie
+                      </Badge>
+                    </div>
+                    <div className="divide-y divide-border">
+                      {group.items.map(({ exercise: ej, originalIndex: i }) => (
+                        <ExerciseRow
+                          key={i}
+                          exercise={ej}
+                          index={i}
+                          onUpdate={updateExercise}
+                          onRemove={removeExercise}
+                          onLinkSuperset={startSupersetLink}
+                          onBreakSuperset={breakSuperset}
+                          isInSuperset
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Reps mín</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={ej.repes_min}
-                      onChange={(e) => updateExercise(i, "repes_min", Number(e.target.value))}
-                      className="h-10"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Reps máx</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={ej.repes_max}
-                      onChange={(e) => updateExercise(i, "repes_max", Number(e.target.value))}
-                      className="h-10"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">RIR</Label>
-                    <Select
-                      value={String(ej.rir)}
-                      onValueChange={(val) => updateExercise(i, "rir", Number(val))}
-                    >
-                      <SelectTrigger className="h-10">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">0 - Fallo</SelectItem>
-                        <SelectItem value="1">1</SelectItem>
-                        <SelectItem value="2">2</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              }
 
-            <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+              // Single exercise (possibly with a superset_id but alone — treat as normal)
+              const { exercise: ej, originalIndex: i } = group.items[0];
+              return (
+                <ExerciseRow
+                  key={i}
+                  exercise={ej}
+                  index={i}
+                  onUpdate={updateExercise}
+                  onRemove={removeExercise}
+                  onLinkSuperset={startSupersetLink}
+                  onBreakSuperset={breakSuperset}
+                  isInSuperset={false}
+                />
+              );
+            })}
+
+            <Popover open={pickerOpen} onOpenChange={(o) => { setPickerOpen(o); if (!o) setSupersetLink(null); }}>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full h-12">
                   <Search className="h-4 w-4 mr-2" /> Agregar Ejercicio
@@ -271,5 +336,114 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** Individual exercise row used inside the form */
+function ExerciseRow({
+  exercise: ej,
+  index: i,
+  onUpdate,
+  onRemove,
+  onLinkSuperset,
+  onBreakSuperset,
+  isInSuperset,
+}: {
+  exercise: RoutineExerciseFormData;
+  index: number;
+  onUpdate: (index: number, field: keyof RoutineExerciseFormData, value: number) => void;
+  onRemove: (index: number) => void;
+  onLinkSuperset: (index: number) => void;
+  onBreakSuperset: (index: number) => void;
+  isInSuperset: boolean;
+}) {
+  const wrapperClass = isInSuperset
+    ? "p-4 space-y-3"
+    : "rounded-xl border border-border bg-card p-4 space-y-3";
+
+  return (
+    <div className={wrapperClass}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <h3 className="font-semibold text-sm">{ej.nombre}</h3>
+        </div>
+        <div className="flex items-center gap-0.5">
+          {isInSuperset ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              title="Romper superserie"
+              onClick={() => onBreakSuperset(i)}
+            >
+              <Unlink className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+              title="Crear superserie"
+              onClick={() => onLinkSuperset(i)}
+            >
+              <Link className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onRemove(i)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Series</Label>
+          <Input
+            type="number"
+            min={1}
+            value={ej.series_objetivo}
+            onChange={(e) => onUpdate(i, "series_objetivo", Number(e.target.value))}
+            className="h-10"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Reps mín</Label>
+          <Input
+            type="number"
+            min={1}
+            value={ej.repes_min}
+            onChange={(e) => onUpdate(i, "repes_min", Number(e.target.value))}
+            className="h-10"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Reps máx</Label>
+          <Input
+            type="number"
+            min={1}
+            value={ej.repes_max}
+            onChange={(e) => onUpdate(i, "repes_max", Number(e.target.value))}
+            className="h-10"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">RIR</Label>
+          <Select
+            value={String(ej.rir)}
+            onValueChange={(val) => onUpdate(i, "rir", Number(val))}
+          >
+            <SelectTrigger className="h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">0 - Fallo</SelectItem>
+              <SelectItem value="1">1</SelectItem>
+              <SelectItem value="2">2</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
   );
 }
