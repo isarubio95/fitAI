@@ -2,7 +2,6 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "./BottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
-import { ModeToggle } from "@/components/ModeToggle";
 import { Loader2 } from "lucide-react";
 
 export function AppLayout() {
@@ -22,9 +21,6 @@ export function AppLayout() {
     <div className="flex min-h-screen bg-background">
       <DesktopSidebar />
       <div className="flex-1 flex flex-col">
-        <header className="flex items-center justify-end p-3 md:hidden">
-          <ModeToggle />
-        </header>
         <main className="flex-1 pb-20 md:pb-0">
           <Outlet />
         </main>
