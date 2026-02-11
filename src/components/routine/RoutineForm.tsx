@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Plus, Trash2, Loader2, Search, GripVertical } from "lucide-react";
@@ -47,6 +48,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
           series_objetivo: ej.series_objetivo,
           repes_min: ej.repes_min,
           repes_max: ej.repes_max,
+          rir: (ej as any).rir ?? 1,
           orden: ej.orden,
         }))
       );
@@ -64,7 +66,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   const addExercise = (tipoId: string, nombre: string) => {
     setEjercicios((prev) => [
       ...prev,
-      { tipo_ejercicio_id: tipoId, nombre, series_objetivo: 3, repes_min: 8, repes_max: 12, orden: prev.length },
+      { tipo_ejercicio_id: tipoId, nombre, series_objetivo: 3, repes_min: 8, repes_max: 12, rir: 1, orden: prev.length },
     ]);
     setPickerOpen(false);
   };
@@ -115,6 +117,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
         series_objetivo: ej.series_objetivo,
         repes_min: ej.repes_min,
         repes_max: ej.repes_max,
+        rir: ej.rir,
         orden: i,
       }));
 
@@ -186,7 +189,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Series</Label>
                     <Input
@@ -216,6 +219,22 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                       onChange={(e) => updateExercise(i, "repes_max", Number(e.target.value))}
                       className="h-10"
                     />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">RIR</Label>
+                    <Select
+                      value={String(ej.rir)}
+                      onValueChange={(val) => updateExercise(i, "rir", Number(val))}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0 - Fallo</SelectItem>
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="2">2</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
