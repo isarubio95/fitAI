@@ -80,3 +80,21 @@ export function useDeleteRoutine() {
     },
   });
 }
+
+export function useUpdateRoutineOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; orden: number }[]) => {
+      // Update each routine's orden in parallel
+      const promises = items.map(({ id, orden }) =>
+        supabase.from("rutina").update({ orden } as any).eq("id", id)
+      );
+      const results = await Promise.all(promises);
+      const err = results.find((r) => r.error);
+      if (err?.error) throw err.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["routines"] });
+    },
+  });
+}
