@@ -192,24 +192,39 @@ export type Database = {
       }
       tipo_ejercicio: {
         Row: {
+          body_part: string | null
           created_at: string
           descripcion: string | null
+          equipment: string | null
+          external_id: string | null
+          gif_url: string | null
           id: string
           imagen: string | null
+          instructions: string[] | null
           nombre: string
         }
         Insert: {
+          body_part?: string | null
           created_at?: string
           descripcion?: string | null
+          equipment?: string | null
+          external_id?: string | null
+          gif_url?: string | null
           id?: string
           imagen?: string | null
+          instructions?: string[] | null
           nombre: string
         }
         Update: {
+          body_part?: string | null
           created_at?: string
           descripcion?: string | null
+          equipment?: string | null
+          external_id?: string | null
+          gif_url?: string | null
           id?: string
           imagen?: string | null
+          instructions?: string[] | null
           nombre?: string
         }
         Relationships: []
