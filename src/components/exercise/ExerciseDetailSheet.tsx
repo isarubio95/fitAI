@@ -1,9 +1,9 @@
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,12 +42,12 @@ const ExerciseDetailSheet = ({
   const isOwn = exercise.usuario_id && exercise.usuario_id === currentUserId;
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh]">
-        <ScrollArea className="overflow-y-auto">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl p-0">
+        <ScrollArea className="h-full">
           <div className="flex flex-col">
             {/* Media */}
-            <div className="relative w-full aspect-video bg-muted flex items-center justify-center overflow-hidden">
+            <div className="relative w-full aspect-video bg-muted flex items-center justify-center overflow-hidden rounded-t-2xl">
               {mediaUrl ? (
                 <img
                   src={mediaUrl}
@@ -65,11 +65,11 @@ const ExerciseDetailSheet = ({
 
             <div className="p-5 space-y-5">
               {/* Header */}
-              <DrawerHeader className="p-0">
+              <SheetHeader className="p-0">
                 <div className="flex items-start justify-between gap-3">
-                  <DrawerTitle className="text-xl text-left leading-tight">
+                  <SheetTitle className="text-xl text-left leading-tight">
                     {exercise.nombre}
-                  </DrawerTitle>
+                  </SheetTitle>
                   {isOwn && onEdit && (
                     <Button
                       variant="outline"
@@ -81,7 +81,7 @@ const ExerciseDetailSheet = ({
                     </Button>
                   )}
                 </div>
-              </DrawerHeader>
+              </SheetHeader>
 
               {/* Badges */}
               {(exercise.body_part || exercise.equipment) && (
@@ -125,8 +125,8 @@ const ExerciseDetailSheet = ({
             </div>
           </div>
         </ScrollArea>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   );
 };
 

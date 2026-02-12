@@ -9,12 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerFooter,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -144,12 +144,12 @@ const Exercises = () => {
       </div>
 
       {/* Create Dialog */}
-      <Drawer open={createOpen} onOpenChange={setCreateOpen}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Crear Ejercicio</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 space-y-4">
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Crear Ejercicio</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>Nombre *</Label>
               <Input
@@ -169,17 +169,17 @@ const Exercises = () => {
               />
             </div>
           </div>
-          <DrawerFooter>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              Cancelar
+            </Button>
             <Button onClick={handleCreate} disabled={!newName.trim() || createExercise.isPending}>
               {createExercise.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Crear
             </Button>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>
-              Cancelar
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirm */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
