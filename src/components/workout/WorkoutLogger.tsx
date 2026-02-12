@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 import { useWorkoutById } from "@/hooks/useWorkouts";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -243,21 +243,21 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[95vh] overflow-y-auto rounded-t-2xl p-0">
-        <SheetHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="max-h-[95vh] overflow-y-auto">
+        <DrawerHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
           <div className="flex items-center justify-between">
-            <SheetTitle className="text-lg">
+            <DrawerTitle className="text-lg">
               {isEdit ? "Editar Entrenamiento" : "Nuevo Entrenamiento"}
-            </SheetTitle>
+            </DrawerTitle>
             <Button onClick={handleSave} disabled={saving} size="sm">
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Actualizar" : "Guardar"}
             </Button>
           </div>
-        </SheetHeader>
+        </DrawerHeader>
 
-        <div className="p-4 space-y-6">
+        <div className="p-4 space-y-6 overflow-y-auto">
           {/* Title & Date */}
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 sm:col-span-1 space-y-1.5">
@@ -304,7 +304,7 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
             />
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }
