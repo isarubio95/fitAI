@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Search, Dumbbell, Plus, User, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 
 const Exercises = () => {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ const Exercises = () => {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedExercise, setSelectedExercise] = useState<any>(null);
 
   const handleCreate = async () => {
     if (!user || !newName.trim()) return;
@@ -101,11 +103,12 @@ const Exercises = () => {
               return (
                 <Card
                   key={ex.id}
-                  className={`transition-colors ${
+                  className={`transition-colors cursor-pointer ${
                     isOwn
                       ? "border-primary/30 bg-primary/5 hover:border-primary/50"
                       : "hover:border-primary/50"
                   }`}
+                  onClick={() => setSelectedExercise(ex)}
                 >
                   <CardContent className="flex items-start gap-3 p-4">
                     <div
@@ -129,7 +132,7 @@ const Exercises = () => {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 shrink-0 text-destructive"
-                        onClick={() => setDeleteId(ex.id)}
+                        onClick={(e) => { e.stopPropagation(); setDeleteId(ex.id); }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -191,6 +194,14 @@ const Exercises = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Exercise Detail Sheet */}
+      <ExerciseDetailSheet
+        exercise={selectedExercise}
+        open={!!selectedExercise}
+        onOpenChange={(open) => !open && setSelectedExercise(null)}
+        currentUserId={user?.id}
+      />
     </div>
   );
 };
