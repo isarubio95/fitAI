@@ -1,9 +1,20 @@
+import { useState } from "react";
 import { useLastPerformance } from "@/hooks/useLastPerformance";
 import { useRestTimerContext } from "@/components/workout/RestTimerProvider";
 import { formatMSS } from "@/hooks/useRestTimer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Trash2, Plus, Info, Play, Square, Timer } from "lucide-react";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
@@ -26,6 +37,8 @@ export function ExerciseCard({
 }: ExerciseCardProps) {
   const { data: lastPerf } = useLastPerformance(exercise.tipo_ejercicio_id);
   const timer = useRestTimerContext();
+  const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
+  const [confirmDeleteSet, setConfirmDeleteSet] = useState<number | null>(null);
 
   const restSeconds = exercise.descanso ?? 120;
 
@@ -49,7 +62,7 @@ export function ExerciseCard({
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-destructive"
-          onClick={onRemoveExercise}
+          onClick={() => setConfirmDeleteExercise(true)}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -127,7 +140,7 @@ export function ExerciseCard({
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-destructive"
-              onClick={() => onRemoveSet(si)}
+              onClick={() => setConfirmDeleteSet(si)}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -163,6 +176,33 @@ export function ExerciseCard({
           </Button>
         </div>
       )}
+      {/* Confirm delete exercise */}
+      <AlertDialog open={confirmDeleteExercise} onOpenChange={setConfirmDeleteExercise}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar "{exercise.nombre}"?</AlertDialogTitle>
+            <AlertDialogDescription>Se eliminarán todas las series de este ejercicio.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={onRemoveExercise}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm delete set */}
+      <AlertDialog open={confirmDeleteSet !== null} onOpenChange={(open) => !open && setConfirmDeleteSet(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar serie {confirmDeleteSet !== null ? confirmDeleteSet + 1 : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (confirmDeleteSet !== null) onRemoveSet(confirmDeleteSet); setConfirmDeleteSet(null); }}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
