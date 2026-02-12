@@ -14,6 +14,7 @@ import WorkoutHistory from "./pages/WorkoutHistory";
 import Profile from "./pages/Profile";
 import Routines from "./pages/Routines";
 import NotFound from "./pages/NotFound";
+import AdminImport from "./pages/AdminImport";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => {
                   <Route path="/history" element={<WorkoutHistory />} />
                   <Route path="/profile" element={<Profile />} />
                 </Route>
+                <Route path="/admin-import" element={<AdminImport />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
