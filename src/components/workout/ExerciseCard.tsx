@@ -111,10 +111,10 @@ export function ExerciseCard({
 
         return (
           <div key={si} className="grid grid-cols-[2rem_2rem_1fr_1fr_2rem] gap-2 items-center">
-            <span className="text-sm text-muted-foreground text-center">{si + 1}</span>
+            <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
 
             {/* Completed checkbox */}
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-start">
               <Checkbox
                 checked={s.completed || false}
                 onCheckedChange={(checked) => {
