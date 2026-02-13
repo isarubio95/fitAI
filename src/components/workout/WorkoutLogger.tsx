@@ -471,9 +471,8 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[96vh] rounded-t-2xl p-0 flex flex-col">
-          {/* Fixed Header */}
-          <DrawerHeader className="shrink-0 bg-card border-b border-border p-4">
+        <DrawerContent className="h-[95vh] overflow-y-auto rounded-t-2xl p-0">
+          <DrawerHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
                 <DrawerTitle className="text-lg">
@@ -483,23 +482,28 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
                   <ElapsedTime since={existingWorkout.fecha} />
                 )}
               </div>
-              {isEdit && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive border-destructive/50 hover:bg-destructive/10"
-                  onClick={() => setConfirmDelete(true)}
-                  disabled={deleting}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />
-                  Borrar
+              <div className="flex items-center gap-2">
+                {isEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                    onClick={() => setConfirmDelete(true)}
+                    disabled={deleting}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Borrar
+                  </Button>
+                )}
+                <Button onClick={handleSave} disabled={saving || creatingActive} size="sm">
+                  {(saving || creatingActive) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {saveButtonLabel}
                 </Button>
-              )}
+              </div>
             </div>
           </DrawerHeader>
 
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          <div className="p-4 space-y-6">
             {/* Title & Date */}
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 sm:col-span-1 space-y-1.5">
@@ -553,14 +557,6 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
                 onSelect={addExercise}
               />
             </div>
-          </div>
-
-          {/* Fixed Footer */}
-          <div className="shrink-0 border-t border-border bg-card p-4 pb-8">
-            <Button onClick={handleSave} disabled={saving || creatingActive} className="w-full h-12">
-              {(saving || creatingActive) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {saveButtonLabel}
-            </Button>
           </div>
         </DrawerContent>
       </Drawer>
