@@ -29,7 +29,7 @@ export function ActiveWorkoutPill() {
   if (!active || state.open) return null;
 
   return (
-    <div className="fixed bottom-[5rem] left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90vw]">
+    <div className="fixed bottom-[6rem] left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90vw]">
       <button
         onClick={() => openActiveWorkout(active.id)}
         className="group relative flex items-center gap-3 pl-2 pr-4 py-2 rounded-full 
