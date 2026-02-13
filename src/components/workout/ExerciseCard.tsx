@@ -74,14 +74,25 @@ export function ExerciseCard({
         </Button>
       </div>
 
-      {/* Ghost set - previous performance */}
-      {lastPerf && (
+      {/* Previous session history */}
+      {lastPerf ? (
+        <div className="rounded-lg bg-muted/50 px-3 py-2 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <Info className="h-3.5 w-3.5 shrink-0" />
+            <span>Sesión anterior ({lastPerf.fecha ? new Date(lastPerf.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : "—"})</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {lastPerf.sets.map((s, i) => (
+              <Badge key={i} variant="secondary" className="text-xs font-normal">
+                S{s.numero_serie}: {s.peso_kg}kg × {s.repeticiones}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      ) : (
         <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-          <Info className="h-3.5 w-3.5 shrink-0" />
-          <span>
-            Última vez: {lastPerf.peso_kg}kg × {lastPerf.repeticiones} reps
-            {lastPerf.rir != null && ` (RIR ${lastPerf.rir})`}
-          </span>
+          <span>💪</span>
+          <span>¡Primer registro! Dale duro</span>
         </div>
       )}
 
