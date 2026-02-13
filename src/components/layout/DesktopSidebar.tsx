@@ -16,7 +16,7 @@ export function DesktopSidebar() {
   const { signOut } = useAuth();
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-card h-screen sticky top-0">
+    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-card h-[100dvh] sticky top-0">
       <div className="flex h-16 items-center gap-2 px-6 border-b border-border">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
           <Dumbbell className="h-5 w-5 text-primary-foreground" />
