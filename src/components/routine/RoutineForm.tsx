@@ -225,7 +225,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[95vh] overflow-y-auto rounded-t-2xl p-0">
+      <SheetContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[20px] p-0">
         <SheetHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-lg">
