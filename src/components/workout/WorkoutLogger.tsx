@@ -458,10 +458,23 @@ export function WorkoutLogger() {
 
   const saveButtonLabel = isActiveWorkout ? "Finalizar" : isEdit ? "Actualizar" : "Guardar";
 
+  // Intercept hardware back button: push a fake history entry when open
+  useEffect(() => {
+    if (!open) return;
+    window.history.pushState({ workoutDrawerOpen: true }, "", window.location.href);
+    const handlePopState = () => {
+      setOpen(false);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [open, setOpen]);
+
   return (
     <>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="h-[95vh] overflow-y-auto rounded-t-2xl p-0">
+        <SheetContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[20px] p-0">
           <SheetHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
