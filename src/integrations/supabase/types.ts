@@ -19,6 +19,7 @@ export type Database = {
           comentarios: string | null
           created_at: string
           fecha: string
+          fecha_fin: string | null
           id: string
           titulo: string
           usuario_id: string
@@ -27,6 +28,7 @@ export type Database = {
           comentarios?: string | null
           created_at?: string
           fecha?: string
+          fecha_fin?: string | null
           id?: string
           titulo: string
           usuario_id: string
@@ -35,6 +37,7 @@ export type Database = {
           comentarios?: string | null
           created_at?: string
           fecha?: string
+          fecha_fin?: string | null
           id?: string
           titulo?: string
           usuario_id?: string
@@ -154,6 +157,7 @@ export type Database = {
       }
       serie: {
         Row: {
+          completed: boolean
           created_at: string
           ejercicio_id: string
           id: string
@@ -163,6 +167,7 @@ export type Database = {
           usuario_id: string
         }
         Insert: {
+          completed?: boolean
           created_at?: string
           ejercicio_id: string
           id?: string
@@ -172,6 +177,7 @@ export type Database = {
           usuario_id: string
         }
         Update: {
+          completed?: boolean
           created_at?: string
           ejercicio_id?: string
           id?: string

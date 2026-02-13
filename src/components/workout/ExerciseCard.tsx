@@ -5,6 +5,7 @@ import { formatMSS } from "@/hooks/useRestTimer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Plus, Info, Play, Square, Timer } from "lucide-react";
+import { Trash2, Plus, Info, Timer } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
 interface ExerciseCardProps {
@@ -25,6 +27,8 @@ interface ExerciseCardProps {
   onAddSet: () => void;
   onRemoveSet: (setIndex: number) => void;
   onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number) => void;
+  onAutoSaveSet?: (setIndex: number) => void;
+  onToggleCompleted?: (setIndex: number, completed: boolean) => void;
 }
 
 export function ExerciseCard({
@@ -34,6 +38,8 @@ export function ExerciseCard({
   onAddSet,
   onRemoveSet,
   onUpdateSet,
+  onAutoSaveSet,
+  onToggleCompleted,
 }: ExerciseCardProps) {
   const { data: lastPerf } = useLastPerformance(exercise.tipo_ejercicio_id);
   const timer = useRestTimerContext();
@@ -80,28 +86,50 @@ export function ExerciseCard({
       )}
 
       {/* Sets header */}
-      <div className="grid grid-cols-[2rem_1fr_1fr_2rem_2rem] gap-2 text-xs text-muted-foreground px-1">
+      <div className="grid grid-cols-[2rem_2rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1">
         <span>#</span>
+        <span>✓</span>
         <span>Reps</span>
         <span>Peso (kg)</span>
-        <span />
         <span />
       </div>
 
       {exercise.sets.map((s, si) => {
         const timerKey = `${exerciseIndex}-${si}`;
         const isActive = timer.activeKey === timerKey;
-        const isRunning = isActive && timer.isRunning;
-        const isFinished = isActive && timer.finished;
 
         return (
-          <div key={si} className="grid grid-cols-[2rem_1fr_1fr_2rem_2rem] gap-2 items-center">
+          <div key={si} className="grid grid-cols-[2rem_2rem_1fr_1fr_2rem] gap-2 items-center">
             <span className="text-sm text-muted-foreground text-center">{si + 1}</span>
+
+            {/* Completed checkbox */}
+            <div className="flex items-center justify-center">
+              <Checkbox
+                checked={s.completed || false}
+                onCheckedChange={(checked) => {
+                  const isCompleted = checked === true;
+                  onToggleCompleted?.(si, isCompleted);
+                  if (isCompleted) {
+                    timer.start(timerKey, restSeconds);
+                  } else if (isActive) {
+                    timer.stop();
+                  }
+                }}
+                className={cn(
+                  "h-5 w-5 rounded-full border-2 transition-colors",
+                  s.completed
+                    ? "border-green-500 bg-green-500 text-white data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 data-[state=checked]:text-white"
+                    : "border-muted-foreground/40"
+                )}
+              />
+            </div>
+
             <Input
               type="number"
               min={0}
               value={s.repeticiones || ""}
               onChange={(e) => onUpdateSet(si, "repeticiones", Number(e.target.value))}
+              onBlur={() => onAutoSaveSet?.(si)}
               className="h-11"
               placeholder={exercise.repRange || "0"}
             />
@@ -111,31 +139,10 @@ export function ExerciseCard({
               step={0.5}
               value={s.peso_kg || ""}
               onChange={(e) => onUpdateSet(si, "peso_kg", Number(e.target.value))}
+              onBlur={() => onAutoSaveSet?.(si)}
               className="h-11"
               placeholder="0"
             />
-            {/* Timer button */}
-            {isRunning ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-primary font-mono text-xs p-0"
-                onClick={() => timer.stop()}
-                title="Detener"
-              >
-                <Square className="h-3.5 w-3.5" />
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-8 w-8 ${isFinished ? "text-green-500" : "text-muted-foreground hover:text-primary"}`}
-                onClick={() => timer.start(timerKey, restSeconds)}
-                title={`Descanso ${formatMSS(restSeconds)}`}
-              >
-                <Play className="h-3.5 w-3.5" />
-              </Button>
-            )}
             <Button
               variant="ghost"
               size="icon"
@@ -176,6 +183,7 @@ export function ExerciseCard({
           </Button>
         </div>
       )}
+
       {/* Confirm delete exercise */}
       <AlertDialog open={confirmDeleteExercise} onOpenChange={setConfirmDeleteExercise}>
         <AlertDialogContent>

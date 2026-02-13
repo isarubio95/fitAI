@@ -12,6 +12,7 @@ export interface SetFormData {
   rir?: number | null;
   descanso?: number; // rest time in seconds
   id?: string;
+  completed?: boolean;
 }
 
 export interface ExerciseFormData {

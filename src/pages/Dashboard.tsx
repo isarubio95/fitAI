@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates, useWorkoutsForDate } from "@/hooks/useWorkouts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,12 +21,25 @@ const Dashboard = () => {
   const [calendarView, setCalendarView] = useState<"month" | "week">("month");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: lastWorkout, isLoading: loadingLast } = useLastWorkout();
   const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyWorkouts();
   const { data: monthWorkouts } = useMonthWorkouts(calendarMonth);
   const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
   const { data: dayWorkouts } = useWorkoutsForDate(calendarView === "week" ? selectedDate : undefined);
+
+  // Handle ?workout=<id> from ActiveWorkoutPill
+  useEffect(() => {
+    const wid = searchParams.get("workout");
+    if (wid) {
+      setEditWorkoutId(wid);
+      setLoggerOpen(true);
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("workout");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, []);
 
   const totalSets = lastWorkout?.ejercicios.reduce(
     (acc, ej) => acc + ej.series.length,
