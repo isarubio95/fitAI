@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -8,7 +9,17 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, Trash2 } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import { ExerciseCard } from "./ExerciseCard";
@@ -27,6 +38,7 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   
   const { data: existingWorkout } = useWorkoutById(workoutId);
 
@@ -35,6 +47,8 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
   const [exercises, setExercises] = useState<ExerciseFormData[]>([]);
   const [saving, setSaving] = useState(false);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isEdit = !!workoutId;
 
@@ -129,6 +143,37 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
     queryClient.invalidateQueries({ queryKey: ["monthWorkoutDates"] });
     queryClient.invalidateQueries({ queryKey: ["workoutsForDate"] });
     queryClient.invalidateQueries({ queryKey: ["workout"] });
+  };
+
+  const handleDelete = async () => {
+    if (!workoutId) return;
+    setDeleting(true);
+    try {
+      // Delete series first, then ejercicios, then actividad
+      const { data: oldEjercicios } = await supabase
+        .from("ejercicio")
+        .select("id")
+        .eq("actividad_id", workoutId);
+
+      if (oldEjercicios?.length) {
+        const oldIds = oldEjercicios.map((e) => e.id);
+        await supabase.from("serie").delete().in("ejercicio_id", oldIds);
+        await supabase.from("ejercicio").delete().eq("actividad_id", workoutId);
+      }
+
+      const { error } = await supabase.from("actividad").delete().eq("id", workoutId);
+      if (error) throw error;
+
+      toast({ title: "Entrenamiento eliminado correctamente" });
+      invalidateAll();
+      onOpenChange(false);
+      navigate("/history");
+    } catch (error: any) {
+      toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
   };
 
   const handleSave = async () => {
@@ -243,6 +288,7 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
   };
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[95vh] overflow-y-auto rounded-t-2xl p-0">
         <SheetHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
@@ -250,10 +296,24 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
             <SheetTitle className="text-lg">
               {isEdit ? "Editar Entrenamiento" : "Nuevo Entrenamiento"}
             </SheetTitle>
-            <Button onClick={handleSave} disabled={saving} size="sm">
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEdit ? "Actualizar" : "Guardar"}
-            </Button>
+            <div className="flex items-center gap-2">
+              {isEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={deleting}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                  Borrar
+                </Button>
+              )}
+              <Button onClick={handleSave} disabled={saving} size="sm">
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEdit ? "Actualizar" : "Guardar"}
+              </Button>
+            </div>
           </div>
         </SheetHeader>
 
@@ -306,5 +366,29 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
         </div>
       </SheetContent>
     </Sheet>
+
+    {/* Confirm delete workout */}
+    <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Borrar este entrenamiento?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Esta acción eliminará permanentemente el registro de esta sesión. No se puede deshacer.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            disabled={deleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Eliminar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
