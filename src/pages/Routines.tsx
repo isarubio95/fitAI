@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   DndContext,
   closestCenter,
@@ -49,6 +50,7 @@ type SortDir = "asc" | "desc";
 const Routines = () => {
   const { data: routines, isLoading } = useRoutines();
   const deleteRoutine = useDeleteRoutine();
+  const navigate = useNavigate();
   const updateOrder = useUpdateRoutineOrder();
   const { toast } = useToast();
 
@@ -143,6 +145,7 @@ const Routines = () => {
     try {
       await deleteRoutine.mutateAsync(deleteId);
       toast({ title: "Rutina eliminada" });
+      navigate("/");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
