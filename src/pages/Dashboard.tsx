@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates, useWorkoutsForDate } from "@/hooks/useWorkouts";
-import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
+import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
 import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
 import { WeekDayDetail } from "@/components/dashboard/WeekDayDetail";
@@ -14,10 +15,13 @@ import { format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 
 const Dashboard = () => {
-  const { openNew, openEdit } = useGlobalWorkoutDrawer();
+  const [loggerOpen, setLoggerOpen] = useState(false);
+  const [editWorkoutId, setEditWorkoutId] = useState<string | null>(null);
+  const [prefillDate, setPrefillDate] = useState<string | undefined>(undefined);
   const [calendarView, setCalendarView] = useState<"month" | "week">("month");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: lastWorkout, isLoading: loadingLast } = useLastWorkout();
   const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyWorkouts();
@@ -25,13 +29,38 @@ const Dashboard = () => {
   const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
   const { data: dayWorkouts } = useWorkoutsForDate(calendarView === "week" ? selectedDate : undefined);
 
+  // Handle ?workout=<id> from ActiveWorkoutPill
+  useEffect(() => {
+    const wid = searchParams.get("workout");
+    if (wid) {
+      setEditWorkoutId(wid);
+      setLoggerOpen(true);
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("workout");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, []);
+
   const totalSets = lastWorkout?.ejercicios.reduce(
     (acc, ej) => acc + ej.series.length,
     0
   ) ?? 0;
 
+  const openNew = (date?: string) => {
+    setEditWorkoutId(null);
+    setPrefillDate(date);
+    setLoggerOpen(true);
+  };
+
+  const openEdit = (id: string) => {
+    setEditWorkoutId(id);
+    setPrefillDate(undefined);
+    setLoggerOpen(true);
+  };
+
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
+    // Sync month when selecting a date
     setCalendarMonth(startOfMonth(date));
   };
 
@@ -173,6 +202,13 @@ const Dashboard = () => {
       >
         <Plus className="h-6 w-6" />
       </Button>
+
+      <WorkoutLogger
+        open={loggerOpen}
+        onOpenChange={setLoggerOpen}
+        workoutId={editWorkoutId}
+        defaultDate={prefillDate}
+      />
     </div>
   );
 };

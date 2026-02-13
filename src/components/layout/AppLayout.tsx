@@ -3,13 +3,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "./BottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
 import { ActiveWorkoutPill } from "@/components/workout/ActiveWorkoutPill";
-import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
-import { GlobalWorkoutDrawerProvider, useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Loader2 } from "lucide-react";
 
-function AppLayoutInner() {
+export function AppLayout() {
   const { user, loading } = useAuth();
-  const { state, setOpen } = useGlobalWorkoutDrawer();
 
   if (loading) {
     return (
@@ -31,22 +28,6 @@ function AppLayoutInner() {
       </div>
       <ActiveWorkoutPill />
       <BottomNav />
-      <WorkoutLogger
-        open={state.open}
-        onOpenChange={setOpen}
-        workoutId={state.workoutId}
-        defaultDate={state.defaultDate}
-        templateExercises={state.templateExercises}
-        templateTitle={state.templateTitle}
-      />
     </div>
-  );
-}
-
-export function AppLayout() {
-  return (
-    <GlobalWorkoutDrawerProvider>
-      <AppLayoutInner />
-    </GlobalWorkoutDrawerProvider>
   );
 }

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkoutById } from "@/hooks/useWorkouts";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,7 +60,7 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
+  const navigate = useNavigate();
 
   const [activeWorkoutId, setActiveWorkoutId] = useState<string | null>(null);
   const effectiveWorkoutId = workoutId || activeWorkoutId;
@@ -363,7 +364,7 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
       invalidateAll();
       onOpenChange(false);
       setActiveWorkoutId(null);
-      
+      navigate("/history");
     } catch (error: any) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
     } finally {
@@ -470,14 +471,14 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
 
   return (
     <>
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="h-[95vh] overflow-y-auto rounded-t-2xl p-0">
-          <DrawerHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="h-[95vh] overflow-y-auto rounded-t-2xl p-0">
+          <SheetHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <DrawerTitle className="text-lg">
+                <SheetTitle className="text-lg">
                   {isActiveWorkout ? "Entrenamiento Activo" : isEdit ? "Editar Entrenamiento" : "Nuevo Entrenamiento"}
-                </DrawerTitle>
+                </SheetTitle>
                 {isActiveWorkout && existingWorkout && (
                   <ElapsedTime since={existingWorkout.fecha} />
                 )}
@@ -501,7 +502,7 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
                 </Button>
               </div>
             </div>
-          </DrawerHeader>
+          </SheetHeader>
 
           <div className="p-4 space-y-6">
             {/* Title & Date */}
@@ -558,8 +559,8 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
               />
             </div>
           </div>
-        </DrawerContent>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
 
       {/* Confirm delete workout */}
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

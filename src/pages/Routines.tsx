@@ -16,8 +16,6 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { useRoutines, useDeleteRoutine, useUpdateRoutineOrder } from "@/hooks/useRoutines";
-import { useActiveWorkout } from "@/hooks/useActiveWorkout";
-import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Dumbbell, ArrowUpDown, Calendar, ArrowDownAZ, Hand, Check } from "lucide-react";
@@ -30,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RoutineForm } from "@/components/routine/RoutineForm";
+import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 import { SortableRoutineCard } from "@/components/routine/SortableRoutineCard";
 import { useToast } from "@/hooks/use-toast";
 import type { RutinaWithDetails } from "@/types/routine";
@@ -54,8 +53,6 @@ const Routines = () => {
   const navigate = useNavigate();
   const updateOrder = useUpdateRoutineOrder();
   const { toast } = useToast();
-  const { data: activeWorkout } = useActiveWorkout();
-  const { openFromTemplate, openActiveWorkout } = useGlobalWorkoutDrawer();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -64,7 +61,13 @@ const Routines = () => {
   const [sortMode, setSortMode] = useState<SortMode>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
+  // Local reordered list for custom mode
   const [customOrder, setCustomOrder] = useState<RutinaWithDetails[] | null>(null);
+
+  // Start workout from routine
+  const [loggerOpen, setLoggerOpen] = useState(false);
+  const [templateExercises, setTemplateExercises] = useState<ExerciseFormData[] | undefined>();
+  const [templateTitle, setTemplateTitle] = useState<string | undefined>();
 
   const isDragMode = sortMode === "custom";
 
@@ -75,7 +78,9 @@ const Routines = () => {
 
   const sortedRoutines = useMemo(() => {
     if (!routines?.length) return [];
+
     if (isDragMode && customOrder) return customOrder;
+
     const sorted = [...routines];
     switch (sortMode) {
       case "date":
@@ -101,6 +106,7 @@ const Routines = () => {
     setSortMode(mode);
     setSortDir(dir);
     if (mode === "custom" && routines) {
+      // Initialize custom order from current DB orden or fallback to current list order
       const ordered = [...routines].sort(
         (a, b) => ((a as any).orden ?? 0) - ((b as any).orden ?? 0)
       );
@@ -113,10 +119,13 @@ const Routines = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id || !customOrder) return;
+
     const oldIndex = customOrder.findIndex((r) => r.id === active.id);
     const newIndex = customOrder.findIndex((r) => r.id === over.id);
     const reordered = arrayMove(customOrder, oldIndex, newIndex);
     setCustomOrder(reordered);
+
+    // Persist
     const updates = reordered.map((r, i) => ({ id: r.id, orden: i }));
     updateOrder.mutate(updates);
   };
@@ -144,24 +153,6 @@ const Routines = () => {
   };
 
   const startRoutine = (routine: RutinaWithDetails) => {
-    // Block if there's already an active workout
-    if (activeWorkout) {
-      toast({
-        title: "Ya tienes un entrenamiento en curso",
-        description: "Termínalo o cancélalo antes de empezar otro.",
-        variant: "destructive",
-        action: (
-          <button
-            className="shrink-0 rounded-md bg-destructive-foreground/20 px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:bg-destructive-foreground/30 transition-colors"
-            onClick={() => openActiveWorkout(activeWorkout.id)}
-          >
-            Ir al entreno
-          </button>
-        ) as any,
-      });
-      return;
-    }
-
     const exercises: ExerciseFormData[] = routine.ejercicios
       .sort((a, b) => a.orden - b.orden)
       .map((ej) => ({
@@ -176,7 +167,9 @@ const Routines = () => {
         })),
       }));
 
-    openFromTemplate(routine.nombre, exercises);
+    setTemplateTitle(routine.nombre);
+    setTemplateExercises(exercises);
+    setLoggerOpen(true);
   };
 
   const sortLabel = () => {
@@ -277,6 +270,19 @@ const Routines = () => {
       </Button>
 
       <RoutineForm open={formOpen} onOpenChange={setFormOpen} routineId={editId} />
+
+      <WorkoutLogger
+        open={loggerOpen}
+        onOpenChange={(open) => {
+          setLoggerOpen(open);
+          if (!open) {
+            setTemplateExercises(undefined);
+            setTemplateTitle(undefined);
+          }
+        }}
+        templateExercises={templateExercises}
+        templateTitle={templateTitle}
+      />
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>

@@ -1,15 +1,22 @@
+import { useState } from "react";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
-import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Calendar, Dumbbell, Hash, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 
 const WorkoutHistory = () => {
   const { data: workouts, isLoading } = useWorkoutHistory();
-  const { openEdit } = useGlobalWorkoutDrawer();
+  const [editId, setEditId] = useState<string | null>(null);
+  const [loggerOpen, setLoggerOpen] = useState(false);
+
+  const openEdit = (id: string) => {
+    setEditId(id);
+    setLoggerOpen(true);
+  };
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-2xl mx-auto">
@@ -84,6 +91,12 @@ const WorkoutHistory = () => {
           })}
         </Accordion>
       )}
+
+      <WorkoutLogger
+        open={loggerOpen}
+        onOpenChange={setLoggerOpen}
+        workoutId={editId}
+      />
     </div>
   );
 };
