@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkoutById } from "@/hooks/useWorkouts";
+import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,15 +24,6 @@ import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import { ExerciseCard } from "./ExerciseCard";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
-
-interface WorkoutLoggerProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  workoutId?: string | null;
-  defaultDate?: string;
-  templateExercises?: ExerciseFormData[];
-  templateTitle?: string;
-}
 
 // Elapsed time display component
 function ElapsedTime({ since }: { since: string }) {
@@ -56,7 +48,10 @@ function ElapsedTime({ since }: { since: string }) {
   );
 }
 
-export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDate, templateExercises, templateTitle }: WorkoutLoggerProps) {
+export function WorkoutLogger() {
+  const { state, setOpen, close } = useGlobalWorkoutDrawer();
+  const { open, workoutId, defaultDate, templateExercises, templateTitle } = state;
+
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -118,11 +113,17 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
     }
   }, [open, isEdit, defaultDate, templateExercises]);
 
+  // Reset activeWorkoutId when drawer closes
+  useEffect(() => {
+    if (!open) {
+      setActiveWorkoutId(null);
+    }
+  }, [open]);
+
   const createActiveWorkout = async () => {
     if (!user || !templateExercises || !templateTitle) return;
     setCreatingActive(true);
     try {
-      // Create actividad with fecha_fin = null (in progress)
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
         .insert({ titulo: templateTitle.trim(), fecha: new Date().toISOString(), usuario_id: user.id })
@@ -130,7 +131,6 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
         .single();
       if (actError) throw actError;
 
-      // Create ejercicios
       const ejercicioInserts = templateExercises.map((ex) => ({
         actividad_id: actividad.id,
         tipo_ejercicio_id: ex.tipo_ejercicio_id,
@@ -142,7 +142,6 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
         .select("id");
       if (ejError) throw ejError;
 
-      // Create series
       const serieInserts = templateExercises.flatMap((ex, i) =>
         ex.sets.map((s, si) => ({
           ejercicio_id: ejercicios![i].id,
@@ -159,7 +158,6 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
         .select("id");
       if (sError) throw sError;
 
-      // Update local state with DB IDs
       let idx = 0;
       const updatedExercises: ExerciseFormData[] = templateExercises.map((ex, i) => ({
         ...ex,
@@ -181,8 +179,6 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
       setCreatingActive(false);
     }
   };
-
-  // --- CRUD operations (live-aware) ---
 
   const addExercise = async (tipoId: string, nombre: string) => {
     if (effectiveWorkoutId && user) {
@@ -294,7 +290,6 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
     );
   };
 
-  // Auto-save set to DB on blur
   const handleAutoSaveSet = useCallback(
     async (exerciseIndex: number, setIndex: number) => {
       const set = exercises[exerciseIndex]?.sets[setIndex];
@@ -311,7 +306,6 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
     [exercises]
   );
 
-  // Toggle completed and save to DB
   const handleToggleCompleted = useCallback(
     async (exerciseIndex: number, setIndex: number, completed: boolean) => {
       setExercises((prev) =>
@@ -362,8 +356,7 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
       if (error) throw error;
       toast({ title: "Entrenamiento eliminado correctamente" });
       invalidateAll();
-      onOpenChange(false);
-      setActiveWorkoutId(null);
+      close();
       navigate("/history");
     } catch (error: any) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
@@ -387,7 +380,6 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
     try {
       if (isEdit && effectiveWorkoutId) {
         if (isActiveWorkout) {
-          // Finalize active workout: update titulo/fecha and set fecha_fin
           const { error } = await supabase
             .from("actividad")
             .update({
@@ -399,7 +391,6 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
           if (error) throw error;
           toast({ title: "¡Entrenamiento finalizado!" });
         } else {
-          // Update finished workout: just update titulo/fecha (sets already auto-saved)
           const { error } = await supabase
             .from("actividad")
             .update({
@@ -411,13 +402,11 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
           toast({ title: "¡Entrenamiento actualizado!" });
         }
       } else {
-        // Create new workout (non-template flow)
         await handleCreate();
         toast({ title: "¡Entrenamiento guardado!" });
       }
       invalidateAll();
-      onOpenChange(false);
-      setActiveWorkoutId(null);
+      close();
     } catch (error: any) {
       toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
     } finally {
@@ -471,7 +460,7 @@ export function WorkoutLogger({ open, onOpenChange, workoutId = null, defaultDat
 
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
+      <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="h-[95vh] overflow-y-auto rounded-t-2xl p-0">
           <SheetHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
             <div className="flex items-center justify-between">
