@@ -15,7 +15,6 @@ import Profile from "./pages/Profile";
 import Routines from "./pages/Routines";
 import NotFound from "./pages/NotFound";
 import AdminImport from "./pages/AdminImport";
-import ActiveWorkout from "./pages/ActiveWorkout";
 
 const queryClient = new QueryClient();
 
@@ -41,7 +40,6 @@ const App = () => {
                   <Route path="/routines" element={<Routines />} />
                   <Route path="/history" element={<WorkoutHistory />} />
                   <Route path="/profile" element={<Profile />} />
-                  <Route path="/workout/:id" element={<ActiveWorkout />} />
                 </Route>
                 <Route path="/admin-import" element={<AdminImport />} />
                 <Route path="*" element={<NotFound />} />

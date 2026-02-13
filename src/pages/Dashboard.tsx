@@ -1,12 +1,10 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates, useWorkoutsForDate } from "@/hooks/useWorkouts";
-import { useActiveWorkoutQuery, useActiveWorkoutActions } from "@/hooks/useActiveWorkout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil, Loader2 } from "lucide-react";
+import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
@@ -16,22 +14,18 @@ import { format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const [loggerOpen, setLoggerOpen] = useState(false);
   const [editWorkoutId, setEditWorkoutId] = useState<string | null>(null);
   const [prefillDate, setPrefillDate] = useState<string | undefined>(undefined);
   const [calendarView, setCalendarView] = useState<"month" | "week">("month");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(new Date());
-  const [startingWorkout, setStartingWorkout] = useState(false);
 
   const { data: lastWorkout, isLoading: loadingLast } = useLastWorkout();
   const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyWorkouts();
   const { data: monthWorkouts } = useMonthWorkouts(calendarMonth);
   const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
   const { data: dayWorkouts } = useWorkoutsForDate(calendarView === "week" ? selectedDate : undefined);
-  const { data: activeWorkout } = useActiveWorkoutQuery();
-  const actions = useActiveWorkoutActions();
 
   const totalSets = lastWorkout?.ejercicios.reduce(
     (acc, ej) => acc + ej.series.length,
@@ -186,26 +180,13 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      {/* FAB - navigate to active workout or start new one */}
+      {/* FAB */}
       <Button
         size="lg"
         className="fixed bottom-20 right-4 md:bottom-8 md:right-8 h-14 w-14 rounded-full shadow-lg shadow-primary/30 z-40"
-        disabled={startingWorkout}
-        onClick={async () => {
-          if (activeWorkout) {
-            navigate(`/workout/${activeWorkout.id}`);
-            return;
-          }
-          setStartingWorkout(true);
-          try {
-            const id = await actions.startWorkout();
-            navigate(`/workout/${id}`);
-          } catch {
-            setStartingWorkout(false);
-          }
-        }}
+        onClick={() => openNew()}
       >
-        {startingWorkout ? <Loader2 className="h-6 w-6 animate-spin" /> : <Plus className="h-6 w-6" />}
+        <Plus className="h-6 w-6" />
       </Button>
 
       <WorkoutLogger

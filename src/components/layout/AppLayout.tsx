@@ -2,7 +2,6 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "./BottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
-import { ActiveWorkoutPill } from "@/components/workout/ActiveWorkoutPill";
 import { Loader2 } from "lucide-react";
 
 export function AppLayout() {
@@ -26,7 +25,6 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
-      <ActiveWorkoutPill />
       <BottomNav />
     </div>
   );
