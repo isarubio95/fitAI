@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
+import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Dumbbell, ChevronRight } from "lucide-react";
 
 function formatElapsed(startDate: string): string {
@@ -14,7 +14,7 @@ function formatElapsed(startDate: string): string {
 
 export function ActiveWorkoutPill() {
   const { data: active } = useActiveWorkout();
-  const navigate = useNavigate();
+  const { openActiveWorkout, state } = useGlobalWorkoutDrawer();
   const [elapsed, setElapsed] = useState("");
 
   useEffect(() => {
@@ -25,11 +25,12 @@ export function ActiveWorkoutPill() {
     return () => clearInterval(interval);
   }, [active?.id, active?.fecha]);
 
-  if (!active) return null;
+  // Don't show pill if no active workout or if the drawer is already open
+  if (!active || state.open) return null;
 
   return (
     <button
-      onClick={() => navigate(`/?workout=${active.id}`)}
+      onClick={() => openActiveWorkout(active.id)}
       className="fixed bottom-[4.5rem] left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-4 py-2.5 shadow-lg shadow-primary/30 md:bottom-6 transition-transform active:scale-95"
     >
       <Dumbbell className="h-4 w-4" />
