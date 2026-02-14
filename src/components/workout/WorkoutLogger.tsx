@@ -75,9 +75,8 @@ export function WorkoutLogger() {
   const isActiveWorkout = !!activeWorkoutId || (!!existingWorkout && !existingWorkout.fecha_fin);
 
   // Pre-fill form when editing existing workout
-  // Skip if activeWorkoutId is set — exercises were already populated by createActiveWorkout with template data (targetRir, repRange, descanso)
   useEffect(() => {
-    if (isEdit && existingWorkout && open && !activeWorkoutId) {
+    if (isEdit && existingWorkout && open) {
       setTitulo(existingWorkout.titulo);
       setFecha(new Date(existingWorkout.fecha).toISOString().slice(0, 10));
       setExercises(
@@ -96,7 +95,7 @@ export function WorkoutLogger() {
         }))
       );
     }
-  }, [isEdit, existingWorkout, open, activeWorkoutId]);
+  }, [isEdit, existingWorkout, open]);
 
   // Create active workout immediately when starting from template
   useEffect(() => {
