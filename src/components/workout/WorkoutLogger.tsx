@@ -85,6 +85,9 @@ export function WorkoutLogger() {
           tipo_ejercicio_id: ej.tipo_ejercicio_id,
           nombre: ej.tipo_ejercicio.nombre,
           id: ej.id,
+          targetRir: (ej as any).rir_objetivo ?? null,
+          repRange: (ej as any).rep_range ?? null,
+          descanso: (ej as any).descanso ?? null,
           sets: ej.series
             .sort((a, b) => a.numero_serie - b.numero_serie)
             .map((s) => ({
@@ -136,10 +139,13 @@ export function WorkoutLogger() {
         actividad_id: actividad.id,
         tipo_ejercicio_id: ex.tipo_ejercicio_id,
         usuario_id: user.id,
+        rir_objetivo: ex.targetRir ?? null,
+        rep_range: ex.repRange ?? null,
+        descanso: ex.descanso ?? null,
       }));
       const { data: ejercicios, error: ejError } = await supabase
         .from("ejercicio")
-        .insert(ejercicioInserts)
+        .insert(ejercicioInserts as any)
         .select("id");
       if (ejError) throw ejError;
 
