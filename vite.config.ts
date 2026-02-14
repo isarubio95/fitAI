@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => ({
         name: 'TrackGym',
         short_name: 'TrackGym',
         description: 'TrackGym - Tu compañero de entrenamiento',
-        theme_color: '#ffffff',
+        theme_color: '#09090b',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
