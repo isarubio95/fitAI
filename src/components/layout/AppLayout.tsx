@@ -37,7 +37,7 @@ export function AppLayout() {
             <ProfileDrawer />
           </header>
 
-          <main className="flex-1 pb-24 md:pb-0">
+          <main className="flex-1 pt-14 md:pt-0 pb-24 md:pb-0">
             <Outlet />
           </main>
         </div>
