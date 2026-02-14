@@ -13,6 +13,7 @@ import Exercises from "./pages/Exercises";
 import WorkoutHistory from "./pages/WorkoutHistory";
 import Profile from "./pages/Profile";
 import Routines from "./pages/Routines";
+import Measurements from "./pages/Measurements";
 import NotFound from "./pages/NotFound";
 import AdminImport from "./pages/AdminImport";
 
@@ -39,6 +40,7 @@ const App = () => {
                   <Route path="/exercises" element={<Exercises />} />
                   <Route path="/routines" element={<Routines />} />
                   <Route path="/history" element={<WorkoutHistory />} />
+                  <Route path="/measurements" element={<Measurements />} />
                   <Route path="/profile" element={<Profile />} />
                 </Route>
                 <Route path="/admin-import" element={<AdminImport />} />
