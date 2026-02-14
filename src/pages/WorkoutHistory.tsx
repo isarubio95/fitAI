@@ -4,12 +4,20 @@ import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Calendar, Dumbbell, Hash, Pencil, TrendingUp, Activity } from "lucide-react";
+import {
+  Calendar, Dumbbell, Hash, Pencil, TrendingUp, TrendingDown,
+  Activity, Weight, Layers, Trophy, Star,
+} from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { format, startOfWeek, subWeeks, isAfter, isBefore, addWeeks, startOfMonth, endOfMonth } from "date-fns";
+import {
+  format, startOfWeek, subWeeks, isAfter, isBefore, addWeeks,
+  startOfMonth, endOfMonth, subMonths,
+} from "date-fns";
 import { es } from "date-fns/locale";
+import type { ActividadWithDetails } from "@/types/workout";
 
 const INITIAL_SHOW = 5;
 
@@ -20,86 +28,157 @@ const chartConfig = {
   },
 };
 
+// ── helpers ──────────────────────────────────────────────
+function inRange(fecha: string, start: Date, end: Date) {
+  const d = new Date(fecha);
+  return !isBefore(d, start) && isBefore(d, end);
+}
+
+function calcMetrics(workouts: ActividadWithDetails[], start: Date, end: Date) {
+  let volume = 0;
+  let sets = 0;
+  for (const w of workouts) {
+    if (!inRange(w.fecha, start, end)) continue;
+    for (const ej of w.ejercicios) {
+      for (const s of ej.series) {
+        sets++;
+        volume += s.repeticiones * Number(s.peso_kg);
+      }
+    }
+  }
+  return { volume, sets };
+}
+
+function pctChange(current: number, previous: number): number | null {
+  if (previous === 0) return current > 0 ? 100 : null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
+// ── Change badge ─────────────────────────────────────────
+function ChangeBadge({ pct }: { pct: number | null }) {
+  if (pct === null) return <span className="text-[10px] text-muted-foreground">sin datos prev.</span>;
+  const positive = pct >= 0;
+  return (
+    <Badge variant="secondary" className={`text-[10px] gap-0.5 ${positive ? "text-emerald-500" : "text-rose-500"}`}>
+      {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {positive ? "+" : ""}{pct}%
+    </Badge>
+  );
+}
+
+// ── Main component ───────────────────────────────────────
 const WorkoutHistory = () => {
   const { data: workouts, isLoading } = useWorkoutHistory();
   const { openEdit } = useGlobalWorkoutDrawer();
   const [showAll, setShowAll] = useState(false);
 
-  // KPI: total workouts
-  const totalWorkouts = workouts?.length ?? 0;
+  const now = useMemo(() => new Date(), []);
 
-  // KPI: workouts this month
-  const workoutsThisMonth = useMemo(() => {
-    if (!workouts) return 0;
-    const now = new Date();
-    const monthStart = startOfMonth(now);
-    const monthEnd = endOfMonth(now);
-    return workouts.filter((w) => {
-      const d = new Date(w.fecha);
-      return !isBefore(d, monthStart) && !isAfter(d, monthEnd);
-    }).length;
-  }, [workouts]);
+  // ── Week ranges ──
+  const thisWeekStart = useMemo(() => startOfWeek(now, { weekStartsOn: 1 }), [now]);
+  const thisWeekEnd = useMemo(() => addWeeks(thisWeekStart, 1), [thisWeekStart]);
+  const prevWeekStart = useMemo(() => subWeeks(thisWeekStart, 1), [thisWeekStart]);
 
-  // Chart: workouts per week for last 4 weeks
+  // ── Month ranges ──
+  const thisMonthStart = useMemo(() => startOfMonth(now), [now]);
+  const thisMonthEnd = useMemo(() => addWeeks(endOfMonth(now), 0), [now]); // endOfMonth is inclusive
+  const prevMonthStart = useMemo(() => startOfMonth(subMonths(now, 1)), [now]);
+  const prevMonthEnd = useMemo(() => startOfMonth(now), [now]);
+
+  // ── Metrics ──
+  const weekCurr = useMemo(() => workouts ? calcMetrics(workouts, thisWeekStart, thisWeekEnd) : { volume: 0, sets: 0 }, [workouts, thisWeekStart, thisWeekEnd]);
+  const weekPrev = useMemo(() => workouts ? calcMetrics(workouts, prevWeekStart, thisWeekStart) : { volume: 0, sets: 0 }, [workouts, prevWeekStart, thisWeekStart]);
+  const monthCurr = useMemo(() => workouts ? calcMetrics(workouts, thisMonthStart, thisMonthEnd) : { volume: 0, sets: 0 }, [workouts, thisMonthStart, thisMonthEnd]);
+  const monthPrev = useMemo(() => workouts ? calcMetrics(workouts, prevMonthStart, prevMonthEnd) : { volume: 0, sets: 0 }, [workouts, prevMonthStart, prevMonthEnd]);
+
+  // ── Weekly bar chart (last 4 weeks) ──
   const weeklyData = useMemo(() => {
     if (!workouts) return [];
-    const now = new Date();
     const weeks: { label: string; start: Date; end: Date }[] = [];
     for (let i = 3; i >= 0; i--) {
       const ws = startOfWeek(subWeeks(now, i), { weekStartsOn: 1 });
       const we = addWeeks(ws, 1);
-      weeks.push({
-        label: format(ws, "d MMM", { locale: es }),
-        start: ws,
-        end: we,
-      });
+      weeks.push({ label: format(ws, "d MMM", { locale: es }), start: ws, end: we });
     }
     return weeks.map((w) => ({
       name: w.label,
-      workouts: workouts.filter((a) => {
-        const d = new Date(a.fecha);
-        return !isBefore(d, w.start) && isBefore(d, w.end);
-      }).length,
+      workouts: workouts.filter((a) => inRange(a.fecha, w.start, w.end)).length,
     }));
+  }, [workouts, now]);
+
+  // ── Top 5 most performed exercises ──
+  const topExercises = useMemo(() => {
+    if (!workouts) return [];
+    const counts: Record<string, { name: string; count: number }> = {};
+    for (const w of workouts) {
+      for (const ej of w.ejercicios) {
+        const id = ej.tipo_ejercicio_id;
+        if (!counts[id]) counts[id] = { name: ej.tipo_ejercicio.nombre, count: 0 };
+        counts[id].count++;
+      }
+    }
+    return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
+  }, [workouts]);
+
+  // ── Top 5 max loads ──
+  const topLoads = useMemo(() => {
+    if (!workouts) return [];
+    const maxes: Record<string, { name: string; max: number }> = {};
+    for (const w of workouts) {
+      for (const ej of w.ejercicios) {
+        const id = ej.tipo_ejercicio_id;
+        for (const s of ej.series) {
+          const kg = Number(s.peso_kg);
+          if (!maxes[id] || kg > maxes[id].max) {
+            maxes[id] = { name: ej.tipo_ejercicio.nombre, max: kg };
+          }
+        }
+      }
+    }
+    return Object.values(maxes).sort((a, b) => b.max - a.max).slice(0, 5);
   }, [workouts]);
 
   const visibleWorkouts = showAll ? workouts : workouts?.slice(0, INITIAL_SHOW);
   const hasMore = (workouts?.length ?? 0) > INITIAL_SHOW;
 
+  const kpiCards = [
+    { label: "Volumen semanal", value: `${(weekCurr.volume / 1000).toFixed(1)}t`, pct: pctChange(weekCurr.volume, weekPrev.volume), icon: Weight },
+    { label: "Series semanales", value: weekCurr.sets, pct: pctChange(weekCurr.sets, weekPrev.sets), icon: Layers },
+    { label: "Volumen mensual", value: `${(monthCurr.volume / 1000).toFixed(1)}t`, pct: pctChange(monthCurr.volume, monthPrev.volume), icon: TrendingUp },
+    { label: "Series mensuales", value: monthCurr.sets, pct: pctChange(monthCurr.sets, monthPrev.sets), icon: Activity },
+  ];
+
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-2xl mx-auto">
+    <div className="p-4 md:p-8 space-y-6 max-w-2xl mx-auto pb-28">
       <header>
         <h1 className="text-2xl font-bold">Progreso</h1>
         <p className="text-sm text-muted-foreground">Tu rendimiento y estadísticas</p>
       </header>
 
-      {/* KPI Cards */}
+      {/* ── KPI Grid ── */}
       <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <TrendingUp className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold leading-none">{isLoading ? "–" : totalWorkouts}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Total entrenamientos</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <Activity className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold leading-none">{isLoading ? "–" : workoutsThisMonth}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Este mes</p>
-            </div>
-          </CardContent>
-        </Card>
+        {kpiCards.map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <Card key={kpi.label}>
+              <CardContent className="p-4 space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <p className="text-xl font-bold leading-none">{isLoading ? "–" : kpi.value}</p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] text-muted-foreground">{kpi.label}</p>
+                  {!isLoading && <ChangeBadge pct={kpi.pct} />}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      {/* Weekly Consistency Chart */}
+      {/* ── Weekly Consistency Chart ── */}
       <Card>
         <CardContent className="p-4">
           <h2 className="text-sm font-semibold mb-3">Constancia semanal</h2>
@@ -119,7 +198,54 @@ const WorkoutHistory = () => {
         </CardContent>
       </Card>
 
-      {/* Recent History */}
+      {/* ── Records & Favorites ── */}
+      {!isLoading && (topExercises.length > 0 || topLoads.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {topExercises.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2 px-4 pt-4">
+                <CardTitle className="text-sm flex items-center gap-1.5">
+                  <Star className="h-4 w-4 text-primary" /> Top ejercicios
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-1.5">
+                {topExercises.map((ex, i) => (
+                  <div key={ex.name} className="flex items-center justify-between text-sm">
+                    <span className="truncate text-muted-foreground">
+                      <span className="font-medium text-foreground mr-1.5">{i + 1}.</span>
+                      {ex.name}
+                    </span>
+                    <Badge variant="secondary" className="shrink-0 ml-2">{ex.count}×</Badge>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {topLoads.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2 px-4 pt-4">
+                <CardTitle className="text-sm flex items-center gap-1.5">
+                  <Trophy className="h-4 w-4 text-primary" /> Cargas máximas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-1.5">
+                {topLoads.map((ex, i) => (
+                  <div key={ex.name} className="flex items-center justify-between text-sm">
+                    <span className="truncate text-muted-foreground">
+                      <span className="font-medium text-foreground mr-1.5">{i + 1}.</span>
+                      {ex.name}
+                    </span>
+                    <Badge variant="secondary" className="shrink-0 ml-2">{ex.max} kg</Badge>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ── Recent History ── */}
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Historial Reciente</h2>
 
