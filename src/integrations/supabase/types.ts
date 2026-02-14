@@ -48,21 +48,30 @@ export type Database = {
         Row: {
           actividad_id: string
           created_at: string
+          descanso: number | null
           id: string
+          rep_range: string | null
+          rir_objetivo: number | null
           tipo_ejercicio_id: string
           usuario_id: string
         }
         Insert: {
           actividad_id: string
           created_at?: string
+          descanso?: number | null
           id?: string
+          rep_range?: string | null
+          rir_objetivo?: number | null
           tipo_ejercicio_id: string
           usuario_id: string
         }
         Update: {
           actividad_id?: string
           created_at?: string
+          descanso?: number | null
           id?: string
+          rep_range?: string | null
+          rir_objetivo?: number | null
           tipo_ejercicio_id?: string
           usuario_id?: string
         }
@@ -110,30 +119,36 @@ export type Database = {
       rutina_ejercicio: {
         Row: {
           created_at: string
+          descanso: number | null
           id: string
           orden: number
           repes_max: number
           repes_min: number
+          rir: number | null
           rutina_id: string
           series_objetivo: number
           tipo_ejercicio_id: string
         }
         Insert: {
           created_at?: string
+          descanso?: number | null
           id?: string
           orden?: number
           repes_max?: number
           repes_min?: number
+          rir?: number | null
           rutina_id: string
           series_objetivo?: number
           tipo_ejercicio_id: string
         }
         Update: {
           created_at?: string
+          descanso?: number | null
           id?: string
           orden?: number
           repes_max?: number
           repes_min?: number
+          rir?: number | null
           rutina_id?: string
           series_objetivo?: number
           tipo_ejercicio_id?: string
