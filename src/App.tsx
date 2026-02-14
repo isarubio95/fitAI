@@ -11,7 +11,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Exercises from "./pages/Exercises";
 import WorkoutHistory from "./pages/WorkoutHistory";
-import Profile from "./pages/Profile";
+// Profile is now in ProfileDrawer
 import Routines from "./pages/Routines";
 import Measurements from "./pages/Measurements";
 import NotFound from "./pages/NotFound";
@@ -41,7 +41,6 @@ const App = () => {
                   <Route path="/routines" element={<Routines />} />
                   <Route path="/history" element={<WorkoutHistory />} />
                   <Route path="/measurements" element={<Measurements />} />
-                  <Route path="/profile" element={<Profile />} />
                 </Route>
                 <Route path="/admin-import" element={<AdminImport />} />
                 <Route path="*" element={<NotFound />} />
