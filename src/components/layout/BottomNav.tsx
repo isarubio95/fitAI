@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, Dumbbell, BarChart3, User, ClipboardList, Scale } from "lucide-react";
+import { Home, Dumbbell, BarChart3, ClipboardList, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [

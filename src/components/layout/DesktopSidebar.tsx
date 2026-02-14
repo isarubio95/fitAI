@@ -1,8 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { Home, Dumbbell, BarChart3, User, LogOut, ClipboardList, Scale } from "lucide-react";
+import { Home, Dumbbell, BarChart3, LogOut, ClipboardList, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { ProfileDrawer } from "./ProfileDrawer";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
@@ -10,7 +11,6 @@ const navItems = [
   { to: "/exercises", icon: Dumbbell, label: "Ejercicios" },
   { to: "/history", icon: BarChart3, label: "Progreso" },
   { to: "/measurements", icon: Scale, label: "Medidas" },
-  { to: "/profile", icon: User, label: "Perfil" },
 ];
 
 export function DesktopSidebar() {
@@ -22,7 +22,8 @@ export function DesktopSidebar() {
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
           <Dumbbell className="h-5 w-5 text-primary-foreground" />
         </div>
-        <span className="text-lg font-bold">TrackGym</span>
+        <span className="text-lg font-bold flex-1">TrackGym</span>
+        <ProfileDrawer />
       </div>
       <nav className="flex-1 space-y-1 p-4">
         {navItems.map(({ to, icon: Icon, label }) => (

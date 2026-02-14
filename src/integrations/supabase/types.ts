@@ -92,6 +92,54 @@ export type Database = {
           },
         ]
       }
+      medidas: {
+        Row: {
+          brazo: number | null
+          cintura: number | null
+          created_at: string
+          fecha: string
+          foto_espalda: string | null
+          foto_frontal: string | null
+          grasa: number | null
+          id: string
+          notas: string | null
+          pecho: number | null
+          peso: number | null
+          pierna: number | null
+          usuario_id: string
+        }
+        Insert: {
+          brazo?: number | null
+          cintura?: number | null
+          created_at?: string
+          fecha?: string
+          foto_espalda?: string | null
+          foto_frontal?: string | null
+          grasa?: number | null
+          id?: string
+          notas?: string | null
+          pecho?: number | null
+          peso?: number | null
+          pierna?: number | null
+          usuario_id: string
+        }
+        Update: {
+          brazo?: number | null
+          cintura?: number | null
+          created_at?: string
+          fecha?: string
+          foto_espalda?: string | null
+          foto_frontal?: string | null
+          grasa?: number | null
+          id?: string
+          notas?: string | null
+          pecho?: number | null
+          peso?: number | null
+          pierna?: number | null
+          usuario_id?: string
+        }
+        Relationships: []
+      }
       rutina: {
         Row: {
           created_at: string
