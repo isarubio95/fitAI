@@ -97,12 +97,11 @@ export function ExerciseCard({
       )}
 
       {/* Sets header */}
-      <div className="grid grid-cols-[2rem_2rem_1fr_1fr_3.5rem_2rem] gap-2 text-xs text-muted-foreground px-1">
+      <div className="grid grid-cols-[2rem_2rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1">
         <span>#</span>
         <span>✓</span>
         <span>Reps</span>
         <span>Peso (kg)</span>
-        <span>RIR</span>
         <span />
       </div>
 
@@ -111,7 +110,7 @@ export function ExerciseCard({
         const isActive = timer.activeKey === timerKey;
 
         return (
-          <div key={si} className="grid grid-cols-[2rem_2rem_1fr_1fr_3.5rem_2rem] gap-2 items-center">
+          <div key={si} className="grid grid-cols-[2rem_2rem_1fr_1fr_2rem] gap-2 items-center">
             <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
 
             {/* Completed checkbox */}
@@ -154,16 +153,6 @@ export function ExerciseCard({
               onBlur={() => onAutoSaveSet?.(si)}
               className="h-11"
               placeholder="0"
-            />
-            <Input
-              type="number"
-              min={0}
-              max={10}
-              value={s.rir ?? ""}
-              onChange={(e) => onUpdateSet(si, "rir", Number(e.target.value))}
-              onBlur={() => onAutoSaveSet?.(si)}
-              className="h-11 text-center"
-              placeholder="—"
             />
             <Button
               variant="ghost"
