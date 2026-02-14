@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, Dumbbell, BarChart3, User, ClipboardList } from "lucide-react";
+import { Home, Dumbbell, BarChart3, User, ClipboardList, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -7,7 +7,7 @@ const navItems = [
   { to: "/routines", icon: ClipboardList, label: "Rutinas" },
   { to: "/exercises", icon: Dumbbell, label: "Ejercicios" },
   { to: "/history", icon: BarChart3, label: "Progreso" },
-  { to: "/profile", icon: User, label: "Perfil" },
+  { to: "/measurements", icon: Scale, label: "Medidas" },
 ];
 
 export function BottomNav() {
