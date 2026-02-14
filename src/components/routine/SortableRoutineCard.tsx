@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pencil, Trash2, Dumbbell, GripVertical } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Play, Pencil, Trash2, Dumbbell, GripVertical, ChevronDown } from "lucide-react";
 import type { RutinaWithDetails } from "@/types/routine";
 
 interface SortableRoutineCardProps {
@@ -20,6 +23,8 @@ export function SortableRoutineCard({
   onDelete,
   onStart,
 }: SortableRoutineCardProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   const {
     attributes,
     listeners,
@@ -36,6 +41,13 @@ export function SortableRoutineCard({
     zIndex: isDragging ? 50 : undefined,
   };
 
+  const sortedEjercicios = [...r.ejercicios].sort((a, b) => a.orden - b.orden);
+
+  const formatDescanso = (s: number | null) => {
+    if (!s) return "—";
+    return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` : `${s}s`;
+  };
+
   return (
     <Card
       ref={setNodeRef}
@@ -43,6 +55,7 @@ export function SortableRoutineCard({
       className={`overflow-hidden ${isDragging ? "shadow-lg ring-2 ring-primary/30" : ""}`}
     >
       <CardContent className="p-4">
+        {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-2 flex-1 min-w-0">
             {isDragMode && (
@@ -54,7 +67,10 @@ export function SortableRoutineCard({
                 <GripVertical className="h-5 w-5" />
               </button>
             )}
-            <div className="flex-1 min-w-0">
+            <button
+              onClick={() => setIsOpen((v) => !v)}
+              className="flex-1 min-w-0 text-left"
+            >
               <h2 className="font-semibold text-base">{r.nombre}</h2>
               {r.descripcion && (
                 <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
@@ -65,9 +81,19 @@ export function SortableRoutineCard({
                 <Dumbbell className="h-3 w-3" />
                 {r.ejercicios.length} ejercicio{r.ejercicios.length !== 1 ? "s" : ""}
               </p>
-            </div>
+            </button>
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setIsOpen((v) => !v)}
+            >
+              <ChevronDown
+                className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+              />
+            </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(r.id)}>
               <Pencil className="h-4 w-4" />
             </Button>
@@ -81,6 +107,42 @@ export function SortableRoutineCard({
             </Button>
           </div>
         </div>
+
+        {/* Expandable exercise list */}
+        <div
+          className={`grid transition-all duration-200 ease-out ${
+            isOpen ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="rounded-lg bg-muted/30 p-3 space-y-0">
+              {sortedEjercicios.map((ej, idx) => (
+                <div key={ej.id}>
+                  {idx > 0 && <Separator className="my-2" />}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium truncate">
+                      {ej.tipo_ejercicio.nombre}
+                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                        {ej.series_objetivo}×{ej.repes_min}-{ej.repes_max}
+                      </Badge>
+                      {ej.rir != null && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          RIR {ej.rir}
+                        </Badge>
+                      )}
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatDescanso(ej.descanso)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <Button className="w-full mt-3" onClick={() => onStart(r)}>
           <Play className="h-4 w-4 mr-2" /> Iniciar Entrenamiento
         </Button>
