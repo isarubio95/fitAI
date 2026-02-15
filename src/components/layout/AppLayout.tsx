@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "./BottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
@@ -8,6 +8,7 @@ import { GlobalWorkoutDrawerProvider } from "@/hooks/useGlobalWorkoutDrawer";
 import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 import { Loader2 } from "lucide-react";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
+import { SwipeableRoutesWrapper } from "./SwipeableRoutesWrapper";
 
 export function AppLayout() {
   const { user, loading } = useAuth();
@@ -37,8 +38,8 @@ export function AppLayout() {
             <ProfileDrawer />
           </header>
 
-          <main className="flex-1 pt-8 md:pt-0 pb-24 md:pb-0">
-            <Outlet />
+          <main className="flex-1 flex flex-col pt-8 md:pt-0 pb-24 md:pb-0 min-h-screen">
+            <SwipeableRoutesWrapper />
           </main>
         </div>
         <ActiveWorkoutPill />

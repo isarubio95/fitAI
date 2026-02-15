@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { Home, Dumbbell, BarChart3, ClipboardList, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,8 @@ const navItems = [
 ];
 
 export function BottomNav() {
+  const location = useLocation();
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/70 backdrop-blur-2xl md:hidden pb-[env(safe-area-inset-bottom)]">
       <div className="flex h-[80px] items-center justify-around px-2">
@@ -19,10 +21,15 @@ export function BottomNav() {
             key={to}
             to={to}
             end={to === "/"}
+            onClick={() => {
+              if (location.pathname === to) {
+                window.scrollTo(0, 0);
+              }
+            }}
             className={({ isActive }) =>
               cn(
                 "group flex flex-1 flex-col items-center justify-center gap-1.5 transition-transform duration-100 ease-out active:scale-90",
-                "focus:outline-none" // Accesibilidad limpia
+                "focus:outline-none"
               )
             }
           >
