@@ -12,6 +12,7 @@ interface ExerciseHistoryPoint {
   date: string;
   oneRepMax: number;
   weight: number;
+  reps: number;
 }
 
 // Returns exercises the user has performed at least once, ordered by most recent
@@ -57,15 +58,21 @@ export function useExerciseWithHistory() {
   });
 }
 
+export interface LastRecord {
+  weight: number;
+  reps: number;
+  oneRepMax: number;
+  date: string;
+}
+
 // Returns daily best estimated 1RM for a specific exercise type
 export function useExerciseHistory(exerciseId: string | undefined) {
   const { user } = useAuth();
 
-  return useQuery<ExerciseHistoryPoint[]>({
+  return useQuery<{ history: ExerciseHistoryPoint[]; lastRecord: LastRecord | null }>({
     queryKey: ["exercise-history", user?.id, exerciseId],
     enabled: !!user && !!exerciseId,
     queryFn: async () => {
-      // Get all series for this exercise type via ejercicio join
       const { data, error } = await supabase
         .from("serie")
         .select(`
@@ -82,27 +89,40 @@ export function useExerciseHistory(exerciseId: string | undefined) {
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      if (!data?.length) return [];
+      if (!data?.length) return { history: [], lastRecord: null };
 
-      // Calculate 1RM per series and group by day (best 1RM)
-      const dayMap = new Map<string, { oneRepMax: number; weight: number }>();
+      const dayMap = new Map<string, { oneRepMax: number; weight: number; reps: number }>();
 
       for (const s of data) {
-        const date = s.created_at.slice(0, 10); // YYYY-MM-DD
+        const date = s.created_at.slice(0, 10);
         const epley = s.peso_kg * (1 + 0.0333 * s.repeticiones);
         const current = dayMap.get(date);
         if (!current || epley > current.oneRepMax) {
           dayMap.set(date, {
             oneRepMax: Math.round(epley * 10) / 10,
             weight: Number(s.peso_kg),
+            reps: Number(s.repeticiones),
           });
         }
       }
 
-      return Array.from(dayMap.entries()).map(([date, vals]) => ({
+      const history = Array.from(dayMap.entries()).map(([date, vals]) => ({
         date,
-        ...vals,
+        oneRepMax: vals.oneRepMax,
+        weight: vals.weight,
+        reps: vals.reps,
       }));
+
+      const lastEntry = data[data.length - 1];
+      const lastEpley = lastEntry.peso_kg * (1 + 0.0333 * lastEntry.repeticiones);
+      const lastRecord: LastRecord = {
+        weight: Number(lastEntry.peso_kg),
+        reps: Number(lastEntry.repeticiones),
+        oneRepMax: Math.round(lastEpley * 10) / 10,
+        date: lastEntry.created_at.slice(0, 10),
+      };
+
+      return { history, lastRecord };
     },
   });
 }
