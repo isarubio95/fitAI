@@ -28,6 +28,7 @@ import {
 import { Search, Dumbbell, Plus, User, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
+import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
 
 const Exercises = () => {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ const Exercises = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [newBodyParts, setNewBodyParts] = useState<string[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
 
@@ -50,11 +52,13 @@ const Exercises = () => {
         nombre: newName,
         descripcion: newDesc,
         usuario_id: user.id,
+        body_part: newBodyParts,
       });
       toast({ title: "Ejercicio creado" });
       setCreateOpen(false);
       setNewName("");
       setNewDesc("");
+      setNewBodyParts([]);
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -167,6 +171,10 @@ const Exercises = () => {
                 onChange={(e) => setNewDesc(e.target.value)}
                 rows={3}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Músculos Trabajados</Label>
+              <MuscleMultiSelect value={newBodyParts} onChange={setNewBodyParts} />
             </div>
           </div>
           <DialogFooter>

@@ -15,7 +15,7 @@ interface ExerciseDetail {
   descripcion?: string | null;
   imagen?: string | null;
   gif_url?: string | null;
-  body_part?: string | null;
+  body_part?: string | string[] | null;
   equipment?: string | null;
   instructions?: string[] | null;
   usuario_id?: string | null;
@@ -87,9 +87,11 @@ const ExerciseDetailSheet = ({
               {(exercise.body_part || exercise.equipment) && (
                 <div className="flex flex-wrap gap-2">
                   {exercise.body_part && (
-                    <Badge variant="secondary" className="capitalize">
-                      💪 {exercise.body_part}
-                    </Badge>
+                    (Array.isArray(exercise.body_part) ? exercise.body_part : [exercise.body_part]).map((part) => (
+                      <Badge key={part} variant="secondary" className="capitalize">
+                        💪 {part}
+                      </Badge>
+                    ))
                   )}
                   {exercise.equipment && (
                     <Badge variant="outline" className="capitalize">
