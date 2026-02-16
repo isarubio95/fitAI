@@ -175,7 +175,7 @@ export function ExerciseProgressWidget() {
         >
           {loadingHistory ? (
             <Skeleton className="h-40 w-full" />
-          ) : !history || history.length < 2 ? (
+          ) : !history || history.length === 0 ? (
             <div className="flex items-center justify-center h-40 text-sm text-muted-foreground text-center px-4">
               Sigue entrenando para ver tu progreso 💪
             </div>
@@ -194,6 +194,7 @@ export function ExerciseProgressWidget() {
                   tickLine={false}
                   tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                   tickFormatter={(d) => format(new Date(d), "d MMM", { locale: es })}
+                  padding={{ left: 20, right: 20 }}
                 />
                 <YAxis
                   axisLine={false}
@@ -208,7 +209,7 @@ export function ExerciseProgressWidget() {
                   stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   fill="url(#progressGradient)"
-                  dot={{ r: 3, fill: "hsl(var(--primary))" }}
+                  dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
                   activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
                 />
               </AreaChart>
