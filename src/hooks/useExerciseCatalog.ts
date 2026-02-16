@@ -36,10 +36,10 @@ export function useCreateExercise() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ nombre, descripcion, usuario_id }: { nombre: string; descripcion?: string; usuario_id: string }) => {
+    mutationFn: async ({ nombre, descripcion, usuario_id, body_part }: { nombre: string; descripcion?: string; usuario_id: string; body_part?: string[] }) => {
       const { data, error } = await supabase
         .from("tipo_ejercicio")
-        .insert({ nombre: nombre.trim(), descripcion: descripcion?.trim() || null, usuario_id })
+        .insert({ nombre: nombre.trim(), descripcion: descripcion?.trim() || null, usuario_id, body_part: body_part?.length ? body_part : null } as any)
         .select()
         .single();
       if (error) throw error;
