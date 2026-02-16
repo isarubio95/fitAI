@@ -261,7 +261,7 @@ export type Database = {
       }
       tipo_ejercicio: {
         Row: {
-          body_part: string | null
+          body_part: string[] | null
           created_at: string
           descripcion: string | null
           equipment: string | null
@@ -273,7 +273,7 @@ export type Database = {
           nombre: string
         }
         Insert: {
-          body_part?: string | null
+          body_part?: string[] | null
           created_at?: string
           descripcion?: string | null
           equipment?: string | null
@@ -285,7 +285,7 @@ export type Database = {
           nombre: string
         }
         Update: {
-          body_part?: string | null
+          body_part?: string[] | null
           created_at?: string
           descripcion?: string | null
           equipment?: string | null

@@ -11,6 +11,7 @@ import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
 import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
 import { WeekDayDetail } from "@/components/dashboard/WeekDayDetail";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
+import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -49,6 +50,9 @@ const Dashboard = () => {
           <p className="text-sm text-muted-foreground">Tu progreso esta semana</p>
         </div>
       </header>
+
+      {/* Body Heatmap */}
+      <BodyHeatmap />
 
       {/* Exercise Progress */}
       <ExerciseProgressWidget />
