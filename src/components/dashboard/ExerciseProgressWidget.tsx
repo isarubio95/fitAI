@@ -10,6 +10,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import {
   AreaChart,
   Area,
   XAxis,
@@ -19,7 +25,7 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp, Info } from "lucide-react";
 
 const SWIPE_THRESHOLD = 50;
 
@@ -28,7 +34,9 @@ export function ExerciseProgressWidget() {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const selectedExercise = exercises?.[selectedIndex];
-  const { data: history, isLoading: loadingHistory } = useExerciseHistory(selectedExercise?.id);
+  const { data: historyData, isLoading: loadingHistory } = useExerciseHistory(selectedExercise?.id);
+  const history = historyData?.history;
+  const lastRecord = historyData?.lastRecord;
 
   // Swipe handling
   const touchStartX = useRef(0);
@@ -83,11 +91,41 @@ export function ExerciseProgressWidget() {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-primary">
+          <div className="flex items-center gap-1.5 text-primary">
             <TrendingUp className="h-4 w-4" />
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Progreso 1RM
             </span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 text-sm" side="bottom" align="start">
+                <p className="font-semibold mb-1">¿Qué es el 1RM Estimado?</p>
+                <p className="text-muted-foreground mb-3">
+                  Es el peso máximo teórico que podrías levantar en una sola repetición, calculado en base a tu rendimiento actual.
+                </p>
+                {lastRecord ? (
+                  <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
+                    <p className="font-medium">Tu último registro:</p>
+                    <p className="text-muted-foreground">Moviste: {lastRecord.weight}kg × {lastRecord.reps} reps</p>
+                    <p className="text-primary font-semibold">Tu 1RM teórico es: {lastRecord.oneRepMax}kg</p>
+                    <p className="text-[10px] text-muted-foreground mt-1 font-mono">
+                      {lastRecord.weight} × (1 + 0.0333 × {lastRecord.reps})
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
+                    <p className="text-muted-foreground">Aquí verás el cálculo cuando registres tu primer entrenamiento.</p>
+                    <p className="text-[10px] text-muted-foreground font-mono mt-1">
+                      Peso × (1 + 0.0333 × Reps)
+                    </p>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <button
@@ -191,7 +229,7 @@ function CustomTooltip({ active, payload }: any) {
         {format(new Date(data.date), "d MMM yyyy", { locale: es })}
       </p>
       <p className="text-primary font-semibold">1RM: {data.oneRepMax} kg</p>
-      <p className="text-muted-foreground">Peso real: {data.weight} kg</p>
+      <p className="text-muted-foreground">Real: {data.weight}kg × {data.reps} reps</p>
     </div>
   );
 }
