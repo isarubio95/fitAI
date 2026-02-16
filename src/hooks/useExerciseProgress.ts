@@ -79,7 +79,10 @@ export function useExerciseHistory(exerciseId: string | undefined) {
           peso_kg,
           repeticiones,
           created_at,
-          ejercicio!inner ( tipo_ejercicio_id )
+          ejercicio!inner (
+            tipo_ejercicio_id,
+            actividad:actividad_id ( fecha )
+          )
         `)
         .eq("usuario_id", user!.id)
         .eq("ejercicio.tipo_ejercicio_id", exerciseId!)
