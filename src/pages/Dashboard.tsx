@@ -10,6 +10,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
 import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
 import { WeekDayDetail } from "@/components/dashboard/WeekDayDetail";
+import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
 import { format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -48,6 +49,9 @@ const Dashboard = () => {
           <p className="text-sm text-muted-foreground">Tu progreso esta semana</p>
         </div>
       </header>
+
+      {/* Exercise Progress */}
+      <ExerciseProgressWidget />
 
       {/* Weekly Chart */}
       <Card>
