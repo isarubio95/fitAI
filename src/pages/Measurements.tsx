@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { MuscleRankingWidget } from "@/components/dashboard/MuscleRankingWidget";
 
 const chartConfig = {
   peso: { label: "Peso (kg)", color: "hsl(var(--primary))" },
@@ -233,6 +234,9 @@ const Measurements = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* ── Muscle Ranking ── */}
+      <MuscleRankingWidget />
 
       {/* ── History ── */}
       <section className="space-y-3">
