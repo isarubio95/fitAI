@@ -105,11 +105,12 @@ export function ExerciseProgressWidget() {
               <PopoverContent className="w-72 text-sm" side="bottom" align="start">
                 <p className="font-semibold mb-1">¿Qué es el 1RM Estimado?</p>
                 <p className="text-muted-foreground mb-3">
-                  Es el peso máximo teórico que podrías levantar en una sola repetición, calculado en base a tu rendimiento actual.
+                  Es el peso máximo teórico que podrías levantar a una sola repetición. 
+                  El cálculo toma automáticamente tu <strong>mejor serie efectiva del día</strong>, ignorando calentamientos o series de fatiga.
                 </p>
                 {lastRecord ? (
                   <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
-                    <p className="font-medium">Tu último registro:</p>
+                    <p className="font-medium">Tu mejor serie registrada:</p>
                     <p className="text-muted-foreground">Moviste: {lastRecord.weight}kg × {lastRecord.reps} reps</p>
                     <p className="text-primary font-semibold">Tu 1RM teórico es: {lastRecord.oneRepMax}kg</p>
                     <p className="text-[10px] text-muted-foreground mt-1 font-mono">
