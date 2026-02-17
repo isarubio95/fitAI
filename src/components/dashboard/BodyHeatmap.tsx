@@ -57,9 +57,12 @@ const FRONT_MUSCLES: MuscleZone[] = [
 ];
 
 const BACK_MUSCLES: MuscleZone[] = [
-  // Espalda (upper back / lats – wide shape)
-  { group: "Espalda", d: "M72,82 C82,78 100,76 100,76 C100,76 118,78 128,82 L130,120 C120,128 100,132 80,128 L72,82Z", label: "Espalda" },
-  // Trapecio area (part of espalda)
+  // Espalda (Corrección: Simetría V-taper)
+  // M72,82 (Hombro Izq) -> Curva Superior -> 128,82 (Hombro Der)
+  // L120,128 (Cintura Der) -> Curva Inferior -> 80,128 (Cintura Izq) -> Z (Cierra)
+  { group: "Espalda", d: "M72,82 C82,78 100,76 100,76 C100,76 118,78 128,82 L120,128 C110,132 90,132 80,128 Z", label: "Espalda" },
+  
+  // Trapecio (Sin cambios, ya era simétrico)
   { group: "Espalda", d: "M88,68 C92,64 100,62 100,62 C100,62 108,64 112,68 L114,82 C108,80 92,80 86,82Z", label: "" },
   // Hombro (rear delt)
   { group: "Hombro", d: "M56,80 C58,70 66,72 72,78 L72,96 C66,100 52,94 56,80Z", label: "Hombro" },
@@ -113,7 +116,8 @@ export function BodyHeatmap() {
   const renderBody = (muscles: MuscleZone[], viewLabel: string) => (
     <div className="flex flex-col items-center gap-1">
       <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{viewLabel}</span>
-      <svg viewBox="0 0 200 310" className="w-full h-auto max-h-[280px]">
+      {/* h-auto y max-h de 300px (subido de 280px) para ganar esos 20px de altura visual */}
+      <svg viewBox="0 0 200 310" className="w-full h-auto max-h-[300px]">
         {/* SVG glow filters */}
         <defs>
           <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
@@ -212,8 +216,7 @@ export function BodyHeatmap() {
             <Skeleton className="h-64 w-full" />
           ) : (
             <div className="space-y-3">
-              {/* Side-by-side bodies */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1">
                 {renderBody(FRONT_MUSCLES, "FRONTAL")}
                 {renderBody(BACK_MUSCLES, "TRASERA")}
               </div>
