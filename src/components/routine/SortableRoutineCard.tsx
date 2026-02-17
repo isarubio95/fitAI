@@ -143,7 +143,7 @@ export function SortableRoutineCard({
           </div>
         </div>
 
-        <Button className="w-full mt-3" onClick={() => onStart(r)}>
+        <Button className="w-full mt-3 bg-green-700" onClick={() => onStart(r)}>
           <Play className="h-4 w-4 mr-2" /> Iniciar Entrenamiento
         </Button>
       </CardContent>
