@@ -18,6 +18,7 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 import type { ActividadWithDetails } from "@/types/workout";
+import { MuscleRankingWidget } from "@/components/dashboard/MuscleRankingWidget";
 
 const INITIAL_SHOW = 5;
 
@@ -197,6 +198,9 @@ const WorkoutHistory = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Muscle Ranking ── */}
+      <MuscleRankingWidget />
 
       {/* ── Records & Favorites ── */}
       {!isLoading && (topExercises.length > 0 || topLoads.length > 0) && (

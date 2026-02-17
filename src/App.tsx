@@ -20,33 +20,29 @@ import AdminImport from "./pages/AdminImport";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // 1. Abrimos llaves para poder escribir código antes de pintar
-  console.log("🔴 URL DE SUPABASE EN USO:", import.meta.env.VITE_SUPABASE_URL);
-
-  // 2. Ahora hacemos el return explícito del JSX
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <RestTimerProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/auth" element={<Auth />} />
-                <Route element={<AppLayout />}>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/exercises" element={<Exercises />} />
-                  <Route path="/routines" element={<Routines />} />
-                  <Route path="/history" element={<WorkoutHistory />} />
-                  <Route path="/measurements" element={<Measurements />} />
-                </Route>
-                <Route path="/admin-import" element={<AdminImport />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/auth" element={<Auth />} />
+                  <Route element={<AppLayout />}>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/exercises" element={<Exercises />} />
+                    <Route path="/routines" element={<Routines />} />
+                    <Route path="/history" element={<WorkoutHistory />} />
+                    <Route path="/measurements" element={<Measurements />} />
+                  </Route>
+                  <Route path="/admin-import" element={<AdminImport />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
           </RestTimerProvider>
         </AuthProvider>
       </QueryClientProvider>
