@@ -155,7 +155,7 @@ export function ExerciseProgressWidget() {
             if (idx >= 0) setSelectedIndex(idx);
           }}
         >
-          <SelectTrigger className="w-full border-none px-0 py-0 h-auto text-base font-semibold shadow-none focus:ring-0">
+          <SelectTrigger className="w-full border-none px-2 py-0.5 h-auto text-base font-semibold shadow-none focus:ring-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
