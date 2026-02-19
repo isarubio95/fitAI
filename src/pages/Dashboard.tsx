@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil } from "lucide-react";
+import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil, ArrowUpDown, GripHorizontal } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
 import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
@@ -14,6 +14,8 @@ import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressW
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
+
+// Importaciones de DND-Kit iguales a las de Rutinas
 import { 
   DndContext, 
   closestCenter, 
@@ -34,8 +36,8 @@ import { CSS } from '@dnd-kit/utilities';
 
 const DEFAULT_WIDGET_ORDER = ['heatmap', 'progress', 'weekly-chart', 'calendar', 'last-workout'];
 
-// Wrapper invisible: arrastra manteniendo pulsado 200ms
-function SortableWidget({ id, children }: { id: string, children: React.ReactNode }) {
+// Wrapper que imita el comportamiento de SortableRoutineCard
+function SortableWidget({ id, isDragMode, children }: { id: string, isDragMode: boolean, children: React.ReactNode }) {
   const {
     attributes,
     listeners,
@@ -43,11 +45,12 @@ function SortableWidget({ id, children }: { id: string, children: React.ReactNod
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled: !isDragMode });
 
   const style = {
-    transform: CSS.Translate.toString(transform),
+    transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : "auto",
   };
 
@@ -55,10 +58,21 @@ function SortableWidget({ id, children }: { id: string, children: React.ReactNod
     <div 
       ref={setNodeRef} 
       style={style} 
-      {...attributes} 
-      {...listeners}
-      className={`relative outline-none transition-all ${isDragging ? "scale-[1.02] opacity-70 shadow-2xl z-50 cursor-grabbing" : "cursor-grab"}`}
+      className={`relative flex flex-col transition-colors duration-200 ${
+        isDragMode ? "p-3 border-2 border-dashed border-primary/30 rounded-xl bg-primary/5 gap-2" : ""
+      }`}
     >
+      {isDragMode && (
+        <div className="flex justify-center w-full">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground p-1"
+          >
+            <GripHorizontal className="h-6 w-6" />
+          </button>
+        </div>
+      )}
       <div className={isDragging ? "pointer-events-none" : ""}>
         {children}
       </div>
@@ -72,6 +86,8 @@ const Dashboard = () => {
   const [calendarView, setCalendarView] = useState<"month" | "week">("month");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+
+  const [isDragMode, setIsDragMode] = useState(false); // Estado para controlar el modo edición
 
   const { data: lastWorkout, isLoading: loadingLast } = useLastWorkout();
   const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyWorkouts();
@@ -110,18 +126,10 @@ const Dashboard = () => {
     setCalendarMonth(month);
   };
 
-  // Configuración de los sensores: Requiere mantener pulsado 200ms para empezar a arrastrar.
-  // Así evitamos robar los clics normales o bloquear el scroll de la página.
+  // Mismos sensores exactos que en src/pages/Routines.tsx
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        delay: 200, // 200ms de presión
-        tolerance: 5, // Permite mover el dedo 5px sin cancelar el click
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -202,9 +210,9 @@ const Dashboard = () => {
                 workouts={monthWorkouts ?? []}
                 onDayClick={(date) => {
                   handleDateSelect(date);
-                  openNew(format(date, "yyyy-MM-dd"));
+                  if (!isDragMode) openNew(format(date, "yyyy-MM-dd"));
                 }}
-                onWorkoutClick={(id) => openEdit(id)}
+                onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
               />
             ) : (
               <div>
@@ -216,7 +224,7 @@ const Dashboard = () => {
                 <WeekDayDetail
                   workouts={dayWorkouts ?? []}
                   dateKey={format(selectedDate, "yyyy-MM-dd")}
-                  onWorkoutClick={(id) => openEdit(id)}
+                  onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
                 />
               </div>
             )}
@@ -268,12 +276,25 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto">
+    <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto pb-32">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">TrackGym</h1>
           <p className="text-sm text-muted-foreground">Tu progreso esta semana</p>
         </div>
+        
+        {/* Botón explícito para habilitar el Drag & Drop */}
+        <Button 
+          variant={isDragMode ? "default" : "outline"} 
+          size="sm" 
+          onClick={() => setIsDragMode(!isDragMode)}
+          className="gap-2 transition-all"
+        >
+          <ArrowUpDown className="h-4 w-4" />
+          <span className="hidden sm:inline">
+            {isDragMode ? "Hecho" : "Reordenar"}
+          </span>
+        </Button>
       </header>
 
       <DndContext 
@@ -287,7 +308,7 @@ const Dashboard = () => {
         >
           <div className="space-y-6">
             {widgetOrder.map((id) => (
-              <SortableWidget key={id} id={id}>
+              <SortableWidget key={id} id={id} isDragMode={isDragMode}>
                 {renderWidget(id)}
               </SortableWidget>
             ))}
@@ -295,26 +316,29 @@ const Dashboard = () => {
         </SortableContext>
       </DndContext>
 
-      <Button
-        size="icon"
-        onClick={() => openNew()}
-        className="fixed bottom-24 right-4 z-40 h-14 w-14 rounded-full 
-                  bg-gradient-to-br from-primary via-primary to-primary/80
-                  border border-white/10
-                  shadow-[0_4px_20px_rgba(var(--primary),0.4)]
-                  hover:shadow-[0_6px_25px_rgba(var(--primary),0.6)]
-                  hover:scale-105 active:scale-90
-                  transition-all duration-300 ease-out
-                  group md:bottom-8 md:right-8"
-      >
-        <Plus 
-          className="h-7 w-7 text-primary-foreground 
-                    transition-transform duration-500 ease-out 
-                    group-hover:rotate-90 group-active:rotate-180" 
-          strokeWidth={2.5} 
-        />
-        <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      </Button>
+      {/* FAB - Se oculta si estamos reordenando para que no moleste */}
+      {!isDragMode && (
+        <Button
+          size="icon"
+          onClick={() => openNew()}
+          className="fixed bottom-24 right-4 z-40 h-14 w-14 rounded-full 
+                    bg-gradient-to-br from-primary via-primary to-primary/80
+                    border border-white/10
+                    shadow-[0_4px_20px_rgba(var(--primary),0.4)]
+                    hover:shadow-[0_6px_25px_rgba(var(--primary),0.6)]
+                    hover:scale-105 active:scale-90
+                    transition-all duration-300 ease-out
+                    group md:bottom-8 md:right-8"
+        >
+          <Plus 
+            className="h-7 w-7 text-primary-foreground 
+                      transition-transform duration-500 ease-out 
+                      group-hover:rotate-90 group-active:rotate-180" 
+            strokeWidth={2.5} 
+          />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        </Button>
+      )}
     </div>
   );
 };
