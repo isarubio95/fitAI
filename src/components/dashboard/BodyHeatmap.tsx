@@ -111,7 +111,7 @@ export function BodyHeatmap() {
     return (
       <div className="flex flex-col items-center">
         {/* Aspect ratio ajustado para el cuerpo realista más alto */}
-        <div className="relative w-full max-w-[180px] aspect-[1/2.1]">
+        <div className="relative w-full max-w-[200px] aspect-[1/1.8]">
           {/* 1. Imagen Realista de Fondo (Sin opacidad, a todo color) */}
           <div className="absolute inset-0 w-full h-full flex justify-center items-center">
              <img 
@@ -155,7 +155,7 @@ export function BodyHeatmap() {
       <Card className="overflow-hidden border-border/40 bg-card/95 shadow-sm">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold">Mapa Muscular</CardTitle>
+            <CardTitle className="text-base font-bold">Mapa Muscular</CardTitle>
             <Tabs value={period} onValueChange={(v) => setPeriod(v as TimePeriod)}>
               <TabsList className="h-9 rounded-full bg-muted/60 p-1">
                 <TabsTrigger value="week" className="rounded-full px-4 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">Semana</TabsTrigger>
@@ -193,7 +193,7 @@ export function BodyHeatmap() {
               )}
 
               {/* Leyenda */}
-              <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-medium text-muted-foreground pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-medium text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <span className="inline-block w-3 h-3 rounded bg-transparent border border-border/50" />
                   0

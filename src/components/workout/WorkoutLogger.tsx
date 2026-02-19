@@ -377,14 +377,42 @@ export function WorkoutLogger() {
       toast({ title: "Completa el formulario", description: "Agrega un título.", variant: "destructive" });
       return;
     }
-    if (!isEdit && exercises.length === 0) {
-      toast({ title: "Completa el formulario", description: "Agrega al menos un ejercicio.", variant: "destructive" });
+
+    // 1. Limpiamos los datos en memoria filtrando los 0
+    const ejerciciosLimpios = exercises
+      .map((ex) => {
+        const seriesValidas = ex.sets.filter((s) => Number(s.repeticiones) > 0 || Number(s.peso_kg) > 0);
+        return { ...ex, sets: seriesValidas };
+      })
+      .filter((ex) => ex.sets.length > 0);
+
+    if (!isEdit && ejerciciosLimpios.length === 0) {
+      toast({ title: "Entrenamiento vacío", description: "No hay ninguna serie con datos válidos.", variant: "destructive" });
       return;
     }
 
     setSaving(true);
     try {
       if (isEdit && effectiveWorkoutId) {
+        // 2. LIMPIEZA EN BASE DE DATOS (Para entrenamientos activos o en edición)
+        for (const ex of exercises) {
+          const emptySets = ex.sets.filter((s) => Number(s.repeticiones) === 0 && Number(s.peso_kg) === 0);
+          const validSets = ex.sets.filter((s) => Number(s.repeticiones) > 0 || Number(s.peso_kg) > 0);
+          
+          // Borrar las series a 0 de Supabase
+          if (emptySets.length > 0) {
+            const emptySetIds = emptySets.map((s) => s.id).filter(Boolean) as string[];
+            if (emptySetIds.length > 0) {
+              await supabase.from("serie").delete().in("id", emptySetIds);
+            }
+          }
+
+          // Si el ejercicio se queda sin series válidas y tiene ID, lo borramos también de Supabase
+          if (validSets.length === 0 && ex.id) {
+            await supabase.from("ejercicio").delete().eq("id", ex.id);
+          }
+        }
+
         if (isActiveWorkout) {
           const { error } = await supabase
             .from("actividad")
@@ -408,7 +436,7 @@ export function WorkoutLogger() {
           toast({ title: "¡Entrenamiento actualizado!" });
         }
       } else {
-        await handleCreate();
+        await handleCreate(ejerciciosLimpios);
         toast({ title: "¡Entrenamiento guardado!" });
       }
       invalidateAll();
@@ -420,7 +448,7 @@ export function WorkoutLogger() {
     }
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (ejerciciosLimpios: ExerciseFormData[]) => {
     const { data: actividad, error: actError } = await supabase
       .from("actividad")
       .insert({
@@ -433,21 +461,21 @@ export function WorkoutLogger() {
       .single();
     if (actError) throw actError;
 
-    const ejercicioInserts = exercises.map((ex) => ({
+    const ejercicioInserts = ejerciciosLimpios.map((ex) => ({
       actividad_id: actividad.id,
       tipo_ejercicio_id: ex.tipo_ejercicio_id,
       usuario_id: user!.id,
     }));
 
-    const { data: ejercicios, error: ejError } = await supabase
+    const { data: ejerciciosDB, error: ejError } = await supabase
       .from("ejercicio")
       .insert(ejercicioInserts)
       .select("id");
     if (ejError) throw ejError;
 
-    const serieInserts = exercises.flatMap((ex, i) =>
+    const serieInserts = ejerciciosLimpios.flatMap((ex, i) =>
       ex.sets.map((s, si) => ({
-        ejercicio_id: ejercicios![i].id,
+        ejercicio_id: ejerciciosDB![i].id,
         usuario_id: user!.id,
         numero_serie: si + 1,
         repeticiones: s.repeticiones,
