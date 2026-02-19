@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates, useWorkoutsForDate } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,57 @@ import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressW
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors, 
+  DragEndEvent 
+} from '@dnd-kit/core';
+import { 
+  arrayMove, 
+  SortableContext, 
+  sortableKeyboardCoordinates, 
+  verticalListSortingStrategy, 
+  useSortable 
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+const DEFAULT_WIDGET_ORDER = ['heatmap', 'progress', 'weekly-chart', 'calendar', 'last-workout'];
+
+// Wrapper invisible: arrastra manteniendo pulsado 200ms
+function SortableWidget({ id, children }: { id: string, children: React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : "auto",
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      {...attributes} 
+      {...listeners}
+      className={`relative outline-none transition-all ${isDragging ? "scale-[1.02] opacity-70 shadow-2xl z-50 cursor-grabbing" : "cursor-grab"}`}
+    >
+      <div className={isDragging ? "pointer-events-none" : ""}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 const Dashboard = () => {
   const { openNew, openEdit } = useGlobalWorkoutDrawer();
@@ -27,6 +78,23 @@ const Dashboard = () => {
   const { data: monthWorkouts } = useMonthWorkouts(calendarMonth);
   const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
   const { data: dayWorkouts } = useWorkoutsForDate(calendarView === "week" ? selectedDate : undefined);
+
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem('dashboard-widget-order');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const validItems = parsed.filter((w: string) => DEFAULT_WIDGET_ORDER.includes(w));
+        const missing = DEFAULT_WIDGET_ORDER.filter(w => !validItems.includes(w));
+        return [...validItems, ...missing];
+      } catch(e) {}
+    }
+    return DEFAULT_WIDGET_ORDER;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('dashboard-widget-order', JSON.stringify(widgetOrder));
+  }, [widgetOrder]);
 
   const totalSets = lastWorkout?.ejercicios.reduce(
     (acc, ej) => acc + ej.series.length,
@@ -42,6 +110,163 @@ const Dashboard = () => {
     setCalendarMonth(month);
   };
 
+  // Configuración de los sensores: Requiere mantener pulsado 200ms para empezar a arrastrar.
+  // Así evitamos robar los clics normales o bloquear el scroll de la página.
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 200, // 200ms de presión
+        tolerance: 5, // Permite mover el dedo 5px sin cancelar el click
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      setWidgetOrder((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over.id as string);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const renderWidget = (id: string) => {
+    switch (id) {
+      case 'heatmap':
+        return <BodyHeatmap />;
+      case 'progress':
+        return <ExerciseProgressWidget />;
+      case 'weekly-chart':
+        return (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Consistencia Semanal</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingWeekly ? (
+                <Skeleton className="h-32 w-full" />
+              ) : (
+                <ResponsiveContainer width="100%" height={130}>
+                  <BarChart data={weeklyData} barCategoryGap="20%">
+                    <XAxis
+                      dataKey="name"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                    />
+                    <YAxis hide allowDecimals={false} />
+                    <Bar dataKey="workouts" radius={[6, 6, 0, 0]} maxBarSize={32}>
+                      {weeklyData?.map((entry, i) => (
+                        <Cell
+                          key={i}
+                          fill={
+                            entry.workouts > 0
+                              ? "hsl(var(--primary))"
+                              : "hsl(var(--muted))"
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        );
+      case 'calendar':
+        return (
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
+                <TabsList className="h-9 rounded-full bg-muted p-1">
+                  <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-sm">
+                    Mes
+                  </TabsTrigger>
+                  <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-sm">
+                    Semana
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            {calendarView === "month" ? (
+              <MonthlyPlanner
+                month={calendarMonth}
+                onMonthChange={handleMonthChange}
+                workouts={monthWorkouts ?? []}
+                onDayClick={(date) => {
+                  handleDateSelect(date);
+                  openNew(format(date, "yyyy-MM-dd"));
+                }}
+                onWorkoutClick={(id) => openEdit(id)}
+              />
+            ) : (
+              <div>
+                <WeekCalendar
+                  selectedDate={selectedDate}
+                  onDateSelect={handleDateSelect}
+                  workoutDates={workoutDates ?? []}
+                />
+                <WeekDayDetail
+                  workouts={dayWorkouts ?? []}
+                  dateKey={format(selectedDate, "yyyy-MM-dd")}
+                  onWorkoutClick={(id) => openEdit(id)}
+                />
+              </div>
+            )}
+          </div>
+        );
+      case 'last-workout':
+        return (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Último Entrenamiento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingLast ? (
+                <Skeleton className="h-20 w-full" />
+              ) : lastWorkout ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-lg">{lastWorkout.titulo}</p>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(lastWorkout.id)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <CalendarIcon className="h-4 w-4" />
+                      {format(new Date(lastWorkout.fecha), "d MMM yyyy", { locale: es })}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Dumbbell className="h-4 w-4" />
+                      {lastWorkout.ejercicios.length} ejercicios
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Hash className="h-4 w-4" />
+                      {totalSets} series
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Aún no has registrado ningún entrenamiento.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto">
       <header className="flex items-center justify-between">
@@ -51,132 +276,27 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Body Heatmap */}
-      <BodyHeatmap />
-
-      {/* Exercise Progress */}
-      <ExerciseProgressWidget />
-
-      {/* Weekly Chart */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Consistencia Semanal</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingWeekly ? (
-            <Skeleton className="h-32 w-full" />
-          ) : (
-            <ResponsiveContainer width="100%" height={130}>
-              <BarChart data={weeklyData} barCategoryGap="20%">
-                <XAxis
-                  dataKey="name"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                />
-                <YAxis hide allowDecimals={false} />
-                <Bar dataKey="workouts" radius={[6, 6, 0, 0]} maxBarSize={32}>
-                  {weeklyData?.map((entry, i) => (
-                    <Cell
-                      key={i}
-                      fill={
-                        entry.workouts > 0
-                          ? "hsl(var(--primary))"
-                          : "hsl(var(--muted))"
-                      }
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Calendar View Switcher */}
-      <div className="space-y-4">
-        <div className="flex justify-center">
-          <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
-            <TabsList className="h-9 rounded-full bg-muted p-1">
-              <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-sm">
-                Mes
-              </TabsTrigger>
-              <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-sm">
-                Semana
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {calendarView === "month" ? (
-          <MonthlyPlanner
-            month={calendarMonth}
-            onMonthChange={handleMonthChange}
-            workouts={monthWorkouts ?? []}
-            onDayClick={(date) => {
-              handleDateSelect(date);
-              openNew(format(date, "yyyy-MM-dd"));
-            }}
-            onWorkoutClick={(id) => openEdit(id)}
-          />
-        ) : (
-          <div>
-            <WeekCalendar
-              selectedDate={selectedDate}
-              onDateSelect={handleDateSelect}
-              workoutDates={workoutDates ?? []}
-            />
-            <WeekDayDetail
-              workouts={dayWorkouts ?? []}
-              dateKey={format(selectedDate, "yyyy-MM-dd")}
-              onWorkoutClick={(id) => openEdit(id)}
-            />
+      <DndContext 
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext 
+          items={widgetOrder}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-6">
+            {widgetOrder.map((id) => (
+              <SortableWidget key={id} id={id}>
+                {renderWidget(id)}
+              </SortableWidget>
+            ))}
           </div>
-        )}
-      </div>
+        </SortableContext>
+      </DndContext>
 
-      {/* Last Workout */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Último Entrenamiento</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingLast ? (
-            <Skeleton className="h-20 w-full" />
-          ) : lastWorkout ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="font-semibold text-lg">{lastWorkout.titulo}</p>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(lastWorkout.id)}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <CalendarIcon className="h-4 w-4" />
-                  {format(new Date(lastWorkout.fecha), "d MMM yyyy", { locale: es })}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Dumbbell className="h-4 w-4" />
-                  {lastWorkout.ejercicios.length} ejercicios
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Hash className="h-4 w-4" />
-                  {totalSets} series
-                </span>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Aún no has registrado ningún entrenamiento.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* FAB */}
       <Button
-        size="icon" // Usamos 'icon' para asegurar que sea cuadrado perfecto
+        size="icon"
         onClick={() => openNew()}
         className="fixed bottom-24 right-4 z-40 h-14 w-14 rounded-full 
                   bg-gradient-to-br from-primary via-primary to-primary/80
@@ -193,8 +313,6 @@ const Dashboard = () => {
                     group-hover:rotate-90 group-active:rotate-180" 
           strokeWidth={2.5} 
         />
-        
-        {/* Brillo especular (Overlay) para efecto 3D sutil */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </Button>
     </div>
