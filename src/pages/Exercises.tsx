@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useExerciseCatalog, useCreateExercise, useDeleteExercise } from "@/hooks/useExerciseCatalog";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +33,8 @@ import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
 
 const Exercises = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const { data: exercises, isLoading } = useExerciseCatalog(search);
   const createExercise = useCreateExercise();
@@ -44,6 +47,13 @@ const Exercises = () => {
   const [newBodyParts, setNewBodyParts] = useState<string[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
+
+  useEffect(() => {
+    if (location.state?.action === "new") {
+      setCreateOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   const handleCreate = async () => {
     if (!user || !newName.trim()) return;

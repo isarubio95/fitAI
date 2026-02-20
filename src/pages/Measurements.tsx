@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useMeasurements, type Medida } from "@/hooks/useMeasurements";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,8 +47,17 @@ const numericFields = [
 const Measurements = () => {
   const { data: medidas, isLoading, addMeasurement, deleteMeasurement, isAdding } = useMeasurements();
   const { toast } = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (location.state?.action === "new") {
+      setSheetOpen(true);
+      navigate(location.pathname, { replace: true, state: { tab: location.state?.tab } });
+    }
+  }, [location.state]);
 
   // ── Form state ──
   const [formDate, setFormDate] = useState<Date>(new Date());
