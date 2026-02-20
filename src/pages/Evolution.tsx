@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ProfileDrawer } from "@/components/layout/ProfileDrawer";
 import WorkoutHistory from "@/pages/WorkoutHistory"; 
 import Measurements from "@/pages/Measurements";
 
@@ -18,14 +17,7 @@ export default function EvolutionPage() {
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto pb-24">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        {/* HEADER INTEGRADO */}
-        <div className="flex items-center gap-3 mb-4">
-          {/* Avatar — solo visible en md+ para no duplicar el del header móvil fijo */}
-          <div className="hidden md:block">
-            <ProfileDrawer />
-          </div>
-
-          {/* Pills */}
+        <div className="mb-4">
           <TabsList className="flex bg-transparent h-auto p-0 gap-2 justify-start w-auto">
             <TabsTrigger
               value="history"
@@ -41,14 +33,13 @@ export default function EvolutionPage() {
             </TabsTrigger>
           </TabsList>
         </div>
-
-        {/* CONTENIDO */}
+        
         <TabsContent value="history" className="mt-0">
-          <WorkoutHistory />
+          <WorkoutHistory /> 
         </TabsContent>
-
+        
         <TabsContent value="measurements" className="mt-0">
-          <Measurements />
+          <Measurements /> 
         </TabsContent>
       </Tabs>
     </div>
