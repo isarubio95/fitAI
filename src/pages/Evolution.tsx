@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProfileDrawer } from "@/components/layout/ProfileDrawer";
 import WorkoutHistory from "@/pages/WorkoutHistory"; 
 import Measurements from "@/pages/Measurements";
 
 export default function EvolutionPage() {
   const location = useLocation();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(location.state?.tab || "history");
 
   useEffect(() => {
@@ -18,10 +18,23 @@ export default function EvolutionPage() {
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto pb-24">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="history">Entrenamientos</TabsTrigger>
-          <TabsTrigger value="measurements">Medidas</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center gap-3 mb-4">
+          <ProfileDrawer />
+          <TabsList className="flex bg-transparent h-auto p-0 gap-2 justify-start w-auto">
+            <TabsTrigger
+              value="history"
+              className="rounded-full px-4 py-2 h-auto text-sm font-medium transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none bg-secondary/50 text-foreground hover:bg-secondary border border-transparent data-[state=inactive]:border-border"
+            >
+              Entrenamientos
+            </TabsTrigger>
+            <TabsTrigger
+              value="measurements"
+              className="rounded-full px-4 py-2 h-auto text-sm font-medium transition-colors data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none bg-secondary/50 text-foreground hover:bg-secondary border border-transparent data-[state=inactive]:border-border"
+            >
+              Medidas
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
         <TabsContent value="history" className="mt-0">
           <WorkoutHistory /> 
@@ -34,3 +47,4 @@ export default function EvolutionPage() {
     </div>
   );
 }
+
