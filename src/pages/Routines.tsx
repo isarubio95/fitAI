@@ -269,30 +269,6 @@ const Routines = () => {
         </DndContext>
       )}
 
-      {/* FAB */}
-      <Button
-        size="icon" // Usamos 'icon' para asegurar que sea cuadrado perfecto
-        onClick={() => openCreate()}
-        className="fixed bottom-24 right-4 z-40 h-14 w-14 rounded-full 
-                  bg-gradient-to-br from-primary via-primary to-primary/80
-                  border border-white/10
-                  shadow-[0_4px_20px_rgba(var(--primary),0.4)]
-                  hover:shadow-[0_6px_25px_rgba(var(--primary),0.6)]
-                  hover:scale-105 active:scale-90
-                  transition-all duration-300 ease-out
-                  group md:bottom-8 md:right-8"
-      >
-        <Plus 
-          className="h-7 w-7 text-primary-foreground 
-                    transition-transform duration-500 ease-out 
-                    group-hover:rotate-90 group-active:rotate-180" 
-          strokeWidth={2.5} 
-        />
-        
-        {/* Brillo especular (Overlay) para efecto 3D sutil */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      </Button>
-
       <RoutineForm open={formOpen} onOpenChange={setFormOpen} routineId={editId} />
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
