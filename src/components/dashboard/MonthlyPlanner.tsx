@@ -102,12 +102,16 @@ export function MonthlyPlanner({
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-7 border-t border-l border-border">
+      <div className="grid grid-cols-7 border-t border-l border-border bg-card rounded-b-xl overflow-hidden">
         {days.map((day, i) => {
           const inMonth = isSameMonth(day, month);
           const today = isToday(day);
           const key = format(day, "yyyy-MM-dd");
           const dayWorkouts = workoutsByDay.get(key) || [];
+
+          // Identificamos las esquinas de la última fila
+          const isBottomLeft = i === days.length - 7;
+          const isBottomRight = i === days.length - 1;
 
           return (
             <div
@@ -117,6 +121,8 @@ export function MonthlyPlanner({
                 transition-colors hover:bg-accent/30
                 ${today ? "bg-accent/15" : ""}
                 ${!inMonth ? "opacity-40" : ""}
+                ${isBottomLeft ? "rounded-bl-xl" : ""}
+                ${isBottomRight ? "rounded-br-xl" : ""}
               `}
               onClick={() => onDayClick(day)}
             >
