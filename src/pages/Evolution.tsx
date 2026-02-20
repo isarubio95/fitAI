@@ -16,11 +16,16 @@ export default function EvolutionPage() {
   }, [location.state?.tab]);
 
   return (
-    <div className="container mx-auto pb-24 pt-4 px-4">
-      <h1 className="text-2xl font-bold mb-6">Tu Evolución</h1>
+    <div className="p-4 md:p-8 space-y-6 max-w-2xl mx-auto pb-24">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Tu Evolución</h1>
+          <p className="text-sm text-muted-foreground">Historial y medidas corporales</p>
+        </div>
+      </header>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="history">Entrenamientos</TabsTrigger>
           <TabsTrigger value="measurements">Medidas</TabsTrigger>
         </TabsList>
