@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import { startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
+import { startOfMonth, endOfMonth, startOfWeek, startOfDay, endOfDay } from "date-fns";
 import type { ActividadWithDetails, EjercicioWithDetails } from "@/types/workout";
 
 export function useLastWorkout() {
@@ -57,23 +57,28 @@ export function useWeeklyWorkouts() {
     enabled: !!user,
     queryFn: async () => {
       const now = new Date();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      startOfWeek.setHours(0, 0, 0, 0);
+      
+      const startOfCurrentWeek = startOfWeek(now, { weekStartsOn: 1 });
 
       const { data, error } = await supabase
         .from("actividad")
         .select("fecha")
         .eq("usuario_id", user!.id)
-        .gte("fecha", startOfWeek.toISOString());
+        .gte("fecha", startOfCurrentWeek.toISOString());
 
       if (error) throw error;
 
-      const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-      const counts = days.map((name, i) => ({
-        name,
-        workouts: (data || []).filter((a) => new Date(a.fecha).getDay() === i).length,
-      }));
+      const days = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+      
+      const counts = days.map((name, index) => {
+        
+        const targetDay = index === 6 ? 0 : index + 1;
+        
+        return {
+          name,
+          workouts: (data || []).filter((a) => new Date(a.fecha).getDay() === targetDay).length,
+        };
+      });
 
       return counts;
     },

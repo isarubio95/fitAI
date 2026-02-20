@@ -276,7 +276,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto pb-32">
+    <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">TrackGym</h1>
