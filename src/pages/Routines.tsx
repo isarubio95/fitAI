@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   DndContext,
   closestCenter,
@@ -52,6 +52,7 @@ const Routines = () => {
   const { data: routines, isLoading } = useRoutines();
   const deleteRoutine = useDeleteRoutine();
   const navigate = useNavigate();
+  const location = useLocation();
   const updateOrder = useUpdateRoutineOrder();
   const { toast } = useToast();
   const { data: activeWorkout } = useActiveWorkout();
@@ -60,6 +61,15 @@ const Routines = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (location.state?.action === "new") {
+      setEditId(null);
+      setFormOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
+
 
   const [sortMode, setSortMode] = useState<SortMode>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");

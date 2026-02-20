@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 
 // Añadimos un objeto especial de tipo "add" para representarlo en el centro
 const navItems = [
@@ -14,6 +15,8 @@ const navItems = [
 
 export function BottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { openNew } = useGlobalWorkoutDrawer();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
@@ -49,28 +52,28 @@ export function BottomNav() {
       >
         <button 
           className="flex items-center gap-3 rounded-xl p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
-          onClick={() => { console.log("Navegar a crear entrenamiento"); setIsMenuOpen(false); }}
+          onClick={() => { openNew(); setIsMenuOpen(false); }}
         >
           <Activity className="h-5 w-5 text-primary" />
           Entrenamiento
         </button>
         <button 
           className="flex items-center gap-3 rounded-xl p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
-          onClick={() => { console.log("Navegar a crear rutina"); setIsMenuOpen(false); }}
+          onClick={() => { navigate("/routines", { state: { action: "new" } }); setIsMenuOpen(false); }}
         >
           <ClipboardList className="h-5 w-5 text-blue-500" />
           Rutina
         </button>
         <button 
           className="flex items-center gap-3 rounded-xl p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
-          onClick={() => { console.log("Navegar a crear ejercicio"); setIsMenuOpen(false); }}
+          onClick={() => { navigate("/exercises", { state: { action: "new" } }); setIsMenuOpen(false); }}
         >
           <Dumbbell className="h-5 w-5 text-orange-500" />
           Ejercicio
         </button>
         <button 
           className="flex items-center gap-3 rounded-xl p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
-          onClick={() => { console.log("Navegar a añadir medida"); setIsMenuOpen(false); }}
+          onClick={() => { navigate("/evolution", { state: { tab: "measurements", action: "new" } }); setIsMenuOpen(false); }}
         >
           <Scale className="h-5 w-5 text-emerald-500" />
           Medida
