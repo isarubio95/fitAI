@@ -1,20 +1,28 @@
-import { NavLink } from "react-router-dom";
-import { Home, Dumbbell, BarChart3, LogOut, ClipboardList, Scale } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { Home, Dumbbell, BarChart3, LogOut, ClipboardList, Plus, Activity, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ProfileDrawer } from "./ProfileDrawer";
+import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
   { to: "/routines", icon: ClipboardList, label: "Rutinas" },
   { to: "/exercises", icon: Dumbbell, label: "Ejercicios" },
-  { to: "/history", icon: BarChart3, label: "Progreso" },
-  { to: "/measurements", icon: Scale, label: "Medidas" },
+  { to: "/evolution", icon: BarChart3, label: "Evolución" },
 ];
 
 export function DesktopSidebar() {
   const { signOut } = useAuth();
+  const navigate = useNavigate();
+  const { openNew } = useGlobalWorkoutDrawer();
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-card h-[100dvh] sticky top-0">
@@ -26,6 +34,33 @@ export function DesktopSidebar() {
         <ProfileDrawer />
       </div>
       <nav className="flex-1 space-y-1 p-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="w-full justify-start gap-3 mb-3" size="sm">
+              <Plus className="h-4 w-4" />
+              Crear Nuevo
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-52">
+            <DropdownMenuItem onClick={() => openNew()}>
+              <Activity className="h-4 w-4 mr-2 text-primary" />
+              Entrenamiento
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/routines", { state: { action: "new" } })}>
+              <ClipboardList className="h-4 w-4 mr-2 text-blue-500" />
+              Rutina
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/exercises", { state: { action: "new" } })}>
+              <Dumbbell className="h-4 w-4 mr-2 text-orange-500" />
+              Ejercicio
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/evolution", { state: { tab: "measurements", action: "new" } })}>
+              <Scale className="h-4 w-4 mr-2 text-emerald-500" />
+              Medida
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -58,3 +93,4 @@ export function DesktopSidebar() {
     </aside>
   );
 }
+
