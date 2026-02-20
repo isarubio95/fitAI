@@ -46,8 +46,8 @@ export function AppLayout() {
                   className={cn(
                     "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
                     (searchParams.get("tab") || "history") === "history"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary/50 text-foreground hover:bg-secondary"
+                      ? "bg-secondary text-secondary-foreground"
+                      : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                   )}
                 >
                   Entrenamientos
@@ -57,8 +57,8 @@ export function AppLayout() {
                   className={cn(
                     "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
                     searchParams.get("tab") === "measurements"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary/50 text-foreground hover:bg-secondary"
+                      ? "bg-secondary text-secondary-foreground"
+                      : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                   )}
                 >
                   Medidas
