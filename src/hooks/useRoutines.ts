@@ -9,10 +9,11 @@ export function useRoutines() {
     queryKey: ["routines", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data: rutinas, error } = await supabase
+      const { data: rutinas, error } = await (supabase
         .from("rutina")
-        .select("*")
+        .select("*") as any)
         .eq("usuario_id", user!.id)
+        .not("es_plantilla", "eq", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
       if (!rutinas?.length) return [];
