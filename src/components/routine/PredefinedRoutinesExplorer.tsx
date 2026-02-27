@@ -96,7 +96,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
   const handleClone = async (id: string) => {
     if (isMock) return;
     await cloneRoutine.mutateAsync(id);
-    onOpenChange(false);
+    // Mantenemos el modal abierto para poder añadir más rutinas
   };
 
   const toggleFilter = <T,>(value: T, setter: React.Dispatch<React.SetStateAction<T | null>>) => {
