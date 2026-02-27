@@ -99,8 +99,8 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
     onOpenChange(false);
   };
 
-  const toggleFilter = <T,>(current: T | null, value: T, setter: (v: T | null) => void) => {
-    setter(current === value ? null : value);
+  const toggleFilter = <T,>(value: T, setter: React.Dispatch<React.SetStateAction<T | null>>) => {
+    setter((prev) => (prev === value ? null : value));
   };
 
   const nivelColor = (nivel: string | null) => {
@@ -137,7 +137,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
               {NIVELES.map(({ value, label, icon: Icon }) => (
                 <button
                   key={value}
-                  onClick={() => toggleFilter(filterNivel, value, setFilterNivel)}
+                  onClick={() => toggleFilter(value, setFilterNivel)}
                   className={cn(
                     "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
                     filterNivel === value
@@ -159,7 +159,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
               {DURACIONES.map(({ value, label, icon: Icon }) => (
                 <button
                   key={value}
-                  onClick={() => toggleFilter(filterDuracion, value, setFilterDuracion)}
+                  onClick={() => toggleFilter(value, setFilterDuracion)}
                   className={cn(
                     "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
                     filterDuracion === value
@@ -182,7 +182,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
                 {GRUPOS.map((g) => (
                   <button
                     key={g}
-                    onClick={() => toggleFilter(filterGrupo, g, setFilterGrupo)}
+                    onClick={() => toggleFilter(g, setFilterGrupo)}
                     className={cn(
                       "rounded-full px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
                       filterGrupo === g
@@ -212,7 +212,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
                 <p className="text-sm text-muted-foreground">No se encontraron rutinas con esos filtros.</p>
               </div>
             ) : (
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence mode="popLayout" key={`${filterNivel ?? ""}-${filterDuracion ?? ""}-${filterGrupo ?? ""}`}>
                 {filtered.map((r) => (
                   <RoutineCard
                     key={r.id}
