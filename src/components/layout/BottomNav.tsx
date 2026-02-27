@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity, Sparkles } from "lucide-react";
+import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity, Sparkles, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
@@ -50,7 +50,7 @@ export function BottomNav() {
       {/* MENÚ DESPLEGABLE DE ACCIONES */}
       <div
         className={cn(
-          "absolute bottom-[85px] left-1/2 -translate-x-1/2 flex flex-col gap-1 rounded-2xl bg-card border border-border p-2 shadow-xl transition-all duration-300 ease-out origin-bottom w-48",
+          "absolute bottom-[85px] left-1/2 -translate-x-1/2 flex flex-col gap-1 rounded-2xl bg-card border border-border p-2 shadow-xl transition-all duration-300 ease-in-out origin-bottom w-48",
           isMenuOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-50 opacity-0 pointer-events-none"
         )}
       >
@@ -62,36 +62,49 @@ export function BottomNav() {
           Entrenamiento
         </button>
         <button 
-          className="flex items-center gap-3 rounded-xl p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
+          className="flex items-center justify-between w-full gap-3 rounded-xl p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
           onClick={() => { setShowRoutineSubmenu(!showRoutineSubmenu); }}
         >
-          <ClipboardList className="h-5 w-5 text-blue-500" />
-          Rutina
+          <span className="flex items-center gap-3">
+            <ClipboardList className="h-5 w-5 text-blue-500" />
+            Rutina
+          </span>
+          <ChevronDown 
+            className={cn("h-4 w-4 shrink-0 transition-transform duration-300", showRoutineSubmenu && "rotate-180")} 
+          />
         </button>
-        {showRoutineSubmenu && (
-          <div className="ml-4 space-y-0.5 border-l-2 border-border pl-3">
-            <button
-              className="flex items-center gap-3 rounded-xl p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm"
-              onClick={() => { setExplorerOpen(true); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
-            >
-              <Sparkles className="h-4 w-4 text-amber-400" />
-              <div className="text-left">
-                <p className="font-medium">Explorar Predefinidas</p>
-                <p className="text-[10px] text-muted-foreground">Descubre rutinas creadas por expertos</p>
-              </div>
-            </button>
-            <button
-              className="flex items-center gap-3 rounded-xl p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm"
-              onClick={() => { navigate("/routines", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
-            >
-              <Plus className="h-4 w-4 text-primary" />
-              <div className="text-left">
-                <p className="font-medium">Crear desde cero</p>
-                <p className="text-[10px] text-muted-foreground">Configura tus propios ejercicios</p>
-              </div>
-            </button>
+        {/* Contenedor grid para transición de altura suave (acordeón) */}
+        <div
+          className={cn(
+            "grid transition-all duration-300 ease-in-out",
+            showRoutineSubmenu ? "grid-rows-[1fr] opacity-100 mt-2" : "grid-rows-[0fr] opacity-0 mt-0"
+          )}
+        >
+          <div className="overflow-hidden">
+            <div className="space-y-0.5 rounded-lg bg-muted/50 p-2">
+              <button
+                className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
+                onClick={() => { setExplorerOpen(true); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
+              >
+                <Sparkles className="h-4 w-4 shrink-0 text-amber-400" />
+                <div>
+                  <p className="font-medium">Explorar Predefinidas</p>
+                  <p className="text-[10px] text-muted-foreground">Descubre rutinas creadas por expertos</p>
+                </div>
+              </button>
+              <button
+                className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
+                onClick={() => { navigate("/routines", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
+              >
+                <Plus className="h-4 w-4 shrink-0 text-primary" />
+                <div>
+                  <p className="font-medium">Crear desde cero</p>
+                  <p className="text-[10px] text-muted-foreground">Configura tus propios ejercicios</p>
+                </div>
+              </button>
+            </div>
           </div>
-        )}
+        </div>
         <button 
           className="flex items-center gap-3 rounded-xl p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
           onClick={() => { navigate("/exercises", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
