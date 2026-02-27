@@ -146,7 +146,6 @@ const Routines = () => {
     try {
       await deleteRoutine.mutateAsync(deleteId);
       toast({ title: "Rutina eliminada" });
-      navigate("/");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
