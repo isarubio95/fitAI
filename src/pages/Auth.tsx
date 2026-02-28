@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dumbbell, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
@@ -76,9 +76,7 @@ const Auth = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
-            <Dumbbell className="h-7 w-7 text-primary-foreground" />
-          </div>
+          <img src="/logo.svg" alt="TrackGym" className="mx-auto mb-2 h-14 w-14 rounded-xl" />
           <CardTitle className="text-2xl font-bold">TrackGym</CardTitle>
           <CardDescription>
             {isLogin ? "Inicia sesión para continuar" : "Crea tu cuenta"}

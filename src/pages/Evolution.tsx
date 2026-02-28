@@ -8,16 +8,14 @@ export default function EvolutionPage() {
   const activeTab = searchParams.get("tab") || "history";
 
   return (
-    <div className="p-4 md:p-8 max-w-2xl mx-auto pb-24">
-      <Tabs value={activeTab} className="w-full">
-        <TabsContent value="history" className="mt-0">
-          <WorkoutHistory /> 
-        </TabsContent>
-        
-        <TabsContent value="measurements" className="mt-0">
-          <Measurements /> 
-        </TabsContent>
-      </Tabs>
-    </div>
+    <Tabs value={activeTab} className="w-full">
+      <TabsContent value="history" className="mt-0">
+        <WorkoutHistory /> 
+      </TabsContent>
+      
+      <TabsContent value="measurements" className="mt-0">
+        <Measurements /> 
+      </TabsContent>
+    </Tabs>
   );
 }

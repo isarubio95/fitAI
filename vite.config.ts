@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'placeholder.svg'],
+      includeAssets: ['favicon.ico', 'robots.txt', 'logo.svg'],
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
       },
@@ -27,18 +27,18 @@ export default defineConfig(({ mode }) => ({
         short_name: 'TrackGym',
         description: 'TrackGym - Tu compañero de entrenamiento',
         theme_color: '#09090b',
-        background_color: '#ffffff',
+        background_color: '#22c55e',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
           {
-            src: 'placeholder.svg',
+            src: 'logo.svg',
             sizes: '192x192',
             type: 'image/svg+xml',
             purpose: 'any maskable',
           },
           {
-            src: 'placeholder.svg',
+            src: 'logo.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'any maskable',
