@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useExerciseCatalog, useCreateExercise, useDeleteExercise } from "@/hooks/useExerciseCatalog";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -17,6 +17,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -26,7 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, Plus, User, Trash2, Loader2 } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
@@ -47,6 +54,17 @@ const Exercises = () => {
   const [newBodyParts, setNewBodyParts] = useState<string[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const sortedExercises = useMemo(() => {
+    if (!exercises?.length) return [];
+    const list = [...exercises];
+    list.sort((a, b) => {
+      const cmp = a.nombre.localeCompare(b.nombre, undefined, { sensitivity: "base" });
+      return sortOrder === "asc" ? cmp : -cmp;
+    });
+    return list;
+  }, [exercises, sortOrder]);
 
   useEffect(() => {
     if (location.state?.action === "new") {
@@ -92,9 +110,27 @@ const Exercises = () => {
           <h1 className="text-2xl font-bold">Ejercicios</h1>
           <p className="text-sm text-muted-foreground">Catálogo de ejercicios disponibles</p>
         </div>
-        <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5">
-          <Plus className="h-4 w-4" /> Crear
-        </Button>
+        {!!exercises?.length && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <ArrowUpDown className="h-4 w-4" />
+                <span className="hidden sm:inline">{sortOrder === "asc" ? "A → Z" : "Z → A"}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44 bg-popover">
+              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                <ArrowDownAZ className="h-3.5 w-3.5" /> Ordenar por nombre
+              </DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => setSortOrder("asc")}>
+                A → Z {sortOrder === "asc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOrder("desc")}>
+                Z → A {sortOrder === "desc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </header>
 
       <div className="relative">
@@ -112,7 +148,7 @@ const Exercises = () => {
           ? Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-24 rounded-xl" />
             ))
-          : exercises?.map((ex) => {
+          : sortedExercises.map((ex) => {
               const isOwn = (ex as any).usuario_id === user?.id;
               return (
                 <Card

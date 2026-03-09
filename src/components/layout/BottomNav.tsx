@@ -50,7 +50,7 @@ export function BottomNav() {
       {/* MENÚ DESPLEGABLE DE ACCIONES */}
       <div
         className={cn(
-          "absolute bottom-[85px] left-1/2 -translate-x-1/2 flex flex-col gap-1 rounded-2xl bg-card border border-border p-2 shadow-xl transition-all duration-300 ease-in-out origin-bottom w-48",
+          "absolute bottom-[85px] left-1/2 -translate-x-1/2 flex flex-col gap-1 rounded-2xl bg-card border border-border p-2 shadow-xl transition-all duration-300 ease-in-out origin-bottom w-[min(92vw,320px)]",
           isMenuOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-50 opacity-0 pointer-events-none"
         )}
       >
