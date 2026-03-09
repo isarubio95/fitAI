@@ -59,6 +59,22 @@ function parseCsvRoutine(text: string): { nombre: string; descripcion: string; r
   return { nombre, descripcion, rows };
 }
 
+/** Lee el archivo como texto intentando UTF-8 y, si hay caracteres corruptos (tildes/ñ), Windows-1252 (Excel en español). */
+async function readCsvWithEncoding(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  let utf8 = new TextDecoder("utf-8").decode(buffer);
+  // Si hay carácter de reemplazo (�) o secuencias típicas de mojibake, probar Windows-1252
+  if (utf8.includes("\uFFFD") || /Ã¡|Ã©|Ã­|Ã³|Ãº|Ã±|Ã/.test(utf8)) {
+    try {
+      utf8 = new TextDecoder("windows-1252").decode(buffer);
+    } catch {
+      // mantener utf8 original
+    }
+  }
+  // Quitar BOM UTF-8 si existe para no ensuciar la primera celda
+  return utf8.replace(/^\uFEFF/, "");
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -90,7 +106,7 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
         toast({ title: "Cargando catálogo…", description: "Espera un momento e intenta de nuevo.", variant: "destructive" });
         return;
       }
-      const text = await file.text();
+      const text = await readCsvWithEncoding(file);
       const parsed = parseCsvRoutine(text);
       if (!parsed) {
         toast({ title: "CSV no válido", description: "Revisa la estructura: primera línea nombre y descripción, luego una línea por ejercicio.", variant: "destructive" });
