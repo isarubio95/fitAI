@@ -144,21 +144,33 @@ export type Database = {
         Row: {
           created_at: string
           descripcion: string | null
+          duracion_minutos: number | null
+          es_plantilla: boolean | null
+          grupo_muscular: string | null
           id: string
+          nivel: string | null
           nombre: string
           usuario_id: string
         }
         Insert: {
           created_at?: string
           descripcion?: string | null
+          duracion_minutos?: number | null
+          es_plantilla?: boolean | null
+          grupo_muscular?: string | null
           id?: string
+          nivel?: string | null
           nombre: string
           usuario_id: string
         }
         Update: {
           created_at?: string
           descripcion?: string | null
+          duracion_minutos?: number | null
+          es_plantilla?: boolean | null
+          grupo_muscular?: string | null
           id?: string
+          nivel?: string | null
           nombre?: string
           usuario_id?: string
         }
