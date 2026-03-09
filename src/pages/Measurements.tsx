@@ -22,7 +22,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
-  Plus, Scale, TrendingUp, TrendingDown, CalendarIcon,
+  Scale, TrendingUp, TrendingDown, CalendarIcon,
   ChevronDown, ChevronUp, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -109,16 +109,13 @@ const Measurements = () => {
   };
 
   return (
-    <div className="p-4 md:p-8 pt-6space-y-6 max-w-2xl mx-auto pb-28">
-      <header className="flex items-center justify-between">
+    <div className="p-4 md:p-8 pt-6 space-y-6 max-w-2xl mx-auto pb-28">
+      <header>
         <div>
           <h1 className="text-2xl font-bold">Medidas Corporales</h1>
           <p className="text-sm text-muted-foreground">Seguimiento de tu composición</p>
         </div>
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Registrar</Button>
-          </SheetTrigger>
           <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
             <SheetHeader>
               <SheetTitle>Registrar Medidas</SheetTitle>
