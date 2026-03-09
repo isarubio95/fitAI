@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Dumbbell, BarChart3, LogOut, ClipboardList, Plus, Activity, Scale } from "lucide-react";
+import { Home, Dumbbell, BarChart3, LogOut, ClipboardList, Plus, Activity, Scale, FileUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,10 @@ export function DesktopSidebar() {
             <DropdownMenuItem onClick={() => navigate("/routines", { state: { action: "new" } })}>
               <ClipboardList className="h-4 w-4 mr-2 text-blue-500" />
               Rutina
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/routines", { state: { action: "import-csv" } })}>
+              <FileUp className="h-4 w-4 mr-2 text-muted-foreground" />
+              Importar rutina desde CSV
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/exercises", { state: { action: "new" } })}>
               <Dumbbell className="h-4 w-4 mr-2 text-orange-500" />

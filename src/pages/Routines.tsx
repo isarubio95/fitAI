@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { RoutineForm } from "@/components/routine/RoutineForm";
 import { SortableRoutineCard } from "@/components/routine/SortableRoutineCard";
+import { ImportRoutineFromCsvDialog } from "@/components/routine/ImportRoutineFromCsvDialog";
 import { useToast } from "@/hooks/use-toast";
 import type { RutinaWithDetails } from "@/types/routine";
 import type { ExerciseFormData } from "@/types/workout";
@@ -61,6 +62,7 @@ const Routines = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [importCsvOpen, setImportCsvOpen] = useState(false);
 
   useEffect(() => {
     if (location.state?.action === "new") {
@@ -68,7 +70,11 @@ const Routines = () => {
       setFormOpen(true);
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state]);
+    if (location.state?.action === "import-csv") {
+      setImportCsvOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
 
   const [sortMode, setSortMode] = useState<SortMode>("date");
@@ -279,6 +285,7 @@ const Routines = () => {
       )}
 
       <RoutineForm open={formOpen} onOpenChange={setFormOpen} routineId={editId} />
+      <ImportRoutineFromCsvDialog open={importCsvOpen} onOpenChange={setImportCsvOpen} />
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>

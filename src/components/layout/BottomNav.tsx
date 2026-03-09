@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity, Sparkles, ChevronDown } from "lucide-react";
+import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity, Sparkles, ChevronDown, FileUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
@@ -100,6 +100,16 @@ export function BottomNav() {
                 <div>
                   <p className="font-medium">Crear desde cero</p>
                   <p className="text-[10px] text-muted-foreground">Configura tus propios ejercicios</p>
+                </div>
+              </button>
+              <button
+                className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
+                onClick={() => { navigate("/routines", { state: { action: "import-csv" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
+              >
+                <FileUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">Importar desde CSV</p>
+                  <p className="text-[10px] text-muted-foreground">Sube un archivo con la rutina</p>
                 </div>
               </button>
             </div>
