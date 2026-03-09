@@ -33,10 +33,41 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
+import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
+
+/** Devuelve el grupo principal del primer músculo en body_part, o null */
+function getMainGroupFromBodyPart(bodyPart: string[] | null | undefined): MainMuscleGroup | null {
+  if (!bodyPart?.length) return null;
+  for (const muscle of bodyPart) {
+    for (const [group, muscles] of Object.entries(MUSCLE_GROUPS) as [MainMuscleGroup, readonly string[]][]) {
+      if (muscles.includes(muscle)) return group;
+    }
+  }
+  return null;
+}
+
+const MUSCLE_GROUP_ICONS: Record<MainMuscleGroup, typeof Dumbbell> = {
+  Pecho: Heart,
+  Espalda: PanelTopClose,
+  Hombro: CircleDot,
+  Bíceps: Hand,
+  Tríceps: Hand,
+  Antebrazo: Hand,
+  Cuádriceps: Footprints,
+  Femoral: Footprints,
+  Glúteo: Footprints,
+  Pantorrilla: Footprints,
+  Core: LayoutGrid,
+};
+
+function getExerciseIcon(ex: { body_part?: string[] | null }) {
+  const group = getMainGroupFromBodyPart(ex.body_part as string[] | null);
+  return group ? MUSCLE_GROUP_ICONS[group] : Dumbbell;
+}
 
 const Exercises = () => {
   const { user } = useAuth();
@@ -150,6 +181,7 @@ const Exercises = () => {
             ))
           : sortedExercises.map((ex) => {
               const isOwn = (ex as any).usuario_id === user?.id;
+              const IconComponent = getExerciseIcon(ex as { body_part?: string[] | null });
               return (
                 <Card
                   key={ex.id}
@@ -166,7 +198,7 @@ const Exercises = () => {
                         isOwn ? "bg-primary/20" : "bg-primary/10"
                       }`}
                     >
-                      <Dumbbell className="h-5 w-5 text-primary" />
+                      <IconComponent className="h-5 w-5 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
