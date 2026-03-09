@@ -34,7 +34,7 @@ export function AppLayout() {
         <div className="flex-1 flex flex-col">
           {/* Mobile header — auto-hide on scroll down */}
           <header
-            className={`fixed top-0 left-0 right-0 z-40 flex h-12 items-center px-4 gap-3 md:hidden transition-transform duration-300 bg-background/60 backdrop-blur-xl ${
+            className={`fixed top-0 left-0 right-0 z-40 flex min-h-12 items-center px-4 pt-3 gap-3 md:hidden transition-transform duration-300 bg-background/60 backdrop-blur-xl ${
               scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
             }`}
           >

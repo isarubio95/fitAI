@@ -109,7 +109,7 @@ const Measurements = () => {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-2xl mx-auto pb-28">
+    <div className="p-4 md:p-8 pt-6space-y-6 max-w-2xl mx-auto pb-28">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Medidas Corporales</h1>
