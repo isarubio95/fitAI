@@ -60,8 +60,15 @@ const DURACIONES = [
 ];
 
 const GRUPOS = [
-  "Full Body", "Torso", "Piernas", "Empuje", "Tracción",
-  "Pecho y Tríceps", "Espalda y Bíceps", "Brazos", "Hombro y Core",
+  "Brazos",
+  "Core",
+  "Empuje",
+  "Full Body",
+  "Glúteo",
+  "Hombros",
+  "Piernas",
+  "Torso",
+  "Tracción",
 ];
 
 interface Props {
