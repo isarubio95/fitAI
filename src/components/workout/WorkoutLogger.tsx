@@ -583,20 +583,25 @@ export function WorkoutLogger() {
             )}
 
             {/* Exercises */}
-            <div className="space-y-4">
-              {exercises.map((ex, ei) => (
-                <ExerciseCard
-                  key={ex.id || ei}
-                  exercise={ex}
-                  exerciseIndex={ei}
-                  onRemoveExercise={() => removeExercise(ei)}
-                  onAddSet={() => addSet(ei)}
-                  onRemoveSet={(si) => removeSet(ei, si)}
-                  onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
-                  onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
-                  onToggleCompleted={(si, completed) => handleToggleCompleted(ei, si, completed)}
-                />
-              ))}
+            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={exercises.map((ex, i) => getExerciseSortId(ex, i))} strategy={verticalListSortingStrategy}>
+                <div className="space-y-4">
+                  {exercises.map((ex, ei) => (
+                    <SortableExerciseCard
+                      key={getExerciseSortId(ex, ei)}
+                      id={getExerciseSortId(ex, ei)}
+                      exercise={ex}
+                      exerciseIndex={ei}
+                      onRemoveExercise={() => removeExercise(ei)}
+                      onAddSet={() => addSet(ei)}
+                      onRemoveSet={(si) => removeSet(ei, si)}
+                      onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
+                      onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
 
               <ExerciseSelector
                 open={exercisePickerOpen}
