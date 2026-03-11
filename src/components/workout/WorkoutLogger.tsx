@@ -1,6 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkoutById } from "@/hooks/useWorkouts";
@@ -22,7 +37,7 @@ import {
 import { Loader2, Trash2, Timer } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
-import { ExerciseCard } from "./ExerciseCard";
+import { SortableExerciseCard } from "./SortableExerciseCard";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
 // Elapsed time display component
