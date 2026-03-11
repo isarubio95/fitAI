@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ExerciseCard } from "./ExerciseCard";
@@ -20,13 +21,19 @@ export function SortableExerciseCard({ id, ...props }: SortableExerciseCardProps
     listeners,
     setNodeRef,
     transform,
-    transition,
     isDragging,
+    isSorting,
   } = useSortable({ id });
+
+  // Only animate displacement of other items while a drag is actively happening
+  const wasSorting = useRef(false);
+  useEffect(() => { wasSorting.current = isSorting; }, [isSorting]);
+
+  const shouldAnimate = isSorting && !isDragging;
 
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    transition: isDragging ? 'none' : 'transform 150ms ease',
+    transition: shouldAnimate ? 'transform 150ms ease' : 'none',
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
