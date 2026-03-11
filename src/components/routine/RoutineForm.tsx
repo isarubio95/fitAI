@@ -294,57 +294,62 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
             </div>
           </div>
 
-          <div className="space-y-4">
-            {groups.map((group, gIdx) => {
-              const isSuperset = !!group.supersetId && group.items.length > 1;
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleRoutineDragEnd}>
+            <SortableContext items={ejercicios.map((_, i) => i)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-4">
+                {groups.map((group, gIdx) => {
+                  const isSuperset = !!group.supersetId && group.items.length > 1;
 
-              if (isSuperset) {
-                return (
-                  <div key={group.supersetId} className="relative rounded-xl border-2 border-primary/40 bg-primary/5">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />
-                     <div className="px-3 pt-2 pb-1">
-                      <span className="text-xs font-medium text-primary">🔗 Superserie</span>
-                    </div>
-                    <div className="divide-y divide-border">
-                      {group.items.map(({ exercise: ej, originalIndex: i }) => (
-                        <ExerciseRow
-                          key={i}
-                          exercise={ej}
-                          index={i}
-                          onUpdate={updateExercise}
-                          onRemove={removeExercise}
-                          onLinkSuperset={startSupersetLink}
-                          onBreakSuperset={breakSuperset}
-                          isInSuperset
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
+                  if (isSuperset) {
+                    return (
+                      <div key={group.supersetId} className="relative rounded-xl border-2 border-primary/40 bg-primary/5">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />
+                         <div className="px-3 pt-2 pb-1">
+                          <span className="text-xs font-medium text-primary">🔗 Superserie</span>
+                        </div>
+                        <div className="divide-y divide-border">
+                          {group.items.map(({ exercise: ej, originalIndex: i }) => (
+                            <SortableExerciseRow
+                              key={i}
+                              sortId={i}
+                              exercise={ej}
+                              index={i}
+                              onUpdate={updateExercise}
+                              onRemove={removeExercise}
+                              onLinkSuperset={startSupersetLink}
+                              onBreakSuperset={breakSuperset}
+                              isInSuperset
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
 
-              // Single exercise (possibly with a superset_id but alone — treat as normal)
-              const { exercise: ej, originalIndex: i } = group.items[0];
-              return (
-                <ExerciseRow
-                  key={i}
-                  exercise={ej}
-                  index={i}
-                  onUpdate={updateExercise}
-                  onRemove={removeExercise}
-                  onLinkSuperset={startSupersetLink}
-                  onBreakSuperset={breakSuperset}
-                  isInSuperset={false}
+                  const { exercise: ej, originalIndex: i } = group.items[0];
+                  return (
+                    <SortableExerciseRow
+                      key={i}
+                      sortId={i}
+                      exercise={ej}
+                      index={i}
+                      onUpdate={updateExercise}
+                      onRemove={removeExercise}
+                      onLinkSuperset={startSupersetLink}
+                      onBreakSuperset={breakSuperset}
+                      isInSuperset={false}
+                    />
+                  );
+                })}
+
+                <ExerciseSelector
+                  open={pickerOpen}
+                  onOpenChange={(o) => { setPickerOpen(o); if (!o) setSupersetLink(null); }}
+                  onSelect={addExercise}
                 />
-              );
-            })}
-
-            <ExerciseSelector
-              open={pickerOpen}
-              onOpenChange={(o) => { setPickerOpen(o); if (!o) setSupersetLink(null); }}
-              onSelect={addExercise}
-            />
-          </div>
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
       </SheetContent>
     </Sheet>
