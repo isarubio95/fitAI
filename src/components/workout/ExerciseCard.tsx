@@ -38,7 +38,7 @@ export function ExerciseCard({
   onRemoveSet,
   onUpdateSet,
   onAutoSaveSet,
-  onToggleCompleted,
+  dragHandleProps,
 }: ExerciseCardProps) {
   const { data: lastPerf } = useLastPerformance(exercise.tipo_ejercicio_id);
   const timer = useRestTimerContext();
