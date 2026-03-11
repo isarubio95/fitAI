@@ -664,6 +664,15 @@ export function WorkoutLogger() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PostWorkoutModal
+        open={showPostWorkout}
+        onClose={() => {
+          setShowPostWorkout(false);
+          setPostWorkoutData(null);
+        }}
+        breakdown={postWorkoutData}
+      />
     </>
   );
 }
