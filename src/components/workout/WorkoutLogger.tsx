@@ -327,27 +327,22 @@ export function WorkoutLogger() {
     [exercises]
   );
 
-  const handleToggleCompleted = useCallback(
-    async (exerciseIndex: number, setIndex: number, completed: boolean) => {
-      setExercises((prev) =>
-        prev.map((ex, i) =>
-          i === exerciseIndex
-            ? { ...ex, sets: ex.sets.map((s, si) => (si === setIndex ? { ...s, completed } : s)) }
-            : ex
-        )
-      );
-      const set = exercises[exerciseIndex]?.sets[setIndex];
-      if (set?.id) {
-        try {
-          await supabase.from("serie").update({ completed }).eq("id", set.id);
-        } catch {
-          // Silent fail
-        }
-      }
-    },
-    [exercises]
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setExercises((prev) => {
+      const oldIndex = prev.findIndex((e) => (e.id || String(prev.indexOf(e))) === active.id);
+      const newIndex = prev.findIndex((e) => (e.id || String(prev.indexOf(e))) === over.id);
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  };
+
+  const getExerciseSortId = (ex: ExerciseFormData, index: number) => ex.id || String(index);
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["lastWorkout"] });
     queryClient.invalidateQueries({ queryKey: ["weeklyWorkouts"] });
