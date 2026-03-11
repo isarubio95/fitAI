@@ -38,6 +38,8 @@ import { Loader2, Trash2, Timer } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import { SortableExerciseCard } from "./SortableExerciseCard";
+import { PostWorkoutModal } from "./PostWorkoutModal";
+import { useCalculateAndAwardXP, type XPBreakdown } from "@/hooks/useGamification";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
 // Elapsed time display component
@@ -85,6 +87,9 @@ export function WorkoutLogger() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [creatingActive, setCreatingActive] = useState(false);
+  const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
+  const [showPostWorkout, setShowPostWorkout] = useState(false);
+  const calculateAndAwardXP = useCalculateAndAwardXP();
 
   const isEdit = !!effectiveWorkoutId;
   const isActiveWorkout = !!activeWorkoutId || (!!existingWorkout && !existingWorkout.fecha_fin);
@@ -433,7 +438,21 @@ export function WorkoutLogger() {
             })
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
-          toast({ title: "¡Entrenamiento finalizado!" });
+
+          // Calculate XP and show post-workout modal
+          const completedSets = exercises.reduce(
+            (acc, ex) => acc + ex.sets.filter((s) => s.completed || (Number(s.repeticiones) > 0 && Number(s.peso_kg) > 0)).length,
+            0
+          );
+          try {
+            const breakdown = await calculateAndAwardXP(effectiveWorkoutId, completedSets);
+            setPostWorkoutData(breakdown);
+            setShowPostWorkout(true);
+          } catch {
+            // XP failed silently, still close
+          }
+          invalidateAll();
+          close();
         } else {
           const { error } = await supabase
             .from("actividad")
@@ -444,13 +463,24 @@ export function WorkoutLogger() {
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
           toast({ title: "¡Entrenamiento actualizado!" });
+          invalidateAll();
+          close();
         }
       } else {
         await handleCreate(ejerciciosLimpios);
-        toast({ title: "¡Entrenamiento guardado!" });
+
+        // Also award XP for manual workouts
+        const completedSets = ejerciciosLimpios.reduce((acc, ex) => acc + ex.sets.length, 0);
+        try {
+          const breakdown = await calculateAndAwardXP("manual", completedSets);
+          setPostWorkoutData(breakdown);
+          setShowPostWorkout(true);
+        } catch {
+          // silent
+        }
+        invalidateAll();
+        close();
       }
-      invalidateAll();
-      close();
     } catch (error: any) {
       toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
     } finally {
@@ -634,6 +664,15 @@ export function WorkoutLogger() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PostWorkoutModal
+        open={showPostWorkout}
+        onClose={() => {
+          setShowPostWorkout(false);
+          setPostWorkoutData(null);
+        }}
+        breakdown={postWorkoutData}
+      />
     </>
   );
 }
