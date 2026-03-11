@@ -49,6 +49,33 @@ import {
 type SortMode = "date" | "name" | "custom";
 type SortDir = "asc" | "desc";
 
+const ROUTINES_SORT_STORAGE_KEY = "gym-log.routines.sort";
+
+function loadRoutinesSortPreference(): { sortMode: SortMode; sortDir: SortDir } {
+  try {
+    const raw = localStorage.getItem(ROUTINES_SORT_STORAGE_KEY);
+    if (!raw) return { sortMode: "date", sortDir: "desc" };
+    const parsed = JSON.parse(raw) as { sortMode?: string; sortDir?: string };
+    const sortMode: SortMode =
+      parsed.sortMode === "date" || parsed.sortMode === "name" || parsed.sortMode === "custom"
+        ? parsed.sortMode
+        : "date";
+    const sortDir: SortDir =
+      parsed.sortDir === "asc" || parsed.sortDir === "desc" ? parsed.sortDir : "desc";
+    return { sortMode, sortDir };
+  } catch {
+    return { sortMode: "date", sortDir: "desc" };
+  }
+}
+
+function saveRoutinesSortPreference(sortMode: SortMode, sortDir: SortDir) {
+  try {
+    localStorage.setItem(ROUTINES_SORT_STORAGE_KEY, JSON.stringify({ sortMode, sortDir }));
+  } catch {
+    // ignore
+  }
+}
+
 const Routines = () => {
   const { data: routines, isLoading } = useRoutines();
   const deleteRoutine = useDeleteRoutine();
@@ -64,6 +91,11 @@ const Routines = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [importCsvOpen, setImportCsvOpen] = useState(false);
 
+  const [sortMode, setSortMode] = useState<SortMode>(() => loadRoutinesSortPreference().sortMode);
+  const [sortDir, setSortDir] = useState<SortDir>(() => loadRoutinesSortPreference().sortDir);
+
+  const [customOrder, setCustomOrder] = useState<RutinaWithDetails[] | null>(null);
+
   useEffect(() => {
     if (location.state?.action === "new") {
       setEditId(null);
@@ -76,11 +108,9 @@ const Routines = () => {
     }
   }, [location.state, navigate]);
 
-
-  const [sortMode, setSortMode] = useState<SortMode>("date");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-
-  const [customOrder, setCustomOrder] = useState<RutinaWithDetails[] | null>(null);
+  useEffect(() => {
+    saveRoutinesSortPreference(sortMode, sortDir);
+  }, [sortMode, sortDir]);
 
   const isDragMode = sortMode === "custom";
 

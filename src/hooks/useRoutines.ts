@@ -14,6 +14,7 @@ export function useRoutines() {
         .select("*") as any)
         .eq("usuario_id", user!.id)
         .not("es_plantilla", "eq", true)
+        .order("orden", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false });
       if (error) throw error;
       if (!rutinas?.length) return [];
