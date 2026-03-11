@@ -608,7 +608,6 @@ export function WorkoutLogger() {
                 onOpenChange={setExercisePickerOpen}
                 onSelect={addExercise}
               />
-            </div>
           </div>
         </SheetContent>
       </Sheet>
