@@ -25,8 +25,8 @@ export function SortableExerciseCard({ id, ...props }: SortableExerciseCardProps
   } = useSortable({ id });
 
   const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition: isDragging ? 'none' : transition,
+    transform: CSS.Translate.toString(transform),
+    transition: 'none',
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
