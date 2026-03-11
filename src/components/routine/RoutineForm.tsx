@@ -356,6 +356,31 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   );
 }
 
+/** Sortable wrapper for ExerciseRow */
+function SortableExerciseRow({ sortId, ...props }: {
+  sortId: number;
+  exercise: RoutineExerciseFormData;
+  index: number;
+  onUpdate: (index: number, field: keyof RoutineExerciseFormData, value: number) => void;
+  onRemove: (index: number) => void;
+  onLinkSuperset: (index: number) => void;
+  onBreakSuperset: (index: number) => void;
+  isInSuperset: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sortId });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <ExerciseRow {...props} dragHandleProps={listeners} />
+    </div>
+  );
+}
+
 /** Individual exercise row used inside the form */
 function ExerciseRow({
   exercise: ej,
@@ -365,6 +390,7 @@ function ExerciseRow({
   onLinkSuperset,
   onBreakSuperset,
   isInSuperset,
+  dragHandleProps,
 }: {
   exercise: RoutineExerciseFormData;
   index: number;
@@ -373,6 +399,7 @@ function ExerciseRow({
   onLinkSuperset: (index: number) => void;
   onBreakSuperset: (index: number) => void;
   isInSuperset: boolean;
+  dragHandleProps?: Record<string, any>;
 }) {
   const wrapperClass = isInSuperset
     ? "p-4 space-y-3"
@@ -382,7 +409,9 @@ function ExerciseRow({
     <div className={wrapperClass}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing">
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
           <h3 className="font-semibold text-sm">{ej.nombre}</h3>
         </div>
         <div className="flex items-center gap-0.5">
