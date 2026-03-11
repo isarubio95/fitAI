@@ -28,6 +28,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Trash2, Loader2, GripVertical, Link, Unlink } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
@@ -402,6 +412,7 @@ function ExerciseRow({
   isInSuperset: boolean;
   dragHandleProps?: Record<string, any>;
 }) {
+  const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
   const wrapperClass = isInSuperset
     ? "p-4 space-y-3"
     : "rounded-xl border border-border bg-card p-4 space-y-3";
@@ -437,11 +448,39 @@ function ExerciseRow({
               <Link className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onRemove(i)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive"
+            onClick={() => setConfirmDeleteExercise(true)}
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={confirmDeleteExercise} onOpenChange={setConfirmDeleteExercise}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar &quot;{ej.nombre}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se quitará este ejercicio de la rutina. Puedes volver a añadirlo desde el selector.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onRemove(i);
+                setConfirmDeleteExercise(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="grid grid-cols-5 gap-2">
         <div className="space-y-1">
