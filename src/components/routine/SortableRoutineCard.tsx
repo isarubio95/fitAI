@@ -62,7 +62,7 @@ export function SortableRoutineCard({
               <button
                 {...attributes}
                 {...listeners}
-                className="mt-0.5 cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground p-1 -ml-1"
+                className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground p-1 -ml-1"
               >
                 <GripVertical className="h-5 w-5" />
               </button>
