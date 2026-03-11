@@ -36,6 +36,26 @@ import { CSS } from '@dnd-kit/utilities';
 
 const DEFAULT_WIDGET_ORDER = ['heatmap', 'progress', 'weekly-chart', 'calendar', 'last-workout'];
 
+const CALENDAR_VIEW_STORAGE_KEY = "gym-log.dashboard.calendar-view";
+
+function loadCalendarView(): "month" | "week" {
+  try {
+    const raw = localStorage.getItem(CALENDAR_VIEW_STORAGE_KEY);
+    if (raw === "month" || raw === "week") return raw;
+    return "month";
+  } catch {
+    return "month";
+  }
+}
+
+function saveCalendarView(view: "month" | "week") {
+  try {
+    localStorage.setItem(CALENDAR_VIEW_STORAGE_KEY, view);
+  } catch {
+    // ignore
+  }
+}
+
 // Wrapper que imita el comportamiento de SortableRoutineCard
 function SortableWidget({ id, isDragMode, children }: { id: string, isDragMode: boolean, children: React.ReactNode }) {
   const {
@@ -83,9 +103,13 @@ function SortableWidget({ id, isDragMode, children }: { id: string, isDragMode: 
 const Dashboard = () => {
   const { openNew, openEdit } = useGlobalWorkoutDrawer();
 
-  const [calendarView, setCalendarView] = useState<"month" | "week">("month");
+  const [calendarView, setCalendarView] = useState<"month" | "week">(loadCalendarView);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+
+  useEffect(() => {
+    saveCalendarView(calendarView);
+  }, [calendarView]);
 
   const [isDragMode, setIsDragMode] = useState(false); // Estado para controlar el modo edición
 
