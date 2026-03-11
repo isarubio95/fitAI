@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import { useLastPerformance } from "@/hooks/useLastPerformance";
 import { useRestTimerContext } from "@/components/workout/RestTimerProvider";
 import { formatMSS } from "@/hooks/useRestTimer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Plus, Info, Timer } from "lucide-react";
+import { Trash2, Plus, Info, Timer, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
@@ -28,7 +27,7 @@ interface ExerciseCardProps {
   onRemoveSet: (setIndex: number) => void;
   onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number) => void;
   onAutoSaveSet?: (setIndex: number) => void;
-  onToggleCompleted?: (setIndex: number, completed: boolean) => void;
+  dragHandleProps?: Record<string, any>;
 }
 
 export function ExerciseCard({
