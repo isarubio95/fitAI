@@ -87,6 +87,9 @@ export function WorkoutLogger() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [creatingActive, setCreatingActive] = useState(false);
+  const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
+  const [showPostWorkout, setShowPostWorkout] = useState(false);
+  const calculateAndAwardXP = useCalculateAndAwardXP();
 
   const isEdit = !!effectiveWorkoutId;
   const isActiveWorkout = !!activeWorkoutId || (!!existingWorkout && !existingWorkout.fecha_fin);
