@@ -171,6 +171,8 @@ const Dashboard = () => {
 
   const renderWidget = (id: string) => {
     switch (id) {
+      case 'gamification':
+        return <GamificationWidget />;
       case 'heatmap':
         return <BodyHeatmap />;
       case 'progress':
