@@ -1,6 +1,23 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { formatMSS, parseMSS } from "@/hooks/useRestTimer";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -142,6 +159,21 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
     [supersetLink]
   );
 
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleRoutineDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setEjercicios((prev) => {
+      const oldIndex = Number(active.id);
+      const newIndex = Number(over.id);
+      return arrayMove(prev, oldIndex, newIndex).map((ej, i) => ({ ...ej, orden: i }));
+    });
+  };
+
   const removeExercise = (index: number) => {
     setEjercicios((prev) => prev.filter((_, i) => i !== index).map((ej, i) => ({ ...ej, orden: i })));
   };
@@ -262,60 +294,90 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
             </div>
           </div>
 
-          <div className="space-y-4">
-            {groups.map((group, gIdx) => {
-              const isSuperset = !!group.supersetId && group.items.length > 1;
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleRoutineDragEnd}>
+            <SortableContext items={ejercicios.map((_, i) => i)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-4">
+                {groups.map((group, gIdx) => {
+                  const isSuperset = !!group.supersetId && group.items.length > 1;
 
-              if (isSuperset) {
-                return (
-                  <div key={group.supersetId} className="relative rounded-xl border-2 border-primary/40 bg-primary/5">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />
-                     <div className="px-3 pt-2 pb-1">
-                      <span className="text-xs font-medium text-primary">🔗 Superserie</span>
-                    </div>
-                    <div className="divide-y divide-border">
-                      {group.items.map(({ exercise: ej, originalIndex: i }) => (
-                        <ExerciseRow
-                          key={i}
-                          exercise={ej}
-                          index={i}
-                          onUpdate={updateExercise}
-                          onRemove={removeExercise}
-                          onLinkSuperset={startSupersetLink}
-                          onBreakSuperset={breakSuperset}
-                          isInSuperset
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
+                  if (isSuperset) {
+                    return (
+                      <div key={group.supersetId} className="relative rounded-xl border-2 border-primary/40 bg-primary/5">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />
+                         <div className="px-3 pt-2 pb-1">
+                          <span className="text-xs font-medium text-primary">🔗 Superserie</span>
+                        </div>
+                        <div className="divide-y divide-border">
+                          {group.items.map(({ exercise: ej, originalIndex: i }) => (
+                            <SortableExerciseRow
+                              key={i}
+                              sortId={i}
+                              exercise={ej}
+                              index={i}
+                              onUpdate={updateExercise}
+                              onRemove={removeExercise}
+                              onLinkSuperset={startSupersetLink}
+                              onBreakSuperset={breakSuperset}
+                              isInSuperset
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
 
-              // Single exercise (possibly with a superset_id but alone — treat as normal)
-              const { exercise: ej, originalIndex: i } = group.items[0];
-              return (
-                <ExerciseRow
-                  key={i}
-                  exercise={ej}
-                  index={i}
-                  onUpdate={updateExercise}
-                  onRemove={removeExercise}
-                  onLinkSuperset={startSupersetLink}
-                  onBreakSuperset={breakSuperset}
-                  isInSuperset={false}
+                  const { exercise: ej, originalIndex: i } = group.items[0];
+                  return (
+                    <SortableExerciseRow
+                      key={i}
+                      sortId={i}
+                      exercise={ej}
+                      index={i}
+                      onUpdate={updateExercise}
+                      onRemove={removeExercise}
+                      onLinkSuperset={startSupersetLink}
+                      onBreakSuperset={breakSuperset}
+                      isInSuperset={false}
+                    />
+                  );
+                })}
+
+                <ExerciseSelector
+                  open={pickerOpen}
+                  onOpenChange={(o) => { setPickerOpen(o); if (!o) setSupersetLink(null); }}
+                  onSelect={addExercise}
                 />
-              );
-            })}
-
-            <ExerciseSelector
-              open={pickerOpen}
-              onOpenChange={(o) => { setPickerOpen(o); if (!o) setSupersetLink(null); }}
-              onSelect={addExercise}
-            />
-          </div>
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** Sortable wrapper for ExerciseRow */
+function SortableExerciseRow({ sortId, ...props }: {
+  sortId: number;
+  exercise: RoutineExerciseFormData;
+  index: number;
+  onUpdate: (index: number, field: keyof RoutineExerciseFormData, value: number) => void;
+  onRemove: (index: number) => void;
+  onLinkSuperset: (index: number) => void;
+  onBreakSuperset: (index: number) => void;
+  isInSuperset: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sortId });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <ExerciseRow {...props} dragHandleProps={listeners} />
+    </div>
   );
 }
 
@@ -328,6 +390,7 @@ function ExerciseRow({
   onLinkSuperset,
   onBreakSuperset,
   isInSuperset,
+  dragHandleProps,
 }: {
   exercise: RoutineExerciseFormData;
   index: number;
@@ -336,6 +399,7 @@ function ExerciseRow({
   onLinkSuperset: (index: number) => void;
   onBreakSuperset: (index: number) => void;
   isInSuperset: boolean;
+  dragHandleProps?: Record<string, any>;
 }) {
   const wrapperClass = isInSuperset
     ? "p-4 space-y-3"
@@ -345,7 +409,9 @@ function ExerciseRow({
     <div className={wrapperClass}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing">
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
           <h3 className="font-semibold text-sm">{ej.nombre}</h3>
         </div>
         <div className="flex items-center gap-0.5">

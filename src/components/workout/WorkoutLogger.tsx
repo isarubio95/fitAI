@@ -1,6 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkoutById } from "@/hooks/useWorkouts";
@@ -22,7 +37,7 @@ import {
 import { Loader2, Trash2, Timer } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
-import { ExerciseCard } from "./ExerciseCard";
+import { SortableExerciseCard } from "./SortableExerciseCard";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
 // Elapsed time display component
@@ -312,27 +327,22 @@ export function WorkoutLogger() {
     [exercises]
   );
 
-  const handleToggleCompleted = useCallback(
-    async (exerciseIndex: number, setIndex: number, completed: boolean) => {
-      setExercises((prev) =>
-        prev.map((ex, i) =>
-          i === exerciseIndex
-            ? { ...ex, sets: ex.sets.map((s, si) => (si === setIndex ? { ...s, completed } : s)) }
-            : ex
-        )
-      );
-      const set = exercises[exerciseIndex]?.sets[setIndex];
-      if (set?.id) {
-        try {
-          await supabase.from("serie").update({ completed }).eq("id", set.id);
-        } catch {
-          // Silent fail
-        }
-      }
-    },
-    [exercises]
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setExercises((prev) => {
+      const oldIndex = prev.findIndex((e) => (e.id || String(prev.indexOf(e))) === active.id);
+      const newIndex = prev.findIndex((e) => (e.id || String(prev.indexOf(e))) === over.id);
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  };
+
+  const getExerciseSortId = (ex: ExerciseFormData, index: number) => ex.id || String(index);
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["lastWorkout"] });
     queryClient.invalidateQueries({ queryKey: ["weeklyWorkouts"] });
@@ -573,27 +583,31 @@ export function WorkoutLogger() {
             )}
 
             {/* Exercises */}
-            <div className="space-y-4">
-              {exercises.map((ex, ei) => (
-                <ExerciseCard
-                  key={ex.id || ei}
-                  exercise={ex}
-                  exerciseIndex={ei}
-                  onRemoveExercise={() => removeExercise(ei)}
-                  onAddSet={() => addSet(ei)}
-                  onRemoveSet={(si) => removeSet(ei, si)}
-                  onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
-                  onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
-                  onToggleCompleted={(si, completed) => handleToggleCompleted(ei, si, completed)}
-                />
-              ))}
+            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={exercises.map((ex, i) => getExerciseSortId(ex, i))} strategy={verticalListSortingStrategy}>
+                <div className="space-y-4">
+                  {exercises.map((ex, ei) => (
+                    <SortableExerciseCard
+                      key={getExerciseSortId(ex, ei)}
+                      id={getExerciseSortId(ex, ei)}
+                      exercise={ex}
+                      exerciseIndex={ei}
+                      onRemoveExercise={() => removeExercise(ei)}
+                      onAddSet={() => addSet(ei)}
+                      onRemoveSet={(si) => removeSet(ei, si)}
+                      onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
+                      onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
 
               <ExerciseSelector
                 open={exercisePickerOpen}
                 onOpenChange={setExercisePickerOpen}
                 onSelect={addExercise}
               />
-            </div>
           </div>
         </SheetContent>
       </Sheet>
