@@ -159,6 +159,21 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
     [supersetLink]
   );
 
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleRoutineDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setEjercicios((prev) => {
+      const oldIndex = Number(active.id);
+      const newIndex = Number(over.id);
+      return arrayMove(prev, oldIndex, newIndex).map((ej, i) => ({ ...ej, orden: i }));
+    });
+  };
+
   const removeExercise = (index: number) => {
     setEjercicios((prev) => prev.filter((_, i) => i !== index).map((ej, i) => ({ ...ej, orden: i })));
   };
