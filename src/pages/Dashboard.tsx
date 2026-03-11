@@ -35,7 +35,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const DEFAULT_WIDGET_ORDER = ['heatmap', 'progress', 'weekly-chart', 'calendar', 'last-workout'];
+const DEFAULT_WIDGET_ORDER = ['gamification', 'heatmap', 'progress', 'weekly-chart', 'calendar', 'last-workout'];
 
 const CALENDAR_VIEW_STORAGE_KEY = "gym-log.dashboard.calendar-view";
 
