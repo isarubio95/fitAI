@@ -370,7 +370,7 @@ function SortableExerciseRow({ sortId, ...props }: {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sortId });
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    transition: 'none',
+    transition: isDragging ? 'none' : 'transform 150ms ease',
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
