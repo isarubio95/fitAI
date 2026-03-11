@@ -12,6 +12,7 @@ import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
 import { WeekDayDetail } from "@/components/dashboard/WeekDayDetail";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
+import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
 import { format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 
