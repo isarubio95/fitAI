@@ -38,6 +38,8 @@ import { Loader2, Trash2, Timer } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import { SortableExerciseCard } from "./SortableExerciseCard";
+import { PostWorkoutModal } from "./PostWorkoutModal";
+import { useCalculateAndAwardXP, type XPBreakdown } from "@/hooks/useGamification";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
 // Elapsed time display component
