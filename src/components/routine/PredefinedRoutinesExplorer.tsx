@@ -185,7 +185,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Grupo muscular</p>
             <ScrollArea className="w-full">
-              <div className="flex gap-2 pb-1">
+              <div className="flex gap-2 py-1">
                 {GRUPOS.map((g) => (
                   <button
                     key={g}
