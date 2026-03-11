@@ -99,74 +99,45 @@ export function ExerciseCard({
       )}
 
       {/* Sets header */}
-      <div className="grid grid-cols-[2rem_2rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1">
+      <div className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1">
         <span>#</span>
-        <span>✓</span>
         <span>Reps</span>
         <span>Peso (kg)</span>
         <span />
       </div>
 
-      {exercise.sets.map((s, si) => {
-        const timerKey = `${exerciseIndex}-${si}`;
-        const isActive = timer.activeKey === timerKey;
-
-        return (
-          <div key={si} className="grid grid-cols-[2rem_2rem_1fr_1fr_2rem] gap-2 items-center">
-            <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
-
-            {/* Completed checkbox */}
-            <div className="flex items-center justify-start">
-              <Checkbox
-                checked={s.completed || false}
-                onCheckedChange={(checked) => {
-                  const isCompleted = checked === true;
-                  onToggleCompleted?.(si, isCompleted);
-                  if (isCompleted) {
-                    timer.start(timerKey, restSeconds);
-                  } else if (isActive) {
-                    timer.stop();
-                  }
-                }}
-                className={cn(
-                  "h-5 w-5 rounded-full border-2 transition-colors",
-                  s.completed
-                    ? "border-green-500 bg-green-500 text-white data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 data-[state=checked]:text-white"
-                    : "border-muted-foreground/40"
-                )}
-              />
-            </div>
-
-            <Input
-              type="number"
-              min={0}
-              value={s.repeticiones || ""}
-              onChange={(e) => onUpdateSet(si, "repeticiones", Number(e.target.value))}
-              onBlur={() => onAutoSaveSet?.(si)}
-              className="h-11"
-              placeholder={exercise.repRange || "0"}
-            />
-            <Input
-              type="number"
-              min={0}
-              step={0.5}
-              value={s.peso_kg || ""}
-              onChange={(e) => onUpdateSet(si, "peso_kg", Number(e.target.value))}
-              onBlur={() => onAutoSaveSet?.(si)}
-              className="h-11"
-              placeholder="0"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-              onClick={() => setConfirmDeleteSet(si)}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        );
-      })}
+      {exercise.sets.map((s, si) => (
+        <div key={si} className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 items-center">
+          <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
+          <Input
+            type="number"
+            min={0}
+            value={s.repeticiones || ""}
+            onChange={(e) => onUpdateSet(si, "repeticiones", Number(e.target.value))}
+            onBlur={() => onAutoSaveSet?.(si)}
+            className="h-11"
+            placeholder={exercise.repRange || "0"}
+          />
+          <Input
+            type="number"
+            min={0}
+            step={0.5}
+            value={s.peso_kg || ""}
+            onChange={(e) => onUpdateSet(si, "peso_kg", Number(e.target.value))}
+            onBlur={() => onAutoSaveSet?.(si)}
+            className="h-11"
+            placeholder="0"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            onClick={() => setConfirmDeleteSet(si)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ))}
 
       <Button
         variant="outline"
