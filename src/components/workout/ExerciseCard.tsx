@@ -52,6 +52,9 @@ export function ExerciseCard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
+          <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing">
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
           <h3 className="font-semibold">{exercise.nombre}</h3>
           {exercise.targetRir != null && (
             <Badge variant="secondary" className="text-xs gap-1">
