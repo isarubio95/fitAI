@@ -1,10 +1,30 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMuscleVolume, type TimePeriod } from "@/hooks/useMuscleVolume";
 import { MuscleDetailSheet } from "./MuscleDetailSheet";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
+
+const HEATMAP_PERIOD_STORAGE_KEY = "gym-log.dashboard.heatmap-period";
+
+function loadHeatmapPeriod(): TimePeriod {
+  try {
+    const raw = localStorage.getItem(HEATMAP_PERIOD_STORAGE_KEY);
+    if (raw === "week" || raw === "month") return raw;
+    return "month";
+  } catch {
+    return "month";
+  }
+}
+
+function saveHeatmapPeriod(period: TimePeriod) {
+  try {
+    localStorage.setItem(HEATMAP_PERIOD_STORAGE_KEY, period);
+  } catch {
+    // ignore
+  }
+}
 
 /** Heat color based on set count – cyber palette */
 function getHeatColor(sets: number): string {
@@ -80,11 +100,15 @@ interface TooltipState {
 }
 
 export function BodyHeatmap() {
-  const [period, setPeriod] = useState<TimePeriod>("week");
+  const [period, setPeriod] = useState<TimePeriod>(loadHeatmapPeriod);
   const [selectedGroup, setSelectedGroup] = useState<MainMuscleGroup | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, x: 0, y: 0, group: "", sets: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const { data, isLoading } = useMuscleVolume(period);
+
+  useEffect(() => {
+    saveHeatmapPeriod(period);
+  }, [period]);
 
   const groupVolume = data?.groupVolume ?? {};
   const specificVolume = data?.specificVolume ?? {};
@@ -158,8 +182,8 @@ export function BodyHeatmap() {
             <CardTitle className="text-base font-bold">Mapa Muscular</CardTitle>
             <Tabs value={period} onValueChange={(v) => setPeriod(v as TimePeriod)}>
               <TabsList className="h-9 rounded-full bg-muted/60 p-1">
-                <TabsTrigger value="week" className="rounded-full px-4 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">Semana</TabsTrigger>
                 <TabsTrigger value="month" className="rounded-full px-4 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">Mes</TabsTrigger>
+                <TabsTrigger value="week" className="rounded-full px-4 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">Semana</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
