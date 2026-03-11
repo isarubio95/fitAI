@@ -367,10 +367,11 @@ function SortableExerciseRow({ sortId, ...props }: {
   onBreakSuperset: (index: number) => void;
   isInSuperset: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sortId });
+  const { attributes, listeners, setNodeRef, transform, isDragging, isSorting } = useSortable({ id: sortId });
+  const shouldAnimate = isSorting && !isDragging;
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    transition: isDragging ? 'none' : 'transform 150ms ease',
+    transition: shouldAnimate ? 'transform 150ms ease' : 'none',
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
