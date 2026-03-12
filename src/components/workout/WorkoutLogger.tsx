@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SortableExerciseCard } from "./SortableExerciseCard";
 import { PostWorkoutModal } from "./PostWorkoutModal";
 import { useCalculateAndAwardXP, useRemoveWorkoutXP, type XPBreakdown } from "@/hooks/useGamification";
+import { checkAndAwardLogros } from "@/hooks/useLogros";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
 // Elapsed time display component
@@ -462,6 +463,9 @@ export function WorkoutLogger() {
             const breakdown = await calculateAndAwardXP(effectiveWorkoutId, completedSets);
             setPostWorkoutData(breakdown);
             setShowPostWorkout(true);
+            checkAndAwardLogros(user!.id).then(() => {
+              queryClient.invalidateQueries({ queryKey: ["logros"] });
+            }).catch(() => {});
           } catch {
             // XP failed silently, still close
           }
@@ -489,6 +493,9 @@ export function WorkoutLogger() {
           const breakdown = await calculateAndAwardXP("manual", completedSets);
           setPostWorkoutData(breakdown);
           setShowPostWorkout(true);
+          checkAndAwardLogros(user!.id).then(() => {
+            queryClient.invalidateQueries({ queryKey: ["logros"] });
+          }).catch(() => {});
         } catch {
           // silent
         }

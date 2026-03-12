@@ -93,6 +93,28 @@ function isLogroUnlocked(logro: LogroRow, stats: LogroStats): boolean {
   return false;
 }
 
+/**
+ * Comprueba si el usuario cumple los requisitos de cada logro y registra en usuario_logro
+ * los que estén desbloqueados (sin duplicar). Llamar al finalizar un entrenamiento.
+ */
+export async function checkAndAwardLogros(userId: string): Promise<void> {
+  const [logrosRes, stats] = await Promise.all([
+    supabase.from("logro" as any).select("*").order("meta", { ascending: true }),
+    fetchLogroStats(userId),
+  ]);
+
+  if (logrosRes.error) throw logrosRes.error;
+  const logros = (logrosRes.data ?? []) as unknown as LogroRow[];
+  const toInsert = logros.filter((l) => isLogroUnlocked(l, stats)).map((l) => ({ usuario_id: userId, logro_id: l.id }));
+
+  if (toInsert.length === 0) return;
+
+  await supabase.from("usuario_logro" as any).upsert(toInsert, {
+    onConflict: "usuario_id,logro_id",
+    ignoreDuplicates: true,
+  });
+}
+
 export function useLogros() {
   const { user } = useAuth();
 
@@ -100,17 +122,21 @@ export function useLogros() {
     queryKey: ["logros", user?.id],
     enabled: !!user,
     queryFn: async (): Promise<LogroConEstado[]> => {
-      const [logrosRes, stats] = await Promise.all([
+      const [logrosRes, unlockedRes] = await Promise.all([
         supabase.from("logro" as any).select("*").order("meta", { ascending: true }),
-        fetchLogroStats(user!.id),
+        supabase.from("usuario_logro" as any).select("logro_id").eq("usuario_id", user!.id),
       ]);
 
       if (logrosRes.error) throw logrosRes.error;
-      const logros = (logrosRes.data ?? []) as LogroRow[];
+      if (unlockedRes.error) throw unlockedRes.error;
+
+      const logros = (logrosRes.data ?? []) as unknown as LogroRow[];
+      const unlockedRows = (unlockedRes.data ?? []) as unknown as { logro_id: string }[];
+      const unlockedIds = new Set(unlockedRows.map((r) => r.logro_id));
 
       return logros.map((l) => ({
         ...l,
-        unlocked: isLogroUnlocked(l, stats),
+        unlocked: unlockedIds.has(l.id),
       }));
     },
   });
