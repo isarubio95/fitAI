@@ -79,7 +79,7 @@ export function useCalculateAndAwardXP() {
   const queryClient = useQueryClient();
 
   const calculateAndAwardXP = useCallback(
-    async (actividadId: string, seriesCompletadas: number): Promise<XPBreakdown> => {
+    async (actividadId: string, seriesCompletadas: number, fechaEntrenamiento?: string): Promise<XPBreakdown> => {
       if (!user) throw new Error("No user");
 
       // 1. Obtener perfil actual (tabla "perfil" no está en tipos generados de Supabase)
@@ -98,15 +98,15 @@ export function useCalculateAndAwardXP() {
       const baseXP = 100;
       const volumeXP = seriesCompletadas * 5;
 
-      // 3. Lógica de Rachas (Streaks)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // 3. Lógica de Rachas (Streaks) — usamos la fecha del entrenamiento, no "hoy"
+      const workoutDay = fechaEntrenamiento ? new Date(fechaEntrenamiento + "T12:00:00.000Z") : new Date();
+      workoutDay.setUTCHours(0, 0, 0, 0);
       const lastDate = p.ultima_actividad_fecha ? new Date(p.ultima_actividad_fecha) : null;
       let newStreak = p.racha_actual ?? 0;
 
       if (lastDate) {
-        lastDate.setHours(0, 0, 0, 0);
-        const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        lastDate.setUTCHours(0, 0, 0, 0);
+        const diffDays = Math.floor((workoutDay.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
         if (diffDays === 1) {
           newStreak += 1; // Entrenó días consecutivos
         } else if (diffDays > 1) {
@@ -129,6 +129,11 @@ export function useCalculateAndAwardXP() {
 
       const newMaxStreak = Math.max(newStreak, p.racha_maxima ?? 0);
 
+      // ultima_actividad_fecha = fecha del entrenamiento (no "ahora") para que la racha use el día registrado
+      const ultimaFechaISO = fechaEntrenamiento
+        ? new Date(fechaEntrenamiento + "T23:59:59.999Z").toISOString()
+        : new Date().toISOString();
+
       // 4. Actualizar la base de datos
       const { error: uErr } = await supabase
         .from("perfil" as any)
@@ -137,7 +142,7 @@ export function useCalculateAndAwardXP() {
           nivel: newLevel,
           racha_actual: newStreak,
           racha_maxima: newMaxStreak,
-          ultima_actividad_fecha: new Date().toISOString(),
+          ultima_actividad_fecha: ultimaFechaISO,
         })
         .eq("id", user.id);
         
@@ -186,34 +191,49 @@ export function useRemoveWorkoutXP() {
     async (actividadId: string, seriesCompletadas: number) => {
       if (!user) throw new Error("No user");
 
-      // 1. Obtener la actividad que se borra para saber su fecha de finalización
+      // 1. Obtener la actividad que se borra: usamos "fecha" (día del entreno), igual que al otorgar XP
       const { data: deletedAct, error: actErr } = await supabase
         .from("actividad")
-        .select("fecha_fin")
+        .select("fecha, fecha_fin")
         .eq("id", actividadId)
         .maybeSingle();
-      if (actErr || !deletedAct?.fecha_fin) {
-        // Sin fecha_fin no había bonus de racha; restamos solo base + volumen
-      }
+      if (actErr) throw actErr;
 
-      const completedDay = deletedAct?.fecha_fin ? (deletedAct.fecha_fin as string).slice(0, 10) : null;
+      const completedDay = deletedAct?.fecha
+        ? (deletedAct.fecha as string).slice(0, 10)
+        : deletedAct?.fecha_fin
+          ? (deletedAct.fecha_fin as string).slice(0, 10)
+          : null;
 
-      // 2. Días con entrenamiento completado (incluyendo el que vamos a borrar) para calcular racha
+      // 2. Todas las actividades completadas; usamos "fecha" (día del entreno) para coincidir con el cálculo al otorgar
       const { data: actividades, error: listErr } = await supabase
         .from("actividad")
-        .select("fecha_fin")
+        .select("id, fecha, fecha_fin")
         .eq("usuario_id", user.id)
         .not("fecha_fin", "is", null);
       if (listErr) throw listErr;
 
-      const workoutDays = new Set<string>(
-        (actividades ?? []).map((a) => (a.fecha_fin as string).slice(0, 10))
-      );
-
+      const allActs = actividades ?? [];
+      const workoutDays = new Set<string>(allActs.map((a) => ((a.fecha as string) || (a.fecha_fin as string)).slice(0, 10)));
       const streak = completedDay ? streakOnDay(completedDay, workoutDays) : 0;
       const streakBonusToRemove = Math.max(0, (streak - 1) * 20);
 
-      // 3. Obtener perfil actual
+      // 3. Días que quedarán después de borrar (para recalcular racha_actual y racha_maxima)
+      const allRemaining = allActs.filter((a) => a.id !== actividadId);
+      const remainingDaysSet = new Set<string>(
+        allRemaining.map((a) => ((a.fecha as string) || (a.fecha_fin as string)).slice(0, 10))
+      );
+
+      let nuevaRachaActual = 0;
+      let nuevaRachaMaxima = 0;
+      if (remainingDaysSet.size > 0) {
+        const sortedDays = Array.from(remainingDaysSet).sort().reverse();
+        const ultimoDia = sortedDays[0];
+        nuevaRachaActual = streakOnDay(ultimoDia, remainingDaysSet);
+        nuevaRachaMaxima = Math.max(0, ...sortedDays.map((d) => streakOnDay(d, remainingDaysSet)));
+      }
+
+      // 4. Obtener perfil actual
       const { data: profile, error: pErr } = await supabase
         .from("perfil" as any)
         .select("*")
@@ -231,25 +251,29 @@ export function useRemoveWorkoutXP() {
       const newXP = Math.max(0, previousXP - totalToRemove);
       const newLevel = calculateLevel(newXP);
 
-      // 4. Última actividad restante para restaurar ultima_actividad_fecha
+      // 5. Última actividad restante por fecha de entreno para ultima_actividad_fecha
       const { data: lastAct } = await supabase
         .from("actividad")
-        .select("fecha_fin")
+        .select("fecha")
         .eq("usuario_id", user.id)
         .neq("id", actividadId)
         .not("fecha_fin", "is", null)
-        .order("fecha_fin", { ascending: false })
+        .order("fecha", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      const nuevaUltimaFecha = lastAct?.fecha_fin || null;
+      const nuevaUltimaFecha = lastAct?.fecha
+        ? new Date((lastAct.fecha as string).slice(0, 10) + "T23:59:59.999Z").toISOString()
+        : null;
 
-      // 5. Actualizar la base de datos
+      // 6. Actualizar la base de datos (incl. racha_actual y racha_maxima recalculadas)
       const { error: uErr } = await supabase
         .from("perfil" as any)
         .update({
           xp_total: newXP,
           nivel: newLevel,
+          racha_actual: nuevaRachaActual,
+          racha_maxima: nuevaRachaMaxima,
           ultima_actividad_fecha: nuevaUltimaFecha,
         })
         .eq("id", user.id);

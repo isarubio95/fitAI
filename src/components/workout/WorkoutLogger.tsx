@@ -460,7 +460,7 @@ export function WorkoutLogger() {
             0
           );
           try {
-            const breakdown = await calculateAndAwardXP(effectiveWorkoutId, completedSets);
+            const breakdown = await calculateAndAwardXP(effectiveWorkoutId, completedSets, fecha);
             setPostWorkoutData(breakdown);
             setShowPostWorkout(true);
             checkAndAwardLogros(user!.id).then(() => {
@@ -490,7 +490,7 @@ export function WorkoutLogger() {
         // Also award XP for manual workouts
         const completedSets = ejerciciosLimpios.reduce((acc, ex) => acc + ex.sets.length, 0);
         try {
-          const breakdown = await calculateAndAwardXP("manual", completedSets);
+          const breakdown = await calculateAndAwardXP("manual", completedSets, fecha);
           setPostWorkoutData(breakdown);
           setShowPostWorkout(true);
           checkAndAwardLogros(user!.id).then(() => {
