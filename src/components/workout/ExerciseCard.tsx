@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Plus, Info, Timer, GripVertical, Check, Circle } from "lucide-react";
+import { Trash2, Plus, Info, Timer, GripVertical, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
@@ -121,7 +121,7 @@ export function ExerciseCard({
                 onClick={() => onSetCompleted(si, !s.completed)}
                 title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
               >
-                {s.completed ? <Check className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                {s.completed ? <Check className="h-4 w-4" /> : null}
               </Button>
             ) : (
               <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
