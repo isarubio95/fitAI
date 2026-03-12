@@ -103,7 +103,7 @@ export function ExerciseCard({
       {/* Sets header: # | Hecho | Reps | Peso | delete */}
       <div className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1 items-center">
         <span>#</span>
-        <span className="mr-2 flex justify-center">Hecho</span>
+        <span className="mr-4 flex justify-center">Hecho</span>
         <span>Reps</span>
         <span>Peso (kg)</span>
         <span />
@@ -112,7 +112,7 @@ export function ExerciseCard({
       {exercise.sets.map((s, si) => (
         <div key={si} className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 items-center">
           <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
-          <div className="flex items-center justify-center justify-self-center">
+          <div className="flex items-center justify-center justify-self-center mr-4">
             {onSetCompleted ? (
               <Button
                 variant={s.completed ? "default" : "outline"}
