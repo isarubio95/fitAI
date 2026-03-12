@@ -39,7 +39,7 @@ import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import { SortableExerciseCard } from "./SortableExerciseCard";
 import { PostWorkoutModal } from "./PostWorkoutModal";
-import { useCalculateAndAwardXP, type XPBreakdown } from "@/hooks/useGamification";
+import { useCalculateAndAwardXP, useRemoveWorkoutXP, type XPBreakdown } from "@/hooks/useGamification";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
 // Elapsed time display component
@@ -90,6 +90,7 @@ export function WorkoutLogger() {
   const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
   const [showPostWorkout, setShowPostWorkout] = useState(false);
   const calculateAndAwardXP = useCalculateAndAwardXP();
+  const removeXP = useRemoveWorkoutXP();
 
   const isEdit = !!effectiveWorkoutId;
   const isActiveWorkout = !!activeWorkoutId || (!!existingWorkout && !existingWorkout.fecha_fin);
@@ -368,8 +369,21 @@ export function WorkoutLogger() {
         .from("ejercicio")
         .select("id")
         .eq("actividad_id", targetId);
-      if (oldEjercicios?.length) {
-        const oldIds = oldEjercicios.map((e) => e.id);
+      const oldIds = oldEjercicios?.length ? oldEjercicios.map((e) => e.id) : [];
+      // Restar XP antes de borrar (mismo criterio que al guardar: series con repes o peso > 0)
+      if (oldIds.length) {
+        const { data: series } = await supabase
+          .from("serie")
+          .select("id, repeticiones, peso_kg")
+          .in("ejercicio_id", oldIds);
+        const seriesCompletadas = (series ?? []).filter(
+          (s) => Number(s.repeticiones) > 0 || Number(s.peso_kg) > 0
+        ).length;
+        if (seriesCompletadas > 0) {
+          await removeXP(targetId, seriesCompletadas);
+        }
+      }
+      if (oldIds.length) {
         await supabase.from("serie").delete().in("ejercicio_id", oldIds);
         await supabase.from("ejercicio").delete().eq("actividad_id", targetId);
       }
