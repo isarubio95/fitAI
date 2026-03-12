@@ -53,7 +53,11 @@ export function ProfileDrawer() {
           </Avatar>
         </button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-full max-w-full sm:max-w-full flex flex-col">
+      <SheetContent
+        side="left"
+        className="w-full max-w-full sm:max-w-full flex flex-col"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <SheetHeader className="text-left">
           <SheetTitle className="text-lg">Mi cuenta</SheetTitle>
         </SheetHeader>
