@@ -39,6 +39,7 @@ import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import { SortableExerciseCard } from "./SortableExerciseCard";
 import { PostWorkoutModal } from "./PostWorkoutModal";
+import { useRestTimerContext } from "./RestTimerProvider";
 import { useCalculateAndAwardXP, useRemoveWorkoutXP, type XPBreakdown } from "@/hooks/useGamification";
 import { checkAndAwardLogros } from "@/hooks/useLogros";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
@@ -92,6 +93,7 @@ export function WorkoutLogger() {
   const [showPostWorkout, setShowPostWorkout] = useState(false);
   const calculateAndAwardXP = useCalculateAndAwardXP();
   const removeXP = useRemoveWorkoutXP();
+  const restTimer = useRestTimerContext();
 
   const isEdit = !!effectiveWorkoutId;
   const isActiveWorkout = !!activeWorkoutId || (!!existingWorkout && !existingWorkout.fecha_fin);
@@ -332,6 +334,36 @@ export function WorkoutLogger() {
       }
     },
     [exercises]
+  );
+
+  const handleSetCompleted = useCallback(
+    async (exerciseIndex: number, setIndex: number, completed: boolean) => {
+      const ex = exercises[exerciseIndex];
+      const set = ex?.sets[setIndex];
+      if (!ex) return;
+
+      setExercises((prev) =>
+        prev.map((e, i) =>
+          i === exerciseIndex
+            ? { ...e, sets: e.sets.map((s, si) => (si === setIndex ? { ...s, completed } : s)) }
+            : e
+        )
+      );
+
+      if (set?.id && effectiveWorkoutId) {
+        try {
+          await supabase.from("serie").update({ completed }).eq("id", set.id);
+        } catch {
+          // Silent fail
+        }
+      }
+
+      if (completed) {
+        const restSeconds = ex.descanso ?? 120;
+        restTimer.start(`${exerciseIndex}-${setIndex}`, restSeconds);
+      }
+    },
+    [exercises, effectiveWorkoutId, restTimer]
   );
 
   const dndSensors = useSensors(
@@ -648,6 +680,7 @@ export function WorkoutLogger() {
                       onRemoveSet={(si) => removeSet(ei, si)}
                       onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
                       onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
+                      onSetCompleted={isActiveWorkout ? (si, completed) => handleSetCompleted(ei, si, completed) : undefined}
                     />
                   ))}
                 </div>
