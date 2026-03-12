@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useProfileStats, xpProgress } from "@/hooks/useGamification";
+import { useLogros } from "@/hooks/useLogros";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -14,13 +15,6 @@ import {
 } from "@/components/ui/select";
 import { LogOut, Mail, SunMoon, Shield, Flame, Zap, Trophy, Swords, Target, Award } from "lucide-react";
 
-const MOCK_ACHIEVEMENTS = [
-  { id: "first-blood", nombre: "Primera Sangre", descripcion: "Termina tu primer entrenamiento", icono: "Swords", xp: 50, unlocked: false },
-  { id: "warrior", nombre: "Guerrero", descripcion: "Completa 10 entrenamientos", icono: "Shield", xp: 200, unlocked: false },
-  { id: "fire-streak", nombre: "En Llamas", descripcion: "Racha de 7 días", icono: "Flame", xp: 300, unlocked: false },
-  { id: "sharpshooter", nombre: "Francotirador", descripcion: "Completa 50 series en un día", icono: "Target", xp: 150, unlocked: false },
-];
-
 const iconMap: Record<string, React.ElementType> = {
   Swords, Shield, Flame, Target, Trophy, Award,
 };
@@ -29,6 +23,7 @@ export function ProfileDrawer() {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const { data: stats } = useProfileStats();
+  const { data: logros = [], isLoading: loadingLogros } = useLogros();
   const [open, setOpen] = useState(false);
 
   const initials = user?.email
@@ -116,28 +111,38 @@ export function ProfileDrawer() {
             <p className="text-sm font-medium flex items-center gap-2">
               <Trophy className="h-4 w-4 text-muted-foreground" /> Logros
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              {MOCK_ACHIEVEMENTS.map((a) => {
-                const Icon = iconMap[a.icono] || Trophy;
-                return (
-                  <div
-                    key={a.id}
-                    className={`flex flex-col items-center text-center gap-2 p-3 rounded-lg border transition-opacity ${
-                      a.unlocked ? "" : "opacity-50 grayscale"
-                    }`}
-                  >
-                    <div className={`p-2 rounded-full ${a.unlocked ? "bg-primary/10" : "bg-muted"}`}>
-                      <Icon className={`h-6 w-6 ${a.unlocked ? "text-primary" : "text-muted-foreground"}`} />
+            {loadingLogros ? (
+              <div className="grid grid-cols-2 gap-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-24 rounded-lg border bg-muted/50 animate-pulse" />
+                ))}
+              </div>
+            ) : logros.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No hay logros definidos.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {logros.map((a) => {
+                  const Icon = iconMap[a.icono] || Trophy;
+                  return (
+                    <div
+                      key={a.id}
+                      className={`flex flex-col items-center text-center gap-2 p-3 rounded-lg border transition-opacity ${
+                        a.unlocked ? "" : "opacity-50 grayscale"
+                      }`}
+                    >
+                      <div className={`p-2 rounded-full ${a.unlocked ? "bg-primary/10" : "bg-muted"}`}>
+                        <Icon className={`h-6 w-6 ${a.unlocked ? "text-primary" : "text-muted-foreground"}`} />
+                      </div>
+                      <p className="text-xs font-semibold leading-tight">{a.nombre}</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight">{a.descripcion}</p>
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                        <Zap className="h-2.5 w-2.5" /> {a.xp_recompensa} XP
+                      </span>
                     </div>
-                    <p className="text-xs font-semibold leading-tight">{a.nombre}</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight">{a.descripcion}</p>
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                      <Zap className="h-2.5 w-2.5" /> {a.xp} XP
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Apariencia (penúltimo) */}
