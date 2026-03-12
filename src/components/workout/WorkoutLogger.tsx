@@ -393,7 +393,7 @@ export function WorkoutLogger() {
       toast({ title: "Entrenamiento eliminado correctamente" });
       invalidateAll();
       close();
-      navigate("/history");
+      navigate("/");
     } catch (error: any) {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
     } finally {
