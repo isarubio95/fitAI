@@ -9,7 +9,7 @@ import {
   AlertDialogFooter,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Zap, Dumbbell, ArrowUp, CheckCircle2 } from "lucide-react";
+import { Zap, Dumbbell, ArrowUp, CheckCircle2, Flame } from "lucide-react";
 import type { XPBreakdown } from "@/hooks/useGamification";
 
 interface PostWorkoutModalProps {
@@ -64,8 +64,17 @@ export function PostWorkoutModal({ open, onClose, breakdown }: PostWorkoutModalP
               <Dumbbell className="h-4 w-4 text-primary" />
               Volumen
             </span>
-            <span className="font-semibold">+{breakdown.volume} XP</span>
+            <span className="font-semibold">+{breakdown.series} XP</span>
           </div>
+          {breakdown.streakBonus > 0 && (
+            <div className="flex items-center justify-between text-sm px-2">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Flame className="h-4 w-4 text-orange-500" />
+                Racha (+{breakdown.newStreak} días)
+              </span>
+              <span className="font-semibold text-orange-500">+{breakdown.streakBonus} XP</span>
+            </div>
+          )}
           <div className="border-t pt-3 flex items-center justify-between px-2">
             <span className="flex items-center gap-2 font-bold">
               <Zap className="h-5 w-5 text-amber-500" />

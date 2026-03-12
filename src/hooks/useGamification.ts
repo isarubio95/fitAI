@@ -14,6 +14,7 @@ export interface ProfileStats {
 export interface XPBreakdown {
   base: number;
   series: number;
+  streakBonus: number;
   total: number;
   leveledUp: boolean;
   newLevel: number;
@@ -96,13 +97,6 @@ export function useCalculateAndAwardXP() {
       // 2. Calcular nuevas métricas (XP y Nivel)
       const baseXP = 100;
       const volumeXP = seriesCompletadas * 5;
-      const totalXP = baseXP + volumeXP;
-
-      const previousXP = p.xp_total ?? 0;
-      const newXP = previousXP + totalXP;
-      const previousLevel = calculateLevel(previousXP);
-      const newLevel = calculateLevel(newXP);
-      const leveledUp = newLevel > previousLevel;
 
       // 3. Lógica de Rachas (Streaks)
       const today = new Date();
@@ -122,6 +116,16 @@ export function useCalculateAndAwardXP() {
       } else {
         newStreak = 1; // Primer entreno
       }
+
+      // Bonus por racha: 20 XP por cada día de racha a partir del 2º (2 días → 20, 3 → 40, 4 → 60…)
+      const streakBonusXP = Math.max(0, (newStreak - 1) * 20);
+      const totalXP = baseXP + volumeXP + streakBonusXP;
+
+      const previousXP = p.xp_total ?? 0;
+      const newXP = previousXP + totalXP;
+      const previousLevel = calculateLevel(previousXP);
+      const newLevel = calculateLevel(newXP);
+      const leveledUp = newLevel > previousLevel;
 
       const newMaxStreak = Math.max(newStreak, p.racha_maxima ?? 0);
 
@@ -145,6 +149,7 @@ export function useCalculateAndAwardXP() {
       return {
         base: baseXP,
         series: volumeXP,
+        streakBonus: streakBonusXP,
         total: totalXP,
         leveledUp,
         newLevel,
@@ -158,7 +163,21 @@ export function useCalculateAndAwardXP() {
   return calculateAndAwardXP;
 }
 
-// NUEVO HOOK: Función para restar XP cuando se borra un entrenamiento
+/** Dado un día (YYYY-MM-DD) y un set de días con entrenamiento, devuelve la racha ese día (días consecutivos hacia atrás). */
+function streakOnDay(dayStr: string, workoutDays: Set<string>): number {
+  if (!workoutDays.has(dayStr)) return 0;
+  let count = 1;
+  const d = new Date(dayStr + "T12:00:00Z");
+  for (;;) {
+    d.setUTCDate(d.getUTCDate() - 1);
+    const prev = d.toISOString().slice(0, 10);
+    if (!workoutDays.has(prev)) break;
+    count++;
+  }
+  return count;
+}
+
+// Función para restar XP cuando se borra un entrenamiento (incluye bonus por racha)
 export function useRemoveWorkoutXP() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -167,33 +186,57 @@ export function useRemoveWorkoutXP() {
     async (actividadId: string, seriesCompletadas: number) => {
       if (!user) throw new Error("No user");
 
-      // 1. Obtener perfil actual (tabla "perfil" no está en tipos generados de Supabase)
+      // 1. Obtener la actividad que se borra para saber su fecha de finalización
+      const { data: deletedAct, error: actErr } = await supabase
+        .from("actividad")
+        .select("fecha_fin")
+        .eq("id", actividadId)
+        .maybeSingle();
+      if (actErr || !deletedAct?.fecha_fin) {
+        // Sin fecha_fin no había bonus de racha; restamos solo base + volumen
+      }
+
+      const completedDay = deletedAct?.fecha_fin ? (deletedAct.fecha_fin as string).slice(0, 10) : null;
+
+      // 2. Días con entrenamiento completado (incluyendo el que vamos a borrar) para calcular racha
+      const { data: actividades, error: listErr } = await supabase
+        .from("actividad")
+        .select("fecha_fin")
+        .eq("usuario_id", user.id)
+        .not("fecha_fin", "is", null);
+      if (listErr) throw listErr;
+
+      const workoutDays = new Set<string>(
+        (actividades ?? []).map((a) => (a.fecha_fin as string).slice(0, 10))
+      );
+
+      const streak = completedDay ? streakOnDay(completedDay, workoutDays) : 0;
+      const streakBonusToRemove = Math.max(0, (streak - 1) * 20);
+
+      // 3. Obtener perfil actual
       const { data: profile, error: pErr } = await supabase
         .from("perfil" as any)
         .select("*")
         .eq("id", user.id)
         .maybeSingle();
-        
       if (pErr) throw pErr;
-      if (!profile) return; // Si no hay perfil, no hay nada que restar
+      if (!profile) return;
 
       const prof = profile as { xp_total?: number };
-      // 2. Calcular los puntos a restar
       const baseXP = 100;
       const volumeXP = seriesCompletadas * 5;
-      const totalToRemove = baseXP + volumeXP;
+      const totalToRemove = baseXP + volumeXP + streakBonusToRemove;
 
       const previousXP = prof.xp_total ?? 0;
-      const newXP = Math.max(0, previousXP - totalToRemove); // GREATEST: Evitar XP negativa
+      const newXP = Math.max(0, previousXP - totalToRemove);
       const newLevel = calculateLevel(newXP);
 
-      // 3. Buscar cuál fue la última actividad ANTES de la que estamos borrando
-      // para restaurar la "ultima_actividad_fecha" correctamente
+      // 4. Última actividad restante para restaurar ultima_actividad_fecha
       const { data: lastAct } = await supabase
         .from("actividad")
         .select("fecha_fin")
         .eq("usuario_id", user.id)
-        .neq("id", actividadId) // Excluir la que estamos borrando
+        .neq("id", actividadId)
         .not("fecha_fin", "is", null)
         .order("fecha_fin", { ascending: false })
         .limit(1)
@@ -201,7 +244,7 @@ export function useRemoveWorkoutXP() {
 
       const nuevaUltimaFecha = lastAct?.fecha_fin || null;
 
-      // 4. Actualizar la base de datos (XP, Nivel y Fecha)
+      // 5. Actualizar la base de datos
       const { error: uErr } = await supabase
         .from("perfil" as any)
         .update({
@@ -210,10 +253,8 @@ export function useRemoveWorkoutXP() {
           ultima_actividad_fecha: nuevaUltimaFecha,
         })
         .eq("id", user.id);
-        
       if (uErr) throw uErr;
 
-      // 5. Refrescar la UI
       queryClient.invalidateQueries({ queryKey: ["profileStats"] });
     },
     [user, queryClient]
