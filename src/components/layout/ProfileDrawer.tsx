@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
@@ -54,7 +53,7 @@ export function ProfileDrawer() {
           </Avatar>
         </button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[300px] sm:w-[340px] flex flex-col">
+      <SheetContent side="left" className="w-full max-w-full sm:max-w-full flex flex-col">
         <SheetHeader className="text-left">
           <SheetTitle className="text-lg">Mi cuenta</SheetTitle>
         </SheetHeader>
@@ -77,62 +76,42 @@ export function ProfileDrawer() {
 
         <Separator />
 
-        {/* Tabs */}
-        <Tabs defaultValue="atleta" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="w-full grid grid-cols-2 mt-3">
-            <TabsTrigger value="atleta">Atleta</TabsTrigger>
-            <TabsTrigger value="logros">Logros</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="atleta" className="flex-1 overflow-y-auto space-y-4 mt-3">
-            {/* Level & XP */}
-            {xp && stats && (
-              <div className="space-y-3 rounded-lg border p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-primary" />
-                    <span className="font-bold">Nivel {xp.level}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Flame
-                      className={`h-4 w-4 ${stats.racha_actual > 0 ? "text-orange-500" : "text-muted-foreground"}`}
-                      fill={stats.racha_actual > 0 ? "currentColor" : "none"}
-                    />
-                    <span className={`text-sm font-semibold ${stats.racha_actual > 0 ? "text-orange-500" : "text-muted-foreground"}`}>
-                      {stats.racha_actual} días
-                    </span>
-                  </div>
+        {/* Contenido del perfil */}
+        <div className="flex-1 overflow-y-auto space-y-6 mt-3">
+          {/* Level & XP */}
+          {xp && stats && (
+            <div className="space-y-3 rounded-lg border p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  <span className="font-bold">Nivel {xp.level}</span>
                 </div>
-                <Progress value={xp.percent} className="h-2" />
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Zap className="h-3 w-3" /> {xp.progress} / {xp.needed} XP para nivel {xp.level + 1}
-                </p>
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  <div>XP Total: <span className="font-semibold text-foreground">{stats.xp_total}</span></div>
-                  <div>Racha máx: <span className="font-semibold text-foreground">{stats.racha_maxima} días</span></div>
+                <div className="flex items-center gap-1">
+                  <Flame
+                    className={`h-4 w-4 ${stats.racha_actual > 0 ? "text-orange-500" : "text-muted-foreground"}`}
+                    fill={stats.racha_actual > 0 ? "currentColor" : "none"}
+                  />
+                  <span className={`text-sm font-semibold ${stats.racha_actual > 0 ? "text-orange-500" : "text-muted-foreground"}`}>
+                    {stats.racha_actual} días
+                  </span>
                 </div>
               </div>
-            )}
-
-            {/* Theme */}
-            <div className="space-y-3">
-              <p className="text-sm font-medium flex items-center gap-2">
-                <SunMoon className="h-4 w-4 text-muted-foreground" /> Apariencia
+              <Progress value={xp.percent} className="h-2" />
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Zap className="h-3 w-3" /> {xp.progress} / {xp.needed} XP para nivel {xp.level + 1}
               </p>
-              <Select value={theme} onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="z-[200] bg-popover">
-                  <SelectItem value="system">Automático (Sistema)</SelectItem>
-                  <SelectItem value="light">Claro</SelectItem>
-                  <SelectItem value="dark">Oscuro</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div>XP Total: <span className="font-semibold text-foreground">{stats.xp_total}</span></div>
+                <div>Racha máx: <span className="font-semibold text-foreground">{stats.racha_maxima} días</span></div>
+              </div>
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="logros" className="flex-1 overflow-y-auto mt-3">
+          {/* Logros */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-muted-foreground" /> Logros
+            </p>
             <div className="grid grid-cols-2 gap-3">
               {MOCK_ACHIEVEMENTS.map((a) => {
                 const Icon = iconMap[a.icono] || Trophy;
@@ -155,22 +134,39 @@ export function ProfileDrawer() {
                 );
               })}
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
 
-        {/* Logout */}
-        <div className="pb-4 pt-2">
-          <Button
-            variant="destructive"
-            className="w-full h-12"
-            onClick={() => {
-              setOpen(false);
-              signOut();
-            }}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Cerrar Sesión
-          </Button>
+          {/* Apariencia (penúltimo) */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium flex items-center gap-2">
+              <SunMoon className="h-4 w-4 text-muted-foreground" /> Apariencia
+            </p>
+            <Select value={theme} onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[200] bg-popover">
+                <SelectItem value="system">Automático (Sistema)</SelectItem>
+                <SelectItem value="light">Claro</SelectItem>
+                <SelectItem value="dark">Oscuro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Cerrar sesión (al final, dentro del scroll) */}
+          <div className="pt-2 pb-4">
+            <Button
+              variant="destructive"
+              className="w-full h-12"
+              onClick={() => {
+                setOpen(false);
+                signOut();
+              }}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Cerrar Sesión
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
