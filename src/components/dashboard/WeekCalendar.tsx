@@ -89,7 +89,7 @@ export function WeekCalendar({
       </div>
 
       {/* Lista de días lunes - domingo, dentro de la card */}
-      <div className="rounded-xl border border-border bg-card p-3 space-y-1">
+      <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border/40">
         {days.map((day) => {
           const selected = selectedDate !== null && isSameDay(day, selectedDate);
           const today = isToday(day);
@@ -108,11 +108,11 @@ export function WeekCalendar({
           }
 
           return (
-            <div key={day.toISOString()} className="rounded-xl bg-card/0">
+            <div key={day.toISOString()} className="bg-card/0">
               <button
                 onClick={() => onDateSelect(day)}
                 className={`
-                  w-full rounded-xl px-3 py-2 text-left transition-colors
+                  w-full px-3 py-2 text-left transition-colors
                   ${selected ? "bg-primary text-primary-foreground" : "hover:bg-accent/30"}
                 `}
               >
