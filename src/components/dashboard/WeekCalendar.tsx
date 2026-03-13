@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   startOfWeek,
   addDays,
@@ -10,11 +11,10 @@ import {
   startOfMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ActividadWithDetails } from "@/types/workout";
 import { useMonthWorkouts } from "@/hooks/useWorkouts";
-import { WeekDayDetail } from "@/components/dashboard/WeekDayDetail";
 
 interface WeekCalendarProps {
   selectedDate: Date | null;
@@ -153,27 +153,65 @@ export function WeekCalendar({
                   </div>
                 </div>
 
-                <div
-                  className={`
-                    mt-1 text-xs
-                    ${selected ? "text-primary-foreground/80" : "text-muted-foreground"}
-                    overflow-hidden text-ellipsis whitespace-nowrap
-                  `}
-                >
-                  {summary}
-                </div>
+                {!selected || dayWorkouts.length === 0 ? (
+                  <div
+                    className={`
+                      mt-1 text-xs
+                      ${selected ? "text-primary-foreground/80" : "text-muted-foreground"}
+                      overflow-hidden text-ellipsis whitespace-nowrap
+                    `}
+                  >
+                    {summary}
+                  </div>
+                ) : null}
               </button>
 
-              {/* Detalle de entrenos justo debajo del día seleccionado */}
-              {selected && dayWorkouts.length > 0 && (
-                <div className="mt-1 px-1">
-                  <WeekDayDetail
-                    workouts={dayWorkouts}
-                    dateKey={dateKey}
-                    onWorkoutClick={onWorkoutClick}
-                  />
-                </div>
-              )}
+              {/* Detalle de entrenos expandido dentro del propio día cuando está seleccionado */}
+              <AnimatePresence initial={false}>
+                {selected && dayWorkouts.length > 0 && (
+                  <motion.div
+                    key={dateKey}
+                    initial={{ height: 0, opacity: 0, y: -6 }}
+                    animate={{ height: "auto", opacity: 1, y: 0 }}
+                    exit={{ height: 0, opacity: 0, y: -6 }}
+                    transition={{ duration: 0.22, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-3 pb-3 pt-1 text-xs border-t border-border/30 bg-card">
+                      {dayWorkouts.map((w) => (
+                        <div
+                          key={w.id}
+                          className="py-2 first:pt-1 last:pb-0 border-b border-border/20 last:border-b-0"
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="font-medium text-[13px]">{w.titulo}</span>
+                            {onWorkoutClick && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0"
+                                onClick={() => onWorkoutClick(w.id)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {w.ejercicios.map((ej) => (
+                              <span
+                                key={ej.id}
+                                className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                              >
+                                {ej.tipo_ejercicio.nombre}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           );
         })}
