@@ -73,9 +73,9 @@ export function WeekCalendar({
   const goForward = () => onDateSelect(addWeeks(selectedDate ?? new Date(), 1));
 
   return (
-    <div className="w-full">
-      {/* Header: rango de la semana */}
-      <div className="flex items-center justify-between mb-3">
+    <div className="w-full space-y-3">
+      {/* Header: rango de la semana (fuera de la card) */}
+      <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goBack}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -88,8 +88,8 @@ export function WeekCalendar({
         </Button>
       </div>
 
-      {/* Lista de días lunes - domingo */}
-      <div className="space-y-1">
+      {/* Lista de días lunes - domingo, dentro de la card */}
+      <div className="rounded-xl border border-border bg-card p-3 space-y-1">
         {days.map((day) => {
           const selected = selectedDate !== null && isSameDay(day, selectedDate);
           const today = isToday(day);
