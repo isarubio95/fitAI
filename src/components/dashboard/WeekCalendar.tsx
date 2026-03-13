@@ -7,26 +7,59 @@ import {
   isSameDay,
   isToday,
   format,
+  startOfMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { ActividadWithDetails } from "@/types/workout";
+import { useMonthWorkouts } from "@/hooks/useWorkouts";
+import { WeekDayDetail } from "@/components/dashboard/WeekDayDetail";
 
 interface WeekCalendarProps {
-  selectedDate: Date;
+  selectedDate: Date | null;
   onDateSelect: (date: Date) => void;
   workoutDates: Date[];
+  onWorkoutClick?: (id: string) => void;
 }
 
 export function WeekCalendar({
   selectedDate,
   onDateSelect,
   workoutDates,
+  onWorkoutClick,
 }: WeekCalendarProps) {
   const weekStart = useMemo(
-    () => startOfWeek(selectedDate, { weekStartsOn: 1 }),
+    () => startOfWeek(selectedDate ?? new Date(), { weekStartsOn: 1 }),
     [selectedDate]
   );
+
+  const monthForWeek = useMemo(
+    () => startOfMonth(weekStart),
+    [weekStart]
+  );
+
+  const { data: monthWorkouts } = useMonthWorkouts(monthForWeek);
+
+  const weekWorkoutsByDate = useMemo(() => {
+    if (!monthWorkouts) return {} as Record<string, ActividadWithDetails[]>;
+
+    const start = weekStart;
+    const end = addDays(start, 6);
+
+    const map: Record<string, ActividadWithDetails[]> = {};
+
+    monthWorkouts.forEach((w) => {
+      const d = new Date(w.fecha);
+      if (d >= start && d <= end) {
+        const key = format(d, "yyyy-MM-dd");
+        if (!map[key]) map[key] = [];
+        map[key].push(w);
+      }
+    });
+
+    return map;
+  }, [monthWorkouts, weekStart]);
 
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -36,69 +69,116 @@ export function WeekCalendar({
   const hasWorkout = (day: Date) =>
     workoutDates.some((d) => isSameDay(d, day));
 
-  const goBack = () => onDateSelect(subWeeks(selectedDate, 1));
-  const goForward = () => onDateSelect(addWeeks(selectedDate, 1));
+  const goBack = () => onDateSelect(subWeeks(selectedDate ?? new Date(), 1));
+  const goForward = () => onDateSelect(addWeeks(selectedDate ?? new Date(), 1));
 
   return (
     <div className="w-full">
-      {/* Header */}
+      {/* Header: rango de la semana */}
       <div className="flex items-center justify-between mb-3">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goBack}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <h2 className="text-base font-semibold capitalize">
-          {format(weekStart, "d MMM", { locale: es })} –{" "}
-          {format(addDays(weekStart, 6), "d MMM yyyy", { locale: es })}
+          {format(weekStart, "d", { locale: es })} -{" "}
+          {format(addDays(weekStart, 6), "d 'de' MMMM", { locale: es })}
         </h2>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goForward}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Days strip */}
-      <div className="grid grid-cols-7 gap-1">
+      {/* Lista de días lunes - domingo */}
+      <div className="space-y-1">
         {days.map((day) => {
-          const selected = isSameDay(day, selectedDate);
+          const selected = selectedDate !== null && isSameDay(day, selectedDate);
           const today = isToday(day);
+          const dateKey = format(day, "yyyy-MM-dd");
+          const dayWorkouts = weekWorkoutsByDate?.[dateKey] ?? [];
+
+          let summary: string;
+          if (dayWorkouts.length === 0) {
+            summary = "Sin entreno";
+          } else if (dayWorkouts.length === 1) {
+            summary = dayWorkouts[0].titulo;
+          } else if (dayWorkouts.length === 2) {
+            summary = `${dayWorkouts[0].titulo}, ${dayWorkouts[1].titulo}`;
+          } else {
+            summary = `${dayWorkouts[0].titulo}, ${dayWorkouts[1].titulo} +${dayWorkouts.length - 2} más`;
+          }
 
           return (
-            <button
-              key={day.toISOString()}
-              onClick={() => onDateSelect(day)}
-              className={`
-                flex flex-col items-center py-2 rounded-xl transition-colors
-                ${selected ? "bg-primary text-primary-foreground" : "hover:bg-accent/30"}
-              `}
-            >
-              <span
-                className={`text-[11px] uppercase tracking-wide ${
-                  selected ? "text-primary-foreground/80" : "text-muted-foreground"
-                }`}
-              >
-                {format(day, "EEE", { locale: es })}
-              </span>
-              <span
+            <div key={day.toISOString()} className="rounded-xl bg-card/0">
+              <button
+                onClick={() => onDateSelect(day)}
                 className={`
-                  text-lg font-bold mt-0.5
-                  ${today && !selected ? "underline underline-offset-4 decoration-primary decoration-2" : ""}
+                  w-full rounded-xl px-3 py-2 text-left transition-colors
+                  ${selected ? "bg-primary text-primary-foreground" : "hover:bg-accent/30"}
                 `}
               >
-                {format(day, "d")}
-              </span>
-              {/* Workout dot */}
-              <div className="h-1.5 mt-1">
-                {hasWorkout(day) && (
-                  <span
-                    className={`block h-1.5 w-1.5 rounded-full ${
-                      selected ? "bg-primary-foreground" : "bg-primary"
-                    }`}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-baseline gap-3">
+                    <span
+                      className={`
+                        text-xs uppercase tracking-wide
+                        ${selected ? "text-primary-foreground/80" : "text-muted-foreground"}
+                      `}
+                    >
+                      {format(day, "EEE", { locale: es })}
+                    </span>
+                    <span
+                      className={`
+                        text-lg font-semibold
+                        ${today && !selected ? "underline underline-offset-4 decoration-primary decoration-2" : ""}
+                      `}
+                    >
+                      {format(day, "d")}
+                    </span>
+                  </div>
+
+                  {/* Indicador de entreno y etiqueta de hoy */}
+                  <div className="flex items-center gap-2">
+                    {today && !selected && (
+                      <span className="text-[11px] font-medium text-primary">
+                        Hoy
+                      </span>
+                    )}
+                    {hasWorkout(day) && (
+                      <span
+                        className={`h-2 w-2 rounded-full ${
+                          selected ? "bg-primary-foreground" : "bg-primary"
+                        }`}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div
+                  className={`
+                    mt-1 text-xs
+                    ${selected ? "text-primary-foreground/80" : "text-muted-foreground"}
+                    overflow-hidden text-ellipsis whitespace-nowrap
+                  `}
+                >
+                  {summary}
+                </div>
+              </button>
+
+              {/* Detalle de entrenos justo debajo del día seleccionado */}
+              {selected && dayWorkouts.length > 0 && (
+                <div className="mt-1 px-1">
+                  <WeekDayDetail
+                    workouts={dayWorkouts}
+                    dateKey={dateKey}
+                    onWorkoutClick={onWorkoutClick}
                   />
-                )}
-              </div>
-            </button>
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
     </div>
   );
 }
+

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates, useWorkoutsForDate } from "@/hooks/useWorkouts";
+import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,10 @@ import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil, ArrowUpDown, Gr
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
 import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
-import { WeekDayDetail } from "@/components/dashboard/WeekDayDetail";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
-import { format, startOfMonth } from "date-fns";
+import { format, startOfMonth, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 
 // Importaciones de DND-Kit iguales a las de Rutinas
@@ -105,7 +104,7 @@ const Dashboard = () => {
   const { openNew, openEdit } = useGlobalWorkoutDrawer();
 
   const [calendarView, setCalendarView] = useState<"month" | "week">(loadCalendarView);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
 
   useEffect(() => {
@@ -118,7 +117,6 @@ const Dashboard = () => {
   const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyWorkouts();
   const { data: monthWorkouts } = useMonthWorkouts(calendarMonth);
   const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
-  const { data: dayWorkouts } = useWorkoutsForDate(calendarView === "week" ? selectedDate : undefined);
 
   const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
     const saved = localStorage.getItem('dashboard-widget-order');
@@ -145,6 +143,15 @@ const Dashboard = () => {
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setCalendarMonth(startOfMonth(date));
+  };
+
+  const handleWeekDaySelect = (date: Date) => {
+    if (selectedDate && isSameDay(selectedDate, date)) {
+      setSelectedDate(null);
+    } else {
+      setSelectedDate(date);
+      setCalendarMonth(startOfMonth(date));
+    }
   };
 
   const handleMonthChange = (month: Date) => {
@@ -245,12 +252,8 @@ const Dashboard = () => {
               <div>
                 <WeekCalendar
                   selectedDate={selectedDate}
-                  onDateSelect={handleDateSelect}
+                  onDateSelect={handleWeekDaySelect}
                   workoutDates={workoutDates ?? []}
-                />
-                <WeekDayDetail
-                  workouts={dayWorkouts ?? []}
-                  dateKey={format(selectedDate, "yyyy-MM-dd")}
                   onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
                 />
               </div>
