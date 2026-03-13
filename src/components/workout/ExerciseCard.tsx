@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Plus, Info, Timer, GripVertical } from "lucide-react";
+import { Trash2, Plus, Info, Timer, GripVertical, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
@@ -27,6 +27,7 @@ interface ExerciseCardProps {
   onRemoveSet: (setIndex: number) => void;
   onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number) => void;
   onAutoSaveSet?: (setIndex: number) => void;
+  onSetCompleted?: (setIndex: number, completed: boolean) => void;
   dragHandleProps?: Record<string, any>;
 }
 
@@ -38,6 +39,7 @@ export function ExerciseCard({
   onRemoveSet,
   onUpdateSet,
   onAutoSaveSet,
+  onSetCompleted,
   dragHandleProps,
 }: ExerciseCardProps) {
   const { data: lastPerf } = useLastPerformance(exercise.tipo_ejercicio_id);
@@ -98,17 +100,33 @@ export function ExerciseCard({
         </div>
       )}
 
-      {/* Sets header */}
-      <div className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1">
+      {/* Sets header: # | Hecho | Reps | Peso | delete */}
+      <div className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1 items-center">
         <span>#</span>
+        <span className="mr-4 flex justify-center">Hecho</span>
         <span>Reps</span>
         <span>Peso (kg)</span>
         <span />
       </div>
 
       {exercise.sets.map((s, si) => (
-        <div key={si} className="grid grid-cols-[2rem_1fr_1fr_2rem] gap-2 items-center">
+        <div key={si} className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 items-center">
           <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
+          <div className="flex items-center justify-center justify-self-center mr-4">
+            {onSetCompleted ? (
+              <Button
+                variant={s.completed ? "default" : "outline"}
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => onSetCompleted(si, !s.completed)}
+                title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
+              >
+                {s.completed ? <Check className="h-4 w-4" /> : null}
+              </Button>
+            ) : (
+              <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
+            )}
+          </div>
           <Input
             type="number"
             min={0}
