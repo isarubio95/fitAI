@@ -68,7 +68,7 @@ export function AppLayout() {
             )}
           </header>
 
-          <main className="flex-1 flex flex-col min-w-0 w-full pt-8 md:pt-0 pb-24 md:pb-0 min-h-screen">
+          <main className="flex-1 flex flex-col pt-8 md:pt-0 pb-24 md:pb-0 min-h-screen">
             {/* Navegación por gestos desactivada: usamos solo el contenido de rutas directamente */}
             <Outlet />
           </main>

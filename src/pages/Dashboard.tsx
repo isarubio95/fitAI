@@ -306,7 +306,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="w-full min-w-0 p-4 md:p-8 pt-6 space-y-6 max-w-4xl mx-auto">
+    <div className="p-4 md:p-8 pt-6 space-y-6 max-w-4xl mx-auto">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">TrackGym</h1>
