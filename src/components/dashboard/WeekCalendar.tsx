@@ -99,7 +99,7 @@ export function WeekCalendar({
 
           let summary: string;
           if (dayWorkouts.length === 0) {
-            summary = "Sin entreno";
+            summary = "";
           } else if (dayWorkouts.length === 1) {
             summary = dayWorkouts[0].titulo;
           } else if (dayWorkouts.length === 2) {
@@ -121,13 +121,11 @@ export function WeekCalendar({
               <div className="w-full rounded-none">
               <button
                 onClick={() => onDateSelect(day)}
-                className="w-full px-3 py-2.5 text-left"
+                className="w-full px-3 py-3 text-left"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-baseline gap-3">
-                    <span
-                      className="text-xs uppercase tracking-wide text-muted-foreground"
-                    >
+                <div className="flex items-center gap-3 w-full min-w-0">
+                  <div className="flex items-baseline gap-3 shrink-0">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
                       {format(day, "EEE", { locale: es })}
                     </span>
                     <span
@@ -139,8 +137,12 @@ export function WeekCalendar({
                       {format(day, "d")}
                     </span>
                   </div>
-
-                  <div className="flex items-center gap-2">
+                  {!isOpen && summary && (
+                    <span className="flex-1 min-w-0 text-xs text-muted-foreground truncate text-right">
+                      {summary}
+                    </span>
+                  )}
+                  <div className="flex items-center gap-2 shrink-0">
                     {today && !selected && (
                       <span className="text-[11px] font-medium text-primary">
                         Hoy
@@ -159,12 +161,6 @@ export function WeekCalendar({
                     )}
                   </div>
                 </div>
-
-                {!isOpen && (
-                  <div className="mt-1 text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
-                    {summary}
-                  </div>
-                )}
               </button>
 
               {/* Mismo contenedor: contenido expandido hacia abajo sin otro bloque */}
