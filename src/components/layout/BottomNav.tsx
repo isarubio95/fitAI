@@ -145,11 +145,19 @@ export function BottomNav() {
                   className="group flex flex-col items-center justify-center gap-1.5 focus:outline-none"
                 >
                   <div className={cn(
-                    "flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 ease-out active:scale-90 shadow-md",
+                    "flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 ease-out active:scale-90 shadow-md",
                     isMenuOpen && "rotate-45 drop-shadow-[0_0_12px_rgba(var(--primary),0.6)]" // Rotación y neón
                   )}>
-                    <Plus className="h-6 w-6 stroke-[2px]" />
+                    <Plus className="h-5 w-5 stroke-[2px]" />
                   </div>
+                  <span
+                    className={cn(
+                      "text-[10px] font-medium tracking-wide transition-colors duration-300",
+                      isMenuOpen ? "text-primary" : "text-zinc-500"
+                    )}
+                  >
+                    Añadir
+                  </span>
                 </button>
               </div>
             );

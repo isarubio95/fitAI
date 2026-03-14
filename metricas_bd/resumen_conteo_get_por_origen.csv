@@ -1,0 +1,30 @@
+origen,archivo,operaciones_get_por_ejecucion,tablas,notas
+useLastWorkout,useWorkouts.ts,3,"actividad, ejercicio, serie",Último entrenamiento con detalle
+useWeeklyWorkouts,useWorkouts.ts,1,actividad,Fechas semana actual
+useMonthWorkoutDates,useWorkouts.ts,1,actividad,Fechas del mes
+useMonthWorkouts,useWorkouts.ts,3,"actividad, ejercicio, serie",Entrenamientos del mes con detalle
+useWorkoutsForDate,useWorkouts.ts,3,"actividad, ejercicio, serie",Entrenamientos de un día
+useWorkoutById,useWorkouts.ts,3,"actividad, ejercicio, serie",Un entrenamiento por ID
+useWorkoutHistory,useWorkouts.ts,3,"actividad, ejercicio, serie",Historial completo
+useRoutines,useRoutines.ts,2,"rutina, rutina_ejercicio",Listado rutinas usuario
+useRoutineById,useRoutines.ts,2,"rutina, rutina_ejercicio",Una rutina por ID
+useExerciseCatalog,useExerciseCatalog.ts,1,tipo_ejercicio,Catálogo ejercicios
+useMeasurements,useMeasurements.ts,1,medidas,Medidas usuario
+useActiveWorkout,useActiveWorkout.ts,1,actividad,Entrenamiento activo (refetch 30s)
+useLastPerformance,useLastPerformance.ts,2,"ejercicio, serie",Por tipo de ejercicio
+useExerciseWithHistory,useExerciseProgress.ts,1,serie,Historial por ejercicio
+useExerciseHistory,useExerciseProgress.ts,1,serie,1RM por ejercicio
+useProfileStats,useGamification.ts,1,perfil,Stats gamificación
+useCalculateAndAwardXP,useGamification.ts,1,perfil,Al finalizar entrenamiento
+useRemoveWorkoutXP,useGamification.ts,4,"actividad(x2), perfil, actividad(last)",Al borrar entrenamiento
+fetchLogroStats,useLogros.ts,4,"actividad, perfil, ejercicio, serie",Usado en checkAndAwardLogros
+checkAndAwardLogros,useLogros.ts,5,"logro + fetchLogroStats",Al finalizar entrenamiento
+useLogros,useLogros.ts,2,"logro, usuario_logro",Listado logros con estado
+useMuscleStatistics,useMuscleStatistics.ts,1+N chunks,ejercicio + serie,N = ceil(ejercicios/200)
+useMuscleVolume,useMuscleVolume.ts,3,"actividad, ejercicio, serie",Volumen por periodo
+usePredefinedRoutines,usePredefinedRoutines.ts,2,"rutina, rutina_ejercicio",Plantillas
+useCloneRoutine,usePredefinedRoutines.ts,2,"rutina, rutina_ejercicio",Al clonar plantilla
+handleDelete (WorkoutLogger),WorkoutLogger.tsx,2,"ejercicio, serie",Al eliminar entrenamiento
+useWorkoutById (WorkoutLogger),WorkoutLogger.tsx,3,"actividad, ejercicio, serie",Al abrir drawer con ID
+useRoutineById (RoutineForm),RoutineForm.tsx,2,"rutina, rutina_ejercicio",Al editar rutina
+getSession,useAuth.tsx,1,auth API,No es tabla pública BD
