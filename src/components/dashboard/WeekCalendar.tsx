@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   startOfWeek,
   addDays,
@@ -165,49 +165,56 @@ export function WeekCalendar({
                 </div>
               </button>
 
-              {/* Mismo contenedor: contenido expandido hacia abajo sin otro bloque */}
-              {isOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-3 pb-3 pt-0 text-xs">
-                    {dayWorkouts.map((w) => (
-                      <div
-                        key={w.id}
-                        className="py-2 first:pt-1 last:pb-0 border-b border-border/20 last:border-b-0"
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="font-medium text-[13px] text-foreground">{w.titulo}</span>
-                          {onWorkoutClick && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 shrink-0"
-                              onClick={() => onWorkoutClick(w.id)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
+              {/* Mismo contenedor: contenido expandido hacia abajo (AnimatePresence para cerrar suave) */}
+              <AnimatePresence initial={false}>
+                {isOpen && (
+                  <motion.div
+                    key={dateKey}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{
+                      duration: 0.25,
+                      ease: [0.32, 0.72, 0, 1],
+                      opacity: { duration: 0.2 },
+                    }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-3 pb-3 pt-0 text-xs">
+                      {dayWorkouts.map((w) => (
+                        <div
+                          key={w.id}
+                          className="py-2 first:pt-1 last:pb-0 border-b border-border/20 last:border-b-0"
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="font-medium text-[13px] text-foreground">{w.titulo}</span>
+                            {onWorkoutClick && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0"
+                                onClick={() => onWorkoutClick(w.id)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {w.ejercicios.map((ej) => (
+                              <span
+                                key={ej.id}
+                                className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                              >
+                                {ej.tipo_ejercicio.nombre}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {w.ejercicios.map((ej) => (
-                            <span
-                              key={ej.id}
-                              className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-                            >
-                              {ej.tipo_ejercicio.nombre}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               </div>
             </motion.div>
           );
