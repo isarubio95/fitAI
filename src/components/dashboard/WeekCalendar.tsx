@@ -118,14 +118,7 @@ export function WeekCalendar({
               layout
               transition={{ layout: { duration: 0.22, ease: "easeInOut" } }}
             >
-              <div
-                className={`
-                  w-full transition-colors rounded-none
-                  ${isOpen ? "bg-accent/50 border-l-2 border-l-primary" : ""}
-                  ${selected && !hasWorkouts ? "bg-accent/30" : ""}
-                  ${!selected ? "hover:bg-accent/30" : ""}
-                `}
-              >
+              <div className="w-full rounded-none">
               <button
                 onClick={() => onDateSelect(day)}
                 className="w-full px-3 py-2.5 text-left"
