@@ -74,19 +74,20 @@ export function useMuscleVolume(period: TimePeriod = "week") {
 
       const ejercicioIds = ejercicios.map((e) => e.id);
 
-      // Count completed sets per exercise
+      // Contar series con datos (marcadas completadas O con reps/peso): así el mapa refleja lo que realmente hiciste
       const { data: series, error: sErr } = await supabase
         .from("serie")
-        .select("ejercicio_id")
-        .in("ejercicio_id", ejercicioIds)
-        .eq("completed", true);
+        .select("ejercicio_id, repeticiones, peso_kg, completed")
+        .in("ejercicio_id", ejercicioIds);
 
       if (sErr) throw sErr;
 
-      // Build a map of ejercicio_id -> set count
       const setCountMap: Record<string, number> = {};
       for (const s of series || []) {
-        setCountMap[s.ejercicio_id] = (setCountMap[s.ejercicio_id] || 0) + 1;
+        const hasData = Number(s.repeticiones) > 0 || Number(s.peso_kg) > 0;
+        if (s.completed || hasData) {
+          setCountMap[s.ejercicio_id] = (setCountMap[s.ejercicio_id] || 0) + 1;
+        }
       }
 
       // Aggregate volume per specific muscle & group

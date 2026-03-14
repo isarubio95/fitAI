@@ -80,27 +80,28 @@ const FRONT_MUSCLES: MuscleZone[] = [
   { group: "Antebrazo", d: "M 42,140 C 32,152 25,165 22,175 C 28,182 35,178 38,168 C 42,158 48,148 42,140 Z" },
   { group: "Antebrazo", d: "M 158,140 C 168,152 175,165 178,175 C 172,182 165,178 162,168 C 158,158 152,148 158,140 Z" },
   
-  // Core / Abdomen y Oblicuos
-  { group: "Core", d: "M 99,105 C 86,108 76,118 76,138 C 76,142 84,154 99,154 C 114,154 124,142 124,138 C 124,118 114,108 101,105 Z" },
+  // Core / Abdomen y Oblicuos (altura extendida hacia arriba)
+  { group: "Core", d: "M 99,97 C 86,100 76,110 76,138 C 76,142 84,154 99,154 C 114,154 124,142 124,138 C 124,110 114,100 101,97 Z" },
 
-  // Cuádriceps
-  { group: "Cuádriceps", d: "M 96,158 C 86,160 74,170 74,184 C 74,209 80,222 84,222 C 92,222 98,204 98,174 Z" },
-  { group: "Cuádriceps", d: "M 104,158 C 114,160 126,170 126,184 C 126,209 120,222 116,222 C 108,222 102,204 102,174 Z" },
+  // Cuádriceps (encaje mejor: bordes superiores e inferior más redondeados)
+  { group: "Cuádriceps", d: "M 96,158 C 88,161 75,171 74,182 C 74,205 79,220 84,222 C 91,221 97,207 97,177 Z" },
+  { group: "Cuádriceps", d: "M 104,158 C 112,161 125,171 126,182 C 126,205 121,220 116,222 C 109,221 103,207 103,177 Z" },
 
-  // Pantorrillas
-  { group: "Pantorrilla", d: "M 82,229 C 72,244 72,269 76,286 C 84,289 98,276 100,254 C 100,244 88,232 82,229 Z" },
-  { group: "Pantorrilla", d: "M 118,229 C 128,244 128,269 124,286 C 116,289 102,276 100,254 C 100,244 112,232 118,229 Z" },
+  // Pantorrillas (ancho reducido en vista frontal; mitad inferior más estrecha)
+  { group: "Pantorrilla", d: "M 86,229 C 82,244 82,269 86,286 C 93,289 99,276 100,254 C 100,244 90,232 86,229 Z" },
+  { group: "Pantorrilla", d: "M 114,229 C 118,244 118,269 114,286 C 107,289 101,276 100,254 C 100,244 110,232 114,229 Z" },
 ];
 
 const BACK_MUSCLES: MuscleZone[] = [
-  { group: "Espalda", d: "M76,60 C86,56 104,54 104,54 C104,54 122,56 132,60 L124,133 C114,137 94,137 84,133 Z" },{ group: "Hombro", d: "M60,68 C62,58 70,60 76,66 L76,84 C70,88 56,82 60,68 Z" },
-  { group: "Hombro", d: "M148,68 C146,58 138,60 132,66 L132,84 C138,88 152,82 148,68 Z" },
-  // Tríceps: zona más corta, girada hacia afuera, esquinas suavizadas (vista espalda)
-  { group: "Tríceps", d: "M 58,87 C 58,97 56,100 56,110 C 54,111 53,111 52,112 C 62,110 69,98 73,89 C 69,88 59,87 58,87 Z" },
-{ group: "Tríceps", d: "M 147,87 C 147,97 149,100 149,110 C 151,111 152,111 153,112 C 144,110 131,98 136,89 C 140,88 146,87 147,87 Z" },
-  { group: "Glúteo", d: "M82,132 C90,136 104,138 104,138 C104,138 118,136 126,132 L124,170 C116,176 92,176 84,170 Z" },
-  { group: "Femoral", d: "M 80,174 C 78,192 76,212 76,230 L 98,230 C 100,212 100,192 98,174 Z" },
-  { group: "Femoral", d: "M 128,174 C 130,192 132,212 132,230 L 110,230 C 108,212 108,192 110,174 Z" },
+  { group: "Espalda", d: "M76,60 C84,57 104,54 104,54 C104,54 124,57 132,60 C128,88 126,115 124,133 C114,136 94,136 84,133 C82,115 80,88 76,60 Z" },
+  { group: "Hombro", d: "M60,68 C62,60 70,62 76,66 L76,84 C72,87 58,84 60,68 Z" },
+  { group: "Hombro", d: "M148,68 C146,60 138,62 132,66 L132,84 C136,87 150,84 148,68 Z" },
+  // Tríceps: encaje mejor, bordes más redondeados (vista espalda)
+  { group: "Tríceps", d: "M 58,87 C 58,95 57,102 57,108 C 55,110 54,111 55,112 C 62,110 69,100 72,90 C 69,89 61,87 58,87 Z" },
+  { group: "Tríceps", d: "M 147,87 C 147,95 148,102 148,108 C 150,110 151,111 150,112 C 143,110 131,100 128,90 C 131,89 139,87 147,87 Z" },
+  { group: "Glúteo", d: "M79,132 C87,136 104,138 104,138 C104,138 121,136 129,132 L130,170 C122,176 86,176 78,170 Z" },
+  { group: "Femoral", d: "M 76,174 C 75,180 82,212 82,230 L 98,230 C 100,212 103,180 102,174 Z" },
+  { group: "Femoral", d: "M 132,174 C 133,180 126,212 126,230 L 110,230 C 108,212 105,180 106,174 Z" },
   // Pantorrillas: Curvatura superior añadida para un look más muscular
   { group: "Pantorrilla", d: "M 84,234 C 88,228 94,228 98,234 C 100,252 97,270 95,290 L 87,290 C 85,270 82,252 84,234 Z" },
   { group: "Pantorrilla", d: "M 124,234 C 120,228 114,228 110,234 C 108,252 111,270 113,290 L 121,290 C 123,270 126,252 124,234 Z" }
@@ -129,7 +130,7 @@ export function BodyHeatmap() {
   const specificVolume = data?.specificVolume ?? {};
   const maxVol = data?.maxGroupVolume ?? 0;
   /** Rango más alto en mes para que la escala sea coherente con la semana (no todo saturado) */
-  const effectiveMax = period === "month" ? Math.max(maxVol, 24) : Math.max(maxVol, 6);
+  const effectiveMax = period === "month" ? Math.max(maxVol, 36) : Math.max(maxVol, 6);
 
   const handleMouseMove = (e: React.MouseEvent, group: MainMuscleGroup) => {
     if (!containerRef.current) return;
@@ -158,12 +159,13 @@ export function BodyHeatmap() {
              <img 
                src={bgImage} 
                alt={`Cuerpo realista ${viewLabel}`}
-               className="w-full h-full object-contain pointer-events-none saturate-[0.35]"
+               className="w-full h-full object-contain pointer-events-none saturate-[0.25]"
              />
           </div>
 
-          {/* 2. Superposición vectorial con modo de fusión COLOR */}
+          {/* 2. Superposición vectorial con modo de fusión COLOR (frontal 15px abajo, trasera 20px abajo) */}
           <svg viewBox="0 0 200 360" className="absolute inset-0 w-full h-full">
+            <g transform={viewLabel === "FRONTAL" ? "translate(0, 15)" : "translate(0, 20)"}>
             {muscles.map((m, i) => {
               const sets = groupVolume[m.group] || 0;
               const color = getHeatColor(sets, effectiveMax);
@@ -185,6 +187,7 @@ export function BodyHeatmap() {
                 />
               );
             })}
+            </g>
           </svg>
         </div>
       </div>
@@ -233,29 +236,36 @@ export function BodyHeatmap() {
                 </div>
               )}
 
-              {/* Leyenda: escala de rojos (0 invisible, 1–4 de claro a oscuro) */}
-              <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] font-medium text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-3 h-3 rounded bg-transparent border border-border/50" />
-                  0
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[1] }} />
-                  Bajo
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[2] }} />
-                  Medio
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[3] }} />
-                  Alto
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[4] }} />
-                  Máximo
-                </span>
-              </div>
+              {/* Leyenda: escala de rojos con series según periodo (semana/mes) */}
+              {(() => {
+                const labels = period === "week"
+                  ? ["0", "1", "2–3", "4", "5+ series"]
+                  : ["0", "1–9", "10–18", "19–27", "28+ series"];
+                return (
+                  <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] font-medium text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded bg-transparent border border-border/50" />
+                      {labels[0]}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[1] }} />
+                      {labels[1]}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[2] }} />
+                      {labels[2]}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[3] }} />
+                      {labels[3]}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[4] }} />
+                      {labels[4]}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </CardContent>
