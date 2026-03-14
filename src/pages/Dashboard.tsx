@@ -12,7 +12,7 @@ import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
-import { format, startOfMonth, isSameDay } from "date-fns";
+import { format, startOfMonth, startOfWeek, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 
 // Importaciones de DND-Kit iguales a las de Rutinas
@@ -106,6 +106,8 @@ const Dashboard = () => {
   const [calendarView, setCalendarView] = useState<"month" | "week">(loadCalendarView);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  /** Semana mostrada en vista semanal; al cerrar el dropdown se mantiene en lugar de volver a hoy */
+  const [weekViewStart, setWeekViewStart] = useState<Date | null>(null);
 
   useEffect(() => {
     saveCalendarView(calendarView);
@@ -148,8 +150,10 @@ const Dashboard = () => {
   const handleWeekDaySelect = (date: Date) => {
     if (selectedDate && isSameDay(selectedDate, date)) {
       setSelectedDate(null);
+      // No cambiar weekViewStart: mantener la semana visible al cerrar el dropdown
     } else {
       setSelectedDate(date);
+      setWeekViewStart(startOfWeek(date, { weekStartsOn: 1 }));
       setCalendarMonth(startOfMonth(date));
     }
   };
@@ -252,6 +256,7 @@ const Dashboard = () => {
               <div>
                 <WeekCalendar
                   selectedDate={selectedDate}
+                  displayWeekStart={weekViewStart}
                   onDateSelect={handleWeekDaySelect}
                   workoutDates={workoutDates ?? []}
                   onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}

@@ -19,6 +19,8 @@ import { useMonthWorkouts } from "@/hooks/useWorkouts";
 
 interface WeekCalendarProps {
   selectedDate: Date | null;
+  /** Inicio de la semana a mostrar cuando no hay día seleccionado (evita volver a hoy al cerrar dropdown) */
+  displayWeekStart?: Date | null;
   onDateSelect: (date: Date) => void;
   workoutDates: Date[];
   onWorkoutClick?: (id: string) => void;
@@ -26,13 +28,14 @@ interface WeekCalendarProps {
 
 export function WeekCalendar({
   selectedDate,
+  displayWeekStart,
   onDateSelect,
   workoutDates,
   onWorkoutClick,
 }: WeekCalendarProps) {
   const weekStart = useMemo(
-    () => startOfWeek(selectedDate ?? new Date(), { weekStartsOn: 1 }),
-    [selectedDate]
+    () => startOfWeek(selectedDate ?? displayWeekStart ?? new Date(), { weekStartsOn: 1 }),
+    [selectedDate, displayWeekStart]
   );
 
   const monthForWeek = useMemo(
@@ -70,8 +73,8 @@ export function WeekCalendar({
   const hasWorkout = (day: Date) =>
     workoutDates.some((d) => isSameDay(d, day));
 
-  const goBack = () => onDateSelect(subWeeks(selectedDate ?? new Date(), 1));
-  const goForward = () => onDateSelect(addWeeks(selectedDate ?? new Date(), 1));
+  const goBack = () => onDateSelect(subWeeks(selectedDate ?? weekStart ?? new Date(), 1));
+  const goForward = () => onDateSelect(addWeeks(selectedDate ?? weekStart ?? new Date(), 1));
 
   return (
     <div className="w-full space-y-3">
