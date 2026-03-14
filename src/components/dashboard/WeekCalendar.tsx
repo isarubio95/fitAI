@@ -11,7 +11,8 @@ import {
   startOfMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Pencil } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { ActividadWithDetails } from "@/types/workout";
 import { useMonthWorkouts } from "@/hooks/useWorkouts";
@@ -107,7 +108,8 @@ export function WeekCalendar({
             summary = `${dayWorkouts[0].titulo}, ${dayWorkouts[1].titulo} +${dayWorkouts.length - 2} más`;
           }
 
-          const isOpen = selected && dayWorkouts.length > 0;
+          const hasWorkouts = dayWorkouts.length > 0;
+          const isOpen = selected && hasWorkouts;
 
           return (
             <motion.div
@@ -119,23 +121,22 @@ export function WeekCalendar({
               <button
                 onClick={() => onDateSelect(day)}
                 className={`
-                  w-full px-3 py-2 text-left transition-colors
-                  ${selected ? "bg-primary text-primary-foreground" : "hover:bg-accent/30"}
+                  w-full px-3 py-2.5 text-left transition-colors rounded-none
+                  ${isOpen ? "bg-accent/50 border-l-2 border-l-primary" : ""}
+                  ${selected && !hasWorkouts ? "bg-accent/30" : ""}
+                  ${!selected ? "hover:bg-accent/30" : ""}
                 `}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-baseline gap-3">
                     <span
-                      className={`
-                        text-xs uppercase tracking-wide
-                        ${selected ? "text-primary-foreground/80" : "text-muted-foreground"}
-                      `}
+                      className="text-xs uppercase tracking-wide text-muted-foreground"
                     >
                       {format(day, "EEE", { locale: es })}
                     </span>
                     <span
                       className={`
-                        text-lg font-semibold
+                        text-lg font-semibold text-foreground
                         ${today && !selected ? "underline underline-offset-4 decoration-primary decoration-2" : ""}
                       `}
                     >
@@ -143,70 +144,75 @@ export function WeekCalendar({
                     </span>
                   </div>
 
-                  {/* Indicador de entreno y etiqueta de hoy */}
                   <div className="flex items-center gap-2">
                     {today && !selected && (
                       <span className="text-[11px] font-medium text-primary">
                         Hoy
                       </span>
                     )}
-                    {hasWorkout(day) && (
-                      <span
-                        className={`h-2 w-2 rounded-full ${
-                          selected ? "bg-primary-foreground" : "bg-primary"
-                        }`}
+                    {hasWorkouts && (
+                      <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                    )}
+                    {hasWorkouts && (
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                          isOpen && "rotate-180"
+                        )}
                       />
                     )}
                   </div>
                 </div>
 
-                {!selected || dayWorkouts.length === 0 ? (
-                  <div
-                    className={`
-                      mt-1 text-xs
-                      ${selected ? "text-primary-foreground/80" : "text-muted-foreground"}
-                      overflow-hidden text-ellipsis whitespace-nowrap
-                    `}
-                  >
+                {!isOpen && (
+                  <div className="mt-1 text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
                     {summary}
                   </div>
-                ) : null}
+                )}
               </button>
 
-              {/* Detalle de entrenos expandido dentro del propio día cuando está seleccionado */}
+              {/* Contenido desplegable hacia abajo (dropdown) cuando el día tiene entrenamientos */}
               {isOpen && (
-                <div className="px-3 pb-3 pt-1 text-xs">
-                  {dayWorkouts.map((w) => (
-                    <div
-                      key={w.id}
-                      className="py-2 first:pt-1 last:pb-0 border-b border-border/20 last:border-b-0"
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-medium text-[13px]">{w.titulo}</span>
-                        {onWorkoutClick && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 shrink-0"
-                            onClick={() => onWorkoutClick(w.id)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="overflow-hidden border-t border-border/50 bg-muted/20"
+                >
+                  <div className="px-3 pb-3 pt-2 text-xs">
+                    {dayWorkouts.map((w) => (
+                      <div
+                        key={w.id}
+                        className="py-2 first:pt-0 last:pb-0 border-b border-border/20 last:border-b-0"
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="font-medium text-[13px] text-foreground">{w.titulo}</span>
+                          {onWorkoutClick && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 shrink-0"
+                              onClick={() => onWorkoutClick(w.id)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {w.ejercicios.map((ej) => (
+                            <span
+                              key={ej.id}
+                              className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                            >
+                              {ej.tipo_ejercicio.nombre}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {w.ejercicios.map((ej) => (
-                          <span
-                            key={ej.id}
-                            className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-                          >
-                            {ej.tipo_ejercicio.nombre}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </motion.div>
               )}
             </motion.div>
           );
