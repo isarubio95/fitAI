@@ -43,11 +43,21 @@ export function BottomNav() {
   }, [location.pathname]);
 
   return (
-    <nav 
-      ref={navRef} 
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/70 backdrop-blur-2xl md:hidden pb-[env(safe-area-inset-bottom)]"
-    >
-      {/* MENÚ DESPLEGABLE DE ACCIONES */}
+    <>
+      {/* Overlay que difumina la página cuando el menú Añadir está abierto */}
+      <div
+        aria-hidden
+        className={cn(
+          "fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity duration-300 md:hidden",
+          isMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setIsMenuOpen(false)}
+      />
+      <nav
+        ref={navRef}
+        className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/70 backdrop-blur-2xl md:hidden pb-[env(safe-area-inset-bottom)]"
+      >
+        {/* MENÚ DESPLEGABLE DE ACCIONES */}
       <div
         className={cn(
           "absolute bottom-[85px] left-1/2 -translate-x-1/2 flex flex-col gap-1 rounded-2xl bg-card border border-border p-2 shadow-xl transition-all duration-300 ease-in-out origin-bottom w-[min(92vw,320px)]",
@@ -207,5 +217,6 @@ export function BottomNav() {
         })}
       </div>
     </nav>
+    </>
   );
 }
