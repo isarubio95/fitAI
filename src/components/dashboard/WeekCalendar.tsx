@@ -118,14 +118,17 @@ export function WeekCalendar({
               layout
               transition={{ layout: { duration: 0.22, ease: "easeInOut" } }}
             >
-              <button
-                onClick={() => onDateSelect(day)}
+              <div
                 className={`
-                  w-full px-3 py-2.5 text-left transition-colors rounded-none
+                  w-full transition-colors rounded-none
                   ${isOpen ? "bg-accent/50 border-l-2 border-l-primary" : ""}
                   ${selected && !hasWorkouts ? "bg-accent/30" : ""}
                   ${!selected ? "hover:bg-accent/30" : ""}
                 `}
+              >
+              <button
+                onClick={() => onDateSelect(day)}
+                className="w-full px-3 py-2.5 text-left"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-baseline gap-3">
@@ -171,20 +174,20 @@ export function WeekCalendar({
                 )}
               </button>
 
-              {/* Contenido desplegable hacia abajo (dropdown) cuando el día tiene entrenamientos */}
+              {/* Mismo contenedor: contenido expandido hacia abajo sin otro bloque */}
               {isOpen && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="overflow-hidden border-t border-border/50 bg-muted/20"
+                  className="overflow-hidden"
                 >
-                  <div className="px-3 pb-3 pt-2 text-xs">
+                  <div className="px-3 pb-3 pt-0 text-xs">
                     {dayWorkouts.map((w) => (
                       <div
                         key={w.id}
-                        className="py-2 first:pt-0 last:pb-0 border-b border-border/20 last:border-b-0"
+                        className="py-2 first:pt-1 last:pb-0 border-b border-border/20 last:border-b-0"
                       >
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <span className="font-medium text-[13px] text-foreground">{w.titulo}</span>
@@ -214,6 +217,7 @@ export function WeekCalendar({
                   </div>
                 </motion.div>
               )}
+              </div>
             </motion.div>
           );
         })}
