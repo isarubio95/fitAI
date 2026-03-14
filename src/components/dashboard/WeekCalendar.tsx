@@ -137,11 +137,13 @@ export function WeekCalendar({
                       {format(day, "d")}
                     </span>
                   </div>
-                  {!isOpen && summary && (
-                    <span className="flex-1 min-w-0 text-xs text-muted-foreground truncate text-right">
-                      {summary}
-                    </span>
-                  )}
+                  <div className="flex-1 min-w-0 flex justify-end">
+                    {!isOpen && summary ? (
+                      <span className="text-xs text-muted-foreground truncate text-right block max-w-full">
+                        {summary}
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {today && !selected && (
                       <span className="text-[11px] font-medium text-primary">
