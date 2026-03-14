@@ -8,7 +8,7 @@ export default function EvolutionPage() {
   const activeTab = searchParams.get("tab") || "history";
 
   return (
-    <Tabs value={activeTab} className="w-full">
+    <Tabs value={activeTab} className="w-full min-w-0">
       <TabsContent value="history" className="mt-0">
         <WorkoutHistory /> 
       </TabsContent>
