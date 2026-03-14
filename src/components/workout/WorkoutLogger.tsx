@@ -42,6 +42,7 @@ import { PostWorkoutModal } from "./PostWorkoutModal";
 import { useRestTimerContext } from "./RestTimerProvider";
 import { useCalculateAndAwardXP, useRemoveWorkoutXP, type XPBreakdown } from "@/hooks/useGamification";
 import { checkAndAwardLogros } from "@/hooks/useLogros";
+import { startOfMonth } from "date-fns";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
 // Elapsed time display component
@@ -202,7 +203,7 @@ export function WorkoutLogger() {
       setActiveWorkoutId(actividad.id);
       setTitulo(templateTitle);
       setExercises(updatedExercises);
-      invalidateAll();
+      invalidateWorkoutQueries({ fecha: new Date().toISOString().slice(0, 10) });
     } catch (error: any) {
       toast({ title: "Error al crear entrenamiento", description: error.message, variant: "destructive" });
     } finally {
@@ -382,15 +383,19 @@ export function WorkoutLogger() {
   };
 
   const getExerciseSortId = (ex: ExerciseFormData, index: number) => ex.id || String(index);
-  const invalidateAll = () => {
+  /** Invalida solo las queries afectadas por guardar/editar o borrar un entrenamiento. */
+  const invalidateWorkoutQueries = (opts: { workoutId?: string; fecha?: string; isDelete?: boolean }) => {
+    const { workoutId, fecha, isDelete } = opts;
     queryClient.invalidateQueries({ queryKey: ["lastWorkout"] });
-    queryClient.invalidateQueries({ queryKey: ["weeklyWorkouts"] });
-    queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
-    queryClient.invalidateQueries({ queryKey: ["monthWorkoutDates"] });
-    queryClient.invalidateQueries({ queryKey: ["workoutsForDate"] });
-    queryClient.invalidateQueries({ queryKey: ["workout"] });
     queryClient.invalidateQueries({ queryKey: ["activeWorkout"] });
-    queryClient.invalidateQueries({ queryKey: ["monthWorkouts"] });
+    if (workoutId) queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
+    if (fecha) {
+      queryClient.invalidateQueries({ queryKey: ["workoutsForDate", user?.id, fecha] });
+      const from = startOfMonth(new Date(fecha + "T12:00:00.000Z")).toISOString();
+      queryClient.invalidateQueries({ queryKey: ["monthWorkoutDates", user?.id, from] });
+      queryClient.invalidateQueries({ queryKey: ["monthWorkouts", user?.id, from] });
+    }
+    if (isDelete) queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
   };
 
   const handleDelete = async () => {
@@ -423,7 +428,8 @@ export function WorkoutLogger() {
       const { error } = await supabase.from("actividad").delete().eq("id", targetId);
       if (error) throw error;
       toast({ title: "Entrenamiento eliminado correctamente" });
-      invalidateAll();
+      const deletedFecha = existingWorkout?.fecha ? new Date(existingWorkout.fecha).toISOString().slice(0, 10) : undefined;
+      invalidateWorkoutQueries({ workoutId: targetId, fecha: deletedFecha, isDelete: true });
       close();
       navigate("/");
     } catch (error: any) {
@@ -501,7 +507,7 @@ export function WorkoutLogger() {
           } catch {
             // XP failed silently, still close
           }
-          invalidateAll();
+          invalidateWorkoutQueries({ workoutId: effectiveWorkoutId, fecha });
           close();
         } else {
           const { error } = await supabase
@@ -513,7 +519,7 @@ export function WorkoutLogger() {
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
           toast({ title: "¡Entrenamiento actualizado!" });
-          invalidateAll();
+          invalidateWorkoutQueries({ workoutId: effectiveWorkoutId, fecha });
           close();
         }
       } else {
@@ -531,7 +537,7 @@ export function WorkoutLogger() {
         } catch {
           // silent
         }
-        invalidateAll();
+        invalidateWorkoutQueries({ fecha });
         close();
       }
     } catch (error: any) {

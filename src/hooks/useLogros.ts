@@ -121,6 +121,7 @@ export function useLogros() {
   return useQuery({
     queryKey: ["logros", user?.id],
     enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutos: listado de logros cambia poco
     queryFn: async (): Promise<LogroConEstado[]> => {
       const [logrosRes, unlockedRes] = await Promise.all([
         supabase.from("logro" as any).select("*").order("meta", { ascending: true }),

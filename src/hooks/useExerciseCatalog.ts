@@ -7,6 +7,7 @@ export function useExerciseCatalog(search?: string) {
 
   return useQuery({
     queryKey: ["exerciseCatalog", search, user?.id],
+    staleTime: 5 * 60 * 1000, // 5 minutos: catálogo cambia poco
     queryFn: async () => {
       let query = supabase
         .from("tipo_ejercicio")

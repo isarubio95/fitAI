@@ -31,6 +31,7 @@ export interface PredefinedRoutine {
 export function usePredefinedRoutines() {
   return useQuery<PredefinedRoutine[]>({
     queryKey: ["predefined-routines"],
+    staleTime: 10 * 60 * 1000, // 10 minutos: plantillas cambian poco
     queryFn: async () => {
       const { data: rutinas, error } = await (supabase
         .from("rutina")
