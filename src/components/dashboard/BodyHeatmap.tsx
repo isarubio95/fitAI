@@ -26,20 +26,35 @@ function saveHeatmapPeriod(period: TimePeriod) {
   }
 }
 
-/** Heat color based on set count – cyber palette */
-function getHeatColor(sets: number): string {
-  if (sets === 0) return "transparent";
-  // Usamos colores ligeramente más saturados para que tiñan bien la imagen realista
-  if (sets <= 4) return "#00d9ff";   // Cyan brillante
-  if (sets <= 12) return "#a855f7";  // Violeta intenso
-  return "#ff0055";                  // Rosa neón
+/** Escala de 5 niveles: 0 = invisible, 1–4 = rojo claro → oscuro */
+const RED_SCALE = [
+  "transparent",  // 0 – no se ve
+  "#fecaca",     // 1 – rojo muy claro (red-200)
+  "#f87171",     // 2 – rojo claro (red-400)
+  "#dc2626",     // 3 – rojo medio (red-600)
+  "#991b1b",     // 4 – rojo oscuro (red-800)
+] as const;
+
+/** Devuelve el nivel 0–4 según sets y max (0 = transparente, 1–4 = rojos) */
+function getHeatLevel(sets: number, max: number): number {
+  if (sets === 0 || max === 0) return 0;
+  if (sets >= max) return 4;
+  const ratio = sets / max;
+  if (ratio <= 0.25) return 1;
+  if (ratio <= 0.5) return 2;
+  if (ratio <= 0.75) return 3;
+  return 4;
+}
+
+function getHeatColor(sets: number, max: number): string {
+  const level = getHeatLevel(sets, max);
+  return RED_SCALE[level];
 }
 
 function getHeatOpacity(sets: number, max: number): number {
-  if (sets === 0) return 0;
-  if (max === 0) return 0.7;
-  // Opacidad más alta (0.7 a 0.95) porque el modo 'color' necesita fuerza para teñir el rojo
-  return 0.7 + 0.25 * (sets / max);
+  const level = getHeatLevel(sets, max);
+  if (level === 0) return 0;
+  return Math.min(1, 0.7 + 0.08 * level);
 }
 
 interface MuscleZone {
@@ -113,6 +128,8 @@ export function BodyHeatmap() {
   const groupVolume = data?.groupVolume ?? {};
   const specificVolume = data?.specificVolume ?? {};
   const maxVol = data?.maxGroupVolume ?? 0;
+  /** Rango más alto en mes para que la escala sea coherente con la semana (no todo saturado) */
+  const effectiveMax = period === "month" ? Math.max(maxVol, 24) : Math.max(maxVol, 6);
 
   const handleMouseMove = (e: React.MouseEvent, group: MainMuscleGroup) => {
     if (!containerRef.current) return;
@@ -136,12 +153,12 @@ export function BodyHeatmap() {
       <div className="flex flex-col items-center">
         {/* Aspect ratio ajustado para el cuerpo realista más alto */}
         <div className="relative w-full max-w-[200px] aspect-[1/1.8]">
-          {/* 1. Imagen Realista de Fondo (Sin opacidad, a todo color) */}
+          {/* 1. Imagen Realista de Fondo: filtro de color solo en la imagen para que destaque el rojo del heatmap */}
           <div className="absolute inset-0 w-full h-full flex justify-center items-center">
              <img 
                src={bgImage} 
                alt={`Cuerpo realista ${viewLabel}`}
-               className="w-full h-full object-contain pointer-events-none" 
+               className="w-full h-full object-contain pointer-events-none saturate-[0.35]"
              />
           </div>
 
@@ -149,8 +166,8 @@ export function BodyHeatmap() {
           <svg viewBox="0 0 200 360" className="absolute inset-0 w-full h-full">
             {muscles.map((m, i) => {
               const sets = groupVolume[m.group] || 0;
-              const color = getHeatColor(sets);
-              const opacity = getHeatOpacity(sets, maxVol);
+              const color = getHeatColor(sets, effectiveMax);
+              const opacity = getHeatOpacity(sets, effectiveMax);
 
               return (
                 <path
@@ -216,23 +233,27 @@ export function BodyHeatmap() {
                 </div>
               )}
 
-              {/* Leyenda */}
-              <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] font-medium text-muted-foreground">
+              {/* Leyenda: escala de rojos (0 invisible, 1–4 de claro a oscuro) */}
+              <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] font-medium text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <span className="inline-block w-3 h-3 rounded bg-transparent border border-border/50" />
                   0
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: "#00d9ff" }} />
-                  1-4
+                  <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[1] }} />
+                  Bajo
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: "#a855f7" }} />
-                  5-12
+                  <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[2] }} />
+                  Medio
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: "#ff0055" }} />
-                  13+
+                  <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[3] }} />
+                  Alto
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-3 h-3 rounded" style={{ backgroundColor: RED_SCALE[4] }} />
+                  Máximo
                 </span>
               </div>
             </div>
