@@ -48,17 +48,16 @@ export function WeekCalendar({
   const weekWorkoutsByDate = useMemo(() => {
     if (!monthWorkouts) return {} as Record<string, ActividadWithDetails[]>;
 
-    const start = weekStart;
-    const end = addDays(start, 6);
+    const weekDateKeys = Array.from({ length: 7 }, (_, i) => format(addDays(weekStart, i), "yyyy-MM-dd"));
+    const keySet = new Set(weekDateKeys);
 
     const map: Record<string, ActividadWithDetails[]> = {};
 
     monthWorkouts.forEach((w) => {
-      const d = new Date(w.fecha);
-      if (d >= start && d <= end) {
-        const key = format(d, "yyyy-MM-dd");
-        if (!map[key]) map[key] = [];
-        map[key].push(w);
+      const dateStr = typeof w.fecha === "string" ? w.fecha.slice(0, 10) : format(new Date(w.fecha), "yyyy-MM-dd");
+      if (keySet.has(dateStr)) {
+        if (!map[dateStr]) map[dateStr] = [];
+        map[dateStr].push(w);
       }
     });
 
