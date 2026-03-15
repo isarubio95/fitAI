@@ -9,13 +9,33 @@ import { useToast } from "@/hooks/use-toast";
 import { FileUp, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type ParsedRow = {
+  nombre_ejercicio: string;
+  series: number;
+  repes_min: number;
+  repes_max: number;
+  descanso: number;
+  rir: number;
+  superset_con_siguiente: boolean;
+};
+
+type ParsedRoutine = {
+  nombre: string;
+  descripcion: string;
+  rows: ParsedRow[];
+};
+
+function isSupersetMarker(value: string): boolean {
+  return value.trim().toLowerCase() === "s";
+}
+
 /**
  * Estructura del CSV:
  * - Línea 1: nombre_rutina, descripcion
- * - Líneas 2+: nombre_ejercicio, series, repes_min, repes_max, descanso_segundos [, rir]
- * Los nombres de ejercicios deben coincidir con el catálogo (busca por nombre).
+ * - Líneas 2+: nombre_ejercicio, series, repes_min, repes_max, descanso_segundos [, rir [, S]]
+ *   Columna opcional (7ª): pon S para que ese ejercicio y el siguiente formen superserie.
  */
-function parseCsvRoutine(text: string): { nombre: string; descripcion: string; rows: { nombre_ejercicio: string; series: number; repes_min: number; repes_max: number; descanso: number; rir: number }[] } | null {
+function parseCsvRoutine(text: string): ParsedRoutine | null {
   const lines = text.trim().split(/\r?\n/).filter(Boolean);
   if (lines.length < 2) return null;
 
@@ -43,7 +63,7 @@ function parseCsvRoutine(text: string): { nombre: string; descripcion: string; r
   const descripcion = (first[1] ?? "").trim();
   if (!nombre) return null;
 
-  const rows: { nombre_ejercicio: string; series: number; repes_min: number; repes_max: number; descanso: number; rir: number }[] = [];
+  const rows: ParsedRow[] = [];
   for (let i = 1; i < lines.length; i++) {
     const cells = parseRow(lines[i]);
     const nombre_ejercicio = (cells[0] ?? "").trim();
@@ -53,7 +73,8 @@ function parseCsvRoutine(text: string): { nombre: string; descripcion: string; r
     const repes_max = Math.max(0, parseInt(cells[3], 10) ?? 12);
     const descanso = Math.max(0, parseInt(cells[4], 10) ?? 90);
     const rir = Math.max(0, Math.min(10, parseInt(cells[5], 10) ?? 0));
-    rows.push({ nombre_ejercicio, series, repes_min, repes_max, descanso, rir });
+    const superset_con_siguiente = isSupersetMarker(cells[6] ?? "");
+    rows.push({ nombre_ejercicio, series, repes_min, repes_max, descanso, rir, superset_con_siguiente });
   }
   if (rows.length === 0) return null;
   return { nombre, descripcion, rows };
@@ -78,6 +99,29 @@ async function readCsvWithEncoding(file: File): Promise<string> {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+function generateUUID(): string {
+  return crypto.randomUUID();
+}
+
+/** Dado los índices que "unen con el siguiente", devuelve superset_id por índice (mismo id para cada grupo consecutivo). */
+function buildSupersetIds(n: number, supersetLinks: Set<number>): (string | null)[] {
+  const result: (string | null)[] = new Array(n).fill(null);
+  const sorted = Array.from(supersetLinks).sort((a, b) => a - b);
+  let i = 0;
+  while (i < sorted.length) {
+    const start = sorted[i];
+    let end = start + 1;
+    while (i + 1 < sorted.length && sorted[i + 1] === end) {
+      end++;
+      i++;
+    }
+    const id = generateUUID();
+    for (let j = start; j <= end && j < n; j++) result[j] = id;
+    i++;
+  }
+  return result;
 }
 
 export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
@@ -115,6 +159,12 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
 
       setImporting(true);
       try {
+        const supersetLinks = new Set<number>();
+        parsed.rows.forEach((row, i) => {
+          if (row.superset_con_siguiente && i < parsed.rows.length - 1) supersetLinks.add(i);
+        });
+        const supersetIds = buildSupersetIds(parsed.rows.length, supersetLinks);
+
         const { data: newRutina, error: errRutina } = await supabase
           .from("rutina")
           .insert({ nombre: parsed.nombre, descripcion: parsed.descripcion || null, usuario_id: user.id })
@@ -123,7 +173,7 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
         if (errRutina) throw errRutina;
 
         const notFound: string[] = [];
-        const inserts: { rutina_id: string; tipo_ejercicio_id: string; series_objetivo: number; repes_min: number; repes_max: number; rir: number; orden: number; descanso: number | null }[] = [];
+        const inserts: { rutina_id: string; tipo_ejercicio_id: string; series_objetivo: number; repes_min: number; repes_max: number; rir: number; orden: number; descanso: number | null; superset_id: string | null }[] = [];
         for (let i = 0; i < parsed.rows.length; i++) {
           const row = parsed.rows[i];
           const tipoId = findTipoEjercicioId(row.nombre_ejercicio);
@@ -140,6 +190,7 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
             rir: row.rir,
             orden: i,
             descanso: row.descanso,
+            superset_id: supersetIds[i],
           });
         }
 
@@ -153,7 +204,7 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
           return;
         }
 
-        const { error: errEj } = await supabase.from("rutina_ejercicio").insert(inserts);
+        const { error: errEj } = await supabase.from("rutina_ejercicio").insert(inserts as any);
         if (errEj) throw errEj;
 
         queryClient.invalidateQueries({ queryKey: ["routines"] });
@@ -201,12 +252,13 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
             <p className="font-medium">Estructura del archivo CSV</p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
               <li><strong>Primera línea:</strong> nombre de la rutina, descripción (opcional). Si la descripción lleva comas, escríbela entre comillas.</li>
-              <li><strong>Resto de líneas:</strong> una por ejercicio: nombre_ejercicio, series, repes_min, repes_max, descanso_segundos. Opcional: rir (0-10).</li>
+              <li><strong>Resto de líneas:</strong> nombre_ejercicio, series, repes_min, repes_max, descanso_segundos. Opcional: rir (0-10). Opcional: pon S para superserie con el siguiente.</li>
               <li>El nombre del ejercicio debe coincidir con uno del catálogo de ejercicios de la app.</li>
             </ul>
             <pre className="mt-2 text-xs bg-background/80 rounded p-2 overflow-x-auto border border-border">
-{`Mi rutina A,"Descripción entre comillas"
-Press banca,3,8,12,90
+{`Mi rutina A,"Descripción"
+Press banca,3,8,12,90,2,S
+Curl bíceps,3,10,12,60,,S
 Sentadilla,4,6,10,120,2
 Peso muerto,3,5,8,180`}
             </pre>
