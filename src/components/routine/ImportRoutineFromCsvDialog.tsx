@@ -159,6 +159,22 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
 
       setImporting(true);
       try {
+        const notFound: string[] = [];
+        for (const row of parsed.rows) {
+          if (!findTipoEjercicioId(row.nombre_ejercicio)) {
+            notFound.push(row.nombre_ejercicio);
+          }
+        }
+        if (notFound.length > 0) {
+          const list = notFound.length > 5 ? `${notFound.slice(0, 5).join(", ")} y ${notFound.length - 5} más` : notFound.join(", ");
+          toast({
+            title: "Ejercicios no encontrados",
+            description: `No se ha creado la rutina. No existen en el catálogo: ${list}. Revisa los nombres en el CSV.`,
+            variant: "destructive",
+          });
+          return;
+        }
+
         const supersetLinks = new Set<number>();
         parsed.rows.forEach((row, i) => {
           if (row.superset_con_siguiente && i < parsed.rows.length - 1) supersetLinks.add(i);
@@ -172,15 +188,10 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
           .single();
         if (errRutina) throw errRutina;
 
-        const notFound: string[] = [];
         const inserts: { rutina_id: string; tipo_ejercicio_id: string; series_objetivo: number; repes_min: number; repes_max: number; rir: number; orden: number; descanso: number | null; superset_id: string | null }[] = [];
         for (let i = 0; i < parsed.rows.length; i++) {
           const row = parsed.rows[i];
-          const tipoId = findTipoEjercicioId(row.nombre_ejercicio);
-          if (!tipoId) {
-            notFound.push(row.nombre_ejercicio);
-            continue;
-          }
+          const tipoId = findTipoEjercicioId(row.nombre_ejercicio)!;
           inserts.push({
             rutina_id: newRutina.id,
             tipo_ejercicio_id: tipoId,
@@ -194,23 +205,13 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
           });
         }
 
-        if (inserts.length === 0) {
-          await supabase.from("rutina").delete().eq("id", newRutina.id);
-          toast({
-            title: "Ningún ejercicio encontrado",
-            description: notFound.length ? `No se encontraron en el catálogo: ${notFound.slice(0, 5).join(", ")}${notFound.length > 5 ? "…" : ""}` : "Revisa los nombres en el CSV.",
-            variant: "destructive",
-          });
-          return;
-        }
-
         const { error: errEj } = await supabase.from("rutina_ejercicio").insert(inserts as any);
         if (errEj) throw errEj;
 
         queryClient.invalidateQueries({ queryKey: ["routines"] });
         toast({
           title: "Rutina importada",
-          description: notFound.length ? `Rutina creada con ${inserts.length} ejercicios. No encontrados: ${notFound.slice(0, 3).join(", ")}${notFound.length > 3 ? "…" : ""}` : `"${parsed.nombre}" creada con ${inserts.length} ejercicios.`,
+          description: `"${parsed.nombre}" creada con ${inserts.length} ejercicios.`,
         });
         onOpenChange(false);
       } catch (e: any) {
