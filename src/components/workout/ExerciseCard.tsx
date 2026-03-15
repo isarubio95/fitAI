@@ -22,6 +22,7 @@ import type { ExerciseFormData, SetFormData } from "@/types/workout";
 interface ExerciseCardProps {
   exercise: ExerciseFormData;
   exerciseIndex: number;
+  isInSuperset?: boolean;
   onRemoveExercise: () => void;
   onAddSet: () => void;
   onRemoveSet: (setIndex: number) => void;
@@ -34,6 +35,7 @@ interface ExerciseCardProps {
 export function ExerciseCard({
   exercise,
   exerciseIndex,
+  isInSuperset,
   onRemoveExercise,
   onAddSet,
   onRemoveSet,
@@ -49,8 +51,12 @@ export function ExerciseCard({
 
   const restSeconds = exercise.descanso ?? 120;
 
+  const wrapperClass = isInSuperset
+    ? "p-4 space-y-3"
+    : "rounded-xl border border-border bg-card p-4 space-y-3";
+
   return (
-    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+    <div className={wrapperClass}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">

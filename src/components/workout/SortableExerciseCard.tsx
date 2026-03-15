@@ -8,6 +8,7 @@ interface SortableExerciseCardProps {
   id: string;
   exercise: ExerciseFormData;
   exerciseIndex: number;
+  isInSuperset?: boolean;
   onRemoveExercise: () => void;
   onAddSet: () => void;
   onRemoveSet: (setIndex: number) => void;
@@ -41,7 +42,7 @@ export function SortableExerciseCard({ id, ...props }: SortableExerciseCardProps
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
-      <ExerciseCard {...props} dragHandleProps={listeners} />
+      <ExerciseCard {...props} isInSuperset={props.isInSuperset} dragHandleProps={listeners} />
     </div>
   );
 }

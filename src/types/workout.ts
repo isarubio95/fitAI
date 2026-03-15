@@ -23,6 +23,8 @@ export interface ExerciseFormData {
   repRange?: string;
   targetRir?: number | null;
   descanso?: number; // default rest time in seconds for this exercise
+  /** Agrupa con el siguiente en la UI como superserie (viene de rutina). */
+  superset_id?: string | null;
 }
 
 export interface WorkoutFormData {

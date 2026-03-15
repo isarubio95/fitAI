@@ -45,6 +45,21 @@ import { checkAndAwardLogros } from "@/hooks/useLogros";
 import { startOfMonth } from "date-fns";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
+/** Agrupa ejercicios consecutivos con el mismo superset_id para mostrar el bloque superserie. */
+function groupExercisesBySuperset(exercises: ExerciseFormData[]): { supersetId: string | null; items: { exercise: ExerciseFormData; originalIndex: number }[] }[] {
+  const groups: { supersetId: string | null; items: { exercise: ExerciseFormData; originalIndex: number }[] }[] = [];
+  exercises.forEach((ex, i) => {
+    const sid = ex.superset_id ?? null;
+    const last = groups[groups.length - 1];
+    if (sid && last?.supersetId === sid) {
+      last.items.push({ exercise: ex, originalIndex: i });
+    } else {
+      groups.push({ supersetId: sid, items: [{ exercise: ex, originalIndex: i }] });
+    }
+  });
+  return groups;
+}
+
 // Elapsed time display component
 function ElapsedTime({ since }: { since: string }) {
   const [text, setText] = useState("");
@@ -99,9 +114,9 @@ export function WorkoutLogger() {
   const isEdit = !!effectiveWorkoutId;
   const isActiveWorkout = !!activeWorkoutId || (!!existingWorkout && !existingWorkout.fecha_fin);
 
-  // Pre-fill form when editing existing workout
+  // Pre-fill form when editing existing workout (no hacerlo si abrimos desde plantilla: createActiveWorkout ya puso exercises con superset_id)
   useEffect(() => {
-    if (isEdit && existingWorkout && open) {
+    if (isEdit && existingWorkout && open && !templateExercises) {
       setTitulo(existingWorkout.titulo);
       setFecha(new Date(existingWorkout.fecha).toISOString().slice(0, 10));
       setExercises(
@@ -123,7 +138,7 @@ export function WorkoutLogger() {
         }))
       );
     }
-  }, [isEdit, existingWorkout, open]);
+  }, [isEdit, existingWorkout, open, templateExercises]);
 
   // Create active workout immediately when starting from template
   useEffect(() => {
@@ -671,24 +686,55 @@ export function WorkoutLogger() {
               </div>
             )}
 
-            {/* Exercises */}
+            {/* Exercises (agrupados por superserie como en la edición de rutinas) */}
             <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={exercises.map((ex, i) => getExerciseSortId(ex, i))} strategy={verticalListSortingStrategy}>
                 <div className="space-y-4">
-                  {exercises.map((ex, ei) => (
-                    <SortableExerciseCard
-                      key={getExerciseSortId(ex, ei)}
-                      id={getExerciseSortId(ex, ei)}
-                      exercise={ex}
-                      exerciseIndex={ei}
-                      onRemoveExercise={() => removeExercise(ei)}
-                      onAddSet={() => addSet(ei)}
-                      onRemoveSet={(si) => removeSet(ei, si)}
-                      onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
-                      onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
-                      onSetCompleted={isActiveWorkout ? (si, completed) => handleSetCompleted(ei, si, completed) : undefined}
-                    />
-                  ))}
+                  {groupExercisesBySuperset(exercises).map((group) => {
+                    const isSuperset = !!group.supersetId && group.items.length > 1;
+                    if (isSuperset) {
+                      return (
+                        <div key={group.supersetId!} className="relative rounded-xl border-2 border-primary/40 bg-primary/5">
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />
+                          <div className="px-3 pt-2 pb-1">
+                            <span className="text-xs font-medium text-primary">🔗 Superserie</span>
+                          </div>
+                          <div className="divide-y divide-border">
+                            {group.items.map(({ exercise: ex, originalIndex: ei }) => (
+                              <SortableExerciseCard
+                                key={getExerciseSortId(ex, ei)}
+                                id={getExerciseSortId(ex, ei)}
+                                exercise={ex}
+                                exerciseIndex={ei}
+                                isInSuperset
+                                onRemoveExercise={() => removeExercise(ei)}
+                                onAddSet={() => addSet(ei)}
+                                onRemoveSet={(si) => removeSet(ei, si)}
+                                onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
+                                onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
+                                onSetCompleted={isActiveWorkout ? (si, completed) => handleSetCompleted(ei, si, completed) : undefined}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    const { exercise: ex, originalIndex: ei } = group.items[0];
+                    return (
+                      <SortableExerciseCard
+                        key={getExerciseSortId(ex, ei)}
+                        id={getExerciseSortId(ex, ei)}
+                        exercise={ex}
+                        exerciseIndex={ei}
+                        onRemoveExercise={() => removeExercise(ei)}
+                        onAddSet={() => addSet(ei)}
+                        onRemoveSet={(si) => removeSet(ei, si)}
+                        onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
+                        onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
+                        onSetCompleted={isActiveWorkout ? (si, completed) => handleSetCompleted(ei, si, completed) : undefined}
+                      />
+                    );
+                  })}
                 </div>
               </SortableContext>
             </DndContext>
