@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 import {
   DndContext,
   closestCenter,
@@ -42,6 +41,8 @@ import { PostWorkoutModal } from "./PostWorkoutModal";
 import { useRestTimerContext } from "./RestTimerProvider";
 import { useCalculateAndAwardXP, useRemoveWorkoutXP, type XPBreakdown } from "@/hooks/useGamification";
 import { checkAndAwardLogros } from "@/hooks/useLogros";
+import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
+import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import { startOfMonth } from "date-fns";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
@@ -90,7 +91,6 @@ export function WorkoutLogger() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
 
   const [activeWorkoutId, setActiveWorkoutId] = useState<string | null>(null);
   const effectiveWorkoutId = workoutId || activeWorkoutId;
@@ -110,6 +110,8 @@ export function WorkoutLogger() {
   const calculateAndAwardXP = useCalculateAndAwardXP();
   const removeXP = useRemoveWorkoutXP();
   const restTimer = useRestTimerContext();
+  const { data: exerciseCatalog } = useExerciseCatalog();
+  const [selectedExerciseDetail, setSelectedExerciseDetail] = useState<any | null>(null);
 
   const isEdit = !!effectiveWorkoutId;
   const isActiveWorkout = !!activeWorkoutId || (!!existingWorkout && !existingWorkout.fecha_fin);
@@ -380,6 +382,16 @@ export function WorkoutLogger() {
       }
     },
     [exercises, effectiveWorkoutId, restTimer]
+  );
+
+  const handleViewExerciseDetails = useCallback(
+    (exercise: ExerciseFormData) => {
+      if (!exercise.tipo_ejercicio_id || !exerciseCatalog) return;
+      const found = exerciseCatalog.find((t) => t.id === exercise.tipo_ejercicio_id);
+      if (!found) return;
+      setSelectedExerciseDetail(found);
+    },
+    [exerciseCatalog]
   );
 
   const dndSensors = useSensors(
@@ -713,6 +725,7 @@ export function WorkoutLogger() {
                                 onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
                                 onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
                                 onSetCompleted={isActiveWorkout ? (si, completed) => handleSetCompleted(ei, si, completed) : undefined}
+                                onViewExerciseDetails={handleViewExerciseDetails}
                               />
                             ))}
                           </div>
@@ -732,6 +745,7 @@ export function WorkoutLogger() {
                         onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
                         onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
                         onSetCompleted={isActiveWorkout ? (si, completed) => handleSetCompleted(ei, si, completed) : undefined}
+                        onViewExerciseDetails={handleViewExerciseDetails}
                       />
                     );
                   })}
@@ -778,6 +792,15 @@ export function WorkoutLogger() {
           setPostWorkoutData(null);
         }}
         breakdown={postWorkoutData}
+      />
+
+      <ExerciseDetailSheet
+        exercise={selectedExerciseDetail}
+        open={!!selectedExerciseDetail}
+        onOpenChange={(open) => {
+          if (!open) setSelectedExerciseDetail(null);
+        }}
+        currentUserId={user?.id}
       />
     </>
   );

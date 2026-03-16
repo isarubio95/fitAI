@@ -30,6 +30,7 @@ interface ExerciseCardProps {
   onAutoSaveSet?: (setIndex: number) => void;
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
   dragHandleProps?: Record<string, any>;
+  onViewExerciseDetails?: (exercise: ExerciseFormData) => void;
 }
 
 export function ExerciseCard({
@@ -43,6 +44,7 @@ export function ExerciseCard({
   onAutoSaveSet,
   onSetCompleted,
   dragHandleProps,
+  onViewExerciseDetails,
 }: ExerciseCardProps) {
   const { data: lastPerf } = useLastPerformance(exercise.tipo_ejercicio_id);
   const timer = useRestTimerContext();
@@ -64,9 +66,20 @@ export function ExerciseCard({
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
           <h3 className="font-semibold">{exercise.nombre}</h3>
+          {onViewExerciseDetails && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => onViewExerciseDetails(exercise)}
+              title="Ver cómo se hace este ejercicio"
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          )}
           {exercise.targetRir != null && (
             <Badge variant="secondary" className="text-xs gap-1">
-              🎯 Meta RIR: {exercise.targetRir}
+              🎯 RIR: {exercise.targetRir}
             </Badge>
           )}
           <Badge variant="outline" className="text-xs gap-1">

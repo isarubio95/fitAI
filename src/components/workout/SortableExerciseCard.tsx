@@ -15,6 +15,7 @@ interface SortableExerciseCardProps {
   onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number) => void;
   onAutoSaveSet?: (setIndex: number) => void;
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
+  onViewExerciseDetails?: (exercise: ExerciseFormData) => void;
 }
 
 export function SortableExerciseCard({ id, ...props }: SortableExerciseCardProps) {
@@ -42,7 +43,12 @@ export function SortableExerciseCard({ id, ...props }: SortableExerciseCardProps
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
-      <ExerciseCard {...props} isInSuperset={props.isInSuperset} dragHandleProps={listeners} />
+      <ExerciseCard
+        {...props}
+        isInSuperset={props.isInSuperset}
+        dragHandleProps={listeners}
+        onViewExerciseDetails={props.onViewExerciseDetails}
+      />
     </div>
   );
 }
