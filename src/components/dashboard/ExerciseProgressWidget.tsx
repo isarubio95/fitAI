@@ -201,7 +201,8 @@ export function ExerciseProgressWidget() {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                  domain={["dataMin - 5", "dataMax + 5"]}
+                  // Nunca permitir valores negativos en el rango
+                  domain={[0, "dataMax + 5"]}
                   tickFormatter={(v) => Number(v).toFixed(2)}
                 />
                 <Tooltip content={<CustomTooltip />} />
