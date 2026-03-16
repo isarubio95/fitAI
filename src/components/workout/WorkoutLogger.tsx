@@ -87,7 +87,7 @@ function ElapsedTime({ since }: { since: string }) {
 
 export function WorkoutLogger() {
   const { state, setOpen, close } = useGlobalWorkoutDrawer();
-  const { open, workoutId, defaultDate, templateExercises, templateTitle } = state;
+  const { open, workoutId, defaultDate, templateExercises, templateTitle, plannedId } = state;
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -523,6 +523,14 @@ export function WorkoutLogger() {
             })
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
+
+          // Marcar la rutina programada como completada, si aplica
+          if (plannedId) {
+            await (supabase as any)
+              .from("rutina_programada")
+              .update({ actividad_id: effectiveWorkoutId })
+              .eq("id", plannedId);
+          }
 
           // Calculate XP and show post-workout modal
           const completedSets = exercises.reduce(

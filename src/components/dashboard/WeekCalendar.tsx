@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   startOfWeek,
@@ -7,15 +7,46 @@ import {
   subWeeks,
   isSameDay,
   isToday,
+  isBefore,
+  startOfDay,
   format,
   startOfMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, ChevronDown, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Pencil, Check, Clock, CalendarX2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { ActividadWithDetails } from "@/types/workout";
 import { useMonthWorkouts } from "@/hooks/useWorkouts";
+import { getPlannedRoutines, deletePlannedRoutine, updatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
+import { useRoutines } from "@/hooks/useRoutines";
+import { useToast } from "@/hooks/use-toast";
 
 interface WeekCalendarProps {
   selectedDate: Date | null;
@@ -24,6 +55,7 @@ interface WeekCalendarProps {
   onDateSelect: (date: Date) => void;
   workoutDates: Date[];
   onWorkoutClick?: (id: string) => void;
+  onPlannedClick?: (planned: PlannedRoutine) => void;
 }
 
 export function WeekCalendar({
@@ -32,6 +64,7 @@ export function WeekCalendar({
   onDateSelect,
   workoutDates,
   onWorkoutClick,
+  onPlannedClick,
 }: WeekCalendarProps) {
   const weekStart = useMemo(
     () => startOfWeek(selectedDate ?? displayWeekStart ?? new Date(), { weekStartsOn: 1 }),
@@ -44,6 +77,25 @@ export function WeekCalendar({
   );
 
   const { data: monthWorkouts } = useMonthWorkouts(monthForWeek);
+  const { data: planned } = getPlannedRoutines(weekStart, addDays(weekStart, 6));
+  const deletePlan = deletePlannedRoutine();
+  const updatePlan = updatePlannedRoutine();
+  const { data: routines } = useRoutines();
+  const { toast } = useToast();
+  const [confirmDeletePlanned, setConfirmDeletePlanned] = useState<PlannedRoutine | null>(null);
+  const [editPlanned, setEditPlanned] = useState<PlannedRoutine | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [editRutinaId, setEditRutinaId] = useState("");
+
+  const plannedByDate = useMemo(() => {
+    const map: Record<string, PlannedRoutine[]> = {};
+    (planned ?? []).forEach((p) => {
+      const key = p.fecha_programada.slice(0, 10);
+      if (!map[key]) map[key] = [];
+      map[key].push(p);
+    });
+    return map;
+  }, [planned]);
 
   const weekWorkoutsByDate = useMemo(() => {
     if (!monthWorkouts) return {} as Record<string, ActividadWithDetails[]>;
@@ -98,10 +150,11 @@ export function WeekCalendar({
           const today = isToday(day);
           const dateKey = format(day, "yyyy-MM-dd");
           const dayWorkouts = weekWorkoutsByDate?.[dateKey] ?? [];
+          const dayPlanned = plannedByDate?.[dateKey] ?? [];
 
           let summary: string;
           if (dayWorkouts.length === 0) {
-            summary = "";
+            summary = dayPlanned.length === 1 ? dayPlanned[0].rutina?.nombre ?? "" : "";
           } else if (dayWorkouts.length === 1) {
             summary = dayWorkouts[0].titulo;
           } else if (dayWorkouts.length === 2) {
@@ -111,7 +164,22 @@ export function WeekCalendar({
           }
 
           const hasWorkouts = dayWorkouts.length > 0;
-          const isOpen = selected && hasWorkouts;
+          const hasPlanned = dayPlanned.length > 0;
+          const isOpen = selected && (hasWorkouts || hasPlanned);
+
+          const now = startOfDay(new Date());
+          const dayStart = startOfDay(day);
+          const plannedCompleted = hasPlanned && dayPlanned.some((p) => !!p.actividad_id);
+          const plannedMissed = hasPlanned && dayPlanned.some((p) => !p.actividad_id && isBefore(dayStart, now));
+          const plannedPending = hasPlanned && dayPlanned.some((p) => !p.actividad_id && !isBefore(dayStart, now));
+
+          const planDotClass = plannedCompleted
+            ? "bg-green-500"
+            : plannedPending
+              ? "bg-orange-500"
+              : plannedMissed
+                ? "bg-zinc-600"
+                : null;
 
           return (
             <motion.div
@@ -155,7 +223,10 @@ export function WeekCalendar({
                     {hasWorkouts && (
                       <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
                     )}
-                    {hasWorkouts && (
+                    {planDotClass && (
+                      <span className={cn("h-2 w-2 rounded-full shrink-0", planDotClass)} />
+                    )}
+                    {(hasWorkouts || hasPlanned) && (
                       <ChevronDown
                         className={cn(
                           "h-4 w-4 text-muted-foreground transition-transform duration-200",
@@ -183,6 +254,79 @@ export function WeekCalendar({
                     className="overflow-hidden"
                   >
                     <div className="px-3 pb-3 pt-0 text-xs">
+                      {hasPlanned && dayPlanned.map((p) => {
+                        const isCompleted = !!p.actividad_id;
+                        const isMissed = !p.actividad_id && isBefore(dayStart, now);
+                        const isPending = !p.actividad_id && !isBefore(dayStart, now);
+                        return (
+                          <div
+                            key={p.id}
+                            className="pt-2 pb-3 border-b border-border/20 last:border-b-0"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium text-[13px] text-foreground truncate">
+                                    {p.rutina?.nombre ?? "Rutina programada"}
+                                  </span>
+                                  {isCompleted && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-green-600">
+                                      <Check className="h-3.5 w-3.5" /> Completado
+                                    </span>
+                                  )}
+                                  {isPending && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-orange-600">
+                                      <Clock className="h-3.5 w-3.5" /> Pendiente
+                                    </span>
+                                  )}
+                                  {isMissed && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-zinc-600">
+                                      <CalendarX2 className="h-3.5 w-3.5" /> Perdido
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground">
+                                  Planificado
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {onPlannedClick && isPending && (
+                                  <Button
+                                    size="sm"
+                                    className="h-8"
+                                    onClick={() => onPlannedClick(p)}
+                                  >
+                                    Iniciar
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => {
+                                    setEditPlanned(p);
+                                    setEditDate(p.fecha_programada.slice(0, 10));
+                                    setEditRutinaId(p.rutina_id);
+                                  }}
+                                  title="Editar"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={() => setConfirmDeletePlanned(p)}
+                                  title="Eliminar"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
                       {dayWorkouts.map((w) => (
                         <div
                           key={w.id}
@@ -222,6 +366,115 @@ export function WeekCalendar({
           );
         })}
       </div>
+
+      {/* Confirmar eliminar programación */}
+      <AlertDialog open={!!confirmDeletePlanned} onOpenChange={(open) => !open && setConfirmDeletePlanned(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar esta programación?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se quitará la rutina &quot;{confirmDeletePlanned?.rutina?.nombre}&quot; del día planificado. El historial de entrenamientos no se verá afectado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePlan.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!confirmDeletePlanned) return;
+                try {
+                  await deletePlan.mutateAsync([confirmDeletePlanned.id]);
+                  toast({ title: "Programación eliminada" });
+                  setConfirmDeletePlanned(null);
+                } catch (e: unknown) {
+                  toast({ title: "Error al eliminar", description: (e as Error).message, variant: "destructive" });
+                }
+              }}
+              disabled={deletePlan.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Editar programación: fecha y/o rutina */}
+      <Dialog
+        open={!!editPlanned}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditPlanned(null);
+            setEditDate("");
+            setEditRutinaId("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar hoja de ruta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-date">Fecha</Label>
+              <Input
+                id="edit-date"
+                type="date"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+                className="h-10"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Rutina</Label>
+              <Select value={editRutinaId} onValueChange={setEditRutinaId}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Elige rutina..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {(routines ?? []).map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditPlanned(null);
+                setEditDate("");
+                setEditRutinaId("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={!editPlanned || !editDate || updatePlan.isPending}
+              onClick={async () => {
+                if (!editPlanned || !editDate) return;
+                try {
+                  await updatePlan.mutateAsync({
+                    id: editPlanned.id,
+                    fecha_programada: editDate,
+                    ...(editRutinaId !== editPlanned.rutina_id ? { rutina_id: editRutinaId } : {}),
+                  });
+                  toast({ title: "Programación actualizada" });
+                  setEditPlanned(null);
+                  setEditDate("");
+                  setEditRutinaId("");
+                } catch (e: unknown) {
+                  toast({ title: "Error al guardar", description: (e as Error).message, variant: "destructive" });
+                }
+              }}
+            >
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
+import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,8 +14,23 @@ import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
-import { format, startOfMonth, startOfWeek, isSameDay } from "date-fns";
+import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashboard/ProgramWizard";
+import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears } from "date-fns";
 import { es } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import { getPlannedRoutines, deleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import type { ExerciseFormData } from "@/types/workout";
 
 // Importaciones de DND-Kit iguales a las de Rutinas
 import { 
@@ -101,17 +118,54 @@ function SortableWidget({ id, isDragMode, children }: { id: string, isDragMode: 
 }
 
 const Dashboard = () => {
-  const { openNew, openEdit } = useGlobalWorkoutDrawer();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { openNew, openEdit, openActiveWorkout, openFromPlannedRoutine } = useGlobalWorkoutDrawer();
+  const { data: activeWorkout } = useActiveWorkout();
+  const { toast } = useToast();
 
   const [calendarView, setCalendarView] = useState<"month" | "week">(loadCalendarView);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   /** Semana mostrada en vista semanal; al cerrar el dropdown se mantiene en lugar de volver a hoy */
   const [weekViewStart, setWeekViewStart] = useState<Date | null>(null);
+  const [planWizardOpen, setPlanWizardOpen] = useState(false);
+  const [editPlanSheetOpen, setEditPlanSheetOpen] = useState(false);
+  const [planWizardReplaceExisting, setPlanWizardReplaceExisting] = useState(false);
+  const [confirmDeletePlan, setConfirmDeletePlan] = useState(false);
+  const [pendingOpenPlanWizard, setPendingOpenPlanWizard] = useState(false);
+
+  const today = useMemo(() => new Date(), []);
+  const { data: allPlannedRoutines, isLoading: plannedLoading } = getPlannedRoutines(subYears(today, 1), addYears(today, 2));
+  const hasPlanned = (allPlannedRoutines?.length ?? 0) > 0;
+  const plannedCount = allPlannedRoutines?.length ?? 0;
+  const initialRoutineByDay = useMemo(
+    () => (allPlannedRoutines?.length ? deriveRoutineByDayFromPlanned(allPlannedRoutines) : {}),
+    [allPlannedRoutines]
+  );
+  const deleteAllPlan = deleteAllPlannedRoutines();
 
   useEffect(() => {
     saveCalendarView(calendarView);
   }, [calendarView]);
+
+  // Abrir hoja de ruta cuando se llega desde el BottomNav (Añadir → Hoja de ruta)
+  useEffect(() => {
+    if ((location.state as { openPlanWizard?: boolean })?.openPlanWizard) {
+      setPendingOpenPlanWizard(true);
+      navigate(".", { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
+
+  useEffect(() => {
+    if (!pendingOpenPlanWizard || plannedLoading) return;
+    if (hasPlanned) {
+      setEditPlanSheetOpen(true);
+    } else {
+      setPlanWizardOpen(true);
+    }
+    setPendingOpenPlanWizard(false);
+  }, [pendingOpenPlanWizard, plannedLoading, hasPlanned]);
 
   const [isDragMode, setIsDragMode] = useState(false); // Estado para controlar el modo edición
 
@@ -160,6 +214,40 @@ const Dashboard = () => {
 
   const handleMonthChange = (month: Date) => {
     setCalendarMonth(month);
+  };
+
+  const startPlanned = (planned: PlannedRoutine) => {
+    if (activeWorkout) {
+      toast({
+        title: "Ya tienes un entrenamiento en curso",
+        description: "Termínalo o cancélalo antes de empezar otro.",
+        variant: "destructive",
+        action: (
+          <Button variant="outline" size="sm" className="shrink-0" onClick={() => openActiveWorkout(activeWorkout.id)}>
+            Ir al entreno
+          </Button>
+        ),
+      });
+      return;
+    }
+
+    const routine = planned.rutina as any;
+    const ejercicios = (routine.ejercicios ?? [])
+      .sort((a: any, b: any) => (a.orden ?? 0) - (b.orden ?? 0))
+      .map((ej: any) => ({
+        tipo_ejercicio_id: ej.tipo_ejercicio_id,
+        nombre: ej.tipo_ejercicio?.nombre ?? "",
+        repRange: `${ej.repes_min}-${ej.repes_max}`,
+        targetRir: (ej as any).rir ?? 1,
+        descanso: (ej as any).descanso ?? 120,
+        superset_id: (ej as any).superset_id ?? null,
+        sets: Array.from({ length: ej.series_objetivo }, () => ({
+          repeticiones: 0,
+          peso_kg: 0,
+        })),
+      })) as ExerciseFormData[];
+
+    openFromPlannedRoutine(planned.id, routine.nombre ?? "Rutina", ejercicios);
   };
 
   // Mismos sensores exactos que en src/pages/Routines.tsx
@@ -241,6 +329,34 @@ const Dashboard = () => {
               </Tabs>
             </div>
 
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  if (hasPlanned) {
+                    setEditPlanSheetOpen(true);
+                  } else {
+                    setPlanWizardReplaceExisting(false);
+                    setPlanWizardOpen(true);
+                  }
+                }}
+              >
+                {hasPlanned ? (
+                  <>
+                    <Pencil className="h-4 w-4" />
+                    Editar hoja de ruta
+                  </>
+                ) : (
+                  <>
+                    <CalendarIcon className="h-4 w-4" />
+                    Crear Hoja de Ruta
+                  </>
+                )}
+              </Button>
+            </div>
+
             {calendarView === "month" ? (
               <MonthlyPlanner
                 month={calendarMonth}
@@ -251,6 +367,7 @@ const Dashboard = () => {
                   if (!isDragMode) openNew(format(date, "yyyy-MM-dd"));
                 }}
                 onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
+                onPlannedStart={!isDragMode ? startPlanned : undefined}
               />
             ) : (
               <div>
@@ -260,9 +377,94 @@ const Dashboard = () => {
                   onDateSelect={handleWeekDaySelect}
                   workoutDates={workoutDates ?? []}
                   onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
+                  onPlannedClick={(p) => { if (!isDragMode) startPlanned(p); }}
                 />
               </div>
             )}
+
+            <ProgramWizard
+              open={planWizardOpen}
+              onOpenChange={(open) => {
+                setPlanWizardOpen(open);
+                if (!open) setPlanWizardReplaceExisting(false);
+              }}
+              startDate={selectedDate ?? new Date()}
+              replaceExisting={planWizardReplaceExisting}
+              initialRoutineByDay={planWizardReplaceExisting ? initialRoutineByDay : undefined}
+            />
+
+            <Sheet open={editPlanSheetOpen} onOpenChange={setEditPlanSheetOpen}>
+              <SheetContent side="bottom" className="rounded-t-2xl">
+                <SheetHeader>
+                  <SheetTitle>Editar hoja de ruta</SheetTitle>
+                </SheetHeader>
+                <div className="mt-4 space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Tienes <strong>{plannedCount}</strong> {plannedCount === 1 ? "día programado" : "días programados"}.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="outline"
+                      className="w-full gap-2"
+                      onClick={() => {
+                        setEditPlanSheetOpen(false);
+                        setPlanWizardReplaceExisting(true);
+                        setPlanWizardOpen(true);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Modificar plan
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="w-full gap-2"
+                      onClick={() => setConfirmDeletePlan(true)}
+                    >
+                      Borrar hoja de ruta
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <AlertDialog open={confirmDeletePlan} onOpenChange={setConfirmDeletePlan}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Eliminar toda la planificación?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Vas a eliminar toda tu hoja de ruta. Se borrarán los{" "}
+                    <strong>{plannedCount} {plannedCount === 1 ? "día programado" : "días programados"}</strong> y no
+                    podrás recuperarlos. Perderás toda la planificación de rutinas. Esta acción no se puede deshacer.
+                    ¿Continuar?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={deleteAllPlan.isPending}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={async () => {
+                      try {
+                        await deleteAllPlan.mutateAsync();
+                        toast({
+                          title: "Hoja de ruta eliminada",
+                          description: "Se ha borrado toda tu planificación.",
+                        });
+                        setConfirmDeletePlan(false);
+                        setEditPlanSheetOpen(false);
+                      } catch (e: any) {
+                        toast({
+                          title: "Error al eliminar",
+                          description: e.message,
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
+                    Eliminar todo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         );
       case 'last-workout':

@@ -1,8 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { startOfMonth, endOfMonth, startOfWeek, startOfDay, endOfDay } from "date-fns";
 import type { ActividadWithDetails, EjercicioWithDetails } from "@/types/workout";
+import { useRemoveWorkoutXP } from "@/hooks/useGamification";
+import { useToast } from "@/hooks/use-toast";
 
 export function useLastWorkout() {
   const { user } = useAuth();
@@ -295,5 +297,64 @@ export function useWorkoutHistory() {
         return { ...act, ejercicios: actEjercicios };
       });
     },
+  });
+}
+
+export function useDeleteWorkout() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const removeXP = useRemoveWorkoutXP();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (workoutId: string) => {
+      const { data: actividad, error: actErr } = await supabase
+        .from("actividad")
+        .select("id, fecha")
+        .eq("id", workoutId)
+        .maybeSingle();
+      if (actErr) throw actErr;
+      if (!actividad) throw new Error("Entrenamiento no encontrado");
+
+      const { data: oldEjercicios } = await supabase
+        .from("ejercicio")
+        .select("id")
+        .eq("actividad_id", workoutId);
+      const oldIds = oldEjercicios?.length ? oldEjercicios.map((e) => e.id) : [];
+
+      if (oldIds.length) {
+        const { data: series } = await supabase
+          .from("serie")
+          .select("id, repeticiones, peso_kg")
+          .in("ejercicio_id", oldIds);
+        const seriesCompletadas = (series ?? []).filter(
+          (s) => Number(s.repeticiones) > 0 || Number(s.peso_kg) > 0
+        ).length;
+        if (seriesCompletadas > 0) await removeXP(workoutId, seriesCompletadas);
+      }
+      if (oldIds.length) {
+        await supabase.from("serie").delete().in("ejercicio_id", oldIds);
+        await supabase.from("ejercicio").delete().eq("actividad_id", workoutId);
+      }
+      const { error } = await supabase.from("actividad").delete().eq("id", workoutId);
+      if (error) throw error;
+
+      const deletedFecha = actividad.fecha ? new Date(actividad.fecha).toISOString().slice(0, 10) : undefined;
+      queryClient.invalidateQueries({ queryKey: ["lastWorkout"] });
+      queryClient.invalidateQueries({ queryKey: ["activeWorkout"] });
+      queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
+      queryClient.invalidateQueries({ queryKey: ["exercise-with-history"] });
+      queryClient.invalidateQueries({ queryKey: ["exercise-history"] });
+      queryClient.invalidateQueries({ queryKey: ["plannedRoutines"] });
+      if (deletedFecha) {
+        queryClient.invalidateQueries({ queryKey: ["workoutsForDate", user?.id, deletedFecha] });
+        const from = startOfMonth(new Date(deletedFecha + "T12:00:00.000Z")).toISOString();
+        queryClient.invalidateQueries({ queryKey: ["monthWorkoutDates", user?.id, from] });
+        queryClient.invalidateQueries({ queryKey: ["monthWorkouts", user?.id, from] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
+    },
+    onSuccess: () => toast({ title: "Entrenamiento eliminado correctamente" }),
+    onError: (err: Error) => toast({ title: "Error al eliminar", description: err.message, variant: "destructive" }),
   });
 }

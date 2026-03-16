@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity, Sparkles, ChevronDown, FileUp } from "lucide-react";
+import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity, Sparkles, ChevronDown, FileUp, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
@@ -60,84 +60,107 @@ export function BottomNav() {
         {/* MENÚ DESPLEGABLE DE ACCIONES */}
       <div
         className={cn(
-          "absolute bottom-[85px] left-1/2 -translate-x-1/2 flex flex-col gap-1 rounded-2xl bg-card border border-border p-2 shadow-xl transition-all duration-300 ease-in-out origin-bottom w-[min(92vw,320px)]",
+          "absolute bottom-[85px] left-1/2 -translate-x-1/2 flex flex-col rounded-2xl bg-card border border-border shadow-xl transition-all duration-300 ease-in-out origin-bottom w-[min(92vw,320px)] divide-y divide-border overflow-hidden",
           isMenuOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-50 opacity-0 pointer-events-none"
         )}
       >
-        <button 
-          className="flex items-center gap-3 rounded-xl p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
-          onClick={() => { openNew(); setIsMenuOpen(false); }}
+        <button
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left w-full"
+          onClick={() => { navigate("/", { state: { openPlanWizard: true } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
         >
-          <Activity className="h-5 w-5 text-primary" />
-          Entrenamiento
+          <Calendar className="h-5 w-5 shrink-0 text-violet-500" />
+          <div className="min-w-0">
+            <p className="font-medium">Hoja de ruta</p>
+            <p className="text-[10px] text-muted-foreground">Planifica qué rutina hacer cada día</p>
+          </div>
         </button>
-        <button 
-          className="flex items-center justify-between w-full gap-3 rounded-xl p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
-          onClick={() => { setShowRoutineSubmenu(!showRoutineSubmenu); }}
-        >
-          <span className="flex items-center gap-3">
-            <ClipboardList className="h-5 w-5 text-blue-500" />
-            Rutina
-          </span>
-          <ChevronDown 
-            className={cn("h-4 w-4 shrink-0 transition-transform duration-300", showRoutineSubmenu && "rotate-180")} 
-          />
-        </button>
-        {/* Contenedor grid para transición de altura suave (acordeón) */}
-        <div
-          className={cn(
-            "grid transition-all duration-300 ease-in-out",
-            showRoutineSubmenu ? "grid-rows-[1fr] opacity-100 mt-2" : "grid-rows-[0fr] opacity-0 mt-0"
-          )}
-        >
-          <div className="overflow-hidden">
-            <div className="space-y-0.5 rounded-lg bg-muted/50 p-2">
-              <button
-                className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
-                onClick={() => { setExplorerOpen(true); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
-              >
-                <Sparkles className="h-4 w-4 shrink-0 text-amber-400" />
-                <div>
-                  <p className="font-medium">Explorar Predefinidas</p>
-                  <p className="text-[10px] text-muted-foreground">Descubre rutinas creadas por expertos</p>
-                </div>
-              </button>
-              <button
-                className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
-                onClick={() => { navigate("/routines", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
-              >
-                <Plus className="h-4 w-4 shrink-0 text-primary" />
-                <div>
-                  <p className="font-medium">Crear desde cero</p>
-                  <p className="text-[10px] text-muted-foreground">Configura tus propios ejercicios</p>
-                </div>
-              </button>
-              <button
-                className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
-                onClick={() => { navigate("/routines", { state: { action: "import-csv" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
-              >
-                <FileUp className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Importar desde CSV</p>
-                  <p className="text-[10px] text-muted-foreground">Sube un archivo con la rutina</p>
-                </div>
-              </button>
+        <div>
+          <button
+            className="flex items-center justify-between w-full gap-3 rounded-none p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
+            onClick={() => { setShowRoutineSubmenu(!showRoutineSubmenu); }}
+          >
+            <span className="flex items-center gap-3 min-w-0">
+              <ClipboardList className="h-5 w-5 shrink-0 text-blue-500" />
+              <div className="min-w-0">
+                <p className="font-medium">Rutina</p>
+                <p className="text-[10px] text-muted-foreground">Crea o explora plantillas de entrenamiento</p>
+              </div>
+            </span>
+            <ChevronDown
+              className={cn("h-4 w-4 shrink-0 transition-transform duration-300", showRoutineSubmenu && "rotate-180")}
+            />
+          </button>
+          <div
+            className={cn(
+              "grid transition-all duration-300 ease-in-out",
+              showRoutineSubmenu ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            )}
+          >
+            <div className="overflow-hidden">
+              <div className="space-y-0.5 bg-muted/30 px-3 pb-2 pt-0">
+                <button
+                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
+                  onClick={() => { setExplorerOpen(true); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
+                >
+                  <Sparkles className="h-4 w-4 shrink-0 text-amber-400" />
+                  <div>
+                    <p className="font-medium">Explorar Predefinidas</p>
+                    <p className="text-[10px] text-muted-foreground">Descubre rutinas creadas por expertos</p>
+                  </div>
+                </button>
+                <button
+                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
+                  onClick={() => { navigate("/routines", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
+                >
+                  <Plus className="h-4 w-4 shrink-0 text-primary" />
+                  <div>
+                    <p className="font-medium">Crear desde cero</p>
+                    <p className="text-[10px] text-muted-foreground">Configura tus propios ejercicios</p>
+                  </div>
+                </button>
+                <button
+                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
+                  onClick={() => { navigate("/routines", { state: { action: "import-csv" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
+                >
+                  <FileUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Importar desde CSV</p>
+                    <p className="text-[10px] text-muted-foreground">Sube un archivo con la rutina</p>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-        <button 
-          className="flex items-center gap-3 rounded-xl p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
+        <button
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left w-full"
+          onClick={() => { openNew(); setIsMenuOpen(false); }}
+        >
+          <Activity className="h-5 w-5 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <p className="font-medium">Entrenamiento</p>
+            <p className="text-[10px] text-muted-foreground">Registra una sesión de gym</p>
+          </div>
+        </button>
+        <button
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left w-full"
           onClick={() => { navigate("/exercises", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
         >
-          <Dumbbell className="h-5 w-5 text-orange-500" />
-          Ejercicio
+          <Dumbbell className="h-5 w-5 shrink-0 text-orange-500" />
+          <div className="min-w-0">
+            <p className="font-medium">Ejercicio</p>
+            <p className="text-[10px] text-muted-foreground">Añade un ejercicio a tu biblioteca</p>
+          </div>
         </button>
-        <button 
-          className="flex items-center gap-3 rounded-xl p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
+        <button
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left w-full"
           onClick={() => { navigate("/evolution", { state: { tab: "measurements", action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
         >
-          <Scale className="h-5 w-5 text-emerald-500" />
-          Medida
+          <Scale className="h-5 w-5 shrink-0 text-emerald-500" />
+          <div className="min-w-0">
+            <p className="font-medium">Medida</p>
+            <p className="text-[10px] text-muted-foreground">Registra peso, cintura, etc.</p>
+          </div>
         </button>
       </div>
 
