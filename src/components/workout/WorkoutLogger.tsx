@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
@@ -91,6 +92,7 @@ export function WorkoutLogger() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [activeWorkoutId, setActiveWorkoutId] = useState<string | null>(null);
   const effectiveWorkoutId = workoutId || activeWorkoutId;
