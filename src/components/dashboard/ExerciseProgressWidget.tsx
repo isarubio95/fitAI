@@ -29,6 +29,11 @@ import { ChevronLeft, ChevronRight, TrendingUp, Info } from "lucide-react";
 
 const SWIPE_THRESHOLD = 50;
 
+function formatWeight(value: number) {
+  const n = Number(value);
+  return Number.isInteger(n) ? n.toString() : n.toFixed(2);
+}
+
 export function ExerciseProgressWidget() {
   const { data: exercises, isLoading: loadingExercises } = useExerciseWithHistory();
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -111,8 +116,8 @@ export function ExerciseProgressWidget() {
                 {lastRecord ? (
                   <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
                     <p className="font-medium">Tu mejor serie registrada:</p>
-                    <p className="text-muted-foreground">Moviste: {Number(lastRecord.weight).toFixed(2)}kg × {lastRecord.reps} reps</p>
-                    <p className="text-primary font-semibold">Tu 1RM teórico es: {Number(lastRecord.oneRepMax).toFixed(2)}kg</p>
+                    <p className="text-muted-foreground">Moviste: {formatWeight(lastRecord.weight)}kg × {lastRecord.reps} reps</p>
+                    <p className="text-primary font-semibold">Tu 1RM teórico es: {formatWeight(lastRecord.oneRepMax)}kg</p>
                     <p className="text-[10px] text-muted-foreground mt-1 font-mono">
                       {Number(lastRecord.weight).toFixed(2)} × (1 + 0.0333 × {lastRecord.reps})
                     </p>
@@ -201,9 +206,9 @@ export function ExerciseProgressWidget() {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                  // Nunca permitir valores negativos en el rango
-                  domain={[0, "dataMax + 5"]}
-                  tickFormatter={(v) => Number(v).toFixed(2)}
+                  domain={["dataMin - 5", "dataMax + 5"]}
+                  // Visualmente nunca mostramos etiquetas por debajo de 0
+                  tickFormatter={(v) => formatWeight(Math.max(0, v as number))}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Area
@@ -232,8 +237,8 @@ function CustomTooltip({ active, payload }: any) {
       <p className="font-medium">
         {format(new Date(data.date), "d MMM yyyy", { locale: es })}
       </p>
-      <p className="text-primary font-semibold">1RM: {Number(data.oneRepMax).toFixed(2)} kg</p>
-      <p className="text-muted-foreground">Real: {Number(data.weight).toFixed(2)}kg × {data.reps} reps</p>
+      <p className="text-primary font-semibold">1RM: {formatWeight(data.oneRepMax)} kg</p>
+      <p className="text-muted-foreground">Real: {formatWeight(data.weight)}kg × {data.reps} reps</p>
     </div>
   );
 }
