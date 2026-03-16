@@ -417,6 +417,9 @@ export function WorkoutLogger() {
     const { workoutId, fecha, isDelete } = opts;
     queryClient.invalidateQueries({ queryKey: ["lastWorkout"] });
     queryClient.invalidateQueries({ queryKey: ["activeWorkout"] });
+    // Actualizar widgets de progreso 1RM
+    queryClient.invalidateQueries({ queryKey: ["exercise-with-history"] });
+    queryClient.invalidateQueries({ queryKey: ["exercise-history"] });
     if (workoutId) queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
     if (fecha) {
       queryClient.invalidateQueries({ queryKey: ["workoutsForDate", user?.id, fecha] });
