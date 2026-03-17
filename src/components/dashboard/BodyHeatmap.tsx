@@ -148,7 +148,7 @@ export function BodyHeatmap() {
 
   const renderBody = (muscles: MuscleZone[], viewLabel: string) => {
     // Asegúrate de tener estas imágenes realistas en tu carpeta public
-    const bgImage = viewLabel === "FRONTAL" ? "/anatomy-front.png" : "/anatomy-back.png";
+    const bgImage = viewLabel === "FRONTAL" ? "/anatomy-front.webp" : "/anatomy-back.webp";
 
     return (
       <div className="flex flex-col items-center">
