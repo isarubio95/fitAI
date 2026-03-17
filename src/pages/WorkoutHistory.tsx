@@ -186,7 +186,7 @@ const WorkoutHistory = () => {
           {isLoading ? (
             <Skeleton className="h-[180px] rounded-lg" />
           ) : (
-            <ChartContainer config={chartConfig} className="aspect-[2/1] w-full">
+            <ChartContainer config={chartConfig} className="aspect-2/1 w-full">
               <BarChart data={weeklyData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/40" />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} />

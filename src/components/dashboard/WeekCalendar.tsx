@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/dialog";
 import type { ActividadWithDetails } from "@/types/workout";
 import { useMonthWorkouts } from "@/hooks/useWorkouts";
-import { getPlannedRoutines, deletePlannedRoutine, updatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
+import { usePlannedRoutines, useDeletePlannedRoutine, useUpdatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useToast } from "@/hooks/use-toast";
 
@@ -77,9 +77,9 @@ export function WeekCalendar({
   );
 
   const { data: monthWorkouts } = useMonthWorkouts(monthForWeek);
-  const { data: planned } = getPlannedRoutines(weekStart, addDays(weekStart, 6));
-  const deletePlan = deletePlannedRoutine();
-  const updatePlan = updatePlannedRoutine();
+  const { data: planned } = usePlannedRoutines(weekStart, addDays(weekStart, 6));
+  const deletePlan = useDeletePlannedRoutine();
+  const updatePlan = useUpdatePlannedRoutine();
   const { data: routines } = useRoutines();
   const { toast } = useToast();
   const [confirmDeletePlanned, setConfirmDeletePlanned] = useState<PlannedRoutine | null>(null);

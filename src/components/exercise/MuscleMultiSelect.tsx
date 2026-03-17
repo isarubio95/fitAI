@@ -43,7 +43,7 @@ const MuscleMultiSelect = ({ value, onChange, placeholder = "Seleccionar múscul
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-auto min-h-[2.75rem] font-normal"
+          className="w-full justify-between h-auto min-h-11 font-normal"
         >
           <div className="flex flex-wrap gap-1 flex-1 text-left">
             {value.length === 0 && (
@@ -62,7 +62,7 @@ const MuscleMultiSelect = ({ value, onChange, placeholder = "Seleccionar múscul
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+      <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
         <Command>
           <CommandInput placeholder="Buscar músculo..." />
           <CommandList className="max-h-[250px]">

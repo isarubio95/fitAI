@@ -29,7 +29,7 @@ export function ActiveWorkoutPill() {
   if (!active || state.open) return null;
 
   return (
-    <div className="fixed bottom-[6rem] left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90vw]">
+    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90vw]">
       <button
         onClick={() => openActiveWorkout(active.id)}
         className="group relative flex items-center gap-3 pl-2 pr-4 py-2 rounded-full 
@@ -67,7 +67,7 @@ export function ActiveWorkoutPill() {
         <ChevronRight className="h-4 w-4 text-neutral-500 ml-1 transition-transform group-hover:translate-x-0.5 group-hover:text-white" />
         
         {/* Subtle gradient glow behind */}
-        <div className="absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
+        <div className="absolute inset-0 -z-10 rounded-full bg-linear-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
       </button>
     </div>
   );

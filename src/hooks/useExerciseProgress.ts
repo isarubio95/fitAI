@@ -95,13 +95,13 @@ export function useExerciseHistory(exerciseId: string | null) {
       if (error) throw error;
 
       // 2. Agrupación Robusta
-      const sessionsMap = new Map<string, any>();
+      const sessionsMap = new Map<string, { weight: number; reps: number; oneRepMax: number; date: string }>();
 
-      data?.forEach((item: any) => {
+      data?.forEach((item: { ejercicio?: { actividad?: { fecha?: string } }; created_at: string; peso_kg: number; repeticiones: number }) => {
         // TRUCO: Priorizamos la fecha elegida en la actividad.
         // Si no existe, usamos created_at.
         // Cortamos la cadena para quedarnos SOLO con 'YYYY-MM-DD'
-        let dateStr = item.ejercicio?.actividad?.fecha || item.created_at;
+        const dateStr = item.ejercicio?.actividad?.fecha || item.created_at;
         
         // Convertimos a objeto Date para manejar zonas horarias si hace falta, 
         // pero lo más seguro es cortar el string ISO si viene de Supabase

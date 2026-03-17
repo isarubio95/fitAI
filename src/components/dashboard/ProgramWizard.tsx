@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useRoutines } from "@/hooks/useRoutines";
 import { usePredefinedRoutines } from "@/hooks/usePredefinedRoutines";
-import { scheduleRoutines, deleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
+import { useScheduleRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { Calendar, Check } from "lucide-react";
 
 /** A partir de las rutinas programadas, infiere qué rutina_id está asignada a cada día de la semana (0=Dom, 1=Lun...6=Sab). */
@@ -113,8 +113,8 @@ export function ProgramWizard({
   const { toast } = useToast();
   const { data: routines, isLoading: loadingRoutines } = useRoutines();
   const { data: templates, isLoading: loadingTemplates } = usePredefinedRoutines();
-  const schedule = scheduleRoutines();
-  const deleteAll = deleteAllPlannedRoutines();
+  const schedule = useScheduleRoutines();
+  const deleteAll = useDeleteAllPlannedRoutines();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [routineByDay, setRoutineByDay] = useState<Record<string, string>>(defaultRoutineByDay);

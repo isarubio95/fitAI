@@ -25,9 +25,9 @@ export function DesktopSidebar() {
   const { openNew } = useGlobalWorkoutDrawer();
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-card h-[100dvh] sticky top-0">
+    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-card h-dvh sticky top-0">
       <div className="flex h-16 items-center gap-2 px-6 border-b border-border">
-        <img src="/logo.svg" alt="TrackGym" className="h-9 w-9 rounded-lg flex-shrink-0" />
+        <img src="/logo.svg" alt="TrackGym" className="h-9 w-9 rounded-lg shrink-0" />
         <span className="text-lg font-bold flex-1">TrackGym</span>
         <ProfileDrawer />
       </div>

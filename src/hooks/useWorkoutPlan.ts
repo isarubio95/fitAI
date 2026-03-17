@@ -19,17 +19,19 @@ function toYMD(input: string | Date) {
   return input.toISOString().slice(0, 10);
 }
 
-export function getPlannedRoutines(startDate: string | Date, endDate: string | Date) {
+export function usePlannedRoutines(startDate: string | Date, endDate: string | Date) {
   const { user } = useAuth();
   const start = useMemo(() => toYMD(startDate), [startDate]);
   const end = useMemo(() => toYMD(endDate), [endDate]);
+  const userId = user?.id;
 
   return useQuery<PlannedRoutine[]>({
-    queryKey: ["plannedRoutines", user?.id, start, end],
-    enabled: !!user,
+    queryKey: ["plannedRoutines", userId, start, end],
+    enabled: !!userId,
     queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
-        .from("rutina_programada" as any)
+        .from("rutina_programada")
         .select(
           `
           id,
@@ -38,27 +40,28 @@ export function getPlannedRoutines(startDate: string | Date, endDate: string | D
           fecha_programada,
           actividad_id,
           created_at,
-          rutina:rutina_id (
+          rutina:rutina!rutina_programada_rutina_id_fkey (
             *,
-            ejercicios:rutina_ejercicio (
+            ejercicios:rutina_ejercicio!rutina_ejercicio_rutina_id_fkey (
               *,
-              tipo_ejercicio(*)
+              tipo_ejercicio:tipo_ejercicio!rutina_ejercicio_tipo_ejercicio_id_fkey (*)
             )
           )
         `
         )
-        .eq("usuario_id", user!.id)
+        .eq("usuario_id", userId)
         .gte("fecha_programada", start)
         .lte("fecha_programada", end)
-        .order("fecha_programada", { ascending: true });
+        .order("fecha_programada", { ascending: true })
+        .returns<PlannedRoutine[]>();
 
       if (error) throw error;
-      return (data ?? []) as any;
+      return data ?? [];
     },
   });
 }
 
-export function scheduleRoutine() {
+export function useScheduleRoutine() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -73,7 +76,7 @@ export function scheduleRoutine() {
         actividad_id: null,
       }));
 
-      const { error } = await supabase.from("rutina_programada" as any).insert(rows as any);
+      const { error } = await supabase.from("rutina_programada").insert(rows);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -83,7 +86,7 @@ export function scheduleRoutine() {
 }
 
 /** Planifica varias rutinas a la vez: cada entrada puede tener un rutinaId y sus fechas. */
-export function scheduleRoutines() {
+export function useScheduleRoutines() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -99,7 +102,7 @@ export function scheduleRoutines() {
         }))
       );
       if (rows.length === 0) return;
-      const { error } = await supabase.from("rutina_programada" as any).insert(rows as any);
+      const { error } = await supabase.from("rutina_programada").insert(rows);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -108,12 +111,12 @@ export function scheduleRoutines() {
   });
 }
 
-export function deletePlannedRoutine() {
+export function useDeletePlannedRoutine() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (ids: string[]) => {
       if (!ids.length) return;
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("rutina_programada")
         .delete()
         .in("id", ids);
@@ -126,13 +129,13 @@ export function deletePlannedRoutine() {
 }
 
 /** Elimina toda la planificación (hoja de ruta) del usuario actual. */
-export function deleteAllPlannedRoutines() {
+export function useDeleteAllPlannedRoutines() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("No autenticado");
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("rutina_programada")
         .delete()
         .eq("usuario_id", user.id);
@@ -144,7 +147,7 @@ export function deleteAllPlannedRoutines() {
   });
 }
 
-export function updatePlannedRoutine() {
+export function useUpdatePlannedRoutine() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (opts: { id: string; fecha_programada?: string; rutina_id?: string }) => {
@@ -153,7 +156,7 @@ export function updatePlannedRoutine() {
       if (fecha_programada != null) payload.fecha_programada = fecha_programada.slice(0, 10);
       if (rutina_id != null) payload.rutina_id = rutina_id;
       if (Object.keys(payload).length === 0) return;
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("rutina_programada")
         .update(payload)
         .eq("id", id);

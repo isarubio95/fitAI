@@ -154,7 +154,7 @@ export function ProfileDrawer() {
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="z-[200] bg-popover">
+              <SelectContent className="z-200 bg-popover">
                 <SelectItem value="system">Automático (Sistema)</SelectItem>
                 <SelectItem value="light">Claro</SelectItem>
                 <SelectItem value="dark">Oscuro</SelectItem>

@@ -18,7 +18,7 @@ import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashb
 import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { getPlannedRoutines, deleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
+import { usePlannedRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   AlertDialog,
@@ -136,14 +136,14 @@ const Dashboard = () => {
   const [pendingOpenPlanWizard, setPendingOpenPlanWizard] = useState(false);
 
   const today = useMemo(() => new Date(), []);
-  const { data: allPlannedRoutines, isLoading: plannedLoading } = getPlannedRoutines(subYears(today, 1), addYears(today, 2));
+  const { data: allPlannedRoutines, isLoading: plannedLoading } = usePlannedRoutines(subYears(today, 1), addYears(today, 2));
   const hasPlanned = (allPlannedRoutines?.length ?? 0) > 0;
   const plannedCount = allPlannedRoutines?.length ?? 0;
   const initialRoutineByDay = useMemo(
     () => (allPlannedRoutines?.length ? deriveRoutineByDayFromPlanned(allPlannedRoutines) : {}),
     [allPlannedRoutines]
   );
-  const deleteAllPlan = deleteAllPlannedRoutines();
+  const deleteAllPlan = useDeleteAllPlannedRoutines();
 
   useEffect(() => {
     saveCalendarView(calendarView);
@@ -182,7 +182,9 @@ const Dashboard = () => {
         const validItems = parsed.filter((w: string) => DEFAULT_WIDGET_ORDER.includes(w));
         const missing = DEFAULT_WIDGET_ORDER.filter(w => !validItems.includes(w));
         return [...validItems, ...missing];
-      } catch(e) {}
+      } catch {
+        // Ignorar JSON inválido en localStorage
+      }
     }
     return DEFAULT_WIDGET_ORDER;
   });
@@ -319,10 +321,10 @@ const Dashboard = () => {
             <div className="flex justify-center">
               <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
                 <TabsList className="h-9 rounded-full bg-muted p-1">
-                  <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-sm">
+                  <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
                     Mes
                   </TabsTrigger>
-                  <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-sm">
+                  <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
                     Semana
                   </TabsTrigger>
                 </TabsList>

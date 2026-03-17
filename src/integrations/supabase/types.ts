@@ -230,6 +230,48 @@ export type Database = {
           },
         ]
       }
+      rutina_programada: {
+        Row: {
+          actividad_id: string | null
+          created_at: string
+          fecha_programada: string
+          id: string
+          rutina_id: string
+          usuario_id: string
+        }
+        Insert: {
+          actividad_id?: string | null
+          created_at?: string
+          fecha_programada: string
+          id?: string
+          rutina_id: string
+          usuario_id: string
+        }
+        Update: {
+          actividad_id?: string | null
+          created_at?: string
+          fecha_programada?: string
+          id?: string
+          rutina_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rutina_programada_rutina_id_fkey"
+            columns: ["rutina_id"]
+            isOneToOne: false
+            referencedRelation: "rutina"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rutina_programada_actividad_id_fkey"
+            columns: ["actividad_id"]
+            isOneToOne: false
+            referencedRelation: "actividad"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       serie: {
         Row: {
           completed: boolean

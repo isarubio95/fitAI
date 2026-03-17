@@ -212,7 +212,7 @@ const Measurements = () => {
         <Card>
           <CardContent className="p-4">
             <h2 className="text-sm font-semibold mb-3">Evolución del peso</h2>
-            <ChartContainer config={chartConfig} className="aspect-[2/1] w-full">
+            <ChartContainer config={chartConfig} className="aspect-2/1 w-full">
               <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
                 <defs>
                   <linearGradient id="pesoGrad" x1="0" y1="0" x2="0" y2="1">

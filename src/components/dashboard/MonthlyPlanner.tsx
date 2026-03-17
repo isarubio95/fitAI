@@ -47,7 +47,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ActividadWithDetails } from "@/types/workout";
-import { getPlannedRoutines, deletePlannedRoutine, updatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
+import { usePlannedRoutines, useDeletePlannedRoutine, useUpdatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useDeleteWorkout } from "@/hooks/useWorkouts";
 import { useToast } from "@/hooks/use-toast";
@@ -72,7 +72,7 @@ export function MonthlyPlanner({
   onWorkoutClick,
   onPlannedStart,
 }: MonthlyPlannerProps) {
-  const { data: planned } = getPlannedRoutines(startOfMonth(month), endOfMonth(month));
+  const { data: planned } = usePlannedRoutines(startOfMonth(month), endOfMonth(month));
 
   const days = useMemo(() => {
     const start = startOfMonth(month);
@@ -118,8 +118,8 @@ export function MonthlyPlanner({
     return map;
   }, [planned]);
 
-  const deletePlan = deletePlannedRoutine();
-  const updatePlan = updatePlannedRoutine();
+  const deletePlan = useDeletePlannedRoutine();
+  const updatePlan = useUpdatePlannedRoutine();
   const deleteWorkout = useDeleteWorkout();
   const { data: routines } = useRoutines();
   const { toast } = useToast();
