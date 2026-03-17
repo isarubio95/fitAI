@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SortableExerciseCard } from "./SortableExerciseCard";
 import { PostWorkoutModal } from "./PostWorkoutModal";
 import { useRestTimerContext } from "./RestTimerProvider";
+import { RestTimerPill } from "@/components/workout/RestTimerPill";
 import { useCalculateAndAwardXP, useRemoveWorkoutXP, type XPBreakdown } from "@/hooks/useGamification";
 import { checkAndAwardLogros } from "@/hooks/useLogros";
 import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
@@ -772,6 +773,9 @@ export function WorkoutLogger() {
                 onSelect={addExercise}
               />
           </div>
+
+          {/* Contador de descanso dentro de Entrenamiento Activo */}
+          {isActiveWorkout && (restTimer.isRunning || restTimer.finished) && <RestTimerPill mode="sheet" />}
         </SheetContent>
       </Sheet>
 

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Outlet } from "react-router-dom";
@@ -17,6 +18,14 @@ export function AppLayout() {
   const scrollDirection = useScrollDirection();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [atTop, setAtTop] = useState(true);
+
+  useEffect(() => {
+    const check = () => setAtTop(window.scrollY < 2);
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    return () => window.removeEventListener("scroll", check);
+  }, []);
 
   if (loading) {
     return (
@@ -35,20 +44,22 @@ export function AppLayout() {
         <div className="flex-1 flex flex-col">
           {/* Mobile header — auto-hide on scroll down */}
           <header
-            className={`fixed top-0 left-0 right-0 z-40 flex min-h-12 items-center px-4 pt-3 gap-3 md:hidden transition-transform duration-300 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-xl border-b border-black/5 dark:border-white/5 ${
+            className={cn(
+              "fixed top-0 left-0 right-0 z-40 flex min-h-12 items-center px-4 pt-3 gap-3 md:hidden transition-[transform,border-color] duration-300 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-xl border-b",
+              atTop ? "border-transparent" : "border-black/5 dark:border-white/5",
               scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
-            }`}
+            )}
           >
             <ProfileDrawer />
             {location.pathname === "/evolution" && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 rounded-full bg-muted/50 p-1 border border-border/50">
                 <button
                   onClick={() => setSearchParams({ tab: "history" })}
                   className={cn(
                     "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
                     (searchParams.get("tab") || "history") === "history"
-                      ? "bg-secondary text-secondary-foreground"
-                      : "bg-secondary/20 border-border/50 text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+                      ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/25"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   Entrenamientos
@@ -58,8 +69,8 @@ export function AppLayout() {
                   className={cn(
                     "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
                     searchParams.get("tab") === "measurements"
-                      ? "bg-secondary text-secondary-foreground"
-                      : "bg-secondary/20 border-border/50 text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+                      ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/25"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   Medidas

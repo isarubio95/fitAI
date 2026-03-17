@@ -326,11 +326,11 @@ const Dashboard = () => {
             <CardHeader className="space-y-3 pb-4">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
-                  <TabsList className="h-9 rounded-full bg-muted/60 p-1">
-                    <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
+                  <TabsList className="h-9 rounded-full bg-muted/50 p-1 border border-border/50">
+                    <TabsTrigger value="month" className="rounded-full px-5 text-sm font-medium text-muted-foreground data-[state=active]:bg-sky-500/15 data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-300 data-[state=active]:shadow-none data-[state=active]:ring-1 data-[state=active]:ring-sky-500/25">
                       Mes
                     </TabsTrigger>
-                    <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
+                    <TabsTrigger value="week" className="rounded-full px-5 text-sm font-medium text-muted-foreground data-[state=active]:bg-sky-500/15 data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-300 data-[state=active]:shadow-none data-[state=active]:ring-1 data-[state=active]:ring-sky-500/25">
                       Semana
                     </TabsTrigger>
                   </TabsList>

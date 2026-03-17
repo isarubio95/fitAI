@@ -23,7 +23,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
         "dark:before:[background:radial-gradient(390px_circle_at_90%_10%,hsl(var(--primary)/0.22),transparent_51%),radial-gradient(725px_circle_at_85%_15%,hsl(var(--primary)/0.12),transparent_61%)]",
         // Subtle inset highlight.
         "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:content-['']",
-        "after:shadow-[inset_0_1px_0_rgba(255,255,255,0.40)] dark:after:shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]",
+        "after:shadow-[inset_0_1px_0_rgba(255,255,255,0.40)] dark:after:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]",
       ].join(" "),
     )}
     {...props}

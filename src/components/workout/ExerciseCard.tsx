@@ -184,26 +184,7 @@ export function ExerciseCard({
       >
         <Plus className="h-4 w-4 mr-1" /> Agregar Serie
       </Button>
-
-      {/* Floating timer display */}
-      {timer.activeKey?.startsWith(`${exerciseIndex}-`) && (timer.isRunning || timer.finished) && (
-        <div className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-mono ${
-          timer.finished
-            ? "bg-green-500/10 text-green-500 border border-green-500/30"
-            : "bg-primary/10 text-primary border border-primary/30"
-        }`}>
-          <Timer className="h-4 w-4" />
-          {timer.finished ? "¡Listo!" : formatMSS(timer.remaining)}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs ml-2"
-            onClick={() => timer.stop()}
-          >
-            Cerrar
-          </Button>
-        </div>
-      )}
+      {/* El contador de descanso se muestra como pill dentro del Entrenamiento Activo */}
 
       {/* Confirm delete exercise */}
       <AlertDialog open={confirmDeleteExercise} onOpenChange={setConfirmDeleteExercise}>

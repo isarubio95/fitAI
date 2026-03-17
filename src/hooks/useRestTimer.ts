@@ -7,6 +7,8 @@ interface TimerState {
   endTime: number | null;
   /** Remaining seconds for display */
   remaining: number;
+  /** Initial duration in seconds (for progress UI) */
+  duration: number;
   /** Whether the timer finished */
   finished: boolean;
 }
@@ -80,6 +82,7 @@ export function useRestTimer() {
     activeKey: null,
     endTime: null,
     remaining: 0,
+    duration: 0,
     finished: false,
   });
 
@@ -150,17 +153,19 @@ export function useRestTimer() {
       activeKey: key,
       endTime: Date.now() + durationSeconds * 1000,
       remaining: durationSeconds,
+      duration: durationSeconds,
       finished: false,
     });
   }, []);
 
   const stop = useCallback(() => {
-    setState({ activeKey: null, endTime: null, remaining: 0, finished: false });
+    setState({ activeKey: null, endTime: null, remaining: 0, duration: 0, finished: false });
   }, []);
 
   return {
     activeKey: state.activeKey,
     remaining: state.remaining,
+    duration: state.duration,
     finished: state.finished,
     isRunning: !!state.activeKey && !state.finished,
     start,
