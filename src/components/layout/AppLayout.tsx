@@ -52,13 +52,13 @@ export function AppLayout() {
           >
             <ProfileDrawer />
             {location.pathname === "/evolution" && (
-              <div className="flex items-center gap-1 rounded-full bg-muted/50 p-1 border border-border/50">
+              <div className="flex items-center gap-1 rounded-full bg-muted p-1">
                 <button
                   onClick={() => setSearchParams({ tab: "history" })}
                   className={cn(
                     "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
                     (searchParams.get("tab") || "history") === "history"
-                      ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/25"
+                      ? "bg-background text-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -69,7 +69,7 @@ export function AppLayout() {
                   className={cn(
                     "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
                     searchParams.get("tab") === "measurements"
-                      ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/25"
+                      ? "bg-background text-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >

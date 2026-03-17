@@ -326,11 +326,11 @@ const Dashboard = () => {
             <CardHeader className="space-y-3 pb-4">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
-                  <TabsList className="h-9 rounded-full bg-muted/50 p-1 border border-border/50">
-                    <TabsTrigger value="month" className="rounded-full px-5 text-sm font-medium text-muted-foreground data-[state=active]:bg-sky-500/15 data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-300 data-[state=active]:shadow-none data-[state=active]:ring-1 data-[state=active]:ring-sky-500/25">
+                  <TabsList className="h-9 rounded-full p-1">
+                    <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
                       Mes
                     </TabsTrigger>
-                    <TabsTrigger value="week" className="rounded-full px-5 text-sm font-medium text-muted-foreground data-[state=active]:bg-sky-500/15 data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-300 data-[state=active]:shadow-none data-[state=active]:ring-1 data-[state=active]:ring-sky-500/25">
+                    <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
                       Semana
                     </TabsTrigger>
                   </TabsList>
@@ -369,18 +369,9 @@ const Dashboard = () => {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="relative p-0 overflow-hidden">
-              {/* Degradado sutil por debajo del calendario (reducido para que no se extienda tanto) */}
-              <div
-                className="pointer-events-none absolute inset-0 rounded-b-2xl opacity-90"
-                style={{
-                  background: "radial-gradient(ellipse 70% 50% at 50% 100%, hsl(var(--primary) / 0.14), transparent 48%)",
-                }}
-                aria-hidden
-              />
-              <div className="relative">
-                {calendarView === "month" ? (
-                  <MonthlyPlanner
+            <CardContent className="p-0">
+              {calendarView === "month" ? (
+                <MonthlyPlanner
                   month={calendarMonth}
                   onMonthChange={handleMonthChange}
                   workouts={monthWorkouts ?? []}
@@ -401,7 +392,6 @@ const Dashboard = () => {
                   onPlannedClick={(p) => { if (!isDragMode) startPlanned(p); }}
                 />
               )}
-              </div>
             </CardContent>
 
             <ProgramWizard

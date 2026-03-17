@@ -203,17 +203,11 @@ export function BodyHeatmap() {
               <h2>Mapa Muscular</h2>
             </CardTitle>
             <Tabs value={period} onValueChange={(v) => setPeriod(v as TimePeriod)}>
-              <TabsList className="h-9 rounded-full bg-muted/50 p-1 border border-border/50">
-                <TabsTrigger
-                  value="month"
-                  className="rounded-full px-4 text-xs font-medium text-muted-foreground data-[state=active]:bg-sky-500/15 data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-300 data-[state=active]:shadow-none data-[state=active]:ring-1 data-[state=active]:ring-sky-500/25"
-                >
+              <TabsList className="h-9 rounded-full p-1">
+                <TabsTrigger value="month" className="rounded-full px-4 text-xs data-[state=active]:shadow-xs">
                   Mes
                 </TabsTrigger>
-                <TabsTrigger
-                  value="week"
-                  className="rounded-full px-4 text-xs font-medium text-muted-foreground data-[state=active]:bg-sky-500/15 data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-300 data-[state=active]:shadow-none data-[state=active]:ring-1 data-[state=active]:ring-sky-500/25"
-                >
+                <TabsTrigger value="week" className="rounded-full px-4 text-xs data-[state=active]:shadow-xs">
                   Semana
                 </TabsTrigger>
               </TabsList>

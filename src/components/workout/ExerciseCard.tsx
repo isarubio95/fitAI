@@ -136,7 +136,7 @@ export function ExerciseCard({
               <Button
                 variant={s.completed ? "default" : "outline"}
                 size="icon"
-                className="h-8 w-8 shrink-0"
+                className="h-8 w-8 shrink-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                 onClick={() => onSetCompleted(si, !s.completed)}
                 title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
               >
