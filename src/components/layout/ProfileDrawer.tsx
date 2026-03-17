@@ -14,6 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { LogOut, Mail, SunMoon, Shield, Flame, Zap, Trophy, Swords, Target, Award } from "lucide-react";
+import { ColorThemeSelector } from "@/components/ColorThemeSelector";
 
 const iconMap: Record<string, React.ElementType> = {
   Swords, Shield, Flame, Target, Trophy, Award,
@@ -145,7 +146,10 @@ export function ProfileDrawer() {
             )}
           </div>
 
-          {/* Apariencia (penúltimo) */}
+          {/* Color de acento */}
+          <ColorThemeSelector />
+
+          {/* Apariencia (tema claro/oscuro) */}
           <div className="space-y-3">
             <p className="text-sm font-medium flex items-center gap-2">
               <SunMoon className="h-4 w-4 text-muted-foreground" /> Apariencia
