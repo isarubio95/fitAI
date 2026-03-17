@@ -11,15 +11,16 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
       [
         // Force the same “Once-like” glass style everywhere.
         "relative overflow-hidden rounded-2xl text-card-foreground",
-        "[&>*]:relative [&>*]:z-10",
+        "*:relative *:z-10",
         "border border-black/5 dark:border-white/10",
         "bg-white/55 dark:bg-zinc-950/35",
         "supports-backdrop-filter:backdrop-blur-2xl",
-        "shadow-[0_16px_45px_rgba(0,0,0,0.10)] dark:shadow-[0_18px_60px_rgba(0,0,0,0.55)]",
+        "transition-shadow duration-200 ease-out",
+        "shadow-[0_10px_28px_rgba(0,0,0,0.08)] dark:shadow-[0_12px_34px_rgba(0,0,0,0.45)]",
         /* Once-style card glow (suave para no restar contraste al texto) */
         "before:pointer-events-none before:absolute before:inset-0 before:content-['']",
-        "before:[background:radial-gradient(400px_circle_at_90%_10%,hsl(var(--primary)/0.10),transparent_50%),radial-gradient(750px_circle_at_85%_15%,hsl(var(--primary)/0.06),transparent_60%)]",
-        "dark:before:[background:radial-gradient(400px_circle_at_90%_10%,hsl(var(--primary)/0.34),transparent_50%),radial-gradient(750px_circle_at_85%_15%,hsl(var(--primary)/0.20),transparent_60%)]",
+        "before:[background:radial-gradient(390px_circle_at_90%_10%,hsl(var(--primary)/0.07),transparent_51%),radial-gradient(725px_circle_at_85%_15%,hsl(var(--primary)/0.04),transparent_61%)]",
+        "dark:before:[background:radial-gradient(390px_circle_at_90%_10%,hsl(var(--primary)/0.22),transparent_51%),radial-gradient(725px_circle_at_85%_15%,hsl(var(--primary)/0.12),transparent_61%)]",
         // Subtle inset highlight.
         "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:content-['']",
         "after:shadow-[inset_0_1px_0_rgba(255,255,255,0.40)] dark:after:shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]",
