@@ -1,6 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@config "../tailwind.config.ts";
 
 @layer base {
     :root {
@@ -75,6 +76,12 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* Restaurar cursor pointer en elementos clicables (Tailwind v4 usa default) */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  a[href] {
+    cursor: pointer;
   }
 }
 
