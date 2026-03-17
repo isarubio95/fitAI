@@ -129,8 +129,8 @@ export function WeekCalendar({
 
   return (
     <div className="w-full space-y-3">
-      {/* Header: rango de la semana (fuera de la card) */}
-      <div className="flex items-center justify-between">
+      {/* Header (padding para que las flechas no queden pegadas a los bordes de la card) */}
+      <div className="flex items-center justify-between px-4">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goBack}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -144,7 +144,7 @@ export function WeekCalendar({
       </div>
 
       {/* Lista de días lunes - domingo, dentro de la card */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border/40">
+      <div className="rounded-xl border border-border/60 bg-transparent overflow-hidden divide-y divide-border/40">
         {days.map((day) => {
           const selected = selectedDate !== null && isSameDay(day, selectedDate);
           const today = isToday(day);

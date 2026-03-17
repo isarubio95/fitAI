@@ -132,8 +132,8 @@ export function MonthlyPlanner({
 
   return (
     <div className="w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      {/* Header (padding para que las flechas no queden pegadas a los bordes de la card) */}
+      <div className="flex items-center justify-between mb-3 px-4">
         <Button
           variant="ghost"
           size="icon"
@@ -165,7 +165,7 @@ export function MonthlyPlanner({
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-7 border-t border-l border-border bg-card rounded-b-xl overflow-hidden">
+      <div className="grid grid-cols-7 border-t border-l border-border bg-transparent rounded-b-xl overflow-hidden">
         {days.map((day, i) => {
           const inMonth = isSameMonth(day, month);
           const today = isToday(day);

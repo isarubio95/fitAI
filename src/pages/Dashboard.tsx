@@ -319,62 +319,69 @@ const Dashboard = () => {
         );
       case 'calendar':
         return (
-          <div className="space-y-4">
-            <div className="flex justify-center">
-              <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
-                <TabsList className="h-9 rounded-full bg-muted p-1">
-                  <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
-                    Mes
-                  </TabsTrigger>
-                  <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
-                    Semana
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => {
-                  if (hasPlanned) {
-                    setEditPlanSheetOpen(true);
-                  } else {
-                    setPlanWizardReplaceExisting(false);
-                    setPlanWizardOpen(true);
-                  }
+          <Card>
+            <CardHeader className="space-y-3 pb-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
+                  <TabsList className="h-9 rounded-full bg-muted/60 p-1">
+                    <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
+                      Mes
+                    </TabsTrigger>
+                    <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
+                      Semana
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 shrink-0"
+                  onClick={() => {
+                    if (hasPlanned) {
+                      setEditPlanSheetOpen(true);
+                    } else {
+                      setPlanWizardReplaceExisting(false);
+                      setPlanWizardOpen(true);
+                    }
+                  }}
+                >
+                  {hasPlanned ? (
+                    <>
+                      <Pencil className="h-4 w-4" />
+                      Editar hoja de ruta
+                    </>
+                  ) : (
+                    <>
+                      <CalendarIcon className="h-4 w-4" />
+                      Crear Hoja de Ruta
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="relative p-0 overflow-hidden">
+              {/* Degradado sutil por debajo del calendario (reducido para que no se extienda tanto) */}
+              <div
+                className="pointer-events-none absolute inset-0 rounded-b-2xl opacity-90"
+                style={{
+                  background: "radial-gradient(ellipse 70% 50% at 50% 100%, hsl(var(--primary) / 0.14), transparent 48%)",
                 }}
-              >
-                {hasPlanned ? (
-                  <>
-                    <Pencil className="h-4 w-4" />
-                    Editar hoja de ruta
-                  </>
-                ) : (
-                  <>
-                    <CalendarIcon className="h-4 w-4" />
-                    Crear Hoja de Ruta
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {calendarView === "month" ? (
-              <MonthlyPlanner
-                month={calendarMonth}
-                onMonthChange={handleMonthChange}
-                workouts={monthWorkouts ?? []}
-                onDayClick={(date) => {
-                  handleDateSelect(date);
-                  if (!isDragMode) openNew(format(date, "yyyy-MM-dd"));
-                }}
-                onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
-                onPlannedStart={!isDragMode ? startPlanned : undefined}
+                aria-hidden
               />
-            ) : (
-              <div>
+              <div className="relative">
+                {calendarView === "month" ? (
+                  <MonthlyPlanner
+                  month={calendarMonth}
+                  onMonthChange={handleMonthChange}
+                  workouts={monthWorkouts ?? []}
+                  onDayClick={(date) => {
+                    handleDateSelect(date);
+                    if (!isDragMode) openNew(format(date, "yyyy-MM-dd"));
+                  }}
+                  onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
+                  onPlannedStart={!isDragMode ? startPlanned : undefined}
+                />
+              ) : (
                 <WeekCalendar
                   selectedDate={selectedDate}
                   displayWeekStart={weekViewStart}
@@ -383,8 +390,9 @@ const Dashboard = () => {
                   onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
                   onPlannedClick={(p) => { if (!isDragMode) startPlanned(p); }}
                 />
+              )}
               </div>
-            )}
+            </CardContent>
 
             <ProgramWizard
               open={planWizardOpen}
@@ -469,7 +477,7 @@ const Dashboard = () => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
+          </Card>
         );
       case 'last-workout':
         return (

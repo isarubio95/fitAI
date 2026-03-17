@@ -76,6 +76,20 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Once-style gradient orbs – visible in light and dark */
+    background-image:
+      radial-gradient(1100px circle at 10% -5%, hsl(var(--primary) / 0.28), transparent 45%),
+      radial-gradient(1000px circle at 95% 5%, hsl(var(--primary) / 0.22), transparent 50%),
+      radial-gradient(1200px circle at 50% 105%, hsl(220 30% 75% / 0.25), transparent 55%),
+      radial-gradient(800px circle at 70% 50%, hsl(var(--primary) / 0.12), transparent 55%);
+    background-attachment: fixed;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(1100px circle at 10% -5%, hsl(var(--primary) / 0.35), transparent 45%),
+      radial-gradient(1000px circle at 95% 5%, hsl(var(--primary) / 0.28), transparent 50%),
+      radial-gradient(1200px circle at 50% 105%, hsl(220 20% 20% / 0.5), transparent 55%),
+      radial-gradient(800px circle at 70% 50%, hsl(var(--primary) / 0.18), transparent 55%);
   }
   /* Restaurar cursor pointer en elementos clicables (Tailwind v4 usa default) */
   button:not(:disabled),
