@@ -137,8 +137,10 @@ const Dashboard = () => {
 
   const today = useMemo(() => new Date(), []);
   const { data: allPlannedRoutines, isLoading: plannedLoading } = usePlannedRoutines(subYears(today, 1), addYears(today, 2));
-  const hasPlanned = (allPlannedRoutines?.length ?? 0) > 0;
-  const plannedCount = allPlannedRoutines?.length ?? 0;
+  // Evita parpadeo: al principio `data` puede ser `undefined` (query aún no resuelta o auth aún no lista).
+  const plannedKnown = allPlannedRoutines !== undefined;
+  const hasPlanned = plannedKnown ? allPlannedRoutines.length > 0 : false;
+  const plannedCount = plannedKnown ? allPlannedRoutines.length : 0;
   const initialRoutineByDay = useMemo(
     () => (allPlannedRoutines?.length ? deriveRoutineByDayFromPlanned(allPlannedRoutines) : {}),
     [allPlannedRoutines]
@@ -158,14 +160,15 @@ const Dashboard = () => {
   }, [location.state, navigate]);
 
   useEffect(() => {
-    if (!pendingOpenPlanWizard || plannedLoading) return;
+    // Esperar a tener certeza de si existe hoja de ruta o no para evitar "Crear" -> "Editar".
+    if (!pendingOpenPlanWizard || plannedLoading || !plannedKnown) return;
     if (hasPlanned) {
       setEditPlanSheetOpen(true);
     } else {
       setPlanWizardOpen(true);
     }
     setPendingOpenPlanWizard(false);
-  }, [pendingOpenPlanWizard, plannedLoading, hasPlanned]);
+  }, [pendingOpenPlanWizard, plannedLoading, plannedKnown, hasPlanned]);
 
   const [isDragMode, setIsDragMode] = useState(false); // Estado para controlar el modo edición
 
@@ -336,7 +339,9 @@ const Dashboard = () => {
                   variant="outline"
                   size="sm"
                   className="gap-2 shrink-0"
+                  disabled={!plannedKnown}
                   onClick={() => {
+                    if (!plannedKnown) return;
                     if (hasPlanned) {
                       setEditPlanSheetOpen(true);
                     } else {
@@ -345,7 +350,12 @@ const Dashboard = () => {
                     }
                   }}
                 >
-                  {hasPlanned ? (
+                  {!plannedKnown ? (
+                    <>
+                      <Skeleton className="h-4 w-4 rounded-sm" />
+                      <Skeleton className="h-4 w-36" />
+                    </>
+                  ) : hasPlanned ? (
                     <>
                       <Pencil className="h-4 w-4" />
                       Editar hoja de ruta
