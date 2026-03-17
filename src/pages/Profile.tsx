@@ -17,7 +17,9 @@ const Profile = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Cuenta</CardTitle>
+          <CardTitle asChild className="text-base">
+            <h2>Cuenta</h2>
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3">
@@ -29,7 +31,9 @@ const Profile = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Apariencia</CardTitle>
+          <CardTitle asChild className="text-base">
+            <h2>Apariencia</h2>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">

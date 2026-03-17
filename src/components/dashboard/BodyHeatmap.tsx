@@ -199,7 +199,9 @@ export function BodyHeatmap() {
       <Card className="overflow-hidden border-border/40 bg-card/95 shadow-xs">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-bold">Mapa Muscular</CardTitle>
+            <CardTitle asChild className="text-base font-bold">
+              <h2>Mapa Muscular</h2>
+            </CardTitle>
             <Tabs value={period} onValueChange={(v) => setPeriod(v as TimePeriod)}>
               <TabsList className="h-9 rounded-full bg-muted/60 p-1">
                 <TabsTrigger value="month" className="rounded-full px-4 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-xs">Mes</TabsTrigger>

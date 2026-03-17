@@ -77,7 +77,9 @@ const Auth = () => {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <img src="/logo.svg" alt="TrackGym" className="mx-auto mb-2 h-14 w-14 rounded-xl" />
-          <CardTitle className="text-2xl font-bold">TrackGym</CardTitle>
+          <CardTitle asChild className="text-2xl font-bold">
+            <h1>TrackGym</h1>
+          </CardTitle>
           <CardDescription>
             {isLogin ? "Inicia sesión para continuar" : "Crea tu cuenta"}
           </CardDescription>

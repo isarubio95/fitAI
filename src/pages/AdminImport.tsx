@@ -97,8 +97,10 @@ export default function AdminImport() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" /> Admin Import
+          <CardTitle asChild className="flex items-center gap-2">
+            <h1>
+              <Shield className="h-5 w-5" /> Admin Import
+            </h1>
           </CardTitle>
           <CardDescription>
             Import exercises from ExerciseDB API into the catalog.

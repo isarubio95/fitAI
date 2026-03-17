@@ -186,7 +186,7 @@ export function BottomNav() {
                   <span
                     className={cn(
                       "text-[10px] font-medium tracking-wide transition-colors duration-300",
-                      isMenuOpen ? "text-primary" : "text-zinc-500"
+                      isMenuOpen ? "text-primary" : "text-muted-foreground"
                     )}
                   >
                     Añadir
@@ -221,14 +221,14 @@ export function BottomNav() {
                         "h-6 w-6 transition-all duration-300 ease-out",
                         isActive
                           ? "text-primary stroke-[2px] drop-shadow-[0_0_12px_rgba(var(--primary),0.6)]"
-                          : "text-zinc-500 stroke-[2px] group-hover:text-zinc-300"
+                          : "text-muted-foreground stroke-[2px] group-hover:text-foreground"
                       )}
                     />
                   </div>
                   <span
                     className={cn(
                       "text-[10px] font-medium tracking-wide transition-colors duration-300",
-                      isActive ? "text-primary" : "text-zinc-500"
+                      isActive ? "text-primary" : "text-muted-foreground"
                     )}
                   >
                     {label}

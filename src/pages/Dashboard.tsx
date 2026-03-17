@@ -282,7 +282,9 @@ const Dashboard = () => {
         return (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Consistencia Semanal</CardTitle>
+              <CardTitle asChild className="text-base">
+                <h2>Consistencia Semanal</h2>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {loadingWeekly ? (
@@ -473,7 +475,9 @@ const Dashboard = () => {
         return (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Último Entrenamiento</CardTitle>
+              <CardTitle asChild className="text-base">
+                <h2>Último Entrenamiento</h2>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {loadingLast ? (
