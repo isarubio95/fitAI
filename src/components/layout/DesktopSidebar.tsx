@@ -1,14 +1,19 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Dumbbell, BarChart3, LogOut, ClipboardList, Plus, Activity, Scale, FileUp } from "lucide-react";
+import { Home, Dumbbell, BarChart3, LogOut, ClipboardList, Plus, Activity, Scale, FileUp, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ProfileDrawer } from "./ProfileDrawer";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
+import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -23,6 +28,7 @@ export function DesktopSidebar() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const { openNew } = useGlobalWorkoutDrawer();
+  const [explorerOpen, setExplorerOpen] = useState(false);
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-white/50 dark:bg-zinc-950/50 backdrop-blur-2xl h-dvh sticky top-0">
@@ -39,29 +45,64 @@ export function DesktopSidebar() {
               Crear Nuevo
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-52">
+          <DropdownMenuContent align="start" className="w-80">
             <DropdownMenuItem onClick={() => openNew()}>
-              <Activity className="h-4 w-4 mr-2 text-primary" />
-              Entrenamiento
+              <Activity className="h-4 w-4 mr-2 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <p className="font-medium">Entrenamiento</p>
+                <p className="text-[10px] text-muted-foreground">Registra una sesión de gym</p>
+              </div>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/routines", { state: { action: "new" } })}>
-              <ClipboardList className="h-4 w-4 mr-2 text-blue-500" />
-              Rutina
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/routines", { state: { action: "import-csv" } })}>
-              <FileUp className="h-4 w-4 mr-2 text-muted-foreground" />
-              Importar rutina desde CSV
-            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="gap-2">
+                <ClipboardList className="h-4 w-4 shrink-0 text-blue-500" />
+                <div className="min-w-0">
+                  <p className="font-medium">Rutina</p>
+                  <p className="text-[10px] text-muted-foreground">Crea o explora plantillas de entrenamiento</p>
+                </div>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-80">
+                <DropdownMenuItem onClick={() => setExplorerOpen(true)}>
+                  <Sparkles className="h-4 w-4 mr-2 shrink-0 text-amber-400" />
+                  <div className="min-w-0">
+                    <p className="font-medium">Explorar Predefinidas</p>
+                    <p className="text-[10px] text-muted-foreground">Descubre rutinas creadas por expertos</p>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/routines", { state: { action: "new" } })}>
+                  <Plus className="h-4 w-4 mr-2 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <p className="font-medium">Crear desde cero</p>
+                    <p className="text-[10px] text-muted-foreground">Configura tus propios ejercicios</p>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/routines", { state: { action: "import-csv" } })}>
+                  <FileUp className="h-4 w-4 mr-2 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="font-medium">Importar desde CSV</p>
+                    <p className="text-[10px] text-muted-foreground">Sube un archivo con la rutina</p>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuItem onClick={() => navigate("/exercises", { state: { action: "new" } })}>
-              <Dumbbell className="h-4 w-4 mr-2 text-orange-500" />
-              Ejercicio
+              <Dumbbell className="h-4 w-4 mr-2 shrink-0 text-orange-500" />
+              <div className="min-w-0">
+                <p className="font-medium">Ejercicio</p>
+                <p className="text-[10px] text-muted-foreground">Añade un ejercicio a tu biblioteca</p>
+              </div>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/evolution", { state: { tab: "measurements", action: "new" } })}>
-              <Scale className="h-4 w-4 mr-2 text-emerald-500" />
-              Medida
+              <Scale className="h-4 w-4 mr-2 shrink-0 text-emerald-500" />
+              <div className="min-w-0">
+                <p className="font-medium">Medida</p>
+                <p className="text-[10px] text-muted-foreground">Registra peso, cintura, etc.</p>
+              </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <PredefinedRoutinesExplorer open={explorerOpen} onOpenChange={setExplorerOpen} />
 
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
