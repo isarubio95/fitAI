@@ -92,5 +92,19 @@
     "typescript-eslint": "^8.57.1",
     "vite": "^7.3.1",
     "vitest": "^4.1.0"
+  },
+  "overrides": {
+    "flatted": "3.4.2",
+    "rollup": "^4.59.0",
+    "serialize-javascript": "^7.0.3",
+    "glob": {
+      "minimatch": "10.2.4"
+    },
+    "filelist": {
+      "minimatch": "5.1.9"
+    },
+    "workbox-build": {
+      "@rollup/plugin-terser": "1.0.0"
+    }
   }
 }
