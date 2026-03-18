@@ -65,7 +65,7 @@ export function BottomNav() {
         )}
       >
         <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left w-full"
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-sm text-left w-full"
           onClick={() => { navigate("/", { state: { openPlanWizard: true } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
         >
           <Calendar className="h-5 w-5 shrink-0 text-violet-500" />
@@ -76,7 +76,7 @@ export function BottomNav() {
         </button>
         <div>
           <button
-            className="flex items-center justify-between w-full gap-3 rounded-none p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
+            className="flex items-center justify-between w-full gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-sm text-left"
             onClick={() => { setShowRoutineSubmenu(!showRoutineSubmenu); }}
           >
             <span className="flex items-center gap-3 min-w-0">
@@ -99,7 +99,7 @@ export function BottomNav() {
             <div className="overflow-hidden">
               <div className="space-y-0.5 bg-muted/30 px-3 pb-2 pt-0">
                 <button
-                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
+                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-sm text-left"
                   onClick={() => { setExplorerOpen(true); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
                 >
                   <Sparkles className="h-4 w-4 shrink-0 text-amber-400" />
@@ -109,7 +109,7 @@ export function BottomNav() {
                   </div>
                 </button>
                 <button
-                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
+                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-sm text-left"
                   onClick={() => { navigate("/routines", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
                 >
                   <Plus className="h-4 w-4 shrink-0 text-primary" />
@@ -119,7 +119,7 @@ export function BottomNav() {
                   </div>
                 </button>
                 <button
-                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left"
+                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-sm text-left"
                   onClick={() => { navigate("/routines", { state: { action: "import-csv" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
                 >
                   <FileUp className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -133,7 +133,7 @@ export function BottomNav() {
           </div>
         </div>
         <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left w-full"
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-sm text-left w-full"
           onClick={() => { openNew(); setIsMenuOpen(false); }}
         >
           <Activity className="h-5 w-5 shrink-0 text-primary" />
@@ -143,7 +143,7 @@ export function BottomNav() {
           </div>
         </button>
         <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left w-full"
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-sm text-left w-full"
           onClick={() => { navigate("/exercises", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
         >
           <Dumbbell className="h-5 w-5 shrink-0 text-orange-500" />
@@ -153,7 +153,7 @@ export function BottomNav() {
           </div>
         </button>
         <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent hover:text-accent-foreground transition-colors text-sm text-left w-full"
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-sm text-left w-full"
           onClick={() => { navigate("/evolution", { state: { tab: "measurements", action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
         >
           <Scale className="h-5 w-5 shrink-0 text-emerald-500" />
