@@ -48,7 +48,7 @@ export default function Community() {
       <section className="space-y-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Buscar por username</CardTitle>
+            <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="relative">

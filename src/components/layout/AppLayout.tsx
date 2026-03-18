@@ -12,6 +12,9 @@ import { Loader2 } from "lucide-react";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
 // import { SwipeableRoutesWrapper } from "./SwipeableRoutesWrapper";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import UsernameSetup from "@/pages/UsernameSetup";
 
 export function AppLayout() {
   const { user, loading } = useAuth();
@@ -27,6 +30,21 @@ export function AppLayout() {
     return () => window.removeEventListener("scroll", check);
   }, []);
 
+  const { data: profileSetup, isLoading: profileLoading } = useQuery({
+    queryKey: ["profileSetup", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("perfil")
+        .select("username")
+        .eq("id", user!.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as { username: string | null } | null;
+    },
+  });
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -36,6 +54,18 @@ export function AppLayout() {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+
+  if (profileLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!profileSetup?.username || !profileSetup.username.trim()) {
+    return <UsernameSetup />;
+  }
 
   return (
     <GlobalWorkoutDrawerProvider>
