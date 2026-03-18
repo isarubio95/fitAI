@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { format } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,7 +17,8 @@ export interface PlannedRoutine {
 
 function toYMD(input: string | Date) {
   if (typeof input === "string") return input.slice(0, 10);
-  return input.toISOString().slice(0, 10);
+  // Importante: usamos fecha LOCAL (no UTC) para evitar off-by-one en rangos.
+  return format(input, "yyyy-MM-dd");
 }
 
 export function usePlannedRoutines(startDate: string | Date, endDate: string | Date) {

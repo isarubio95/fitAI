@@ -28,20 +28,55 @@ export interface PredefinedRoutine {
   }[];
 }
 
-export function usePredefinedRoutines() {
+type PredefinedRoutinesFilters = {
+  nivel: string | null;
+  duracion: number | null;
+  grupo: string | null;
+  enabled?: boolean;
+};
+
+function buildNivelOrFilter(nivel: string) {
+  const n = nivel.trim().toLowerCase();
+  if (n === "principiante") return "nivel.ilike.%principiante%,nivel.ilike.%bajo%,nivel.ilike.%baja%";
+  if (n === "intermedio") return "nivel.ilike.%intermedio%,nivel.ilike.%medio%,nivel.ilike.%media%";
+  if (n === "avanzado") return "nivel.ilike.%avanzado%,nivel.ilike.%alto%,nivel.ilike.%alta%";
+  return `nivel.ilike.%${nivel}%`;
+}
+
+export function usePredefinedRoutines(filters?: PredefinedRoutinesFilters) {
+  const { nivel = null, duracion = null, grupo = null, enabled = true } = filters ?? {};
+  const shouldFetch = enabled && !!nivel && !!duracion && !!grupo;
+
   return useQuery<PredefinedRoutine[]>({
-    queryKey: ["predefined-routines"],
+    queryKey: ["predefined-routines", nivel, duracion, grupo],
     staleTime: 10 * 60 * 1000, // 10 minutos: plantillas cambian poco
+    enabled: shouldFetch,
     queryFn: async () => {
+      if (!nivel || !duracion || !grupo) return [];
+
       const { data: rutinas, error } = await (supabase
         .from("rutina")
         .select("*") as any)
         .eq("es_plantilla", true)
+        .or(buildNivelOrFilter(nivel))
+        .eq("grupo_muscular", grupo)
         .order("created_at", { ascending: false });
-      if (error) throw error;
-      if (!rutinas?.length) return [];
 
-      const rutinaIds = rutinas.map((r) => r.id);
+      // Duración: 60+ se interpreta como >= 60
+      // Nota: aplicamos esto como filtro adicional vía "post" porque estamos usando .select("*") typed loosely.
+      // (Podemos moverlo a la query cuando tipemos Database.rutina por completo.)
+      const rutinasFiltradasPorDuracion = (rutinas ?? []).filter((r: any) => {
+        const d = Number(r?.duracion_minutos ?? 0);
+        if (duracion === 60) return d >= 60;
+        return d === duracion;
+      });
+
+      // Reemplazamos para el resto del flujo
+      const rutinasFinal = rutinasFiltradasPorDuracion;
+      if (error) throw error;
+      if (!rutinasFinal?.length) return [];
+
+      const rutinaIds = rutinasFinal.map((r: any) => r.id);
       const { data: ejercicios, error: ejError } = await supabase
         .from("rutina_ejercicio")
         .select("*, tipo_ejercicio(id, nombre, body_part, gif_url)")
@@ -49,7 +84,7 @@ export function usePredefinedRoutines() {
         .order("orden");
       if (ejError) throw ejError;
 
-      return rutinas.map((r) => ({
+      return rutinasFinal.map((r: any) => ({
         ...r,
         nivel: (r as any).nivel,
         duracion_minutos: (r as any).duracion_minutos,

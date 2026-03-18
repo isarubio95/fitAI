@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,16 +26,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-
-// --- Mock data for empty state ---
-const MOCK_ROUTINES: PredefinedRoutine[] = [
-  { id: "mock-1", nombre: "Full Body Principiante", descripcion: "Rutina ideal para empezar en el gimnasio", nivel: "Principiante", duracion_minutos: 45, grupo_muscular: "Full Body", ejercicios: [] },
-  { id: "mock-2", nombre: "Push Day Avanzado", descripcion: "Empuje intenso: pecho, hombro y tríceps", nivel: "Avanzado", duracion_minutos: 60, grupo_muscular: "Empuje", ejercicios: [] },
-  { id: "mock-3", nombre: "Pull Day Intermedio", descripcion: "Tracción para espalda y bíceps", nivel: "Intermedio", duracion_minutos: 50, grupo_muscular: "Tracción", ejercicios: [] },
-  { id: "mock-4", nombre: "Piernas y Glúteos", descripcion: "Tren inferior completo con énfasis en glúteo", nivel: "Intermedio", duracion_minutos: 55, grupo_muscular: "Piernas", ejercicios: [] },
-  { id: "mock-5", nombre: "Torso Express", descripcion: "Torso completo en 30 minutos", nivel: "Principiante", duracion_minutos: 30, grupo_muscular: "Torso", ejercicios: [] },
-  { id: "mock-6", nombre: "Brazos & Core", descripcion: "Bíceps, tríceps y abdominales", nivel: "Avanzado", duracion_minutos: 40, grupo_muscular: "Brazos", ejercicios: [] },
-];
 
 const NIVELES = [
   { value: "Principiante", label: "Baja", icon: SignalLow },
@@ -77,31 +67,22 @@ interface Props {
 }
 
 export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
-  const { data: routines, isLoading } = usePredefinedRoutines();
-  const cloneRoutine = useCloneRoutine();
-
   const [filterNivel, setFilterNivel] = useState<string | null>(null);
   const [filterDuracion, setFilterDuracion] = useState<number | null>(null);
   const [filterGrupo, setFilterGrupo] = useState<string | null>(null);
 
-  const isMock = !routines?.length && !isLoading;
-  const source = isMock ? MOCK_ROUTINES : routines || [];
+  const readyToFetch = !!filterNivel && !!filterDuracion && !!filterGrupo;
 
-  const filtered = useMemo(() => {
-    return source.filter((r) => {
-      if (filterNivel && normalizeNivelForFilter(r.nivel) !== filterNivel) return false;
-      if (filterGrupo && r.grupo_muscular !== filterGrupo) return false;
-      if (filterDuracion) {
-        const dur = r.duracion_minutos ?? 0;
-        if (filterDuracion === 60 && dur < 60) return false;
-        if (filterDuracion < 60 && dur !== filterDuracion) return false;
-      }
-      return true;
-    });
-  }, [source, filterNivel, filterDuracion, filterGrupo]);
+  const { data: routines, isLoading } = usePredefinedRoutines({
+    nivel: filterNivel,
+    duracion: filterDuracion,
+    grupo: filterGrupo,
+    enabled: open && readyToFetch,
+  });
+  const cloneRoutine = useCloneRoutine();
+  const source = routines || [];
 
   const handleClone = async (id: string) => {
-    if (isMock) return;
     await cloneRoutine.mutateAsync(id);
     // Mantenemos el modal abierto para poder añadir más rutinas
   };
@@ -209,34 +190,36 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
         {/* Cards */}
         <ScrollArea className="flex-1">
           <div className="p-4 space-y-3">
-            {isLoading ? (
+            {!readyToFetch ? (
+              <div className="text-center py-12 space-y-3">
+                <Sparkles className="h-10 w-10 mx-auto text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">
+                  Selecciona <span className="font-medium text-foreground">nivel</span>,{" "}
+                  <span className="font-medium text-foreground">duración</span> y{" "}
+                  <span className="font-medium text-foreground">grupo muscular</span> para ver rutinas.
+                </p>
+              </div>
+            ) : isLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-32 rounded-xl" />
               ))
-            ) : filtered.length === 0 ? (
+            ) : source.length === 0 ? (
               <div className="text-center py-12 space-y-2">
                 <Sparkles className="h-10 w-10 mx-auto text-muted-foreground/40" />
                 <p className="text-sm text-muted-foreground">No se encontraron rutinas con esos filtros.</p>
               </div>
             ) : (
               <AnimatePresence mode="popLayout" key={`${filterNivel ?? ""}-${filterDuracion ?? ""}-${filterGrupo ?? ""}`}>
-                {filtered.map((r) => (
+                {source.map((r) => (
                   <RoutineCard
                     key={r.id}
                     routine={r}
-                    isMock={isMock}
                     nivelColor={nivelColor}
                     onClone={handleClone}
                     isCloning={cloneRoutine.isPending}
                   />
                 ))}
               </AnimatePresence>
-            )}
-
-            {isMock && (
-              <p className="text-center text-xs text-muted-foreground/60 pt-2">
-                Estas son rutinas de ejemplo. Añade plantillas predefinidas desde tu base de datos.
-              </p>
             )}
           </div>
         </ScrollArea>
@@ -247,13 +230,11 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
 
 function RoutineCard({
   routine: r,
-  isMock,
   nivelColor,
   onClone,
   isCloning,
 }: {
   routine: PredefinedRoutine;
-  isMock: boolean;
   nivelColor: (n: string | null) => string;
   onClone: (id: string) => void;
   isCloning: boolean;
@@ -266,8 +247,7 @@ function RoutineCard({
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        "rounded-2xl border border-border bg-card p-4 space-y-3",
-        isMock && "opacity-70"
+        "rounded-2xl border border-border bg-card p-4 space-y-3"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -309,7 +289,7 @@ function RoutineCard({
       <Button
         size="sm"
         className="w-full gap-1.5"
-        disabled={isMock || isCloning}
+        disabled={isCloning}
         onClick={() => onClone(r.id)}
       >
         {isCloning ? (
