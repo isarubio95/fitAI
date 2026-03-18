@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { LogOut, Mail, SunMoon, Shield, Flame, Zap, Trophy, Swords, Target, Award } from "lucide-react";
 import { ColorThemeSelector } from "@/components/ColorThemeSelector";
+import { Switch } from "@/components/ui/switch";
+import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 
 const iconMap: Record<string, React.ElementType> = {
   Swords, Shield, Flame, Target, Trophy, Award,
@@ -25,6 +27,7 @@ export function ProfileDrawer() {
   const { theme, setTheme } = useTheme();
   const { data: stats } = useProfileStats();
   const { data: logros = [], isLoading: loadingLogros } = useLogros();
+  const { comunidadPublicaActividad, isLoading: settingsLoading, isUpdating, setComunidadPublicaActividad } = useCommunitySettings();
   const [open, setOpen] = useState(false);
 
   const initials = user?.email
@@ -52,7 +55,6 @@ export function ProfileDrawer() {
       <SheetContent
         side="left"
         className="w-full max-w-full sm:max-w-full flex flex-col"
-        onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <SheetHeader className="text-left">
           <SheetTitle className="text-lg">Mi cuenta</SheetTitle>
@@ -144,6 +146,34 @@ export function ProfileDrawer() {
                 })}
               </div>
             )}
+          </div>
+
+          {/* Privacidad en comunidad */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium flex items-center gap-2">
+              Comunidad
+            </p>
+            <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold">Publicar entrenos</p>
+                <p className="text-[12px] text-muted-foreground">
+                  {settingsLoading
+                    ? "Cargando..."
+                    : comunidadPublicaActividad
+                      ? "Tus entrenos se verán en el feed público."
+                      : "Tus entrenos se mantendrán privados."}
+                </p>
+              </div>
+              <Switch
+                checked={comunidadPublicaActividad}
+                onCheckedChange={(v) => {
+                  setComunidadPublicaActividad(v).catch(() => {
+                    // Error silencioso: el backend puede no estar migrado aún.
+                  });
+                }}
+                disabled={settingsLoading || isUpdating}
+              />
+            </div>
           </div>
 
           {/* Color de acento */}

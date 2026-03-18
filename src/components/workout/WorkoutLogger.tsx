@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkoutById } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
+import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +92,7 @@ export function WorkoutLogger() {
   const { open, workoutId, defaultDate, templateExercises, templateTitle, plannedId } = state;
 
   const { user } = useAuth();
+  const { comunidadPublicaActividad } = useCommunitySettings();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -174,7 +176,12 @@ export function WorkoutLogger() {
     try {
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
-        .insert({ titulo: templateTitle.trim(), fecha: new Date().toISOString(), usuario_id: user.id })
+        .insert({
+          titulo: templateTitle.trim(),
+          fecha: new Date().toISOString(),
+          usuario_id: user.id,
+          es_publica: comunidadPublicaActividad,
+        })
         .select("id")
         .single();
       if (actError) throw actError;
@@ -596,6 +603,7 @@ export function WorkoutLogger() {
         fecha: new Date(fecha).toISOString(),
         fecha_fin: new Date().toISOString(),
         usuario_id: user!.id,
+        es_publica: comunidadPublicaActividad,
       })
       .select("id")
       .single();

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Dumbbell, BarChart3, LogOut, ClipboardList, Plus, Activity, Scale, FileUp, Sparkles } from "lucide-react";
+import { Home, Dumbbell, BarChart3, LogOut, ClipboardList, Plus, Activity, Scale, FileUp, Sparkles, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import {
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
   { to: "/routines", icon: ClipboardList, label: "Rutinas" },
-  { to: "/exercises", icon: Dumbbell, label: "Ejercicios" },
+  { to: "/community", icon: Users, label: "Comunidad" },
   { to: "/evolution", icon: BarChart3, label: "Evolución" },
 ];
 
@@ -85,7 +85,7 @@ export function DesktopSidebar() {
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            <DropdownMenuItem onClick={() => navigate("/exercises", { state: { action: "new" } })}>
+            <DropdownMenuItem onClick={() => navigate("/routines?tab=ejercicios", { state: { action: "new" } })}>
               <Dumbbell className="h-4 w-4 mr-2 shrink-0 text-orange-500" />
               <div className="min-w-0">
                 <p className="font-medium">Ejercicio</p>

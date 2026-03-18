@@ -100,11 +100,11 @@ const Routines = () => {
     if (location.state?.action === "new") {
       setEditId(null);
       setFormOpen(true);
-      navigate(location.pathname, { replace: true, state: {} });
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: {} });
     }
     if (location.state?.action === "import-csv") {
       setImportCsvOpen(true);
-      navigate(location.pathname, { replace: true, state: {} });
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: {} });
     }
   }, [location.state, navigate]);
 

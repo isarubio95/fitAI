@@ -77,6 +77,33 @@ export function AppLayout() {
                 </button>
               </div>
             )}
+
+            {location.pathname === "/routines" && (
+              <div className="flex items-center gap-1 rounded-full bg-muted p-1">
+                <button
+                  onClick={() => setSearchParams({ tab: "rutinas" })}
+                  className={cn(
+                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
+                    (searchParams.get("tab") || "rutinas") === "rutinas"
+                      ? "bg-background text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Rutinas
+                </button>
+                <button
+                  onClick={() => setSearchParams({ tab: "ejercicios" })}
+                  className={cn(
+                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
+                    searchParams.get("tab") === "ejercicios"
+                      ? "bg-background text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Ejercicios
+                </button>
+              </div>
+            )}
           </header>
 
           <main className="flex-1 flex flex-col min-w-0 w-full pt-8 md:pt-0 pb-24 md:pb-0 min-h-screen">

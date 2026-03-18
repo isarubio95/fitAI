@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity, Sparkles, ChevronDown, FileUp, Calendar } from "lucide-react";
+import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity, Sparkles, ChevronDown, FileUp, Calendar, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
@@ -10,7 +10,7 @@ const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
   { to: "/routines", icon: ClipboardList, label: "Rutinas" },
   { type: "add" }, // El botón central
-  { to: "/exercises", icon: Dumbbell, label: "Ejercicios" },
+  { to: "/community", icon: Users, label: "Comunidad" },
   { to: "/evolution", icon: BarChart3, label: "Evolución" }, // Nueva ruta unificada
 ];
 
@@ -144,7 +144,7 @@ export function BottomNav() {
         </button>
         <button
           className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-sm text-left w-full"
-          onClick={() => { navigate("/exercises", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
+          onClick={() => { navigate("/routines?tab=ejercicios", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
         >
           <Dumbbell className="h-5 w-5 shrink-0 text-orange-500" />
           <div className="min-w-0">

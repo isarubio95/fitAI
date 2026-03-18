@@ -100,7 +100,7 @@ const Exercises = () => {
   useEffect(() => {
     if (location.state?.action === "new") {
       setCreateOpen(true);
-      navigate(location.pathname, { replace: true, state: {} });
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: {} });
     }
   }, [location.state]);
 
