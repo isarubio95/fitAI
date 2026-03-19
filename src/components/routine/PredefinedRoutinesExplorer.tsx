@@ -33,16 +33,6 @@ const NIVELES = [
   { value: "Avanzado", label: "Alta", icon: SignalHigh },
 ];
 
-/** Normaliza valores de nivel de la BD (Bajo, bajo, etc.) al valor usado en filtros (Principiante, Intermedio, Avanzado). */
-function normalizeNivelForFilter(nivel: string | null): string | null {
-  if (!nivel || typeof nivel !== "string") return null;
-  const n = nivel.trim().toLowerCase();
-  if (["principiante", "bajo", "baja"].includes(n)) return "Principiante";
-  if (["intermedio", "medio", "media"].includes(n)) return "Intermedio";
-  if (["avanzado", "alto", "alta"].includes(n)) return "Avanzado";
-  return nivel;
-}
-
 const DURACIONES = [
   { value: 30, label: "30 min", icon: Timer },
   { value: 45, label: "45 min", icon: Clock },

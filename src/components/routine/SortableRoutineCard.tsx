@@ -143,7 +143,10 @@ export function SortableRoutineCard({
           </div>
         </div>
 
-        <Button className="w-full mt-3" onClick={() => onStart(r)}>
+        <Button
+          className="w-full mt-3 h-11 rounded-xl border border-emerald-500/25 bg-linear-to-b from-[#1b2220] to-[#131917] px-4 text-sm font-medium leading-none text-emerald-300 shadow-[0_8px_20px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_0_rgba(16,185,129,0.2)] transform-gpu will-change-transform transition-all duration-300 ease-out hover:-translate-y-1 hover:border-emerald-400/50 hover:text-emerald-200 hover:from-[#1f2925] hover:to-[#151d19] hover:shadow-[0_14px_28px_rgba(0,0,0,0.38),0_0_0_1px_rgba(16,185,129,0.22),inset_0_1px_0_rgba(255,255,255,0.05)] focus-visible:ring-2 focus-visible:ring-emerald-400/35 focus-visible:ring-offset-0 active:duration-150 active:translate-y-[1.5px] active:scale-100 active:from-[#151c19] active:to-[#101512] active:shadow-[inset_0_2px_8px_rgba(0,0,0,0.42),0_0_0_1px_rgba(16,185,129,0.18)]"
+          onClick={() => onStart(r)}
+        >
           <Play className="h-4 w-4 mr-2" /> Iniciar Entrenamiento
         </Button>
       </CardContent>

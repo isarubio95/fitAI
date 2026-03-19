@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useExerciseWithHistory, useExerciseHistory } from "@/hooks/useExerciseProgress";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -25,13 +25,40 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, TrendingUp, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 
 const SWIPE_THRESHOLD = 50;
 
 function formatWeight(value: number) {
   const n = Number(value);
   return Number.isInteger(n) ? n.toString() : n.toFixed(2);
+}
+
+function getNiceStep(range: number) {
+  if (range <= 10) return 2.5;
+  if (range <= 30) return 5;
+  if (range <= 80) return 10;
+  if (range <= 200) return 25;
+  return 50;
+}
+
+function getUniformYScale(history: { oneRepMax: number }[], tickCount = 5) {
+  if (!history.length) {
+    const ticks = [0, 12.5, 25, 37.5, 50];
+    return { domain: [ticks[0], ticks[ticks.length - 1]] as [number, number], ticks };
+  }
+
+  const values = history.map((d) => d.oneRepMax);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const rawRange = Math.max(1, max - min);
+  const step = getNiceStep(rawRange);
+  const minDomain = Math.max(0, Math.floor((min - step) / step) * step);
+  const maxDomain = Math.ceil((max + step) / step) * step;
+  const finalStep = (maxDomain - minDomain) / (tickCount - 1);
+
+  const ticks = Array.from({ length: tickCount }, (_, i) => minDomain + i * finalStep);
+  return { domain: [minDomain, maxDomain] as [number, number], ticks };
 }
 
 export function ExerciseProgressWidget() {
@@ -42,6 +69,7 @@ export function ExerciseProgressWidget() {
   const { data: historyData, isLoading: loadingHistory } = useExerciseHistory(selectedExercise?.id);
   const history = historyData?.history;
   const lastRecord = historyData?.lastRecord;
+  const yScale = useMemo(() => getUniformYScale(history ?? []), [history]);
 
   // Swipe handling
   const touchStartX = useRef(0);
@@ -94,17 +122,20 @@ export function ExerciseProgressWidget() {
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-primary">
-            <TrendingUp className="h-4 w-4" />
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Progreso 1RM
-            </span>
+          <div className="flex items-center gap-1.5">
+            <CardTitle asChild className="text-base font-bold">
+              <h2>Fuerza Máxima</h2>
+            </CardTitle>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
-                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="group h-6 w-6 rounded-full hover:bg-transparent focus-visible:bg-transparent"
+                >
+                  <Info className="h-3.5 w-3.5 text-muted-foreground transition-colors duration-150 group-hover:text-foreground group-focus-visible:text-foreground" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-72 text-sm" side="bottom" align="start">
@@ -153,24 +184,6 @@ export function ExerciseProgressWidget() {
             </button>
           </div>
         </div>
-        <Select
-          value={selectedExercise?.id}
-          onValueChange={(val) => {
-            const idx = exercises.findIndex((e) => e.id === val);
-            if (idx >= 0) setSelectedIndex(idx);
-          }}
-        >
-          <SelectTrigger className="w-full border-none px-2 py-0.5 h-auto text-base font-semibold shadow-none focus:ring-0">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {exercises.map((ex) => (
-              <SelectItem key={ex.id} value={ex.id}>
-                {ex.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </CardHeader>
       <CardContent>
         <div
@@ -198,6 +211,7 @@ export function ExerciseProgressWidget() {
                   dataKey="date"
                   axisLine={false}
                   tickLine={false}
+                  tickMargin={10}
                   tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                   tickFormatter={(d) => format(new Date(d), "d MMM", { locale: es })}
                   padding={{ left: 20, right: 20 }}
@@ -206,8 +220,9 @@ export function ExerciseProgressWidget() {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                  domain={["dataMin - 5", "dataMax + 5"]}
-                  // Visualmente nunca mostramos etiquetas por debajo de 0
+                  domain={yScale.domain}
+                  ticks={yScale.ticks}
+                  interval={0}
                   tickFormatter={(v) => formatWeight(Math.max(0, v as number))}
                 />
                 <Tooltip content={<CustomTooltip />} />
@@ -224,6 +239,29 @@ export function ExerciseProgressWidget() {
             </ResponsiveContainer>
           )}
         </div>
+
+        <Select
+          value={selectedExercise?.id}
+          onValueChange={(val) => {
+            const idx = exercises.findIndex((e) => e.id === val);
+            if (idx >= 0) setSelectedIndex(idx);
+          }}
+        >
+          <SelectTrigger className="mt-3 h-10 w-full rounded-lg border border-emerald-500/20 bg-linear-to-b from-[#1b2220] to-[#151b18] px-3 text-sm font-medium text-emerald-200 shadow-[0_4px_12px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors hover:border-emerald-400/30 hover:text-emerald-100 focus-visible:ring-2 focus-visible:ring-emerald-400/30 focus-visible:ring-offset-0 data-[state=open]:border-emerald-400/35">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="max-h-60 rounded-lg border border-emerald-500/20 bg-[#18201d] text-emerald-100 shadow-[0_10px_24px_rgba(0,0,0,0.4)] will-change-transform data-[state=open]:animation-duration-[260ms] data-[state=closed]:animation-duration-[180ms] data-[state=open]:[animation-timing-function:cubic-bezier(0.22,1,0.36,1)] data-[state=closed]:[animation-timing-function:cubic-bezier(0.4,0,1,1)] data-[state=open]:zoom-in-99 data-[state=closed]:zoom-out-99 data-[side=bottom]:slide-in-from-top-0 data-[side=top]:slide-in-from-bottom-0">
+            {exercises.map((ex) => (
+              <SelectItem
+                key={ex.id}
+                value={ex.id}
+                className="rounded-md focus:bg-emerald-500/15 focus:text-emerald-50 data-highlighted:bg-emerald-500/15 data-highlighted:text-emerald-50"
+              >
+                {ex.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </CardContent>
     </Card>
   );
