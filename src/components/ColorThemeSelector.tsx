@@ -17,7 +17,7 @@ export function ColorThemeSelector() {
       <p className="text-sm font-medium flex items-center gap-2">
         <Palette className="h-4 w-4 text-muted-foreground" /> Color de acento
       </p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 px-1">
         {ACCENT_OPTIONS.map((opt) => (
           <button
             key={opt.value}

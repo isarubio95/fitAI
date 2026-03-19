@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useProfileStats, xpProgress } from "@/hooks/useGamification";
 import { useLogros } from "@/hooks/useLogros";
+import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -39,6 +41,31 @@ export function ProfileDrawer() {
     (user?.user_metadata?.picture as string | undefined);
 
   const xp = stats ? xpProgress(stats.xp_total) : null;
+  const { data: followCounts, isLoading: loadingFollowCounts } = useQuery({
+    queryKey: ["follow-counts", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const sb = supabase as any;
+      const [followersRes, followingRes] = await Promise.all([
+        sb
+          .from("seguimiento")
+          .select("seguido_id")
+          .eq("seguido_id", user!.id),
+        sb
+          .from("seguimiento")
+          .select("seguidor_id")
+          .eq("seguidor_id", user!.id),
+      ]);
+
+      if (followersRes.error) throw followersRes.error;
+      if (followingRes.error) throw followingRes.error;
+
+      return {
+        seguidores: followersRes.data?.length ?? 0,
+        seguidos: followingRes.data?.length ?? 0,
+      };
+    },
+  });
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -61,7 +88,7 @@ export function ProfileDrawer() {
         </SheetHeader>
 
         {/* User info */}
-        <div className="flex items-center gap-3 py-4">
+        <div className="flex items-center gap-3 pt-2">
           <Avatar className="h-12 w-12">
             {avatarUrl && <AvatarImage src={avatarUrl} alt="" />}
             <AvatarFallback className="bg-primary/10 text-primary text-base font-bold">
@@ -73,6 +100,22 @@ export function ProfileDrawer() {
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Mail className="h-3 w-3" /> Cuenta personal
             </p>
+          </div>
+        </div>
+        <div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border px-3 py-2 text-center">
+              <p className="text-sm font-semibold">
+                {loadingFollowCounts ? "..." : followCounts?.seguidores ?? 0}
+              </p>
+              <p className="text-[11px] text-muted-foreground">Seguidores</p>
+            </div>
+            <div className="rounded-lg border px-3 py-2 text-center">
+              <p className="text-sm font-semibold">
+                {loadingFollowCounts ? "..." : followCounts?.seguidos ?? 0}
+              </p>
+              <p className="text-[11px] text-muted-foreground">Seguidos</p>
+            </div>
           </div>
         </div>
 
