@@ -15,6 +15,8 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   AreaChart,
   Area,
@@ -253,16 +255,12 @@ export function ExerciseProgressWidget() {
             if (idx >= 0) setSelectedIndex(idx);
           }}
         >
-          <SelectTrigger className="mt-3 h-10 w-full rounded-lg border border-emerald-600/20 bg-linear-to-b from-[#ecfdf5] to-[#d1fae5] px-3 text-sm font-medium text-emerald-800 shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.65)] transition-colors hover:border-emerald-600/35 hover:text-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500/25 focus-visible:ring-offset-0 data-[state=open]:border-emerald-600/45 dark:border-emerald-500/20 dark:bg-linear-to-b dark:from-[#1b2220] dark:to-[#151b18] dark:text-emerald-200 dark:shadow-[0_4px_12px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.03)] dark:hover:border-emerald-400/30 dark:hover:text-emerald-100 dark:data-[state=open]:border-emerald-400/35 dark:focus-visible:ring-emerald-400/30">
+          <SelectTrigger className={cn(buttonVariants({ variant: "default" }), "mt-3 h-10 w-full justify-between text-left")}>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="max-h-60 rounded-lg border border-emerald-600/20 bg-popover text-emerald-900 shadow-[0_10px_24px_rgba(0,0,0,0.12)] will-change-transform data-[state=open]:animation-duration-[260ms] data-[state=closed]:animation-duration-[180ms] data-[state=open]:[animation-timing-function:cubic-bezier(0.22,1,0.36,1)] data-[state=closed]:[animation-timing-function:cubic-bezier(0.4,0,1,1)] data-[state=open]:zoom-in-99 data-[state=closed]:zoom-out-99 data-[side=bottom]:slide-in-from-top-0 data-[side=top]:slide-in-from-bottom-0 dark:border-emerald-500/20 dark:bg-[#18201d] dark:text-emerald-100 dark:shadow-[0_10px_24px_rgba(0,0,0,0.4)]">
+          <SelectContent>
             {exercises.map((ex) => (
-              <SelectItem
-                key={ex.id}
-                value={ex.id}
-                className="rounded-md focus:bg-emerald-600/10 focus:text-emerald-900 data-highlighted:bg-emerald-600/10 data-highlighted:text-emerald-900 dark:focus:bg-emerald-500/15 dark:focus:text-emerald-50 dark:data-highlighted:bg-emerald-500/15 dark:data-highlighted:text-emerald-50"
-              >
+              <SelectItem key={ex.id} value={ex.id}>
                 {ex.name}
               </SelectItem>
             ))}
