@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -31,6 +32,7 @@ export function ProfileDrawer() {
   const { data: logros = [], isLoading: loadingLogros } = useLogros();
   const { comunidadPublicaActividad, isLoading: settingsLoading, isUpdating, setComunidadPublicaActividad } = useCommunitySettings();
   const [open, setOpen] = useState(false);
+  const [followListMode, setFollowListMode] = useState<"seguidores" | "seguidos" | null>(null);
 
   const initials = user?.email
     ? user.email.slice(0, 2).toUpperCase()
@@ -67,6 +69,44 @@ export function ProfileDrawer() {
     },
   });
 
+  const { data: followUsers = [], isLoading: loadingFollowUsers } = useQuery({
+    queryKey: ["follow-users", user?.id, followListMode],
+    enabled: !!user && !!followListMode,
+    queryFn: async (): Promise<{ id: string; username: string | null; avatar_url: string | null }[]> => {
+      const sb = supabase as any;
+      const isFollowers = followListMode === "seguidores";
+
+      const { data: relData, error: relErr } = await sb
+        .from("seguimiento")
+        .select(isFollowers ? "seguidor_id" : "seguido_id")
+        .eq(isFollowers ? "seguido_id" : "seguidor_id", user!.id);
+
+      if (relErr) throw relErr;
+
+      const ids: string[] = (relData ?? [])
+        .map((row: any) => (isFollowers ? row.seguidor_id : row.seguido_id))
+        .filter(Boolean);
+
+      if (ids.length === 0) return [];
+
+      const { data: usersData, error: usersErr } = await sb
+        .from("perfil")
+        .select("id, username, avatar_url")
+        .in("id", ids);
+
+      if (usersErr) throw usersErr;
+      return (usersData ?? []) as { id: string; username: string | null; avatar_url: string | null }[];
+    },
+  });
+
+  const initialsFromUsername = (username?: string | null) => {
+    if (!username) return "U";
+    const parts = username.trim().split(/[\s_\-]+/).filter(Boolean);
+    const first = parts[0]?.[0] ?? "U";
+    const second = parts[1]?.[0] ?? "";
+    return (first + second).toUpperCase();
+  };
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -102,24 +142,61 @@ export function ProfileDrawer() {
             </p>
           </div>
         </div>
-        <div>
+        <div className="space-y-2">
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg border px-3 py-2 text-center">
+            <button
+              type="button"
+              onClick={() => setFollowListMode("seguidores")}
+              className="rounded-lg border px-3 py-2 text-center transition-colors hover:bg-muted/50"
+            >
               <p className="text-sm font-semibold">
                 {loadingFollowCounts ? "..." : followCounts?.seguidores ?? 0}
               </p>
               <p className="text-[11px] text-muted-foreground">Seguidores</p>
-            </div>
-            <div className="rounded-lg border px-3 py-2 text-center">
+            </button>
+            <button
+              type="button"
+              onClick={() => setFollowListMode("seguidos")}
+              className="rounded-lg border px-3 py-2 text-center transition-colors hover:bg-muted/50"
+            >
               <p className="text-sm font-semibold">
                 {loadingFollowCounts ? "..." : followCounts?.seguidos ?? 0}
               </p>
               <p className="text-[11px] text-muted-foreground">Seguidos</p>
-            </div>
+            </button>
           </div>
         </div>
 
         <Separator />
+
+        <Dialog open={!!followListMode} onOpenChange={(next) => !next && setFollowListMode(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{followListMode === "seguidores" ? "Seguidores" : "Seguidos"}</DialogTitle>
+            </DialogHeader>
+            <div className="max-h-[50dvh] overflow-y-auto pr-1">
+              {loadingFollowUsers ? (
+                <p className="py-2 text-sm text-muted-foreground">Cargando...</p>
+              ) : followUsers.length === 0 ? (
+                <p className="py-2 text-sm text-muted-foreground">No hay usuarios para mostrar.</p>
+              ) : (
+                <div className="space-y-1">
+                  {followUsers.map((p) => (
+                    <div key={p.id} className="flex items-center gap-3 rounded-md border px-2 py-2">
+                      <Avatar className="h-8 w-8">
+                        {p.avatar_url && <AvatarImage src={p.avatar_url} alt="" />}
+                        <AvatarFallback className="text-[10px]">
+                          {initialsFromUsername(p.username)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-sm font-medium truncate">{p.username ?? "Usuario"}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Contenido del perfil */}
         <div className="flex-1 overflow-y-auto space-y-6 mt-3">
