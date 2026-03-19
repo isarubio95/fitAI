@@ -193,50 +193,56 @@ export function ExerciseProgressWidget() {
           className="touch-pan-y"
         >
           {loadingHistory ? (
-            <Skeleton className="h-40 w-full" />
+            <div className="py-2">
+              <Skeleton className="h-40 w-full" />
+            </div>
           ) : !history || history.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-sm text-muted-foreground text-center px-4">
-              Sigue entrenando para ver tu progreso 💪
+            <div className="py-2">
+              <div className="flex items-center justify-center h-40 text-sm text-muted-foreground text-center px-4">
+                Sigue entrenando para ver tu progreso 💪
+              </div>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={160}>
-              <AreaChart data={history} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="progressGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="date"
-                  axisLine={false}
-                  tickLine={false}
-                  tickMargin={10}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                  tickFormatter={(d) => format(new Date(d), "d MMM", { locale: es })}
-                  padding={{ left: 20, right: 20 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                  domain={yScale.domain}
-                  ticks={yScale.ticks}
-                  interval={0}
-                  tickFormatter={(v) => formatWeight(Math.max(0, v as number))}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="oneRepMax"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  fill="url(#progressGradient)"
-                  dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
-                  activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="py-2">
+              <ResponsiveContainer width="100%" height={160}>
+                <AreaChart data={history} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="progressGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="date"
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={10}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    tickFormatter={(d) => format(new Date(d), "d MMM", { locale: es })}
+                    padding={{ left: 20, right: 20 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    domain={yScale.domain}
+                    ticks={yScale.ticks}
+                    interval={0}
+                    tickFormatter={(v) => formatWeight(Math.max(0, v as number))}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="oneRepMax"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    fill="url(#progressGradient)"
+                    dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
+                    activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </div>
 
