@@ -86,9 +86,9 @@ export function AppLayout() {
                 <button
                   onClick={() => setSearchParams({ tab: "history" })}
                   className={cn(
-                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
+                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
                     (searchParams.get("tab") || "history") === "history"
-                      ? "bg-background text-foreground shadow-xs"
+                      ? "bg-background text-foreground border-emerald-500/40"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -97,9 +97,9 @@ export function AppLayout() {
                 <button
                   onClick={() => setSearchParams({ tab: "measurements" })}
                   className={cn(
-                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
+                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
                     searchParams.get("tab") === "measurements"
-                      ? "bg-background text-foreground shadow-xs"
+                      ? "bg-background text-foreground border-emerald-500/40"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -113,9 +113,9 @@ export function AppLayout() {
                 <button
                   onClick={() => setSearchParams({ tab: "rutinas" })}
                   className={cn(
-                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
+                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
                     (searchParams.get("tab") || "rutinas") === "rutinas"
-                      ? "bg-background text-foreground shadow-xs"
+                      ? "bg-background text-foreground border-emerald-500/40"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -124,9 +124,9 @@ export function AppLayout() {
                 <button
                   onClick={() => setSearchParams({ tab: "ejercicios" })}
                   className={cn(
-                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap",
+                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
                     searchParams.get("tab") === "ejercicios"
-                      ? "bg-background text-foreground shadow-xs"
+                      ? "bg-background text-foreground border-emerald-500/40"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
