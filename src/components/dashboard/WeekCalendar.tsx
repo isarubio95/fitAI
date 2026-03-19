@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   startOfWeek,
@@ -65,6 +65,7 @@ export function WeekCalendar({
   onDateSelect,
   workoutDates,
   onWorkoutClick,
+  onWorkoutDetailsClick,
   onPlannedClick,
 }: WeekCalendarProps) {
   const weekStart = useMemo(
@@ -87,6 +88,17 @@ export function WeekCalendar({
   const [editPlanned, setEditPlanned] = useState<PlannedRoutine | null>(null);
   const [editDate, setEditDate] = useState("");
   const [editRutinaId, setEditRutinaId] = useState("");
+
+  // Evita que quede algún elemento con foco/outline visible al abrir el diálogo de edición.
+  useEffect(() => {
+    if (!editPlanned) return;
+    if (typeof window === "undefined") return;
+    const t = window.setTimeout(() => {
+      const activeEl = document.activeElement as HTMLElement | null;
+      activeEl?.blur?.();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [editPlanned]);
 
   const plannedByDate = useMemo(() => {
     const map: Record<string, PlannedRoutine[]> = {};
@@ -426,7 +438,11 @@ export function WeekCalendar({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent
+          className="sm:max-w-md"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Editar hoja de ruta</DialogTitle>
           </DialogHeader>

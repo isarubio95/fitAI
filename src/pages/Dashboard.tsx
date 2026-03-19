@@ -233,12 +233,24 @@ const Dashboard = () => {
 
   const startPlanned = (planned: PlannedRoutine) => {
     if (activeWorkout) {
+      // Evita que quede un foco/outline visible tras pulsar “Iniciar” (móvil/teclado)
+      const activeEl = document.activeElement as HTMLElement | null;
+      activeEl?.blur?.();
       toast({
         title: "Ya tienes un entrenamiento en curso",
         description: "Termínalo o cancélalo antes de empezar otro.",
         variant: "destructive",
         action: (
-          <Button variant="outline" size="sm" className="shrink-0" onClick={() => openActiveWorkout(activeWorkout.id)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            onClick={() => {
+              const activeEl = document.activeElement as HTMLElement | null;
+              activeEl?.blur?.();
+              openActiveWorkout(activeWorkout.id);
+            }}
+          >
             Ir al entreno
           </Button>
         ),
@@ -279,6 +291,9 @@ const Dashboard = () => {
           peso_kg: 0,
         })),
       }));
+
+    const activeEl = document.activeElement as HTMLElement | null;
+    activeEl?.blur?.();
 
     openFromPlannedRoutine(planned.id, routine.nombre ?? "Rutina", ejercicios);
   };

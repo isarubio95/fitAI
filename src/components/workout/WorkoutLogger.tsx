@@ -653,10 +653,25 @@ export function WorkoutLogger() {
     };
   }, [open, setOpen]);
 
+  // Evita que Radix deje algún elemento con foco visible al abrir el drawer
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setTimeout(() => {
+      const activeEl = document.activeElement as HTMLElement | null;
+      activeEl?.blur?.();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
   return (
     <>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[20px] p-0">
+        <SheetContent
+          side="bottom"
+          className="h-[92dvh] overflow-y-auto rounded-t-[20px] p-0"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <SheetHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
             <div className="flex items-center justify-between">
               <div className="flex flex-col">

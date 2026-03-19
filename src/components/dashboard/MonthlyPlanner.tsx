@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   startOfMonth,
   endOfMonth,
@@ -131,6 +131,17 @@ export function MonthlyPlanner({
   const [editDate, setEditDate] = useState("");
   const [editRutinaId, setEditRutinaId] = useState("");
   const [popoverOpen, setPopoverOpen] = useState<string | null>(null);
+
+  // Evita que quede algún elemento con foco/outline visible al abrir el diálogo de edición.
+  useEffect(() => {
+    if (!editPlanned) return;
+    if (typeof window === "undefined") return;
+    const t = window.setTimeout(() => {
+      const activeEl = document.activeElement as HTMLElement | null;
+      activeEl?.blur?.();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [editPlanned]);
 
   return (
     <div className="w-full">
@@ -462,7 +473,11 @@ export function MonthlyPlanner({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent
+          className="sm:max-w-md"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Editar hoja de ruta</DialogTitle>
           </DialogHeader>
