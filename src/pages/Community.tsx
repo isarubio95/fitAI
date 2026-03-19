@@ -91,9 +91,10 @@ export default function Community() {
 
                       {!isOwn && (
                         <Button
-                          variant={isFollowing ? "secondary" : "default"}
+                          variant="ghost"
                           onClick={() => toggleFollow(p.id)}
                           disabled={isToggling.has(p.id)}
+                          className="h-11 rounded-xl border border-emerald-600/25 bg-linear-to-b from-[#ecfdf5] to-[#d1fae5] px-4 text-sm font-medium leading-none text-emerald-800 shadow-[0_8px_20px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.75),inset_0_-1px_0_rgba(16,185,129,0.12)] transform-gpu will-change-transform transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-transparent hover:border-emerald-600/40 hover:text-emerald-700 hover:from-[#dcfce7] hover:to-[#bbf7d0] hover:shadow-[0_14px_28px_rgba(0,0,0,0.12),0_0_0_1px_rgba(16,185,129,0.18),inset_0_1px_0_rgba(255,255,255,0.65)] focus-visible:ring-2 focus-visible:ring-emerald-500/25 focus-visible:ring-offset-0 active:duration-150 active:translate-y-[1.5px] active:scale-100 active:bg-transparent active:from-[#d1fae5] active:to-[#a7f3d0] active:shadow-[inset_0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(16,185,129,0.12)] dark:border-emerald-500/25 dark:from-[#1b2220] dark:to-[#131917] dark:text-emerald-300 dark:shadow-[0_8px_20px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_0_rgba(16,185,129,0.2)] dark:hover:bg-transparent dark:hover:border-emerald-400/50 dark:hover:text-emerald-200 dark:hover:from-[#1f2925] dark:hover:to-[#151d19] dark:hover:shadow-[0_14px_28px_rgba(0,0,0,0.38),0_0_0_1px_rgba(16,185,129,0.22),inset_0_1px_0_rgba(255,255,255,0.05)] dark:focus-visible:ring-emerald-400/35 dark:active:from-[#151c19] dark:active:to-[#101512] dark:active:shadow-[inset_0_2px_8px_rgba(0,0,0,0.42),0_0_0_1px_rgba(16,185,129,0.18)]"
                         >
                           {isToggling.has(p.id) ? (
                             "..."

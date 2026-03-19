@@ -109,7 +109,7 @@ export function ExerciseProgressWidget() {
           <Skeleton className="h-5 w-40" />
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-44 w-full" />
         </CardContent>
       </Card>
     );
@@ -194,17 +194,17 @@ export function ExerciseProgressWidget() {
         >
           {loadingHistory ? (
             <div className="py-2">
-              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-44 w-full" />
             </div>
           ) : !history || history.length === 0 ? (
             <div className="py-2">
-              <div className="flex items-center justify-center h-40 text-sm text-muted-foreground text-center px-4">
+              <div className="flex items-center justify-center h-44 text-sm text-muted-foreground text-center px-4">
                 Sigue entrenando para ver tu progreso 💪
               </div>
             </div>
           ) : (
             <div className="py-2">
-              <ResponsiveContainer width="100%" height={160}>
+              <ResponsiveContainer width="100%" height={176}>
                 <AreaChart data={history} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="progressGradient" x1="0" y1="0" x2="0" y2="1">
