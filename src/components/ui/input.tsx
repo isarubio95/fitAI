@@ -8,7 +8,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
       <input
         type={type}
         className={cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:border-emerald-500/30 focus-visible:shadow-[0_0_0_1px_rgba(16,185,129,0.35),0_0_0_4px_rgba(16,185,129,0.18),0_0_0_8px_rgba(16,185,129,0.10),0_0_0_14px_rgba(52,211,153,0.06)] transition-[box-shadow,border-color] duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:border-emerald-500/30 focus-visible:shadow-[0_0_0_1px_rgba(16,185,129,0.35),0_0_0_1px_rgba(16,185,129,0.18),0_0_0_3px_rgba(16,185,129,0.13),0_0_0_5px_rgba(16,185,129,0.10),0_0_0_7px_rgba(52,211,153,0.06)] transition-[box-shadow,border-color] duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           className,
         )}
         ref={ref}

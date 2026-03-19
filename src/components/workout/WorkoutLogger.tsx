@@ -695,7 +695,7 @@ export function WorkoutLogger() {
                     Borrar
                   </Button>
                 )}
-                <Button variant="primary" onClick={handleSave} disabled={saving || creatingActive} size="sm">
+                <Button variant="default" onClick={handleSave} disabled={saving || creatingActive} size="sm">
                   {(saving || creatingActive) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {saveButtonLabel}
                 </Button>

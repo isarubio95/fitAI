@@ -273,7 +273,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
             <SheetTitle className="text-lg">
               {isEdit ? "Editar Rutina" : "Nueva Rutina"}
             </SheetTitle>
-            <Button variant="primary" onClick={handleSave} disabled={saving} size="sm">
+            <Button variant="default" onClick={handleSave} disabled={saving} size="sm">
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Actualizar" : "Guardar"}
             </Button>

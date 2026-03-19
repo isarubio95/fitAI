@@ -255,7 +255,7 @@ export function ExerciseProgressWidget() {
             if (idx >= 0) setSelectedIndex(idx);
           }}
         >
-          <SelectTrigger className={cn(buttonVariants({ variant: "default" }), "mt-3 h-10 w-full justify-between text-left")}>
+          <SelectTrigger className={cn(buttonVariants({ variant: "ghost" }), "mt-3 h-10 w-full justify-between text-left")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
