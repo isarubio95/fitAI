@@ -13,7 +13,7 @@ import {
   startOfMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, ChevronDown, Pencil, Check, Clock, CalendarX2, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Pencil, Check, Clock, CalendarX2, Trash2, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +55,7 @@ interface WeekCalendarProps {
   onDateSelect: (date: Date) => void;
   workoutDates: Date[];
   onWorkoutClick?: (id: string) => void;
+  onWorkoutDetailsClick?: (id: string) => void;
   onPlannedClick?: (planned: PlannedRoutine) => void;
 }
 
@@ -334,16 +335,32 @@ export function WeekCalendar({
                         >
                           <div className="flex items-center justify-between gap-2 mb-1">
                             <span className="font-medium text-[13px] text-foreground">{w.titulo}</span>
-                            {onWorkoutClick && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 shrink-0"
-                                onClick={() => onWorkoutClick(w.id)}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
+                            <div className="flex items-center gap-1 shrink-0">
+                              {onWorkoutDetailsClick && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onWorkoutDetailsClick(w.id);
+                                  }}
+                                  title="Ver detalles"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              {onWorkoutClick && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 shrink-0"
+                                  onClick={() => onWorkoutClick(w.id)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {w.ejercicios.map((ej) => (

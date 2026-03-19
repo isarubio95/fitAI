@@ -2,8 +2,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "dark" | "light" | "system";
 
-/** Color de acento/primario: verde (logo), naranja, amarillo, rosa */
-export type AccentColor = "green" | "orange" | "yellow" | "pink";
+/** Color de acento/primario: verde (logo), naranja, amarillo, rosa, azul */
+export type AccentColor = "green" | "orange" | "yellow" | "pink" | "blue";
 
 interface ThemeContextType {
   theme: Theme;
@@ -43,7 +43,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const [accentColor, setAccentColorState] = useState<AccentColor>(() => {
     const stored = localStorage.getItem(ACCENT_STORAGE_KEY) as AccentColor | null;
-    if (stored && ["green", "orange", "yellow", "pink"].includes(stored)) return stored;
+    if (stored && ["green", "orange", "yellow", "pink", "blue"].includes(stored)) return stored;
     return "green";
   });
 

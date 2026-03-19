@@ -7,6 +7,7 @@ const ACCENT_OPTIONS: { value: AccentColor; label: string; className: string }[]
   { value: "orange", label: "Naranja", className: "bg-[hsl(24,95%,48%)]" },
   { value: "yellow", label: "Amarillo", className: "bg-[hsl(38,92%,42%)]" },
   { value: "pink", label: "Rosa", className: "bg-[hsl(330,72%,50%)]" },
+  { value: "blue", label: "Azul", className: "bg-[hsl(215,92%,54%)]" },
 ];
 
 export function ColorThemeSelector() {

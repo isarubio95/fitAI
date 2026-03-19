@@ -77,6 +77,16 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-ring: 330 72% 50%;
   }
+  :root[data-accent="blue"] {
+    --primary: 215 92% 54%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 215 92% 54%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 215 92% 54%;
+    --sidebar-primary: 215 92% 54%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-ring: 215 92% 54%;
+  }
 
   .dark {
     --background: 224 71% 4%;
@@ -127,6 +137,13 @@
     --ring: 330 72% 50%;
     --sidebar-primary: 330 72% 50%;
     --sidebar-ring: 330 72% 50%;
+  }
+  .dark[data-accent="blue"] {
+    --primary: 215 92% 54%;
+    --accent: 215 92% 54%;
+    --ring: 215 92% 54%;
+    --sidebar-primary: 215 92% 54%;
+    --sidebar-ring: 215 92% 54%;
   }
 
 }

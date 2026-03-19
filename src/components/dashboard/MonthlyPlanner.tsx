@@ -13,7 +13,7 @@ import {
   format,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +59,7 @@ interface MonthlyPlannerProps {
   workouts: ActividadWithDetails[];
   onDayClick: (date: Date) => void;
   onWorkoutClick: (workoutId: string) => void;
+  onWorkoutDetailsClick?: (workoutId: string) => void;
   onPlannedStart?: (planned: PlannedRoutine) => void;
 }
 
@@ -70,6 +71,7 @@ export function MonthlyPlanner({
   workouts,
   onDayClick,
   onWorkoutClick,
+  onWorkoutDetailsClick,
   onPlannedStart,
 }: MonthlyPlannerProps) {
   const { data: planned } = usePlannedRoutines(startOfMonth(month), endOfMonth(month));
@@ -174,8 +176,8 @@ export function MonthlyPlanner({
           const dayPlanned = plannedByDay.get(key) || [];
           const now = startOfDay(new Date());
           const dayStart = startOfDay(day);
-          const plannedCompleted = dayPlanned.some((p: any) => !!p.actividad_id);
-          const plannedMissed = dayPlanned.some((p: any) => !p.actividad_id && isBefore(dayStart, now));
+          const plannedCompleted = dayPlanned.some((p) => !!p.actividad_id);
+          const plannedMissed = dayPlanned.some((p) => !p.actividad_id && isBefore(dayStart, now));
 
           // Identificamos las esquinas de la última fila
           const isBottomLeft = i === days.length - 7;
@@ -258,6 +260,21 @@ export function MonthlyPlanner({
                               </p>
                             </div>
                             <div className="flex items-center gap-0.5 shrink-0">
+                              {/** Details */ }
+                              {onWorkoutDetailsClick && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => {
+                                    onWorkoutDetailsClick(w.id);
+                                    setPopoverOpen(null);
+                                  }}
+                                  title="Ver detalles"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"

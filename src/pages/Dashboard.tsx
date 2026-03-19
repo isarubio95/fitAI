@@ -14,6 +14,7 @@ import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
+import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashboard/ProgramWizard";
 import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears } from "date-fns";
 import { es } from "date-fns/locale";
@@ -172,6 +173,9 @@ const Dashboard = () => {
 
   const [isDragMode, setIsDragMode] = useState(false); // Estado para controlar el modo edición
 
+  const [workoutDetailsOpen, setWorkoutDetailsOpen] = useState(false);
+  const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
+
   const { data: lastWorkout, isLoading: loadingLast } = useLastWorkout();
   const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyWorkouts();
   const { data: monthWorkouts } = useMonthWorkouts(calendarMonth);
@@ -221,6 +225,12 @@ const Dashboard = () => {
     setCalendarMonth(month);
   };
 
+  const openWorkoutDetails = (id: string) => {
+    if (isDragMode) return;
+    setWorkoutDetailsId(id);
+    setWorkoutDetailsOpen(true);
+  };
+
   const startPlanned = (planned: PlannedRoutine) => {
     if (activeWorkout) {
       toast({
@@ -236,21 +246,39 @@ const Dashboard = () => {
       return;
     }
 
-    const routine = planned.rutina as any;
-    const ejercicios = (routine.ejercicios ?? [])
-      .sort((a: any, b: any) => (a.orden ?? 0) - (b.orden ?? 0))
-      .map((ej: any) => ({
+    type RoutineExercise = {
+      tipo_ejercicio_id: string;
+      tipo_ejercicio?: { nombre?: string | null } | null;
+      repes_min: number;
+      repes_max: number;
+      rir?: number | null;
+      descanso?: number | null;
+      superset_id?: string | null;
+      series_objetivo: number;
+      orden?: number | null;
+    };
+
+    type PlannedRoutineWithExercises = {
+      ejercicios?: RoutineExercise[] | null;
+      nombre?: string | null;
+    };
+
+    const routine = planned.rutina as unknown as PlannedRoutineWithExercises;
+
+    const ejercicios: ExerciseFormData[] = (routine.ejercicios ?? [])
+      .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+      .map((ej) => ({
         tipo_ejercicio_id: ej.tipo_ejercicio_id,
         nombre: ej.tipo_ejercicio?.nombre ?? "",
         repRange: `${ej.repes_min}-${ej.repes_max}`,
-        targetRir: (ej as any).rir ?? 1,
-        descanso: (ej as any).descanso ?? 120,
-        superset_id: (ej as any).superset_id ?? null,
+        targetRir: ej.rir ?? 1,
+        descanso: ej.descanso ?? 120,
+        superset_id: ej.superset_id ?? null,
         sets: Array.from({ length: ej.series_objetivo }, () => ({
           repeticiones: 0,
           peso_kg: 0,
         })),
-      })) as ExerciseFormData[];
+      }));
 
     openFromPlannedRoutine(planned.id, routine.nombre ?? "Rutina", ejercicios);
   };
@@ -380,6 +408,7 @@ const Dashboard = () => {
                     if (!isDragMode) openNew(format(date, "yyyy-MM-dd"));
                   }}
                   onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
+                  onWorkoutDetailsClick={(id) => openWorkoutDetails(id)}
                   onPlannedStart={!isDragMode ? startPlanned : undefined}
                 />
               ) : (
@@ -389,6 +418,7 @@ const Dashboard = () => {
                   onDateSelect={handleWeekDaySelect}
                   workoutDates={workoutDates ?? []}
                   onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
+                  onWorkoutDetailsClick={(id) => openWorkoutDetails(id)}
                   onPlannedClick={(p) => { if (!isDragMode) startPlanned(p); }}
                 />
               )}
@@ -463,10 +493,11 @@ const Dashboard = () => {
                         });
                         setConfirmDeletePlan(false);
                         setEditPlanSheetOpen(false);
-                      } catch (e: any) {
+                  } catch (e: unknown) {
+                    const message = e instanceof Error ? e.message : "Error desconocido";
                         toast({
                           title: "Error al eliminar",
-                          description: e.message,
+                      description: message,
                           variant: "destructive",
                         });
                       }
@@ -566,6 +597,15 @@ const Dashboard = () => {
           </div>
         </SortableContext>
       </DndContext>
+
+      <WorkoutDetailsSheet
+        open={workoutDetailsOpen}
+        onOpenChange={(next) => {
+          setWorkoutDetailsOpen(next);
+          if (!next) setWorkoutDetailsId(null);
+        }}
+        workoutId={workoutDetailsId}
+      />
     </div>
   );
 };
