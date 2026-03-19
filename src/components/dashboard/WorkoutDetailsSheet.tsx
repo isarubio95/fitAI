@@ -486,7 +486,7 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
                                   key={`${g.supersetId}-${idx}`}
                                   className="relative border-t-0 bg-primary/5 border-border/0"
                                 >
-                                  <div className="mx-4 mb-0 -mt-0 rounded-xl border-2 border-primary/40 bg-primary/5 overflow-hidden">
+                                  <div className="mx-4 mb-0 mt-0 rounded-xl border-2 border-primary/40 bg-primary/5 overflow-hidden">
                                     <div className="px-3 pt-2 pb-1">
                                       <span className="text-xs font-medium text-primary">Superserie</span>
                                     </div>
