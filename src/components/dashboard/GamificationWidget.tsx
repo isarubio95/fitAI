@@ -24,7 +24,7 @@ export function GamificationWidget() {
 
   return (
     <Card className="w-full rounded-none md:rounded-2xl">
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="px-6 py-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
