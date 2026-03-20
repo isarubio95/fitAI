@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ProfileDrawer } from "./ProfileDrawer";
+import { SettingsDrawer } from "./SettingsDrawer";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
 import {
@@ -35,6 +36,7 @@ export function DesktopSidebar() {
       <div className="flex h-16 items-center gap-2 px-6 border-b border-border">
         <img src="/logo.svg" alt="TrackGym" className="h-9 w-9 rounded-lg shrink-0" />
         <span className="text-lg font-bold flex-1">TrackGym</span>
+        <SettingsDrawer />
         <ProfileDrawer />
       </div>
       <nav className="flex-1 space-y-1 p-4">

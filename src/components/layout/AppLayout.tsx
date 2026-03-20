@@ -5,6 +5,7 @@ import { Outlet } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
 import { ProfileDrawer } from "./ProfileDrawer";
+import { SettingsDrawer } from "./SettingsDrawer";
 import { ActiveWorkoutPill } from "@/components/workout/ActiveWorkoutPill";
 import { GlobalWorkoutDrawerProvider } from "@/hooks/useGlobalWorkoutDrawer";
 import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
@@ -75,65 +76,74 @@ export function AppLayout() {
           {/* Mobile header — auto-hide on scroll down */}
           <header
             className={cn(
-              "fixed top-0 left-0 right-0 z-40 flex min-h-12 items-center px-4 pt-3 gap-3 md:hidden transition-[transform,border-color] duration-300 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-xl border-b",
+              "fixed top-0 left-0 right-0 z-40 flex min-h-12 items-center px-4 pt-3 md:hidden transition-[transform,border-color] duration-300 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-xl border-b",
               atTop ? "border-transparent" : "border-black/5 dark:border-white/5",
               scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
             )}
           >
-            <ProfileDrawer />
-            {location.pathname === "/evolution" && (
-              <div className="flex items-center gap-1 rounded-full bg-muted p-1">
-                <button
-                  onClick={() => setSearchParams({ tab: "history" })}
-                  className={cn(
-                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
-                    (searchParams.get("tab") || "history") === "history"
-                      ? "bg-background text-foreground border-emerald-500/40"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Entrenamientos
-                </button>
-                <button
-                  onClick={() => setSearchParams({ tab: "measurements" })}
-                  className={cn(
-                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
-                    searchParams.get("tab") === "measurements"
-                      ? "bg-background text-foreground border-emerald-500/40"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Medidas
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              <ProfileDrawer />
+            </div>
 
-            {location.pathname === "/routines" && (
-              <div className="flex items-center gap-1 rounded-full bg-muted p-1">
-                <button
-                  onClick={() => setSearchParams({ tab: "rutinas" })}
-                  className={cn(
-                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
-                    (searchParams.get("tab") || "rutinas") === "rutinas"
-                      ? "bg-background text-foreground border-emerald-500/40"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Rutinas
-                </button>
-                <button
-                  onClick={() => setSearchParams({ tab: "ejercicios" })}
-                  className={cn(
-                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
-                    searchParams.get("tab") === "ejercicios"
-                      ? "bg-background text-foreground border-emerald-500/40"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Ejercicios
-                </button>
-              </div>
-            )}
+            <div className="flex-1 flex items-center justify-center min-w-0">
+              {location.pathname === "/evolution" && (
+                <div className="flex items-center gap-1 rounded-full bg-muted p-1">
+                  <button
+                    onClick={() => setSearchParams({ tab: "history" })}
+                    className={cn(
+                      "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
+                      (searchParams.get("tab") || "history") === "history"
+                        ? "bg-background text-foreground border-emerald-500/40"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Entrenamientos
+                  </button>
+                  <button
+                    onClick={() => setSearchParams({ tab: "measurements" })}
+                    className={cn(
+                      "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
+                      searchParams.get("tab") === "measurements"
+                        ? "bg-background text-foreground border-emerald-500/40"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Medidas
+                  </button>
+                </div>
+              )}
+
+              {location.pathname === "/routines" && (
+                <div className="flex items-center gap-1 rounded-full bg-muted p-1">
+                  <button
+                    onClick={() => setSearchParams({ tab: "rutinas" })}
+                    className={cn(
+                      "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
+                      (searchParams.get("tab") || "rutinas") === "rutinas"
+                        ? "bg-background text-foreground border-emerald-500/40"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Rutinas
+                  </button>
+                  <button
+                    onClick={() => setSearchParams({ tab: "ejercicios" })}
+                    className={cn(
+                      "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
+                      searchParams.get("tab") === "ejercicios"
+                        ? "bg-background text-foreground border-emerald-500/40"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Ejercicios
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end">
+              <SettingsDrawer />
+            </div>
           </header>
 
           <main className="flex-1 flex flex-col min-w-0 w-full pt-8 md:pt-0 pb-24 md:pb-0 min-h-screen">

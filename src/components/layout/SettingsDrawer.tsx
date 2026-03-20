@@ -1,0 +1,115 @@
+import { useState } from "react";
+import { useTheme } from "@/hooks/useTheme";
+import { useCommunitySettings } from "@/hooks/useCommunitySettings";
+import { useAuth } from "@/hooks/useAuth";
+import { ColorThemeSelector } from "@/components/ColorThemeSelector";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { LogOut, Settings } from "lucide-react";
+
+export function SettingsDrawer() {
+  const { signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const { comunidadPublicaActividad, isLoading: settingsLoading, isUpdating, setComunidadPublicaActividad } = useCommunitySettings();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Ajustes"
+        >
+          <Settings className="h-5 w-5" />
+        </Button>
+      </SheetTrigger>
+
+      <SheetContent
+        side="right"
+        className="w-full max-w-full sm:max-w-full flex flex-col"
+      >
+        <SheetHeader className="text-left">
+          <SheetTitle className="text-lg">Ajustes</SheetTitle>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto space-y-6 mt-3">
+          {/* Privacidad en comunidad */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium flex items-center gap-2">Comunidad</p>
+            <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold">Publicar entrenos</p>
+                <p className="text-[12px] text-muted-foreground">
+                  {settingsLoading
+                    ? "Cargando..."
+                    : comunidadPublicaActividad
+                      ? "Tus entrenos se verán en el feed público."
+                      : "Tus entrenos se mantendrán privados."}
+                </p>
+              </div>
+              <Switch
+                checked={comunidadPublicaActividad}
+                onCheckedChange={(v) => {
+                  setComunidadPublicaActividad(v).catch(() => {
+                    // Error silencioso: el backend puede no estar migrado aún.
+                  });
+                }}
+                disabled={settingsLoading || isUpdating}
+              />
+            </div>
+          </div>
+
+          {/* Color de acento */}
+          <ColorThemeSelector />
+
+          {/* Apariencia (tema claro/oscuro) */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium flex items-center gap-2">Apariencia</p>
+            <Select value={theme} onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-200 bg-popover">
+                <SelectItem value="system">Automático (Sistema)</SelectItem>
+                <SelectItem value="light">Claro</SelectItem>
+                <SelectItem value="dark">Oscuro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Cerrar sesión (al final, dentro del scroll) */}
+          <div className="pt-2 pb-4">
+            <Button
+              variant="destructive"
+              className="w-full h-12"
+              onClick={() => {
+                setOpen(false);
+                signOut();
+              }}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Cerrar Sesión
+            </Button>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+

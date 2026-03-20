@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { useTheme } from "@/hooks/useTheme";
 import { useProfileStats, xpProgress } from "@/hooks/useGamification";
 import { useLogros } from "@/hooks/useLogros";
+import { useWorkoutHistory } from "@/hooks/useWorkouts";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -13,26 +13,23 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { LogOut, Mail, SunMoon, Shield, Flame, Zap, Trophy, Swords, Target, Award } from "lucide-react";
-import { ColorThemeSelector } from "@/components/ColorThemeSelector";
-import { Switch } from "@/components/ui/switch";
-import { useCommunitySettings } from "@/hooks/useCommunitySettings";
+import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Eye, Dumbbell } from "lucide-react";
+import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 const iconMap: Record<string, React.ElementType> = {
   Swords, Shield, Flame, Target, Trophy, Award,
 };
 
 export function ProfileDrawer() {
-  const { user, signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
   const { data: stats } = useProfileStats();
   const { data: logros = [], isLoading: loadingLogros } = useLogros();
-  const { comunidadPublicaActividad, isLoading: settingsLoading, isUpdating, setComunidadPublicaActividad } = useCommunitySettings();
   const [open, setOpen] = useState(false);
   const [followListMode, setFollowListMode] = useState<"seguidores" | "seguidos" | null>(null);
+  const [workoutDetailsOpen, setWorkoutDetailsOpen] = useState(false);
+  const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
 
   const initials = user?.email
     ? user.email.slice(0, 2).toUpperCase()
@@ -99,6 +96,24 @@ export function ProfileDrawer() {
     },
   });
 
+  const { data: workoutsHistory = [], isLoading: loadingWorkoutHistory } = useWorkoutHistory();
+  const lastWorkouts = workoutsHistory.slice(0, 5);
+
+  const { data: profileUsername, isLoading: loadingProfileUsername } = useQuery({
+    queryKey: ["profileUsername", user?.id],
+    enabled: !!user,
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await (supabase as any)
+        .from("perfil")
+        .select("username")
+        .eq("id", user!.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return (data?.username as string | null) ?? null;
+    },
+  });
+
   const initialsFromUsername = (username?: string | null) => {
     if (!username) return "U";
     const parts = username.trim().split(/[\s_\-]+/).filter(Boolean);
@@ -136,9 +151,8 @@ export function ProfileDrawer() {
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold truncate">{user?.email}</p>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Mail className="h-3 w-3" /> Cuenta personal
+            <p className="text-sm font-semibold truncate">
+              {loadingProfileUsername ? "..." : profileUsername ?? user?.email}
             </p>
           </div>
         </div>
@@ -268,70 +282,69 @@ export function ProfileDrawer() {
             )}
           </div>
 
-          {/* Privacidad en comunidad */}
+          {/* Últimos entrenamientos */}
           <div className="space-y-3">
             <p className="text-sm font-medium flex items-center gap-2">
-              Comunidad
+              <Dumbbell className="h-4 w-4 text-muted-foreground" /> Últimos entrenamientos
             </p>
-            <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold">Publicar entrenos</p>
-                <p className="text-[12px] text-muted-foreground">
-                  {settingsLoading
-                    ? "Cargando..."
-                    : comunidadPublicaActividad
-                      ? "Tus entrenos se verán en el feed público."
-                      : "Tus entrenos se mantendrán privados."}
-                </p>
+
+            {loadingWorkoutHistory ? (
+              <div className="grid grid-cols-1 gap-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-16 rounded-lg border bg-muted/30 animate-pulse" />
+                ))}
               </div>
-              <Switch
-                checked={comunidadPublicaActividad}
-                onCheckedChange={(v) => {
-                  setComunidadPublicaActividad(v).catch(() => {
-                    // Error silencioso: el backend puede no estar migrado aún.
-                  });
-                }}
-                disabled={settingsLoading || isUpdating}
-              />
-            </div>
+            ) : lastWorkouts.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Aún no has registrado entrenamientos.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {lastWorkouts.map((w) => {
+                  const totalSets = w.ejercicios.reduce((acc, ej) => acc + (ej.series?.length ?? 0), 0);
+                  return (
+                    <div
+                      key={w.id}
+                      className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{w.titulo}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {w.ejercicios.length} ejercicios · {totalSets} series ·{" "}
+                          {w.fecha ? format(new Date(w.fecha), "d MMM yyyy", { locale: es }) : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => {
+                            setWorkoutDetailsId(w.id);
+                            setWorkoutDetailsOpen(true);
+                          }}
+                          title="Ver detalles"
+                          aria-label="Ver detalles"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Color de acento */}
-          <ColorThemeSelector />
-
-          {/* Apariencia (tema claro/oscuro) */}
-          <div className="space-y-3">
-            <p className="text-sm font-medium flex items-center gap-2">
-              <SunMoon className="h-4 w-4 text-muted-foreground" /> Apariencia
-            </p>
-            <Select value={theme} onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="z-200 bg-popover">
-                <SelectItem value="system">Automático (Sistema)</SelectItem>
-                <SelectItem value="light">Claro</SelectItem>
-                <SelectItem value="dark">Oscuro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Cerrar sesión (al final, dentro del scroll) */}
-          <div className="pt-2 pb-4">
-            <Button
-              variant="destructive"
-              className="w-full h-12"
-              onClick={() => {
-                setOpen(false);
-                signOut();
-              }}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Cerrar Sesión
-            </Button>
-          </div>
         </div>
       </SheetContent>
+
+      <WorkoutDetailsSheet
+        open={workoutDetailsOpen}
+        onOpenChange={(next) => {
+          setWorkoutDetailsOpen(next);
+          if (!next) setWorkoutDetailsId(null);
+        }}
+        workoutId={workoutDetailsId}
+      />
     </Sheet>
   );
 }
