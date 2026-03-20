@@ -74,7 +74,7 @@ export function AppLayout() {
           {/* Mobile header — fijo siempre visible */}
           <header
             className={cn(
-              "fixed left-0 right-0 top-0 z-40 flex w-full items-center justify-between gap-3 border-b bg-white/40 px-4 py-3 backdrop-blur-xl transition-[border-color] duration-300 dark:bg-zinc-950/40 md:hidden",
+              "fixed left-0 right-0 top-0 z-40 flex w-full items-center justify-between gap-3 border-b bg-white/40 px-4 py-2 backdrop-blur-xl transition-[border-color] duration-300 dark:bg-zinc-950/40 md:hidden",
               atTop ? "border-transparent" : "border-black/5 dark:border-white/5",
             )}
           >

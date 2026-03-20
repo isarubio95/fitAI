@@ -37,7 +37,7 @@ export default function Community() {
 
   return (
     <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
-      <header className="space-y-2 px-4 sm:px-5 md:px-0">
+      <header className="space-y-2 px-6 md:px-0">
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
           <h1 className="text-2xl font-bold">Comunidad</h1>
@@ -46,7 +46,7 @@ export default function Community() {
       </header>
 
       <section className="space-y-3">
-        <Card className="w-full rounded-none md:rounded-2xl">
+        <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
           <CardHeader>
             <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
           </CardHeader>
@@ -121,7 +121,7 @@ export default function Community() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold px-4 sm:px-5 md:px-0">Feed</h2>
+        <h2 className="px-6 text-lg font-semibold md:px-0">Feed</h2>
 
         {loadingFeed ? (
           <div className="space-y-3">
@@ -130,14 +130,14 @@ export default function Community() {
             ))}
           </div>
         ) : normalizedFeed.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-6 text-center px-4 sm:px-5 md:px-0">
+          <p className="px-6 py-6 text-center text-sm text-muted-foreground md:px-0">
             Todavía no hay entrenos publicados.
           </p>
         ) : (
           <div className="space-y-3">
             {normalizedFeed.map((item) => (
-              <Card key={item.id} className="w-full rounded-none md:rounded-2xl">
-                <CardContent className="p-4 space-y-2">
+              <Card key={item.id} className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
+                <CardContent className="space-y-2 px-6 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <Avatar className="h-9 w-9">

@@ -326,7 +326,7 @@ const Dashboard = () => {
         return <ExerciseProgressWidget />;
       case 'weekly-chart':
         return (
-          <Card className="w-full rounded-none md:rounded-2xl">
+          <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
             <CardHeader className="pb-2">
               <CardTitle asChild className="text-base">
                 <h2>Consistencia Semanal</h2>
@@ -365,7 +365,7 @@ const Dashboard = () => {
         );
       case 'calendar':
         return (
-          <Card className="w-full rounded-none md:rounded-2xl">
+          <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
             <CardHeader className="space-y-3 pb-4">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
@@ -527,7 +527,7 @@ const Dashboard = () => {
         );
       case 'last-workout':
         return (
-          <Card className="w-full rounded-none md:rounded-2xl">
+          <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
             <CardHeader className="pb-2">
               <CardTitle asChild className="text-base">
                 <h2>Último Entrenamiento</h2>

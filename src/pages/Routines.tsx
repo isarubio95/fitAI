@@ -235,7 +235,7 @@ const Routines = () => {
 
   return (
     <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
-      <header className="flex items-center justify-between px-4 sm:px-5 md:px-0">
+      <header className="flex items-center justify-between px-6 md:px-0">
         <div>
           <h1 className="text-2xl font-bold">Rutinas</h1>
           <p className="text-sm text-muted-foreground">Tus plantillas de entrenamiento</p>
@@ -289,7 +289,7 @@ const Routines = () => {
           ))}
         </div>
       ) : !routines?.length ? (
-        <div className="text-center py-12 space-y-3 px-4 sm:px-5 md:px-0">
+        <div className="space-y-3 px-6 py-12 text-center md:px-0">
           <Dumbbell className="h-12 w-12 mx-auto text-muted-foreground/50" />
           <p className="text-sm text-muted-foreground">Aún no tienes rutinas creadas.</p>
           <Button onClick={openCreate}>
