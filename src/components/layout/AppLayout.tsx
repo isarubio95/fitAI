@@ -81,11 +81,8 @@ export function AppLayout() {
               scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
             )}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <ProfileDrawer />
-            </div>
-
-            <div className="flex-1 flex items-center justify-center min-w-0">
               {location.pathname === "/evolution" && (
                 <div className="flex items-center gap-1 rounded-full bg-muted p-1">
                   <button
@@ -141,7 +138,7 @@ export function AppLayout() {
               )}
             </div>
 
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-end ml-auto">
               <SettingsDrawer />
             </div>
           </header>
