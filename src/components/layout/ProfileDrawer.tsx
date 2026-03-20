@@ -6,15 +6,14 @@ import { useLogros } from "@/hooks/useLogros";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Eye, Dumbbell } from "lucide-react";
-import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
+import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Dumbbell } from "lucide-react";
+import { WorkoutDetailsContent } from "@/components/dashboard/WorkoutDetailsSheet";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -28,8 +27,6 @@ export function ProfileDrawer() {
   const { data: logros = [], isLoading: loadingLogros } = useLogros();
   const [open, setOpen] = useState(false);
   const [followListMode, setFollowListMode] = useState<"seguidores" | "seguidos" | null>(null);
-  const [workoutDetailsOpen, setWorkoutDetailsOpen] = useState(false);
-  const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
 
   const initials = user?.email
     ? user.email.slice(0, 2).toUpperCase()
@@ -157,7 +154,19 @@ export function ProfileDrawer() {
           </div>
         </div>
         <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                // Contador informativo; no abre panel.
+              }}
+              className="rounded-lg border px-3 py-2 text-center transition-colors hover:bg-muted/50"
+            >
+              <p className="text-sm font-semibold">
+                {loadingWorkoutHistory ? "..." : workoutsHistory.length}
+              </p>
+              <p className="text-[11px] text-muted-foreground">Entrenamientos</p>
+            </button>
             <button
               type="button"
               onClick={() => setFollowListMode("seguidores")}
@@ -297,54 +306,18 @@ export function ProfileDrawer() {
             ) : lastWorkouts.length === 0 ? (
               <p className="text-xs text-muted-foreground">Aún no has registrado entrenamientos.</p>
             ) : (
-              <div className="space-y-1.5">
-                {lastWorkouts.map((w) => {
-                  const totalSets = w.ejercicios.reduce((acc, ej) => acc + (ej.series?.length ?? 0), 0);
-                  return (
-                    <div
-                      key={w.id}
-                      className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{w.titulo}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {w.ejercicios.length} ejercicios · {totalSets} series ·{" "}
-                          {w.fecha ? format(new Date(w.fecha), "d MMM yyyy", { locale: es }) : ""}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-0.5 shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => {
-                            setWorkoutDetailsId(w.id);
-                            setWorkoutDetailsOpen(true);
-                          }}
-                          title="Ver detalles"
-                          aria-label="Ver detalles"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="space-y-6">
+                {lastWorkouts.map((w) => (
+                  <div key={w.id} className="rounded-xl border border-border/20 bg-card">
+                    <WorkoutDetailsContent workout={w} containerClassName="p-4" />
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
         </div>
       </SheetContent>
-
-      <WorkoutDetailsSheet
-        open={workoutDetailsOpen}
-        onOpenChange={(next) => {
-          setWorkoutDetailsOpen(next);
-          if (!next) setWorkoutDetailsId(null);
-        }}
-        workoutId={workoutDetailsId}
-      />
     </Sheet>
   );
 }
