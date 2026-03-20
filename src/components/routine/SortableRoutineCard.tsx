@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Play, Pencil, Trash2, Dumbbell, GripVertical, ChevronDown } from "lucide-react";
 import type { RutinaWithDetails } from "@/types/routine";
+import { cn } from "@/lib/utils";
 
 interface SortableRoutineCardProps {
   routine: RutinaWithDetails;
@@ -52,7 +53,10 @@ export function SortableRoutineCard({
     <Card
       ref={setNodeRef}
       style={style}
-      className={`overflow-hidden ${isDragging ? "shadow-lg ring-2 ring-primary/30" : ""}`}
+      className={cn(
+        "overflow-hidden w-full rounded-none md:rounded-2xl",
+        isDragging && "shadow-lg ring-2 ring-primary/30",
+      )}
     >
       <CardContent className="p-4">
         {/* Header */}

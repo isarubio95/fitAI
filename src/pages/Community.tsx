@@ -36,8 +36,8 @@ export default function Community() {
   }, [feed]);
 
   return (
-    <div className="w-full min-w-0 p-4 md:p-8 pt-6 space-y-6 max-w-2xl mx-auto">
-      <header className="space-y-2">
+    <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
+      <header className="space-y-2 px-4 sm:px-5 md:px-0">
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
           <h1 className="text-2xl font-bold">Comunidad</h1>
@@ -46,7 +46,7 @@ export default function Community() {
       </header>
 
       <section className="space-y-3">
-        <Card>
+        <Card className="w-full rounded-none md:rounded-2xl">
           <CardHeader>
             <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
           </CardHeader>
@@ -63,7 +63,7 @@ export default function Community() {
             {searching ? (
               <div className="space-y-2">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 rounded-xl" />
+                  <Skeleton key={i} className="h-16 rounded-none md:rounded-xl" />
                 ))}
               </div>
             ) : usernameQuery.trim().length === 0 ? (
@@ -77,7 +77,10 @@ export default function Community() {
                   const isFollowing = followingIds.has(p.id);
 
                   return (
-                    <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border p-3">
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between gap-3 rounded-none border p-3 md:rounded-xl"
+                    >
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar className="h-10 w-10">
                           {p.avatar_url && <AvatarImage src={p.avatar_url} alt="" />}
@@ -118,20 +121,22 @@ export default function Community() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Feed</h2>
+        <h2 className="text-lg font-semibold px-4 sm:px-5 md:px-0">Feed</h2>
 
         {loadingFeed ? (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 rounded-xl" />
+              <Skeleton key={i} className="h-28 rounded-none md:rounded-xl" />
             ))}
           </div>
         ) : normalizedFeed.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">Todavía no hay entrenos publicados.</p>
+          <p className="text-sm text-muted-foreground py-6 text-center px-4 sm:px-5 md:px-0">
+            Todavía no hay entrenos publicados.
+          </p>
         ) : (
           <div className="space-y-3">
             {normalizedFeed.map((item) => (
-              <Card key={item.id}>
+              <Card key={item.id} className="w-full rounded-none md:rounded-2xl">
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">

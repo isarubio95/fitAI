@@ -150,41 +150,47 @@ const WorkoutHistory = () => {
   ];
 
   return (
-    <div className="w-full min-w-0 p-4 md:p-8 pt-6 space-y-6 max-w-2xl mx-auto pb-28">
-      <header>
+    <div className="w-full min-w-0 space-y-6 pb-28 pt-6 md:mx-auto md:max-w-2xl md:px-8">
+      <header className="px-6 md:px-0">
         <h1 className="text-2xl font-bold">Progreso</h1>
         <p className="text-sm text-muted-foreground">Tu rendimiento y estadísticas</p>
       </header>
 
-      {/* ── KPI Grid ── */}
-      <div className="grid grid-cols-2 gap-3">
-        {kpiCards.map((kpi) => {
+      {/* ── KPI Grid (sin gap ni fondo de card; solo líneas divisorias) ── */}
+      <div className="grid grid-cols-2 gap-0">
+        {kpiCards.map((kpi, i) => {
           const Icon = kpi.icon;
+          const cellBorder =
+            i === 0
+              ? "border-r border-b border-black/5 dark:border-white/10"
+              : i === 1
+                ? "border-b border-black/5 dark:border-white/10"
+                : i === 2
+                  ? "border-r border-black/5 dark:border-white/10"
+                  : "";
           return (
-            <Card key={kpi.label}>
-              <CardContent className="p-4 space-y-1">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <p className="text-xl font-bold leading-none">{isLoading ? "–" : kpi.value}</p>
+            <div key={kpi.label} className={`space-y-1 px-6 py-4 ${cellBorder}`}>
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                  <Icon className="h-4 w-4 text-primary" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] text-muted-foreground">{kpi.label}</p>
-                  {!isLoading && <ChangeBadge pct={kpi.pct} />}
-                </div>
-              </CardContent>
-            </Card>
+                <p className="text-xl font-bold leading-none">{isLoading ? "–" : kpi.value}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-muted-foreground">{kpi.label}</p>
+                {!isLoading && <ChangeBadge pct={kpi.pct} />}
+              </div>
+            </div>
           );
         })}
       </div>
 
       {/* ── Weekly Consistency Chart ── */}
-      <Card>
-        <CardContent className="p-4">
-          <h2 className="text-sm font-semibold mb-3">Constancia semanal</h2>
+      <Card className="w-full rounded-none md:rounded-2xl">
+        <CardContent className="px-6 py-4">
+          <h2 className="mb-4 text-sm font-semibold">Constancia semanal</h2>
           {isLoading ? (
-            <Skeleton className="h-[180px] rounded-lg" />
+            <Skeleton className="h-[180px] rounded-none md:rounded-lg" />
           ) : (
             <ChartContainer config={chartConfig} className="aspect-2/1 w-full">
               <BarChart data={weeklyData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
@@ -206,13 +212,13 @@ const WorkoutHistory = () => {
       {!isLoading && (topExercises.length > 0 || topLoads.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {topExercises.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2 px-4 pt-4">
-                <CardTitle className="text-sm flex items-center gap-1.5">
+            <Card className="w-full rounded-none md:rounded-2xl">
+              <CardHeader className="px-6 pb-2 pt-4">
+                <CardTitle className="flex items-center gap-1.5 text-sm">
                   <Star className="h-4 w-4 text-primary" /> Top ejercicios
                 </CardTitle>
               </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-1.5">
+              <CardContent className="space-y-1.5 px-6 pb-4">
                 {topExercises.map((ex, i) => (
                   <div key={ex.name} className="flex items-center justify-between text-sm">
                     <span className="truncate text-muted-foreground">
@@ -227,13 +233,13 @@ const WorkoutHistory = () => {
           )}
 
           {topLoads.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2 px-4 pt-4">
-                <CardTitle className="text-sm flex items-center gap-1.5">
+            <Card className="w-full rounded-none md:rounded-2xl">
+              <CardHeader className="px-6 pb-2 pt-4">
+                <CardTitle className="flex items-center gap-1.5 text-sm">
                   <Trophy className="h-4 w-4 text-primary" /> Cargas máximas
                 </CardTitle>
               </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-1.5">
+              <CardContent className="space-y-1.5 px-6 pb-4">
                 {topLoads.map((ex, i) => (
                   <div key={ex.name} className="flex items-center justify-between text-sm">
                     <span className="truncate text-muted-foreground">
@@ -251,16 +257,16 @@ const WorkoutHistory = () => {
 
       {/* ── Recent History ── */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Historial Reciente</h2>
+        <h2 className="px-6 text-lg font-semibold md:px-0">Historial Reciente</h2>
 
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 rounded-xl" />
+              <Skeleton key={i} className="h-16 rounded-none md:rounded-xl" />
             ))}
           </div>
         ) : !workouts?.length ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">
+          <p className="px-6 py-8 text-center text-sm text-muted-foreground md:px-0">
             Aún no tienes entrenamientos registrados.
           </p>
         ) : (
@@ -269,7 +275,7 @@ const WorkoutHistory = () => {
               {visibleWorkouts?.map((w) => {
                 const totalSets = w.ejercicios.reduce((a, ej) => a + ej.series.length, 0);
                 return (
-                  <AccordionItem key={w.id} value={w.id} className="border rounded-xl px-4">
+                  <AccordionItem key={w.id} value={w.id} className="border rounded-none px-4 md:rounded-xl">
                     <AccordionTrigger className="hover:no-underline py-3">
                       <article className="flex flex-col items-start text-left gap-1">
                         <h3 className="font-semibold">{w.titulo}</h3>
@@ -320,7 +326,7 @@ const WorkoutHistory = () => {
               })}
             </Accordion>
             {hasMore && !showAll && (
-              <Button variant="ghost" size="sm" className="w-full" onClick={() => setShowAll(true)}>
+              <Button variant="ghost" size="sm" className="w-full px-6" onClick={() => setShowAll(true)}>
                 Ver anteriores ({(workouts?.length ?? 0) - INITIAL_SHOW} más)
               </Button>
             )}

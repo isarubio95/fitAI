@@ -234,8 +234,8 @@ const Routines = () => {
   };
 
   return (
-    <div className="w-full min-w-0 p-4 md:p-8 pt-6 space-y-6 max-w-2xl mx-auto">
-      <header className="flex items-center justify-between">
+    <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
+      <header className="flex items-center justify-between px-4 sm:px-5 md:px-0">
         <div>
           <h1 className="text-2xl font-bold">Rutinas</h1>
           <p className="text-sm text-muted-foreground">Tus plantillas de entrenamiento</p>
@@ -285,11 +285,11 @@ const Routines = () => {
       {isLoading ? (
         <div className="grid gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-xl" />
+            <Skeleton key={i} className="h-28 rounded-none md:rounded-xl" />
           ))}
         </div>
       ) : !routines?.length ? (
-        <div className="text-center py-12 space-y-3">
+        <div className="text-center py-12 space-y-3 px-4 sm:px-5 md:px-0">
           <Dumbbell className="h-12 w-12 mx-auto text-muted-foreground/50" />
           <p className="text-sm text-muted-foreground">Aún no tienes rutinas creadas.</p>
           <Button onClick={openCreate}>

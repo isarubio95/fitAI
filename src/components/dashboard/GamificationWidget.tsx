@@ -9,7 +9,7 @@ export function GamificationWidget() {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="w-full rounded-none md:rounded-2xl">
         <CardContent className="p-4">
           <Skeleton className="h-16 w-full" />
         </CardContent>
@@ -23,7 +23,7 @@ export function GamificationWidget() {
   const hasStreak = stats.racha_actual > 0;
 
   return (
-    <Card>
+    <Card className="w-full rounded-none md:rounded-2xl">
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

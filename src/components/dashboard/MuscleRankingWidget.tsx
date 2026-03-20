@@ -16,8 +16,8 @@ export function MuscleRankingWidget() {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Skeleton className="h-56 rounded-xl" />
-        <Skeleton className="h-56 rounded-xl" />
+        <Skeleton className="h-56 rounded-none md:rounded-xl" />
+        <Skeleton className="h-56 rounded-none md:rounded-xl" />
       </div>
     );
   }
@@ -30,13 +30,13 @@ export function MuscleRankingWidget() {
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Top 5 */}
-        <Card>
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-sm flex items-center gap-1.5">
+        <Card className="w-full rounded-none md:rounded-2xl">
+          <CardHeader className="px-6 pb-2 pt-4">
+            <CardTitle className="flex items-center gap-1.5 text-sm">
               <Flame className="h-4 w-4 text-primary" /> Más Entrenados
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4 space-y-2.5">
+          <CardContent className="space-y-2.5 px-6 pb-4">
             {data.topGroups.map(({ group, count }) => (
               <RankRow
                 key={group}
@@ -51,13 +51,13 @@ export function MuscleRankingWidget() {
         </Card>
 
         {/* Bottom 5 */}
-        <Card>
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-sm flex items-center gap-1.5">
+        <Card className="w-full rounded-none md:rounded-2xl">
+          <CardHeader className="px-6 pb-2 pt-4">
+            <CardTitle className="flex items-center gap-1.5 text-sm">
               <Snowflake className="h-4 w-4 text-muted-foreground" /> Menos Entrenados
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4 space-y-2.5">
+          <CardContent className="space-y-2.5 px-6 pb-4">
             {data.bottomGroups.map(({ group, count }) => (
               <RankRow
                 key={group}

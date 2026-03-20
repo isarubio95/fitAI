@@ -10,7 +10,6 @@ import { ActiveWorkoutPill } from "@/components/workout/ActiveWorkoutPill";
 import { GlobalWorkoutDrawerProvider } from "@/hooks/useGlobalWorkoutDrawer";
 import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 import { Loader2 } from "lucide-react";
-import { useScrollDirection } from "@/hooks/useScrollDirection";
 // import { SwipeableRoutesWrapper } from "./SwipeableRoutesWrapper";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -19,7 +18,6 @@ import UsernameSetup from "@/pages/UsernameSetup";
 
 export function AppLayout() {
   const { user, loading } = useAuth();
-  const scrollDirection = useScrollDirection();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [atTop, setAtTop] = useState(true);
@@ -73,36 +71,37 @@ export function AppLayout() {
       <div className="flex min-h-screen bg-background">
         <DesktopSidebar />
         <div className="flex-1 flex flex-col">
-          {/* Mobile header — auto-hide on scroll down */}
+          {/* Mobile header — fijo siempre visible */}
           <header
             className={cn(
-              "fixed top-0 left-0 right-0 z-40 flex min-h-12 items-center px-4 pt-3 md:hidden transition-[transform,border-color] duration-300 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-xl border-b",
+              "fixed left-0 right-0 top-0 z-40 flex w-full items-center justify-between gap-3 border-b bg-white/40 px-4 py-3 backdrop-blur-xl transition-[border-color] duration-300 dark:bg-zinc-950/40 md:hidden",
               atTop ? "border-transparent" : "border-black/5 dark:border-white/5",
-              scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
             )}
           >
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex min-w-0 items-center gap-3">
               <ProfileDrawer />
               {location.pathname === "/evolution" && (
-                <div className="flex items-center gap-1 rounded-full bg-muted p-1">
+                <div className="flex shrink-0 items-center gap-2">
                   <button
+                    type="button"
                     onClick={() => setSearchParams({ tab: "history" })}
                     className={cn(
-                      "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
+                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
                       (searchParams.get("tab") || "history") === "history"
-                        ? "bg-background text-foreground border-emerald-500/40"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "border-primary bg-primary text-black shadow-sm"
+                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
                     )}
                   >
                     Entrenamientos
                   </button>
                   <button
+                    type="button"
                     onClick={() => setSearchParams({ tab: "measurements" })}
                     className={cn(
-                      "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
+                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
                       searchParams.get("tab") === "measurements"
-                        ? "bg-background text-foreground border-emerald-500/40"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "border-primary bg-primary text-black shadow-sm"
+                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
                     )}
                   >
                     Medidas
@@ -111,25 +110,27 @@ export function AppLayout() {
               )}
 
               {location.pathname === "/routines" && (
-                <div className="flex items-center gap-1 rounded-full bg-muted p-1">
+                <div className="flex shrink-0 items-center gap-2">
                   <button
+                    type="button"
                     onClick={() => setSearchParams({ tab: "rutinas" })}
                     className={cn(
-                      "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
+                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
                       (searchParams.get("tab") || "rutinas") === "rutinas"
-                        ? "bg-background text-foreground border-emerald-500/40"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "border-primary bg-primary text-black shadow-sm"
+                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
                     )}
                   >
                     Rutinas
                   </button>
                   <button
+                    type="button"
                     onClick={() => setSearchParams({ tab: "ejercicios" })}
                     className={cn(
-                      "rounded-full px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap border border-transparent",
+                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
                       searchParams.get("tab") === "ejercicios"
-                        ? "bg-background text-foreground border-emerald-500/40"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "border-primary bg-primary text-black shadow-sm"
+                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
                     )}
                   >
                     Ejercicios
@@ -138,12 +139,12 @@ export function AppLayout() {
               )}
             </div>
 
-            <div className="flex items-center justify-end ml-auto">
+            <div className="flex shrink-0 items-center justify-end">
               <SettingsDrawer />
             </div>
           </header>
 
-          <main className="flex-1 flex flex-col min-w-0 w-full pt-8 md:pt-0 pb-24 md:pb-0 min-h-screen">
+          <main className="flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 pt-10 md:pb-0 md:pt-0">
             {/* Navegación por gestos desactivada: usamos solo el contenido de rutas directamente */}
             <Outlet />
           </main>

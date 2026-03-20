@@ -326,7 +326,7 @@ const Dashboard = () => {
         return <ExerciseProgressWidget />;
       case 'weekly-chart':
         return (
-          <Card>
+          <Card className="w-full rounded-none md:rounded-2xl">
             <CardHeader className="pb-2">
               <CardTitle asChild className="text-base">
                 <h2>Consistencia Semanal</h2>
@@ -365,7 +365,7 @@ const Dashboard = () => {
         );
       case 'calendar':
         return (
-          <Card>
+          <Card className="w-full rounded-none md:rounded-2xl">
             <CardHeader className="space-y-3 pb-4">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
@@ -527,7 +527,7 @@ const Dashboard = () => {
         );
       case 'last-workout':
         return (
-          <Card>
+          <Card className="w-full rounded-none md:rounded-2xl">
             <CardHeader className="pb-2">
               <CardTitle asChild className="text-base">
                 <h2>Último Entrenamiento</h2>
@@ -573,8 +573,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="w-full min-w-0 p-4 md:p-8 pt-6 space-y-6 max-w-4xl mx-auto">
-      <header className="flex items-center justify-between">
+    <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-4xl md:mx-auto md:px-8">
+      <header className="flex items-center justify-between px-4 sm:px-5 md:px-0">
         <div>
           <h1 className="text-2xl font-bold">TrackGym</h1>
           <p className="text-sm text-muted-foreground">Tu progreso esta semana</p>

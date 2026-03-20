@@ -106,7 +106,7 @@ export function ExerciseProgressWidget() {
 
   if (loadingExercises) {
     return (
-      <Card>
+      <Card className="w-full rounded-none md:rounded-2xl">
         <CardHeader className="pb-2">
           <Skeleton className="h-5 w-40" />
         </CardHeader>
@@ -123,7 +123,7 @@ export function ExerciseProgressWidget() {
   const canGoNext = selectedIndex < exercises.length - 1;
 
   return (
-    <Card>
+    <Card className="w-full rounded-none md:rounded-2xl">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">

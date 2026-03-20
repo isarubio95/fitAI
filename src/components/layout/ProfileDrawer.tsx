@@ -6,7 +6,7 @@ import { useLogros } from "@/hooks/useLogros";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
@@ -16,6 +16,7 @@ import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Dumbbell } from "luc
 import { WorkoutDetailsContent } from "@/components/dashboard/WorkoutDetailsSheet";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 const iconMap: Record<string, React.ElementType> = {
   Swords, Shield, Flame, Target, Trophy, Award,
@@ -133,64 +134,58 @@ export function ProfileDrawer() {
       </SheetTrigger>
       <SheetContent
         side="left"
-        className="w-full max-w-full sm:max-w-full flex flex-col"
+        className="flex h-full max-h-dvh w-full max-w-full flex-col gap-0 overflow-x-hidden p-0 sm:max-w-full"
       >
-        <SheetHeader className="text-left">
-          <SheetTitle className="text-lg">Mi cuenta</SheetTitle>
-        </SheetHeader>
+        <div className="px-6 pb-2 pt-6">
+          <SheetHeader className="mb-4 text-left">
+            <SheetTitle className="text-lg">Mi cuenta</SheetTitle>
+          </SheetHeader>
 
-        {/* User info */}
-        <div className="flex items-center gap-3 pt-2">
-          <Avatar className="h-12 w-12">
-            {avatarUrl && <AvatarImage src={avatarUrl} alt="" />}
-            <AvatarFallback className="bg-primary/10 text-primary text-base font-bold">
+          {/* Cabecera: avatar | usuario + contadores */}
+          <div className="flex gap-4 items-start">
+          <Avatar className="h-16 w-16 shrink-0 ring-2 ring-border/60 mr-1">
+            {avatarUrl && <AvatarImage src={avatarUrl} alt="" className="object-cover" />}
+            <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold truncate">
+          <div className="min-w-0 flex-1 flex flex-col gap-3">
+            <p className="text-lg font-semibold leading-tight truncate">
               {loadingProfileUsername ? "..." : profileUsername ?? user?.email}
             </p>
+            <div className="grid w-full min-w-0 grid-cols-3 gap-x-5 gap-y-0">
+              <div className="min-w-0 w-full flex flex-col items-start text-left">
+                <p className="text-base font-bold tabular-nums leading-none">
+                  {loadingWorkoutHistory ? "…" : workoutsHistory.length}
+                </p>
+                <p className="text-xs text-muted-foreground leading-tight mt-1 line-clamp-2">
+                  Entrenos
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFollowListMode("seguidores")}
+                className="min-w-0 w-full flex flex-col items-start text-left rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <p className="text-base font-bold tabular-nums leading-none">
+                  {loadingFollowCounts ? "…" : followCounts?.seguidores ?? 0}
+                </p>
+                <p className="text-xs text-muted-foreground leading-tight mt-1">Seguidores</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFollowListMode("seguidos")}
+                className="min-w-0 w-full flex flex-col items-start text-left rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <p className="text-base font-bold tabular-nums leading-none">
+                  {loadingFollowCounts ? "…" : followCounts?.seguidos ?? 0}
+                </p>
+                <p className="text-xs text-muted-foreground leading-tight mt-1">Seguidos</p>
+              </button>
+            </div>
           </div>
         </div>
-        <div className="space-y-2">
-          <div className="grid grid-cols-3 gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                // Contador informativo; no abre panel.
-              }}
-              className="rounded-lg border px-3 py-2 text-center transition-colors hover:bg-muted/50"
-            >
-              <p className="text-sm font-semibold">
-                {loadingWorkoutHistory ? "..." : workoutsHistory.length}
-              </p>
-              <p className="text-[11px] text-muted-foreground">Entrenamientos</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setFollowListMode("seguidores")}
-              className="rounded-lg border px-3 py-2 text-center transition-colors hover:bg-muted/50"
-            >
-              <p className="text-sm font-semibold">
-                {loadingFollowCounts ? "..." : followCounts?.seguidores ?? 0}
-              </p>
-              <p className="text-[11px] text-muted-foreground">Seguidores</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setFollowListMode("seguidos")}
-              className="rounded-lg border px-3 py-2 text-center transition-colors hover:bg-muted/50"
-            >
-              <p className="text-sm font-semibold">
-                {loadingFollowCounts ? "..." : followCounts?.seguidos ?? 0}
-              </p>
-              <p className="text-[11px] text-muted-foreground">Seguidos</p>
-            </button>
-          </div>
         </div>
-
-        <Separator />
 
         <Dialog open={!!followListMode} onOpenChange={(next) => !next && setFollowListMode(null)}>
           <DialogContent className="max-w-md">
@@ -221,60 +216,72 @@ export function ProfileDrawer() {
           </DialogContent>
         </Dialog>
 
-        {/* Contenido del perfil */}
-        <div className="flex-1 overflow-y-auto space-y-6 mt-3">
+        {/* Contenido del perfil: sin padding horizontal para cards a ancho del panel */}
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pb-6 pt-3">
           {/* Level & XP */}
           {xp && stats && (
-            <div className="space-y-3 rounded-lg border p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-primary" />
-                  <span className="font-bold">Nivel {xp.level}</span>
+            <Card className="w-full max-w-none rounded-none border-0 bg-transparent shadow-none md:rounded-2xl">
+              <CardContent className="space-y-3 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-primary" />
+                    <span className="font-bold">Nivel {xp.level}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Flame
+                      className={`h-4 w-4 ${stats.racha_actual > 0 ? "text-orange-500" : "text-muted-foreground"}`}
+                      fill={stats.racha_actual > 0 ? "currentColor" : "none"}
+                    />
+                    <span className={`text-sm font-semibold ${stats.racha_actual > 0 ? "text-orange-500" : "text-muted-foreground"}`}>
+                      {stats.racha_actual} días
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Flame
-                    className={`h-4 w-4 ${stats.racha_actual > 0 ? "text-orange-500" : "text-muted-foreground"}`}
-                    fill={stats.racha_actual > 0 ? "currentColor" : "none"}
-                  />
-                  <span className={`text-sm font-semibold ${stats.racha_actual > 0 ? "text-orange-500" : "text-muted-foreground"}`}>
-                    {stats.racha_actual} días
-                  </span>
+                <Progress value={xp.percent} className="h-2" />
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Zap className="h-3 w-3" /> {xp.progress} / {xp.needed} XP para nivel {xp.level + 1}
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground text-left">
+                  <div>XP Total: <span className="font-semibold text-foreground">{stats.xp_total}</span></div>
+                  <div>Racha máx: <span className="font-semibold text-foreground">{stats.racha_maxima} días</span></div>
                 </div>
-              </div>
-              <Progress value={xp.percent} className="h-2" />
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Zap className="h-3 w-3" /> {xp.progress} / {xp.needed} XP para nivel {xp.level + 1}
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div>XP Total: <span className="font-semibold text-foreground">{stats.xp_total}</span></div>
-                <div>Racha máx: <span className="font-semibold text-foreground">{stats.racha_maxima} días</span></div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Logros */}
           <div className="space-y-3">
-            <p className="text-sm font-medium flex items-center gap-2">
+            <p className="flex items-center gap-2 px-6 text-sm font-medium">
               <Trophy className="h-4 w-4 text-muted-foreground" /> Logros
             </p>
             {loadingLogros ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-0 px-6">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-24 rounded-lg border bg-muted/50 animate-pulse" />
+                  <div
+                    key={i}
+                    className="h-24 animate-pulse border-b border-r border-black/5 bg-muted/50 p-3 nth-[n+3]:border-b-0 dark:border-white/10 nth-[2n]:border-r-0"
+                  />
                 ))}
               </div>
             ) : logros.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No hay logros definidos.</p>
+              <p className="px-6 text-xs text-muted-foreground">No hay logros definidos.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {logros.map((a) => {
+              <div className="grid grid-cols-2 gap-0 px-6">
+                {logros.map((a, i) => {
                   const Icon = iconMap[a.icono] || Trophy;
+                  const row = Math.floor(i / 2);
+                  const totalRows = Math.ceil(logros.length / 2);
+                  const hasCellToRight = i % 2 === 0 && i + 1 < logros.length;
+                  const showBottomSep = row < totalRows - 1;
                   return (
                     <div
                       key={a.id}
-                      className={`flex flex-col items-center text-center gap-2 p-3 rounded-lg border transition-opacity ${
-                        a.unlocked ? "" : "opacity-50 grayscale"
-                      }`}
+                      className={cn(
+                        "flex min-w-0 w-full flex-col items-center gap-2 p-3 text-center transition-opacity",
+                        hasCellToRight && "border-r border-black/5 dark:border-white/10",
+                        showBottomSep && "border-b border-black/5 dark:border-white/10",
+                        !a.unlocked && "opacity-50 grayscale",
+                      )}
                     >
                       <div className={`p-2 rounded-full ${a.unlocked ? "bg-primary/10" : "bg-muted"}`}>
                         <Icon className={`h-6 w-6 ${a.unlocked ? "text-primary" : "text-muted-foreground"}`} />
@@ -291,26 +298,29 @@ export function ProfileDrawer() {
             )}
           </div>
 
-          {/* Últimos entrenamientos */}
+          {/* Últimos entrenos */}
           <div className="space-y-3">
-            <p className="text-sm font-medium flex items-center gap-2">
-              <Dumbbell className="h-4 w-4 text-muted-foreground" /> Últimos entrenamientos
+            <p className="flex items-center gap-2 px-6 text-sm font-medium">
+              <Dumbbell className="h-4 w-4 text-muted-foreground" /> Últimos entrenos
             </p>
 
             {loadingWorkoutHistory ? (
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-2 px-6">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="h-16 rounded-lg border bg-muted/30 animate-pulse" />
+                  <div key={i} className="h-16 rounded-none border bg-muted/30 animate-pulse md:rounded-xl" />
                 ))}
               </div>
             ) : lastWorkouts.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Aún no has registrado entrenamientos.</p>
+              <p className="px-6 text-xs text-muted-foreground">Aún no has registrado entrenos.</p>
             ) : (
               <div className="space-y-6">
                 {lastWorkouts.map((w) => (
-                  <div key={w.id} className="rounded-xl border border-border/20 bg-card">
+                  <Card
+                    key={w.id}
+                    className="w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs md:rounded-2xl md:border-x"
+                  >
                     <WorkoutDetailsContent workout={w} containerClassName="p-4" />
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}

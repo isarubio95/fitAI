@@ -33,10 +33,10 @@ export function SettingsDrawer() {
         <Button
           variant="ghost"
           size="icon"
-          className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-11 w-11 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
           aria-label="Ajustes"
         >
-          <Settings className="h-5 w-5" />
+          <Settings />
         </Button>
       </SheetTrigger>
 

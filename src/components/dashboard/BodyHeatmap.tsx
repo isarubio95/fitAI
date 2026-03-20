@@ -196,7 +196,7 @@ export function BodyHeatmap() {
 
   return (
     <>
-      <Card className="overflow-hidden border-border/40 bg-card/95 shadow-xs">
+      <Card className="overflow-hidden w-full rounded-none border-border/40 bg-card/95 shadow-xs md:rounded-2xl">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <CardTitle asChild className="text-base font-bold">
