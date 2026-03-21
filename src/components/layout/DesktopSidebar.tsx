@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ProfileDrawerTrigger } from "./ProfileDrawer";
 import { SettingsDrawer } from "./SettingsDrawer";
+import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
 import {
@@ -36,69 +37,70 @@ export function DesktopSidebar() {
       <div className="flex h-[calc(4rem+1px)] shrink-0 items-center gap-2 border-b border-border px-6">
         <img src="/logo.svg" alt="TrackGym" className="h-9 w-9 rounded-lg shrink-0" />
         <span className="text-lg font-bold flex-1">TrackGym</span>
+        <InAppNotificationsBell />
         <SettingsDrawer />
         <ProfileDrawerTrigger />
       </div>
       <nav className="flex-1 space-y-1 p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="w-full justify-start gap-3 mb-3" size="sm">
-              <Plus className="h-4 w-4" />
+            <Button className="w-full justify-start gap-3 mb-3 text-base" size="sm">
+              <Plus className="h-5 w-5" />
               Crear Nuevo
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-80">
-            <DropdownMenuItem onClick={() => openNew()}>
-              <Activity className="h-4 w-4 mr-2 shrink-0 text-primary" />
+          <DropdownMenuContent align="start" className="w-80 text-base">
+            <DropdownMenuItem className="text-base" onClick={() => openNew()}>
+              <Activity className="h-5 w-5 mr-2 shrink-0 text-primary" />
               <div className="min-w-0">
-                <p className="font-medium">Entrenamiento</p>
-                <p className="text-[10px] text-muted-foreground">Registra una sesión de gym</p>
+                <p className="font-medium">Entrenamiento Libre</p>
+                <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
               </div>
             </DropdownMenuItem>
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="gap-2">
-                <ClipboardList className="h-4 w-4 shrink-0 text-blue-500" />
+              <DropdownMenuSubTrigger className="gap-2 text-base [&_svg]:h-5 [&_svg]:w-5">
+                <ClipboardList className="h-5 w-5 shrink-0 text-blue-500" />
                 <div className="min-w-0">
                   <p className="font-medium">Rutina</p>
-                  <p className="text-[10px] text-muted-foreground">Crea o explora plantillas de entrenamiento</p>
+                  <p className="text-xs text-muted-foreground">Crea o explora plantillas de entrenamiento</p>
                 </div>
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-80">
-                <DropdownMenuItem onClick={() => setExplorerOpen(true)}>
-                  <Sparkles className="h-4 w-4 mr-2 shrink-0 text-amber-400" />
+              <DropdownMenuSubContent className="w-80 text-base">
+                <DropdownMenuItem className="text-base" onClick={() => setExplorerOpen(true)}>
+                  <Sparkles className="h-5 w-5 mr-2 shrink-0 text-amber-400" />
                   <div className="min-w-0">
                     <p className="font-medium">Explorar Predefinidas</p>
-                    <p className="text-[10px] text-muted-foreground">Descubre rutinas creadas por expertos</p>
+                    <p className="text-xs text-muted-foreground">Descubre rutinas creadas por expertos</p>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/routines", { state: { action: "new" } })}>
-                  <Plus className="h-4 w-4 mr-2 shrink-0 text-primary" />
+                <DropdownMenuItem className="text-base" onClick={() => navigate("/routines", { state: { action: "new" } })}>
+                  <Plus className="h-5 w-5 mr-2 shrink-0 text-primary" />
                   <div className="min-w-0">
                     <p className="font-medium">Crear desde cero</p>
-                    <p className="text-[10px] text-muted-foreground">Configura tus propios ejercicios</p>
+                    <p className="text-xs text-muted-foreground">Configura tus propios ejercicios</p>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/routines", { state: { action: "import-csv" } })}>
-                  <FileUp className="h-4 w-4 mr-2 shrink-0 text-muted-foreground" />
+                <DropdownMenuItem className="text-base" onClick={() => navigate("/routines", { state: { action: "import-csv" } })}>
+                  <FileUp className="h-5 w-5 mr-2 shrink-0 text-muted-foreground" />
                   <div className="min-w-0">
                     <p className="font-medium">Importar desde CSV</p>
-                    <p className="text-[10px] text-muted-foreground">Sube un archivo con la rutina</p>
+                    <p className="text-xs text-muted-foreground">Sube un archivo con la rutina</p>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            <DropdownMenuItem onClick={() => navigate("/routines?tab=ejercicios", { state: { action: "new" } })}>
-              <Dumbbell className="h-4 w-4 mr-2 shrink-0 text-orange-500" />
+            <DropdownMenuItem className="text-base" onClick={() => navigate("/routines?tab=ejercicios", { state: { action: "new" } })}>
+              <Dumbbell className="h-5 w-5 mr-2 shrink-0 text-orange-500" />
               <div className="min-w-0">
                 <p className="font-medium">Ejercicio</p>
-                <p className="text-[10px] text-muted-foreground">Añade un ejercicio a tu biblioteca</p>
+                <p className="text-xs text-muted-foreground">Añade un ejercicio a tu biblioteca</p>
               </div>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/evolution", { state: { tab: "measurements", action: "new" } })}>
-              <Scale className="h-4 w-4 mr-2 shrink-0 text-emerald-500" />
+            <DropdownMenuItem className="text-base" onClick={() => navigate("/evolution", { state: { tab: "measurements", action: "new" } })}>
+              <Scale className="h-5 w-5 mr-2 shrink-0 text-emerald-500" />
               <div className="min-w-0">
                 <p className="font-medium">Medida</p>
-                <p className="text-[10px] text-muted-foreground">Registra peso, cintura, etc.</p>
+                <p className="text-xs text-muted-foreground">Registra peso, cintura, etc.</p>
               </div>
             </DropdownMenuItem>
           </DropdownMenuContent>

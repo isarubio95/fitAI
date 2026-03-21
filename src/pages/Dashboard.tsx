@@ -14,6 +14,7 @@ import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
+import { DashboardNotificationPills } from "@/components/notifications/DashboardNotificationPills";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashboard/ProgramWizard";
 import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears } from "date-fns";
@@ -593,6 +594,8 @@ const Dashboard = () => {
           </span>
         </Button>
       </header>
+
+      <DashboardNotificationPills />
 
       <DndContext 
         sensors={sensors}

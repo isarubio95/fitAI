@@ -60,34 +60,34 @@ export function BottomNav() {
         {/* MENÚ DESPLEGABLE DE ACCIONES */}
       <div
         className={cn(
-          "absolute bottom-[85px] left-1/2 -translate-x-1/2 flex flex-col rounded-2xl bg-card border border-border shadow-xl transition-all duration-300 ease-in-out origin-bottom w-[min(92vw,320px)] overflow-hidden",
+          "absolute bottom-[85px] left-1/2 -translate-x-1/2 flex flex-col rounded-2xl bg-card border border-border shadow-xl transition-all duration-300 ease-in-out origin-bottom w-[min(92vw,360px)] overflow-hidden",
           isMenuOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-50 opacity-0 pointer-events-none"
         )}
       >
         <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-sm text-left w-full"
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
           onClick={() => { navigate("/", { state: { openPlanWizard: true } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
         >
-          <Calendar className="h-5 w-5 shrink-0 text-violet-500" />
+          <Calendar className="h-6 w-6 shrink-0 text-violet-500" />
           <div className="min-w-0">
-            <p className="font-medium">Hoja de ruta</p>
-            <p className="text-[10px] text-muted-foreground">Planifica qué rutina hacer cada día</p>
+            <p className="font-medium">Hoja de Ruta</p>
+            <p className="text-xs text-muted-foreground">Planifica qué rutina hacer cada día</p>
           </div>
         </button>
         <div>
           <button
-            className="flex items-center justify-between w-full gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-sm text-left"
+            className="flex items-center justify-between w-full gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left"
             onClick={() => { setShowRoutineSubmenu(!showRoutineSubmenu); }}
           >
             <span className="flex items-center gap-3 min-w-0">
-              <ClipboardList className="h-5 w-5 shrink-0 text-blue-500" />
+              <ClipboardList className="h-6 w-6 shrink-0 text-blue-500" />
               <div className="min-w-0">
                 <p className="font-medium">Rutina</p>
-                <p className="text-[10px] text-muted-foreground">Crea o explora plantillas de entrenamiento</p>
+                <p className="text-xs text-muted-foreground">Crea o explora plantillas de entrenamiento</p>
               </div>
             </span>
             <ChevronDown
-              className={cn("h-4 w-4 shrink-0 transition-transform duration-300", showRoutineSubmenu && "rotate-180")}
+              className={cn("h-5 w-5 shrink-0 transition-transform duration-300", showRoutineSubmenu && "rotate-180")}
             />
           </button>
           <div
@@ -99,33 +99,33 @@ export function BottomNav() {
             <div className="overflow-hidden">
               <div className="space-y-0.5 bg-muted/30 px-3 pb-2 pt-0">
                 <button
-                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-sm text-left"
+                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-base text-left"
                   onClick={() => { setExplorerOpen(true); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
                 >
-                  <Sparkles className="h-4 w-4 shrink-0 text-amber-400" />
+                  <Sparkles className="h-5 w-5 shrink-0 text-amber-400" />
                   <div>
                     <p className="font-medium">Explorar Predefinidas</p>
-                    <p className="text-[10px] text-muted-foreground">Descubre rutinas creadas por expertos</p>
+                    <p className="text-xs text-muted-foreground">Descubre rutinas creadas por expertos</p>
                   </div>
                 </button>
                 <button
-                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-sm text-left"
+                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-base text-left"
                   onClick={() => { navigate("/routines", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
                 >
-                  <Plus className="h-4 w-4 shrink-0 text-primary" />
+                  <Plus className="h-5 w-5 shrink-0 text-primary" />
                   <div>
                     <p className="font-medium">Crear desde cero</p>
-                    <p className="text-[10px] text-muted-foreground">Configura tus propios ejercicios</p>
+                    <p className="text-xs text-muted-foreground">Configura tus propios ejercicios</p>
                   </div>
                 </button>
                 <button
-                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-sm text-left"
+                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-base text-left"
                   onClick={() => { navigate("/routines", { state: { action: "import-csv" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
                 >
-                  <FileUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <FileUp className="h-5 w-5 shrink-0 text-muted-foreground" />
                   <div>
                     <p className="font-medium">Importar desde CSV</p>
-                    <p className="text-[10px] text-muted-foreground">Sube un archivo con la rutina</p>
+                    <p className="text-xs text-muted-foreground">Sube un archivo con la rutina</p>
                   </div>
                 </button>
               </div>
@@ -133,33 +133,33 @@ export function BottomNav() {
           </div>
         </div>
         <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-sm text-left w-full"
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
           onClick={() => { openNew(); setIsMenuOpen(false); }}
         >
-          <Activity className="h-5 w-5 shrink-0 text-primary" />
+          <Activity className="h-6 w-6 shrink-0 text-primary" />
           <div className="min-w-0">
-            <p className="font-medium">Entrenamiento</p>
-            <p className="text-[10px] text-muted-foreground">Registra una sesión de gym</p>
+            <p className="font-medium">Entrenamiento Libre</p>
+            <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
           </div>
         </button>
         <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-sm text-left w-full"
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
           onClick={() => { navigate("/routines?tab=ejercicios", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
         >
-          <Dumbbell className="h-5 w-5 shrink-0 text-orange-500" />
+          <Dumbbell className="h-6 w-6 shrink-0 text-orange-500" />
           <div className="min-w-0">
             <p className="font-medium">Ejercicio</p>
-            <p className="text-[10px] text-muted-foreground">Añade un ejercicio a tu biblioteca</p>
+            <p className="text-xs text-muted-foreground">Añade un ejercicio a tu biblioteca</p>
           </div>
         </button>
         <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-sm text-left w-full"
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
           onClick={() => { navigate("/evolution", { state: { tab: "measurements", action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
         >
-          <Scale className="h-5 w-5 shrink-0 text-emerald-500" />
+          <Scale className="h-6 w-6 shrink-0 text-emerald-500" />
           <div className="min-w-0">
             <p className="font-medium">Medida</p>
-            <p className="text-[10px] text-muted-foreground">Registra peso, cintura, etc.</p>
+            <p className="text-xs text-muted-foreground">Registra peso, cintura, etc.</p>
           </div>
         </button>
       </div>

@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import UsernameSetup from "@/pages/UsernameSetup";
+import { InAppNotificationsProvider } from "@/contexts/InAppNotificationsContext";
+import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
 
 export function AppLayout() {
   const { user, loading } = useAuth();
@@ -59,6 +61,7 @@ export function AppLayout() {
 
   return (
     <GlobalWorkoutDrawerProvider>
+      <InAppNotificationsProvider>
       <ProfileDrawerProvider>
       <div className="flex min-h-screen bg-background">
         <DesktopSidebar />
@@ -126,7 +129,8 @@ export function AppLayout() {
               )}
             </div>
 
-            <div className="flex shrink-0 items-center justify-end">
+            <div className="flex shrink-0 items-center justify-end gap-0.5">
+              <InAppNotificationsBell />
               <SettingsDrawer />
             </div>
           </header>
@@ -141,6 +145,7 @@ export function AppLayout() {
         <WorkoutLogger />
       </div>
       </ProfileDrawerProvider>
+      </InAppNotificationsProvider>
     </GlobalWorkoutDrawerProvider>
   );
 }

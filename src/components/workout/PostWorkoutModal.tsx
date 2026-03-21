@@ -9,6 +9,8 @@ import {
   AlertDialogFooter,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Zap, Dumbbell, ArrowUp, CheckCircle2, Flame } from "lucide-react";
 import type { XPBreakdown } from "@/hooks/useGamification";
 
@@ -99,7 +101,7 @@ export function PostWorkoutModal({ open, onClose, breakdown }: PostWorkoutModalP
               onClose();
               navigate("/");
             }}
-            className="w-full"
+            className={cn(buttonVariants({ variant: "default" }), "w-full")}
           >
             Ir al Dashboard
           </AlertDialogAction>
