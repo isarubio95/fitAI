@@ -22,7 +22,7 @@ function NotificationRow({
     return (
       <div
         className={cn(
-          "rounded-xl border border-primary/25 bg-primary/5 px-3 py-3 text-left",
+          "rounded-xl border border-primary/25 bg-primary/10 px-3 py-3 text-left dark:bg-primary/5",
         )}
       >
         <NewFollowerNotificationContent
@@ -51,7 +51,8 @@ function NotificationRow({
     <div
       className={cn(
         "rounded-xl border border-border/60 bg-muted/30 px-3 py-3 text-left",
-        item.kind === "action" && "border-primary/25 bg-primary/5",
+        item.kind === "action" &&
+          "border-primary/25 bg-primary/10 dark:bg-primary/5",
       )}
     >
       <div className="flex items-start justify-between gap-2">

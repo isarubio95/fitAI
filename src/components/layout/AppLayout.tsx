@@ -67,7 +67,7 @@ export function AppLayout() {
         <DesktopSidebar />
         <div className="flex-1 flex flex-col">
           {/* Mobile header — fijo siempre visible */}
-          <header className="fixed left-0 right-0 top-0 z-40 flex w-full items-center justify-between gap-3 bg-white/40 px-4 py-2 backdrop-blur-xl dark:bg-zinc-950/40 md:hidden">
+          <header className="mobile-header-glass fixed left-0 right-0 top-0 z-40 flex w-full items-center justify-between gap-3 px-4 py-2 dark:bg-zinc-950/40 dark:backdrop-blur-xl md:hidden">
             <div className="flex min-w-0 items-center gap-3">
               <ProfileDrawerTrigger />
               {location.pathname === "/evolution" && (

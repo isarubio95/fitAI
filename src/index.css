@@ -5,34 +5,37 @@
 
 @layer base {
     :root {
-    /* Tema claro: un poco más de contraste (fondo vs tarjeta, bordes, texto secundario) */
-    --background: 220 14% 94%;
+    /*
+     * Tema claro: menos “lavado” — fondo más presente, tarjetas como capa superior,
+     * bordes y muted legibles; sidebar alineado con la misma escala.
+     */
+    --background: 220 16% 89%;
     --foreground: 224 71% 4%;
-    --card: 0 0% 100%;
+    --card: 220 14% 97%;
     --card-foreground: 224 71% 4%;
-    --popover: 0 0% 100%;
+    --popover: 220 14% 97%;
     --popover-foreground: 224 71% 4%;
     --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 88%;
+    --secondary: 220 14% 84%;
     --secondary-foreground: 224 71% 4%;
-    --muted: 220 14% 88%;
-    --muted-foreground: 220 10% 30%;
+    --muted: 220 14% 84%;
+    --muted-foreground: 220 10% 26%;
     --accent: 142 71% 45%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 82%;
-    --input: 220 13% 82%;
+    --border: 220 12% 74%;
+    --input: 220 12% 74%;
     --ring: 142 71% 45%;
     --radius: 0.75rem;
-    --sidebar-background: 220 12% 96%;
+    --sidebar-background: 220 14% 91%;
     --sidebar-foreground: 224 71% 4%;
     --sidebar-primary: 142 71% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 88%;
+    --sidebar-accent: 220 14% 84%;
     --sidebar-accent-foreground: 224 71% 4%;
-    --sidebar-border: 220 13% 82%;
+    --sidebar-border: 220 12% 74%;
     --sidebar-ring: 142 71% 45%;
   }
 
@@ -165,10 +168,10 @@
     scrollbar-gutter: stable;
     /* Once-style gradient orbs – visible in light and dark */
     background-image:
-      radial-gradient(1100px circle at 10% -5%, hsl(var(--primary) / 0.28), transparent 45%),
-      radial-gradient(1000px circle at 95% 5%, hsl(var(--primary) / 0.22), transparent 50%),
-      radial-gradient(1200px circle at 50% 105%, hsl(220 30% 75% / 0.25), transparent 55%),
-      radial-gradient(800px circle at 70% 50%, hsl(var(--primary) / 0.12), transparent 55%);
+      radial-gradient(1100px circle at 10% -5%, hsl(var(--primary) / 0.16), transparent 45%),
+      radial-gradient(1000px circle at 95% 5%, hsl(var(--primary) / 0.12), transparent 50%),
+      radial-gradient(1200px circle at 50% 105%, hsl(220 28% 62% / 0.14), transparent 55%),
+      radial-gradient(800px circle at 70% 50%, hsl(var(--primary) / 0.07), transparent 55%);
     background-attachment: fixed;
   }
   /* Evita salto de ancho en escritorio cuando Radix abre Select/Dialog: no añadir padding extra si ya usamos scrollbar-gutter */
@@ -188,6 +191,54 @@
   [role="button"]:not(:disabled),
   a[href] {
     cursor: pointer;
+  }
+}
+
+/*
+ * Header móvil (claro): arriba del todo = transparente; al hacer scroll la vítrea
+ * aparece de forma continua vía Scroll-driven animations (sin React ni umbral binario → menos tirón).
+ * Fallback: vítrea fija si el navegador no soporta animation-timeline: scroll().
+ */
+@keyframes mobile-header-frost-light {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@layer components {
+  html:not(.dark) header.mobile-header-glass {
+    isolation: isolate;
+    background-color: transparent;
+  }
+
+  @supports (animation-timeline: scroll()) {
+    html:not(.dark) header.mobile-header-glass::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-color: hsl(0 0% 100% / 0.42);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      opacity: 0;
+      animation-name: mobile-header-frost-light;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root);
+      animation-range: 0 4.5rem;
+    }
+  }
+
+  @supports not (animation-timeline: scroll()) {
+    html:not(.dark) header.mobile-header-glass {
+      background-color: hsl(0 0% 100% / 0.4);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
   }
 }
 
