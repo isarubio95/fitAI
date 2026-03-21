@@ -42,13 +42,13 @@ export function SettingsDrawer() {
 
       <SheetContent
         side="right"
-        className="w-full max-w-full sm:max-w-full flex flex-col"
+        className="flex w-full max-w-full flex-col border-0 p-0 shadow-none sm:max-w-full"
       >
-        <SheetHeader className="text-left">
+        <SheetHeader className="px-6 pt-6 text-left">
           <SheetTitle className="text-lg">Ajustes</SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-6 mt-3">
+        <div className="mt-3 flex-1 space-y-6 overflow-y-auto px-6 pb-8">
           {/* Privacidad en comunidad */}
           <div className="space-y-3">
             <p className="text-sm font-medium flex items-center gap-2">Comunidad</p>

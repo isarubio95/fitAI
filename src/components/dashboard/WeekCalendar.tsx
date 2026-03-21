@@ -143,7 +143,7 @@ export function WeekCalendar({
   return (
     <div className="w-full space-y-3">
       {/* Header (padding para que las flechas no queden pegadas a los bordes de la card) */}
-      <div className="flex items-center justify-between px-4">
+      <div className="flex items-center justify-between px-6">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goBack}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -157,7 +157,7 @@ export function WeekCalendar({
       </div>
 
       {/* Lista de días lunes - domingo, dentro de la card */}
-      <div className="rounded-xl border border-border/60 bg-transparent overflow-hidden divide-y divide-border/40">
+      <div className="overflow-hidden rounded-t-xl border-x border-t border-border/60 bg-transparent divide-y divide-border/40">
         {days.map((day) => {
           const selected = selectedDate !== null && isSameDay(day, selectedDate);
           const today = isToday(day);
@@ -204,7 +204,7 @@ export function WeekCalendar({
               <div className="w-full rounded-none">
               <button
                 onClick={() => onDateSelect(day)}
-                className="w-full px-3 py-3 text-left"
+                className="w-full px-6 py-3 text-left"
               >
                 <div className="flex items-center gap-3 w-full min-w-0">
                   <div className="flex items-baseline gap-3 shrink-0">
@@ -266,7 +266,7 @@ export function WeekCalendar({
                     }}
                     className="overflow-hidden"
                   >
-                    <div className="px-3 pb-3 pt-0 text-xs">
+                    <div className="px-6 pb-3 pt-0 text-xs">
                       {hasPlanned && dayPlanned.map((p) => {
                         const isCompleted = !!p.actividad_id;
                         const isMissed = !p.actividad_id && isBefore(dayStart, now);

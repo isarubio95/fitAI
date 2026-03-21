@@ -42,18 +42,19 @@ export function xpProgress(xp: number) {
   };
 }
 
-// Obtener datos del perfil en tiempo real
-export function useProfileStats() {
+// Obtener datos del perfil en tiempo real (opcionalmente de otro usuario)
+export function useProfileStats(profileUserId?: string) {
   const { user } = useAuth();
+  const id = profileUserId ?? user?.id;
 
   return useQuery({
-    queryKey: ["profileStats", user?.id],
-    enabled: !!user,
+    queryKey: ["profileStats", id],
+    enabled: !!id,
     queryFn: async (): Promise<ProfileStats> => {
       const { data, error } = await supabase
         .from("perfil" as any)
         .select("nivel, xp_total, racha_actual, racha_maxima, ultima_actividad_fecha")
-        .eq("id", user!.id)
+        .eq("id", id!)
         .maybeSingle();
 
       if (error) throw error;

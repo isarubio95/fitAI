@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserSearch } from "@/hooks/useUserSearch";
 import { useFollows } from "@/hooks/useFollows";
 import { useCommunityFeed } from "@/hooks/useCommunityFeed";
+import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ export default function Community() {
   const { data: searchResults = [], isLoading: searching } = useUserSearch(usernameQuery);
   const { followingIds, toggleFollow, isToggling } = useFollows();
   const { data: feed, isLoading: loadingFeed } = useCommunityFeed();
+  const { openMyProfile, openUserProfile } = useProfileDrawer();
 
   const normalizedFeed = useMemo(() => {
     // Por si el backend devuelve cualquier otra cosa en el futuro.
@@ -46,7 +48,7 @@ export default function Community() {
       </header>
 
       <section className="space-y-3">
-        <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
+        <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
           <CardHeader>
             <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
           </CardHeader>
@@ -76,21 +78,32 @@ export default function Community() {
                   const isOwn = p.id === user?.id;
                   const isFollowing = followingIds.has(p.id);
 
+                  const openProfile = () => {
+                    if (p.id === user?.id) openMyProfile();
+                    else openUserProfile(p.id);
+                  };
+
                   return (
                     <div
                       key={p.id}
                       className="flex items-center justify-between gap-3 rounded-none border p-3 md:rounded-xl"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Avatar className="h-10 w-10">
+                      <button
+                        type="button"
+                        onClick={openProfile}
+                        className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring -m-1 p-1"
+                      >
+                        <Avatar className="h-10 w-10 shrink-0">
                           {p.avatar_url && <AvatarImage src={p.avatar_url} alt="" />}
                           <AvatarFallback>{initialsFromUsername(p.username)}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
                           <p className="font-semibold truncate">{p.username}</p>
-                          <p className="text-xs text-muted-foreground truncate">{p.id === user?.id ? "Tú" : "Usuario"}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {p.id === user?.id ? "Tú" : "Usuario"}
+                          </p>
                         </div>
-                      </div>
+                      </button>
 
                       {!isOwn && (
                         <Button
@@ -136,7 +149,7 @@ export default function Community() {
         ) : (
           <div className="space-y-3">
             {normalizedFeed.map((item) => (
-              <Card key={item.id} className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
+              <Card key={item.id} className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
                 <CardContent className="space-y-2 px-6 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">

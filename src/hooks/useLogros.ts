@@ -115,17 +115,18 @@ export async function checkAndAwardLogros(userId: string): Promise<void> {
   });
 }
 
-export function useLogros() {
+export function useLogros(profileUserId?: string) {
   const { user } = useAuth();
+  const id = profileUserId ?? user?.id;
 
   return useQuery({
-    queryKey: ["logros", user?.id],
-    enabled: !!user,
+    queryKey: ["logros", id],
+    enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutos: listado de logros cambia poco
     queryFn: async (): Promise<LogroConEstado[]> => {
       const [logrosRes, unlockedRes] = await Promise.all([
         supabase.from("logro" as any).select("*").order("meta", { ascending: true }),
-        supabase.from("usuario_logro" as any).select("logro_id").eq("usuario_id", user!.id),
+        supabase.from("usuario_logro" as any).select("logro_id").eq("usuario_id", id!),
       ]);
 
       if (logrosRes.error) throw logrosRes.error;

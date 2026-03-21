@@ -193,10 +193,12 @@ export function MonthlyPlanner({
           // Identificamos las esquinas de la última fila
           const isBottomLeft = i === days.length - 7;
           const isBottomRight = i === days.length - 1;
+          const isLastRow = i >= days.length - 7;
 
           const cellClass = `
-                relative border-r border-b border-border min-h-[80px] md:min-h-[100px] p-1 cursor-pointer
+                relative min-h-[80px] md:min-h-[100px] border-r border-border p-1 cursor-pointer
                 transition-colors hover:bg-accent/30
+                ${!isLastRow ? "border-b" : ""}
                 ${today ? "bg-accent/15" : ""}
                 ${!inMonth ? "opacity-40" : ""}
                 ${isBottomLeft ? "rounded-bl-xl" : ""}

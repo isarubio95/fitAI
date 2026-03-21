@@ -54,7 +54,7 @@ export function SortableRoutineCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "overflow-hidden w-full rounded-none border-x-0 md:rounded-2xl md:border-x",
+        "overflow-hidden w-full rounded-none border-x-0 md:rounded-3xl md:border-x",
         isDragging && "shadow-lg ring-2 ring-primary/30",
       )}
     >

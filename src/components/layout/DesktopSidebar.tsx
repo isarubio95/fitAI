@@ -4,7 +4,7 @@ import { Home, Dumbbell, BarChart3, LogOut, ClipboardList, Plus, Activity, Scale
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { ProfileDrawer } from "./ProfileDrawer";
+import { ProfileDrawerTrigger } from "./ProfileDrawer";
 import { SettingsDrawer } from "./SettingsDrawer";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
@@ -37,7 +37,7 @@ export function DesktopSidebar() {
         <img src="/logo.svg" alt="TrackGym" className="h-9 w-9 rounded-lg shrink-0" />
         <span className="text-lg font-bold flex-1">TrackGym</span>
         <SettingsDrawer />
-        <ProfileDrawer />
+        <ProfileDrawerTrigger />
       </div>
       <nav className="flex-1 space-y-1 p-4">
         <DropdownMenu>

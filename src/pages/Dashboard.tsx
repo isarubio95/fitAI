@@ -326,7 +326,7 @@ const Dashboard = () => {
         return <ExerciseProgressWidget />;
       case 'weekly-chart':
         return (
-          <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
+          <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
             <CardHeader className="pb-2">
               <CardTitle asChild className="text-base">
                 <h2>Consistencia Semanal</h2>
@@ -365,23 +365,13 @@ const Dashboard = () => {
         );
       case 'calendar':
         return (
-          <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
+          <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
             <CardHeader className="space-y-3 pb-4">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
-                  <TabsList className="h-9 rounded-full p-1">
-                    <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
-                      Mes
-                    </TabsTrigger>
-                    <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
-                      Semana
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+              <div className="flex w-full flex-row items-center justify-between gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 shrink-0"
+                  className="shrink-0 gap-2"
                   disabled={!plannedKnown}
                   onClick={() => {
                     if (!plannedKnown) return;
@@ -410,6 +400,16 @@ const Dashboard = () => {
                     </>
                   )}
                 </Button>
+                <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
+                  <TabsList className="h-9 shrink-0 rounded-full p-1">
+                    <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
+                      Mes
+                    </TabsTrigger>
+                    <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
+                      Semana
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -527,7 +527,7 @@ const Dashboard = () => {
         );
       case 'last-workout':
         return (
-          <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
+          <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
             <CardHeader className="pb-2">
               <CardTitle asChild className="text-base">
                 <h2>Último Entrenamiento</h2>
@@ -574,7 +574,7 @@ const Dashboard = () => {
 
   return (
     <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-4xl md:mx-auto md:px-8">
-      <header className="flex items-center justify-between px-4 sm:px-5 md:px-0">
+      <header className="flex items-center justify-between px-6 md:px-0">
         <div>
           <h1 className="text-2xl font-bold">TrackGym</h1>
           <p className="text-sm text-muted-foreground">Tu progreso esta semana</p>

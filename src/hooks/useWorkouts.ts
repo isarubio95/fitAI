@@ -252,16 +252,17 @@ export function useWorkoutById(id: string | null) {
   });
 }
 
-export function useWorkoutHistory() {
+export function useWorkoutHistory(profileUserId?: string) {
   const { user } = useAuth();
+  const id = profileUserId ?? user?.id;
   return useQuery({
-    queryKey: ["workoutHistory", user?.id],
-    enabled: !!user,
+    queryKey: ["workoutHistory", id],
+    enabled: !!id,
     queryFn: async (): Promise<ActividadWithDetails[]> => {
       const { data: actividades, error } = await supabase
         .from("actividad")
         .select("*")
-        .eq("usuario_id", user!.id)
+        .eq("usuario_id", id!)
         .order("fecha", { ascending: false });
 
       if (error) throw error;

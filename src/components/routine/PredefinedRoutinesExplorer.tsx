@@ -237,7 +237,7 @@ function RoutineCard({
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        "rounded-2xl border border-border bg-card p-4 space-y-3"
+        "rounded-3xl border border-border/80 bg-card p-4 space-y-3"
       )}
     >
       <div className="flex items-start justify-between gap-2">

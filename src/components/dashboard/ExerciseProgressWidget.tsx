@@ -18,14 +18,15 @@ import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  AreaChart,
   Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts";
-import { format } from "date-fns";
+import { addDays, format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 
@@ -72,6 +73,20 @@ export function ExerciseProgressWidget() {
   const history = historyData?.history;
   const lastRecord = historyData?.lastRecord;
   const yScale = useMemo(() => getUniformYScale(history ?? []), [history]);
+
+  /** Un solo punto no dibuja trazo en Area; duplicamos en el eje X (misma Y) y guardamos la fecha real para el tooltip. */
+  const chartData = useMemo(() => {
+    if (!history?.length) return [];
+    if (history.length === 1) {
+      const p = history[0];
+      const d = new Date(p.date);
+      return [
+        { ...p, date: format(subDays(d, 5), "yyyy-MM-dd"), tooltipDate: p.date },
+        { ...p, date: format(addDays(d, 5), "yyyy-MM-dd"), tooltipDate: p.date },
+      ];
+    }
+    return history.map((row) => ({ ...row, tooltipDate: row.date }));
+  }, [history]);
 
   // Swipe handling
   const touchStartX = useRef(0);
@@ -207,13 +222,19 @@ export function ExerciseProgressWidget() {
           ) : (
             <div className="py-2">
               <ResponsiveContainer width="100%" height={176}>
-                <AreaChart data={history} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="progressGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                     </linearGradient>
                   </defs>
+                  <CartesianGrid
+                    stroke="hsl(var(--border))"
+                    strokeOpacity={0.45}
+                    vertical={false}
+                    horizontal
+                  />
                   <XAxis
                     dataKey="date"
                     axisLine={false}
@@ -274,10 +295,11 @@ export function ExerciseProgressWidget() {
 function CustomTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const data = payload[0].payload;
+  const when = data.tooltipDate ?? data.date;
   return (
     <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md text-popover-foreground">
       <p className="font-medium">
-        {format(new Date(data.date), "d MMM yyyy", { locale: es })}
+        {format(new Date(when), "d MMM yyyy", { locale: es })}
       </p>
       <p className="text-primary font-semibold">1RM: {formatWeight(data.oneRepMax)} kg</p>
       <p className="text-muted-foreground">Real: {formatWeight(data.weight)}kg × {data.reps} reps</p>

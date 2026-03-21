@@ -186,7 +186,7 @@ const WorkoutHistory = () => {
       </div>
 
       {/* ── Weekly Consistency Chart ── */}
-      <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
+      <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
         <CardContent className="px-6 py-4">
           <h2 className="mb-4 text-sm font-semibold">Constancia semanal</h2>
           {isLoading ? (
@@ -212,7 +212,7 @@ const WorkoutHistory = () => {
       {!isLoading && (topExercises.length > 0 || topLoads.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {topExercises.length > 0 && (
-            <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
+            <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
               <CardHeader className="px-6 pb-2 pt-4">
                 <CardTitle className="flex items-center gap-1.5 text-sm">
                   <Star className="h-4 w-4 text-primary" /> Top ejercicios
@@ -233,7 +233,7 @@ const WorkoutHistory = () => {
           )}
 
           {topLoads.length > 0 && (
-            <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
+            <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
               <CardHeader className="px-6 pb-2 pt-4">
                 <CardTitle className="flex items-center gap-1.5 text-sm">
                   <Trophy className="h-4 w-4 text-primary" /> Cargas máximas
@@ -262,7 +262,7 @@ const WorkoutHistory = () => {
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 rounded-none md:rounded-xl" />
+              <Skeleton key={i} className="h-16 rounded-none md:rounded-2xl" />
             ))}
           </div>
         ) : !workouts?.length ? (
@@ -275,7 +275,7 @@ const WorkoutHistory = () => {
               {visibleWorkouts?.map((w) => {
                 const totalSets = w.ejercicios.reduce((a, ej) => a + ej.series.length, 0);
                 return (
-                  <AccordionItem key={w.id} value={w.id} className="rounded-none border border-x-0 px-4 md:rounded-xl md:border-x">
+                  <AccordionItem key={w.id} value={w.id} className="rounded-none border border-x-0 px-4 md:rounded-2xl md:border-x">
                     <AccordionTrigger className="hover:no-underline py-3">
                       <article className="flex flex-col items-start text-left gap-1">
                         <h3 className="font-semibold">{w.titulo}</h3>

@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Outlet } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
-import { ProfileDrawer } from "./ProfileDrawer";
+import { ProfileDrawerProvider, ProfileDrawerTrigger } from "./ProfileDrawer";
 import { SettingsDrawer } from "./SettingsDrawer";
 import { ActiveWorkoutPill } from "@/components/workout/ActiveWorkoutPill";
 import { GlobalWorkoutDrawerProvider } from "@/hooks/useGlobalWorkoutDrawer";
@@ -68,6 +68,7 @@ export function AppLayout() {
 
   return (
     <GlobalWorkoutDrawerProvider>
+      <ProfileDrawerProvider>
       <div className="flex min-h-screen bg-background">
         <DesktopSidebar />
         <div className="flex-1 flex flex-col">
@@ -79,7 +80,7 @@ export function AppLayout() {
             )}
           >
             <div className="flex min-w-0 items-center gap-3">
-              <ProfileDrawer />
+              <ProfileDrawerTrigger />
               {location.pathname === "/evolution" && (
                 <div className="flex shrink-0 items-center gap-2">
                   <button
@@ -153,6 +154,7 @@ export function AppLayout() {
         <BottomNav />
         <WorkoutLogger />
       </div>
+      </ProfileDrawerProvider>
     </GlobalWorkoutDrawerProvider>
   );
 }

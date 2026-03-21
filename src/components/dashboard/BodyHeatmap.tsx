@@ -196,7 +196,7 @@ export function BodyHeatmap() {
 
   return (
     <>
-      <Card className="overflow-hidden w-full rounded-none border-x-0 border-y border-border/40 bg-card/95 shadow-xs md:rounded-2xl md:border-x">
+      <Card className="overflow-hidden w-full rounded-none border-x-0 border-y border-border/30 bg-card/95 shadow-xs md:rounded-3xl md:border-x">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <CardTitle asChild className="text-base font-bold">
@@ -222,7 +222,7 @@ export function BodyHeatmap() {
             <div className="space-y-6">
               
               {/* Contenedor de las dos vistas (Frontal y Trasera) */}
-              <div className="grid grid-cols-2 gap-4 pt-4 items-start">
+              <div className="grid grid-cols-2 gap-4 pt-3 items-start">
                 {renderBody(FRONT_MUSCLES, "FRONTAL")}
                 {renderBody(BACK_MUSCLES, "TRASERA")}
               </div>
