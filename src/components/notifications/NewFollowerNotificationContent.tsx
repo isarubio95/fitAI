@@ -63,7 +63,7 @@ export function NewFollowerNotificationContent({
           onClick={openProfile}
           className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring -m-1 p-1"
         >
-          <Avatar className={cn("shrink-0", compact ? "h-9 w-9" : "h-10 w-10")}>
+          <Avatar className={cn("shrink-0", compact ? "h-10 w-10" : "h-11 w-11")}>
             {avatarUrl ? <AvatarImage src={avatarUrl} alt="" className="object-cover" /> : null}
             <AvatarFallback className="text-xs font-semibold">{initialsFromUsername(username)}</AvatarFallback>
           </Avatar>
