@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Outlet } from "react-router-dom";
@@ -20,14 +19,6 @@ export function AppLayout() {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [atTop, setAtTop] = useState(true);
-
-  useEffect(() => {
-    const check = () => setAtTop(window.scrollY < 2);
-    check();
-    window.addEventListener("scroll", check, { passive: true });
-    return () => window.removeEventListener("scroll", check);
-  }, []);
 
   const { data: profileSetup, isLoading: profileLoading } = useQuery({
     queryKey: ["profileSetup", user?.id],
@@ -73,12 +64,7 @@ export function AppLayout() {
         <DesktopSidebar />
         <div className="flex-1 flex flex-col">
           {/* Mobile header — fijo siempre visible */}
-          <header
-            className={cn(
-              "fixed left-0 right-0 top-0 z-40 flex w-full items-center justify-between gap-3 border-b bg-white/40 px-4 py-2 backdrop-blur-xl transition-[border-color] duration-300 dark:bg-zinc-950/40 md:hidden",
-              atTop ? "border-transparent" : "border-black/5 dark:border-white/5",
-            )}
-          >
+          <header className="fixed left-0 right-0 top-0 z-40 flex w-full items-center justify-between gap-3 bg-white/40 px-4 py-2 backdrop-blur-xl dark:bg-zinc-950/40 md:hidden">
             <div className="flex min-w-0 items-center gap-3">
               <ProfileDrawerTrigger />
               {location.pathname === "/evolution" && (
