@@ -215,7 +215,7 @@ function ProfileDrawerSheet() {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="flex h-full max-h-dvh w-full max-w-full flex-col gap-0 overflow-x-hidden border-0 p-0 shadow-none sm:max-w-full"
+        className="flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 p-0 shadow-none"
       >
         <div className="px-6 pb-2 pt-6">
           <SheetHeader className="mb-4 text-left">

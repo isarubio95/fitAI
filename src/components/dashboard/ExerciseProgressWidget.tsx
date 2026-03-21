@@ -122,10 +122,10 @@ export function ExerciseProgressWidget() {
   if (loadingExercises) {
     return (
       <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
-        <CardHeader className="pb-2">
+        <CardHeader className="px-6 pt-8 pb-2">
           <Skeleton className="h-5 w-40" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-6 pb-8 pt-0">
           <Skeleton className="h-44 w-full" />
         </CardContent>
       </Card>
@@ -139,7 +139,7 @@ export function ExerciseProgressWidget() {
 
   return (
     <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
-      <CardHeader className="pb-4">
+      <CardHeader className="px-6 pt-8 pb-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <CardTitle asChild className="text-base font-bold">
@@ -202,7 +202,7 @@ export function ExerciseProgressWidget() {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-6 pb-8 pt-0">
         <div
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}

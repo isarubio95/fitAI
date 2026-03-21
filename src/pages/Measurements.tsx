@@ -109,7 +109,7 @@ const Measurements = () => {
   };
 
   return (
-    <div className="w-full min-w-0 p-4 md:p-8 pt-6 space-y-6 max-w-2xl mx-auto pb-28">
+    <div className="w-full min-w-0 p-4 md:p-8 pt-6 max-w-2xl mx-auto pb-28">
       <header>
         <div>
           <h1 className="text-2xl font-bold">Medidas Corporales</h1>
@@ -178,9 +178,10 @@ const Measurements = () => {
         </Sheet>
       </header>
 
+      <div className="mt-6 space-y-3">
       {/* ── Current Weight Card ── */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="px-6 py-8">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
               <Scale className="h-5 w-5 text-primary" />
@@ -210,7 +211,7 @@ const Measurements = () => {
       {/* ── Weight Chart ── */}
       {chartData.length > 1 && (
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="px-6 py-8">
             <h2 className="text-sm font-semibold mb-3">Evolución del peso</h2>
             <ChartContainer config={chartConfig} className="aspect-2/1 w-full">
               <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
@@ -306,6 +307,7 @@ const Measurements = () => {
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 };

@@ -1,7 +1,17 @@
 import { useSearchParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Routines from "@/pages/Routines";
 import Exercises from "@/pages/Exercises";
+
+const sectionPillTabsList =
+  "hidden h-auto w-full justify-start gap-2 bg-transparent p-0 shadow-none md:flex md:max-w-2xl md:mx-auto md:px-8 md:pt-6";
+
+const sectionPillTabsTrigger = cn(
+  "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+  "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+  "data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:shadow-sm",
+);
 
 export default function Library() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,11 +29,11 @@ export default function Library() {
       className="w-full min-w-0"
     >
       {/* En móvil los pills se muestran en el header (igual que Evolución). */}
-      <TabsList className="hidden md:flex w-full justify-start max-w-[720px] mx-auto">
-        <TabsTrigger value="rutinas" className="flex-1 sm:flex-none">
+      <TabsList className={sectionPillTabsList}>
+        <TabsTrigger value="rutinas" className={sectionPillTabsTrigger}>
           Rutinas
         </TabsTrigger>
-        <TabsTrigger value="ejercicios" className="flex-1 sm:flex-none">
+        <TabsTrigger value="ejercicios" className={sectionPillTabsTrigger}>
           Ejercicios
         </TabsTrigger>
       </TabsList>

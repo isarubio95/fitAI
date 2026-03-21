@@ -150,12 +150,13 @@ const WorkoutHistory = () => {
   ];
 
   return (
-    <div className="w-full min-w-0 space-y-6 pb-28 pt-6 md:mx-auto md:max-w-2xl md:px-8">
+    <div className="w-full min-w-0 pb-28 pt-6 md:mx-auto md:max-w-2xl md:px-8">
       <header className="px-6 md:px-0">
         <h1 className="text-2xl font-bold">Progreso</h1>
         <p className="text-sm text-muted-foreground">Tu rendimiento y estadísticas</p>
       </header>
 
+      <div className="mt-6 space-y-3">
       {/* ── KPI Grid (sin gap ni fondo de card; solo líneas divisorias) ── */}
       <div className="grid grid-cols-2 gap-0">
         {kpiCards.map((kpi, i) => {
@@ -169,7 +170,7 @@ const WorkoutHistory = () => {
                   ? "border-r border-black/5 dark:border-white/10"
                   : "";
           return (
-            <div key={kpi.label} className={`space-y-1 px-6 py-4 ${cellBorder}`}>
+            <div key={kpi.label} className={`space-y-1 px-6 py-8 ${cellBorder}`}>
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
                   <Icon className="h-4 w-4 text-primary" />
@@ -187,8 +188,12 @@ const WorkoutHistory = () => {
 
       {/* ── Weekly Consistency Chart ── */}
       <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-        <CardContent className="px-6 py-4">
-          <h2 className="mb-4 text-sm font-semibold">Constancia semanal</h2>
+        <CardHeader className="px-6 pt-8 pb-4">
+          <CardTitle asChild className="text-base">
+            <h2>Constancia semanal</h2>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-6 pb-8 pt-0">
           {isLoading ? (
             <Skeleton className="h-[180px] rounded-none md:rounded-lg" />
           ) : (
@@ -213,12 +218,12 @@ const WorkoutHistory = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {topExercises.length > 0 && (
             <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-              <CardHeader className="px-6 pb-2 pt-4">
-                <CardTitle className="flex items-center gap-1.5 text-sm">
+              <CardHeader className="px-6 pt-8 pb-4">
+                <CardTitle className="flex items-center gap-1.5 text-base">
                   <Star className="h-4 w-4 text-primary" /> Top ejercicios
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-1.5 px-6 pb-4">
+              <CardContent className="space-y-1.5 px-6 pb-8 pt-0">
                 {topExercises.map((ex, i) => (
                   <div key={ex.name} className="flex items-center justify-between text-sm">
                     <span className="truncate text-muted-foreground">
@@ -234,12 +239,12 @@ const WorkoutHistory = () => {
 
           {topLoads.length > 0 && (
             <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-              <CardHeader className="px-6 pb-2 pt-4">
-                <CardTitle className="flex items-center gap-1.5 text-sm">
+              <CardHeader className="px-6 pt-8 pb-4">
+                <CardTitle className="flex items-center gap-1.5 text-base">
                   <Trophy className="h-4 w-4 text-primary" /> Cargas máximas
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-1.5 px-6 pb-4">
+              <CardContent className="space-y-1.5 px-6 pb-8 pt-0">
                 {topLoads.map((ex, i) => (
                   <div key={ex.name} className="flex items-center justify-between text-sm">
                     <span className="truncate text-muted-foreground">
@@ -333,6 +338,7 @@ const WorkoutHistory = () => {
           </>
         )}
       </section>
+      </div>
     </div>
   );
 };

@@ -121,7 +121,7 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
-          className="flex w-full max-w-full flex-col gap-0 border-0 p-0 shadow-none sm:max-w-md"
+          className="flex h-full w-full flex-col gap-0 border-0 p-0 shadow-none"
         >
           <SheetHeader className="border-b border-border/60 px-6 py-4 text-left">
             <SheetTitle className="text-lg">Notificaciones</SheetTitle>

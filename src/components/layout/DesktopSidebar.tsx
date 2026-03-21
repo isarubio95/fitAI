@@ -36,9 +36,7 @@ export function DesktopSidebar() {
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-white/50 dark:bg-zinc-950/50 backdrop-blur-2xl h-dvh sticky top-0">
       <div className="flex h-[calc(4rem+1px)] shrink-0 items-center gap-2 border-b border-border px-6">
         <img src="/logo.svg" alt="TrackGym" className="h-9 w-9 rounded-lg shrink-0" />
-        <span className="text-lg font-bold flex-1">TrackGym</span>
-        <InAppNotificationsBell />
-        <SettingsDrawer />
+        <span className="text-lg font-bold flex-1 min-w-0 truncate">TrackGym</span>
         <ProfileDrawerTrigger />
       </div>
       <nav className="flex-1 space-y-1 p-4">
@@ -115,10 +113,10 @@ export function DesktopSidebar() {
             end={to === "/"}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? "border-primary/20 bg-primary/10 text-primary dark:border-primary/42 dark:bg-primary/8"
+                  : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
               )
             }
           >
@@ -127,15 +125,21 @@ export function DesktopSidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="border-t border-border p-4 space-y-2">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground"
-          onClick={signOut}
-        >
-          <LogOut className="h-5 w-5" />
-          Cerrar Sesión
-        </Button>
+      <div className="mt-auto shrink-0 border-t border-border px-4 pb-4 pt-4">
+        <div className="flex items-center justify-end gap-0.5 pb-3">
+          <InAppNotificationsBell />
+          <SettingsDrawer />
+        </div>
+        <div className="flex justify-end border-t border-border pt-3">
+          <Button
+            variant="ghost"
+            className="gap-3 text-muted-foreground"
+            onClick={signOut}
+          >
+            <LogOut className="h-5 w-5" />
+            Cerrar Sesión
+          </Button>
+        </div>
       </div>
     </aside>
   );

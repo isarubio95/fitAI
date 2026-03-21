@@ -42,7 +42,7 @@ export function SettingsDrawer() {
 
       <SheetContent
         side="right"
-        className="flex w-full max-w-full flex-col border-0 p-0 shadow-none sm:max-w-full"
+        className="flex h-full w-full flex-col border-0 p-0 shadow-none"
       >
         <SheetHeader className="px-6 pt-6 text-left">
           <SheetTitle className="text-lg">Ajustes</SheetTitle>

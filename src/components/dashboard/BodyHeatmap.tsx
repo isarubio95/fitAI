@@ -197,7 +197,7 @@ export function BodyHeatmap() {
   return (
     <>
       <Card className="overflow-hidden w-full rounded-none border-x-0 border-y border-border/30 bg-card/95 shadow-xs md:rounded-3xl md:border-x">
-        <CardHeader className="pb-4">
+        <CardHeader className="px-6 pt-8 pb-4">
           <div className="flex items-center justify-between">
             <CardTitle asChild className="text-base font-bold">
               <h2>Carga Muscular</h2>
@@ -215,7 +215,7 @@ export function BodyHeatmap() {
           </div>
         </CardHeader>
         
-        <CardContent className="relative pb-6" ref={containerRef}>
+        <CardContent className="relative px-6 pb-8 pt-0" ref={containerRef}>
           {isLoading ? (
             <Skeleton className="h-[400px] w-full rounded-xl" />
           ) : (

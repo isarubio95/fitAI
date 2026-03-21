@@ -328,12 +328,12 @@ const Dashboard = () => {
       case 'weekly-chart':
         return (
           <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-            <CardHeader className="pb-2">
+            <CardHeader className="px-6 pt-8 pb-2">
               <CardTitle asChild className="text-base">
                 <h2>Consistencia Semanal</h2>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-6 pb-8 pt-0">
               {loadingWeekly ? (
                 <Skeleton className="h-32 w-full" />
               ) : (
@@ -367,7 +367,7 @@ const Dashboard = () => {
       case 'calendar':
         return (
           <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-            <CardHeader className="space-y-3 pb-4">
+            <CardHeader className="space-y-3 px-6 pt-8 pb-4">
               <div className="flex w-full flex-row items-center justify-between gap-2">
                 <Button
                   variant="outline"
@@ -413,7 +413,7 @@ const Dashboard = () => {
                 </Tabs>
               </div>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 pb-8 pt-0">
               {calendarView === "month" ? (
                 <MonthlyPlanner
                   month={calendarMonth}
@@ -529,12 +529,12 @@ const Dashboard = () => {
       case 'last-workout':
         return (
           <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-            <CardHeader className="pb-2">
+            <CardHeader className="px-6 pt-8 pb-2">
               <CardTitle asChild className="text-base">
                 <h2>Último Entrenamiento</h2>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-6 pb-8 pt-0">
               {loadingLast ? (
                 <Skeleton className="h-20 w-full" />
               ) : lastWorkout ? (
@@ -574,7 +574,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-4xl md:mx-auto md:px-8">
+    <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
       <header className="flex items-center justify-between px-6 md:px-0">
         <div>
           <h1 className="text-2xl font-bold">TrackGym</h1>
@@ -606,7 +606,7 @@ const Dashboard = () => {
           items={widgetOrder}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-6">
+          <div className="space-y-3">
             {widgetOrder.map((id) => (
               <SortableWidget key={id} id={id} isDragMode={isDragMode}>
                 {renderWidget(id)}

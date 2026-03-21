@@ -229,7 +229,7 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-2xl max-w-full overflow-y-auto rounded-l-[20px] p-0 inset-y-auto top-8 bottom-0 h-[calc(100dvh-1.5rem)]"
+        className="w-full overflow-y-auto rounded-l-[20px] p-0 inset-y-auto top-8 bottom-0 h-[calc(100dvh-1.5rem)] sm:max-w-2xl"
       >
         <WorkoutDetailsContent
           workout={workout}

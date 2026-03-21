@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +16,7 @@ export function MuscleRankingWidget() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Skeleton className="h-56 rounded-none md:rounded-xl" />
         <Skeleton className="h-56 rounded-none md:rounded-xl" />
       </div>
@@ -24,26 +25,23 @@ export function MuscleRankingWidget() {
 
   if (!data) return null;
 
-  const maxCount = Math.max(1, ...data.topGroups.map((g) => g.count));
-
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Top 5 */}
         <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-          <CardHeader className="px-6 pb-2 pt-4">
-            <CardTitle className="flex items-center gap-1.5 text-sm">
+          <CardHeader className="px-6 pt-8 pb-4">
+            <CardTitle className="flex items-center gap-1.5 text-base">
               <Flame className="h-4 w-4 text-primary" /> Más Entrenados
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2.5 px-6 pb-4">
-            {data.topGroups.map(({ group, count }) => (
+          <CardContent className="space-y-1.5 px-6 pb-8 pt-0">
+            {data.topGroups.map(({ group, count }, i) => (
               <RankRow
                 key={group}
+                rank={i + 1}
                 group={group}
                 count={count}
-                max={maxCount}
-                variant="hot"
                 onClick={() => setDetailGroup(group)}
               />
             ))}
@@ -52,19 +50,18 @@ export function MuscleRankingWidget() {
 
         {/* Bottom 5 */}
         <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-          <CardHeader className="px-6 pb-2 pt-4">
-            <CardTitle className="flex items-center gap-1.5 text-sm">
+          <CardHeader className="px-6 pt-8 pb-4">
+            <CardTitle className="flex items-center gap-1.5 text-base">
               <Snowflake className="h-4 w-4 text-muted-foreground" /> Menos Entrenados
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2.5 px-6 pb-4">
-            {data.bottomGroups.map(({ group, count }) => (
+          <CardContent className="space-y-1.5 px-6 pb-8 pt-0">
+            {data.bottomGroups.map(({ group, count }, i) => (
               <RankRow
                 key={group}
+                rank={i + 1}
                 group={group}
                 count={count}
-                max={maxCount}
-                variant="cold"
                 onClick={() => setDetailGroup(group)}
               />
             ))}
@@ -86,27 +83,26 @@ export function MuscleRankingWidget() {
 
 /* ── Row ── */
 function RankRow({
-  group, count, max, variant, onClick,
+  rank, group, count, onClick,
 }: {
+  rank: number;
   group: MainMuscleGroup;
   count: number;
-  max: number;
-  variant: "hot" | "cold";
   onClick: () => void;
 }) {
-  const pct = max > 0 ? (count / max) * 100 : 0;
-
   return (
     <button
+      type="button"
       onClick={onClick}
-      className="w-full text-left group flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-accent/50 cursor-pointer"
+      className="flex w-full cursor-pointer items-center justify-between text-sm rounded-lg transition-colors hover:bg-accent/50 text-left"
     >
-      <span className="text-sm font-medium flex-1 truncate">{group}</span>
-      <span className="text-xs text-muted-foreground tabular-nums w-10 text-right">{count}s</span>
-      <Progress
-        value={pct}
-        className={`h-2 w-20 ${variant === "cold" ? "[&>div]:bg-muted-foreground" : ""}`}
-      />
+      <span className="truncate text-muted-foreground">
+        <span className="font-medium text-foreground mr-1.5">{rank}.</span>
+        {group}
+      </span>
+      <Badge variant="secondary" className="shrink-0 ml-2">
+        {count}×
+      </Badge>
     </button>
   );
 }
