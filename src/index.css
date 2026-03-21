@@ -194,54 +194,6 @@
   }
 }
 
-/*
- * Header móvil (claro): arriba del todo = transparente; al hacer scroll la vítrea
- * aparece de forma continua vía Scroll-driven animations (sin React ni umbral binario → menos tirón).
- * Fallback: vítrea fija si el navegador no soporta animation-timeline: scroll().
- */
-@keyframes mobile-header-frost-light {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@layer components {
-  html:not(.dark) header.mobile-header-glass {
-    isolation: isolate;
-    background-color: transparent;
-  }
-
-  @supports (animation-timeline: scroll()) {
-    html:not(.dark) header.mobile-header-glass::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      pointer-events: none;
-      background-color: hsl(0 0% 100% / 0.42);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      opacity: 0;
-      animation-name: mobile-header-frost-light;
-      animation-timing-function: linear;
-      animation-fill-mode: both;
-      animation-timeline: scroll(root);
-      animation-range: 0 4.5rem;
-    }
-  }
-
-  @supports not (animation-timeline: scroll()) {
-    html:not(.dark) header.mobile-header-glass {
-      background-color: hsl(0 0% 100% / 0.4);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-    }
-  }
-}
-
 /* Calendar workout dot indicator */
 .workout-dot {
   position: relative;
