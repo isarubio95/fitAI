@@ -1,10 +1,42 @@
+import { AnimatePresence } from "framer-motion";
 import { X, Info, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useInAppNotifications } from "@/hooks/useInAppNotifications";
 import { cn } from "@/lib/utils";
-import type { InAppNotificationItem } from "@/types/inAppNotification";
+import { isNewFollowerNotification, type InAppNotificationItem } from "@/types/inAppNotification";
+import { NewFollowerNotificationContent } from "@/components/notifications/NewFollowerNotificationContent";
+import { InAppNotificationItemMotion } from "@/components/notifications/InAppNotificationItemMotion";
 
 function Pill({ item, onDismiss }: { item: InAppNotificationItem; onDismiss: (id: string) => void }) {
+  if (isNewFollowerNotification(item)) {
+    return (
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 flex-col gap-0 rounded-2xl border border-primary/30 bg-primary/5 px-3 py-2.5 sm:max-w-sm sm:flex-initial",
+        )}
+      >
+        <NewFollowerNotificationContent
+          compact
+          seguidorId={item.seguidorId}
+          username={item.username}
+          avatarUrl={item.avatarUrl}
+          trailing={
+            item.dismissable ? (
+              <button
+                type="button"
+                className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-background/80 hover:text-foreground"
+                aria-label="Descartar"
+                onClick={() => onDismiss(item.id)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null
+          }
+        />
+      </div>
+    );
+  }
+
   const Icon = item.kind === "action" ? Zap : Info;
   return (
     <div
@@ -62,10 +94,17 @@ export function DashboardNotificationPills() {
   return (
     <section className="space-y-2 px-6 md:px-0" aria-label="Avisos">
       <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Avisos</h2>
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        {topItems.map((item) => (
-          <Pill key={item.id} item={item} onDismiss={dismiss} />
-        ))}
+      <div className="flex flex-col gap-2 overflow-x-hidden sm:flex-row sm:flex-wrap">
+        <AnimatePresence initial={false} mode="popLayout">
+          {topItems.map((item) => (
+            <InAppNotificationItemMotion
+              key={item.id}
+              className="min-w-0 flex-1 sm:max-w-sm sm:flex-initial"
+            >
+              <Pill item={item} onDismiss={dismiss} />
+            </InAppNotificationItemMotion>
+          ))}
+        </AnimatePresence>
       </div>
     </section>
   );

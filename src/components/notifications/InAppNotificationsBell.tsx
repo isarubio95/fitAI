@@ -1,10 +1,13 @@
 import { useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useInAppNotifications } from "@/hooks/useInAppNotifications";
 import { cn } from "@/lib/utils";
-import type { InAppNotificationItem } from "@/types/inAppNotification";
+import { isNewFollowerNotification, type InAppNotificationItem } from "@/types/inAppNotification";
+import { NewFollowerNotificationContent } from "@/components/notifications/NewFollowerNotificationContent";
+import { InAppNotificationItemMotion } from "@/components/notifications/InAppNotificationItemMotion";
 
 function NotificationRow({
   item,
@@ -15,6 +18,35 @@ function NotificationRow({
   onDismiss: (id: string) => void;
   onAfterPrimaryAction?: () => void;
 }) {
+  if (isNewFollowerNotification(item)) {
+    return (
+      <div
+        className={cn(
+          "rounded-xl border border-primary/25 bg-primary/5 px-3 py-3 text-left",
+        )}
+      >
+        <NewFollowerNotificationContent
+          seguidorId={item.seguidorId}
+          username={item.username}
+          avatarUrl={item.avatarUrl}
+          onAfterOpenProfile={onAfterPrimaryAction}
+          trailing={
+            item.dismissable ? (
+              <button
+                type="button"
+                className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label="Descartar"
+                onClick={() => onDismiss(item.id)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -79,7 +111,7 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
       >
         <Bell className="text-foreground" />
         {unreadCount > 0 ? (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground">
+          <span className="absolute -right-[2.5px] top-[0.5px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         ) : null}
@@ -106,19 +138,22 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
             ) : null}
           </SheetHeader>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-4">
             {items.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">No hay novedades por ahora.</p>
             ) : (
               <div className="space-y-3">
-                {items.map((item) => (
-                  <NotificationRow
-                    key={item.id}
-                    item={item}
-                    onDismiss={dismiss}
-                    onAfterPrimaryAction={() => setOpen(false)}
-                  />
-                ))}
+                <AnimatePresence initial={false} mode="popLayout">
+                  {items.map((item) => (
+                    <InAppNotificationItemMotion key={item.id}>
+                      <NotificationRow
+                        item={item}
+                        onDismiss={dismiss}
+                        onAfterPrimaryAction={() => setOpen(false)}
+                      />
+                    </InAppNotificationItemMotion>
+                  ))}
+                </AnimatePresence>
               </div>
             )}
           </div>

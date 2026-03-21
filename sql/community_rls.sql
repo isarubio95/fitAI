@@ -35,7 +35,7 @@ DROP POLICY IF EXISTS seguimiento_select_by_follower ON public.seguimiento;
 CREATE POLICY seguimiento_select_by_follower
 ON public.seguimiento
 FOR SELECT
-USING (seguidor_id = auth.uid());
+USING (seguidor_id = auth.uid() OR seguido_id = auth.uid());
 
 DROP POLICY IF EXISTS seguimiento_insert_by_follower ON public.seguimiento;
 CREATE POLICY seguimiento_insert_by_follower
