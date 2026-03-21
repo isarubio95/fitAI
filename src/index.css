@@ -5,7 +5,8 @@
 
 @layer base {
     :root {
-    --background: 220 14% 96%;
+    /* Tema claro: un poco más de contraste (fondo vs tarjeta, bordes, texto secundario) */
+    --background: 220 14% 94%;
     --foreground: 224 71% 4%;
     --card: 0 0% 100%;
     --card-foreground: 224 71% 4%;
@@ -13,25 +14,25 @@
     --popover-foreground: 224 71% 4%;
     --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 90%;
+    --secondary: 220 14% 88%;
     --secondary-foreground: 224 71% 4%;
-    --muted: 220 14% 90%;
-    --muted-foreground: 220 9% 34%;
+    --muted: 220 14% 88%;
+    --muted-foreground: 220 10% 30%;
     --accent: 142 71% 45%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 87%;
-    --input: 220 13% 87%;
+    --border: 220 13% 82%;
+    --input: 220 13% 82%;
     --ring: 142 71% 45%;
     --radius: 0.75rem;
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 220 12% 96%;
     --sidebar-foreground: 224 71% 4%;
     --sidebar-primary: 142 71% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 90%;
+    --sidebar-accent: 220 14% 88%;
     --sidebar-accent-foreground: 224 71% 4%;
-    --sidebar-border: 220 13% 87%;
+    --sidebar-border: 220 13% 82%;
     --sidebar-ring: 142 71% 45%;
   }
 
