@@ -4,7 +4,7 @@ import { useRestTimerContext } from "@/components/workout/RestTimerProvider";
 import { formatMSS } from "@/hooks/useRestTimer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +53,9 @@ export function ExerciseCard({
 
   const restSeconds = exercise.descanso ?? 120;
 
+  /** Misma base visual que el badge de descanso (outline + borde tema). */
+  const headerMetaBadgeClass = "gap-1";
+
   const wrapperClass = isInSuperset
     ? "p-4 space-y-3"
     : "rounded-xl border border-border bg-card p-4 space-y-3";
@@ -67,22 +70,25 @@ export function ExerciseCard({
           </div>
           <h3 className="font-semibold">{exercise.nombre}</h3>
           {onViewExerciseDetails && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onViewExerciseDetails(exercise)}
+            <button
+              type="button"
               title="Ver cómo se hace este ejercicio"
+              onClick={() => onViewExerciseDetails(exercise)}
+              className={cn(
+                badgeVariants({ variant: "outline" }),
+                "h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              )}
             >
-              <Info className="h-4 w-4" />
-            </Button>
+              <Info className="h-3.5 w-3.5" />
+            </button>
           )}
           {exercise.targetRir != null && (
-            <Badge variant="secondary" className="text-xs gap-1">
+            <Badge variant="outline" className={cn("text-xs", headerMetaBadgeClass)}>
               🎯 RIR: {exercise.targetRir}
             </Badge>
           )}
-          <Badge variant="outline" className="text-xs gap-1">
+          <Badge variant="outline" className={cn("text-xs", headerMetaBadgeClass)}>
             <Timer className="h-3 w-3" />
             {formatMSS(restSeconds)}
           </Badge>

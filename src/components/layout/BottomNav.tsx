@@ -55,6 +55,7 @@ export function BottomNav() {
       />
       <nav
         ref={navRef}
+        data-app-bottom-nav
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/5 dark:border-white/10 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-2xl md:hidden pb-[env(safe-area-inset-bottom)]"
       >
         {/* MENÚ DESPLEGABLE DE ACCIONES */}

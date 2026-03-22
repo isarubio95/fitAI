@@ -672,7 +672,10 @@ export function WorkoutLogger() {
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
-          <SheetHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
+          <SheetHeader
+            data-active-workout-sheet-header
+            className="sticky top-0 z-10 bg-card border-b border-border p-4"
+          >
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
                 <SheetTitle className="text-lg">

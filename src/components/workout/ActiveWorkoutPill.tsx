@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
+import { useDraggablePillPosition } from "@/hooks/useDraggablePillPosition";
 import { ChevronRight } from "lucide-react";
 
 function formatElapsed(startDate: string): string {
@@ -16,6 +17,8 @@ export function ActiveWorkoutPill() {
   const { data: active } = useActiveWorkout();
   const { openActiveWorkout, state } = useGlobalWorkoutDrawer();
   const [elapsed, setElapsed] = useState("");
+  /** bottom-24 = 6rem → 96px con root 16px */
+  const drag = useDraggablePillPosition("gym-log-pill-active-workout", 96, "activeWorkout");
 
   useEffect(() => {
     if (!active) return;
@@ -29,10 +32,30 @@ export function ActiveWorkoutPill() {
   if (!active || state.open) return null;
 
   return (
-    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90vw]">
-      <button
-        onClick={() => openActiveWorkout(active.id)}
-        className="group relative flex items-center gap-3 pl-2 pr-4 py-2 rounded-full 
+    <div
+      ref={drag.elRef}
+      role="button"
+      tabIndex={0}
+      className="fixed bottom-24 left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full"
+      style={drag.style}
+      onPointerDown={drag.onPointerDown}
+      onPointerMove={drag.onPointerMove}
+      onPointerUp={(e) => {
+        drag.onPointerUp(e);
+        const wasDrag = drag.didDrag();
+        drag.resetMovedFlag();
+        if (!wasDrag) openActiveWorkout(active.id);
+      }}
+      onPointerCancel={drag.onPointerCancel}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openActiveWorkout(active.id);
+        }
+      }}
+    >
+      <div
+        className="group relative flex cursor-pointer items-center gap-3 pl-2 pr-4 py-2 rounded-full 
                    bg-neutral-900/80 backdrop-blur-md 
                    border border-white/10 shadow-2xl shadow-black/40
                    hover:bg-neutral-800/80 hover:border-white/20 hover:scale-[1.02]
@@ -68,7 +91,7 @@ export function ActiveWorkoutPill() {
         
         {/* Subtle gradient glow behind */}
         <div className="absolute inset-0 -z-10 rounded-full bg-linear-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
-      </button>
+      </div>
     </div>
   );
 }
