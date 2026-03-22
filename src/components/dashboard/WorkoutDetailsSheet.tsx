@@ -58,7 +58,7 @@ function getMainGroup(muscle: string): MainMuscleGroup | null {
 }
 
 function getMainGroupsForExercise(ex: EjercicioWithDetails): MainMuscleGroup[] {
-  const bodyParts: string[] = ex.tipo_ejercicio.body_part ?? [];
+  const bodyParts: string[] = ex.tipo_ejercicio?.body_part ?? [];
   const groups = new Set<MainMuscleGroup>();
   for (const muscle of bodyParts) {
     const group = getMainGroup(muscle);
@@ -199,7 +199,7 @@ function ExerciseBlock({
   const series = ex.series ?? [];
   const doneSeries = series.filter(isSerieDone);
   const doneCount = doneSeries.length;
-  const title = ex.tipo_ejercicio.nombre;
+  const title = ex.tipo_ejercicio?.nombre ?? "Ejercicio";
   const isTopExercise = topExerciseId === ex.id;
   const best = rmByExerciseId[ex.id];
 

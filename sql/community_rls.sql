@@ -49,3 +49,135 @@ ON public.seguimiento
 FOR DELETE
 USING (seguidor_id = auth.uid());
 
+-- EJERCICIO + SERIE: lectura alineada con actividad (dueño ve todo; otros solo si es_publica).
+-- Sin esto, RLS en actividad permite ver la fila pública pero los SELECT a ejercicio/serie
+-- devuelven vacío y el perfil / feed de otros no muestra el entrenamiento completo.
+
+ALTER TABLE public.ejercicio ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS ejercicio_select_visible_actividad ON public.ejercicio;
+CREATE POLICY ejercicio_select_visible_actividad
+ON public.ejercicio
+FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.actividad a
+    WHERE a.id = ejercicio.actividad_id
+      AND (a.usuario_id = auth.uid() OR a.es_publica = true)
+  )
+);
+
+DROP POLICY IF EXISTS ejercicio_insert_owner_actividad ON public.ejercicio;
+CREATE POLICY ejercicio_insert_owner_actividad
+ON public.ejercicio
+FOR INSERT
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.actividad a
+    WHERE a.id = ejercicio.actividad_id
+      AND a.usuario_id = auth.uid()
+  )
+);
+
+DROP POLICY IF EXISTS ejercicio_update_owner_actividad ON public.ejercicio;
+CREATE POLICY ejercicio_update_owner_actividad
+ON public.ejercicio
+FOR UPDATE
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.actividad a
+    WHERE a.id = ejercicio.actividad_id
+      AND a.usuario_id = auth.uid()
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.actividad a
+    WHERE a.id = ejercicio.actividad_id
+      AND a.usuario_id = auth.uid()
+  )
+);
+
+DROP POLICY IF EXISTS ejercicio_delete_owner_actividad ON public.ejercicio;
+CREATE POLICY ejercicio_delete_owner_actividad
+ON public.ejercicio
+FOR DELETE
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.actividad a
+    WHERE a.id = ejercicio.actividad_id
+      AND a.usuario_id = auth.uid()
+  )
+);
+
+ALTER TABLE public.serie ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS serie_select_visible_actividad ON public.serie;
+CREATE POLICY serie_select_visible_actividad
+ON public.serie
+FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.ejercicio e
+    JOIN public.actividad a ON a.id = e.actividad_id
+    WHERE e.id = serie.ejercicio_id
+      AND (a.usuario_id = auth.uid() OR a.es_publica = true)
+  )
+);
+
+DROP POLICY IF EXISTS serie_insert_owner_actividad ON public.serie;
+CREATE POLICY serie_insert_owner_actividad
+ON public.serie
+FOR INSERT
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.ejercicio e
+    JOIN public.actividad a ON a.id = e.actividad_id
+    WHERE e.id = serie.ejercicio_id
+      AND a.usuario_id = auth.uid()
+  )
+);
+
+DROP POLICY IF EXISTS serie_update_owner_actividad ON public.serie;
+CREATE POLICY serie_update_owner_actividad
+ON public.serie
+FOR UPDATE
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.ejercicio e
+    JOIN public.actividad a ON a.id = e.actividad_id
+    WHERE e.id = serie.ejercicio_id
+      AND a.usuario_id = auth.uid()
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.ejercicio e
+    JOIN public.actividad a ON a.id = e.actividad_id
+    WHERE e.id = serie.ejercicio_id
+      AND a.usuario_id = auth.uid()
+  )
+);
+
+DROP POLICY IF EXISTS serie_delete_owner_actividad ON public.serie;
+CREATE POLICY serie_delete_owner_actividad
+ON public.serie
+FOR DELETE
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.ejercicio e
+    JOIN public.actividad a ON a.id = e.actividad_id
+    WHERE e.id = serie.ejercicio_id
+      AND a.usuario_id = auth.uid()
+  )
+);

@@ -20,6 +20,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { LogOut, Settings } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+/** Panel de preferencia de comunidad: se distingue del bloque plano de color de acento. */
+const preferencePanelClass =
+  "rounded-2xl border border-border/80 bg-secondary/50 p-4 shadow-sm dark:bg-secondary/25 dark:border-border/60";
 
 export function SettingsDrawer() {
   const { signOut } = useAuth();
@@ -52,8 +57,8 @@ export function SettingsDrawer() {
           {/* Privacidad en comunidad */}
           <div className="space-y-3">
             <p className="text-sm font-medium flex items-center gap-2">Comunidad</p>
-            <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-              <div className="space-y-1">
+            <div className={cn(preferencePanelClass, "flex items-center justify-between gap-4")}>
+              <div className="space-y-1 min-w-0">
                 <p className="text-sm font-semibold">Publicar entrenos</p>
                 <p className="text-[12px] text-muted-foreground">
                   {settingsLoading

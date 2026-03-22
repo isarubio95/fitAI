@@ -153,10 +153,20 @@ export default function Community() {
                 <CardContent className="space-y-2 px-6 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <Avatar className="h-9 w-9">
-                        {item.author.avatar_url && <AvatarImage src={item.author.avatar_url} alt="" />}
-                        <AvatarFallback>{initialsFromUsername(item.author.username)}</AvatarFallback>
-                      </Avatar>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (item.author.id === user?.id) openMyProfile();
+                          else openUserProfile(item.author.id);
+                        }}
+                        className="shrink-0 rounded-full outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        aria-label={`Ver perfil de ${item.author.username ?? "usuario"}`}
+                      >
+                        <Avatar className="h-9 w-9">
+                          {item.author.avatar_url && <AvatarImage src={item.author.avatar_url} alt="" />}
+                          <AvatarFallback>{initialsFromUsername(item.author.username)}</AvatarFallback>
+                        </Avatar>
+                      </button>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{item.author.username}</p>
                         <p className="text-xs text-muted-foreground">
