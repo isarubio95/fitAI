@@ -1,4 +1,4 @@
-import { forwardRef, useState } from "react";
+import { useState } from "react";
 import { useLastPerformance } from "@/hooks/useLastPerformance";
 import { useRestTimerContext } from "@/components/workout/RestTimerProvider";
 import { formatMSS } from "@/hooks/useRestTimer";
@@ -15,9 +15,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Plus, Info, Timer, GripVertical, Check } from "lucide-react";
+import { Trash2, Plus, Info, Timer, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
+import { ActiveWorkoutCheckbox } from "./ActiveWorkoutCheckbox";
 
 interface ExerciseCardProps {
   exercise: ExerciseFormData;
@@ -139,15 +140,12 @@ export function ExerciseCard({
           <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
           <div className="flex items-center justify-center justify-self-center mr-4">
             {onSetCompleted ? (
-              <Button
-                variant={s.completed ? "default" : "outline"}
-                size="icon"
-                className="h-8 w-8 shrink-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                onClick={() => onSetCompleted(si, !s.completed)}
+              <ActiveWorkoutCheckbox
+                checked={!!s.completed}
+                onChange={(next) => onSetCompleted(si, next)}
                 title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
-              >
-                {s.completed ? <Check className="h-4 w-4" /> : null}
-              </Button>
+                size={32}
+              />
             ) : (
               <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
             )}

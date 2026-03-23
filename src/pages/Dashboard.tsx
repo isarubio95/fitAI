@@ -366,13 +366,13 @@ const Dashboard = () => {
         );
       case 'calendar':
         return (
-          <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-            <CardHeader className="space-y-3 px-6 pt-8 pb-4">
+          <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x bg-transparent shadow-none">
+            <CardHeader className="space-y-3 px-6 pt-8 pb-6">
               <div className="flex w-full flex-row items-center justify-between gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="shrink-0 gap-2"
+                  className="shrink-0 gap-2 bg-card border-border hover:bg-card/80"
                   disabled={!plannedKnown}
                   onClick={() => {
                     if (!plannedKnown) return;

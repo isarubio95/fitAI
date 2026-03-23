@@ -14,14 +14,10 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Pencil, Trash2, Eye } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -52,6 +48,7 @@ import { useRoutines } from "@/hooks/useRoutines";
 import { useDeleteWorkout } from "@/hooks/useWorkouts";
 import { useToast } from "@/hooks/use-toast";
 import { Dumbbell } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MonthlyPlannerProps {
   month: Date;
@@ -130,7 +127,22 @@ export function MonthlyPlanner({
   const [editPlanned, setEditPlanned] = useState<PlannedRoutine | null>(null);
   const [editDate, setEditDate] = useState("");
   const [editRutinaId, setEditRutinaId] = useState("");
-  const [popoverOpen, setPopoverOpen] = useState<string | null>(null);
+  const [expandedWeekIndex, setExpandedWeekIndex] = useState<number | null>(null);
+  const [expandedDayKey, setExpandedDayKey] = useState<string | null>(null);
+
+  const weeks = useMemo(() => {
+    const res: Date[][] = [];
+    for (let i = 0; i < days.length; i += 7) {
+      res.push(days.slice(i, i + 7) as Date[]);
+    }
+    return res;
+  }, [days]);
+
+  // Reset al cambiar de mes para evitar que se muestre información de un día anterior.
+  useEffect(() => {
+    setExpandedWeekIndex(null);
+    setExpandedDayKey(null);
+  }, [month]);
 
   // Evita que quede algún elemento con foco/outline visible al abrir el diálogo de edición.
   useEffect(() => {
@@ -178,229 +190,284 @@ export function MonthlyPlanner({
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-7 border-t border-l border-border bg-transparent rounded-b-xl overflow-hidden">
-        {days.map((day, i) => {
-          const inMonth = isSameMonth(day, month);
-          const today = isToday(day);
-          const key = format(day, "yyyy-MM-dd");
-          const dayWorkouts = workoutsByDay.get(key) || [];
-          const dayPlanned = plannedByDay.get(key) || [];
-          const now = startOfDay(new Date());
-          const dayStart = startOfDay(day);
-          const plannedCompleted = dayPlanned.some((p) => !!p.actividad_id);
-          const plannedMissed = dayPlanned.some((p) => !p.actividad_id && isBefore(dayStart, now));
+      <div className="bg-transparent rounded-b-xl overflow-hidden">
+        {weeks.map((weekDays, weekIndex) => (
+          <div key={weekIndex}>
+            <div className="grid grid-cols-7">
+              {weekDays.map((day, colIndex) => {
+                const i = weekIndex * 7 + colIndex;
+                const inMonth = isSameMonth(day, month);
+                const today = isToday(day);
+                const key = format(day, "yyyy-MM-dd");
+                const dayWorkouts = workoutsByDay.get(key) || [];
+                const dayPlanned = plannedByDay.get(key) || [];
+                const hasContent = dayWorkouts.length > 0 || dayPlanned.length > 0;
+                const isTrained = dayWorkouts.length > 0;
+                const isScheduled = !isTrained && dayPlanned.length > 0;
 
-          // Identificamos las esquinas de la última fila
-          const isBottomLeft = i === days.length - 7;
-          const isBottomRight = i === days.length - 1;
-          const isLastRow = i >= days.length - 7;
+                const now = startOfDay(new Date());
+                const dayStart = startOfDay(day);
+                const isPast = isBefore(dayStart, now) && !today;
 
-          const cellClass = `
-                relative min-h-[80px] md:min-h-[100px] border-r border-border p-1 cursor-pointer
-                transition-colors hover:bg-accent/30
-                ${!isLastRow ? "border-b" : ""}
-                ${today ? "bg-accent/15" : ""}
-                ${!inMonth ? "opacity-40" : ""}
-                ${isBottomLeft ? "rounded-bl-xl" : ""}
-                ${isBottomRight ? "rounded-br-xl" : ""}
-              `;
+                const isLastWeekRow = weekIndex === weeks.length - 1;
+                const isBottomLeft = isLastWeekRow && colIndex === 0;
+                const isBottomRight = isLastWeekRow && colIndex === 6;
 
-          const cellContent = (
-            <>
-              {/* Day number */}
-              <span
-                className={`
-                  absolute top-1 right-1.5 text-xs font-medium
-                  ${today ? "text-primary font-bold" : "text-foreground"}
-                `}
-              >
-                {format(day, "d")}
-              </span>
+                const isSelected = expandedDayKey === key && expandedWeekIndex === weekIndex;
 
-              {/* Indicador visual de programación (solo círculo) */}
-              {dayPlanned.length > 0 && (
-                <span
-                  className={`
-                    absolute top-1 left-1.5 h-2 w-2 rounded-full
-                    ${plannedCompleted ? "bg-green-500" : plannedMissed ? "bg-zinc-600" : "bg-orange-500"}
-                  `}
-                />
-              )}
+                const handleClick = () => {
+                  if (!hasContent) {
+                    setExpandedDayKey(null);
+                    setExpandedWeekIndex(null);
+                    onDayClick(day);
+                    return;
+                  }
 
-              {/* Workout pills: solo visual (clic en la celda abre el popover) */}
-              <div className="mt-5 space-y-0.5 overflow-hidden">
-                {dayWorkouts.slice(0, 3).map((w) => (
-                  <div key={w.id} className="flex items-center gap-1 rounded px-1 py-0.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-purple-500 shrink-0" />
-                    <span className="text-[10px] md:text-xs truncate text-foreground">{w.titulo}</span>
-                  </div>
-                ))}
-                {dayWorkouts.length > 3 && (
-                  <span className="text-[10px] text-muted-foreground pl-1">+{dayWorkouts.length - 3} más</span>
-                )}
-              </div>
-            </>
-          );
+                  if (isSelected) {
+                    setExpandedDayKey(null);
+                    setExpandedWeekIndex(null);
+                    return;
+                  }
 
-          return (
-            <Popover key={i} open={popoverOpen === key} onOpenChange={(open) => setPopoverOpen(open ? key : null)}>
-              <PopoverTrigger asChild>
-                <div className={cellClass}>{cellContent}</div>
-              </PopoverTrigger>
-              <PopoverContent className="w-72 p-2 max-h-[80vh] overflow-y-auto" align="start" onClick={(e) => e.stopPropagation()}>
-                <p className="text-xs font-medium text-muted-foreground mb-2 px-1">
-                  {format(day, "d MMM yyyy", { locale: es })}
-                </p>
+                  setExpandedDayKey(key);
+                  setExpandedWeekIndex(weekIndex);
+                };
 
-                {/* Entrenamientos realizados */}
-                {dayWorkouts.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5 px-1">
-                      Entrenamientos realizados
-                    </p>
-                    <div className="space-y-1.5">
-                      {dayWorkouts.map((w) => {
-                        const totalSets = w.ejercicios.reduce((acc, ej) => acc + (ej.series?.length ?? 0), 0);
-                        return (
-                          <div
-                            key={w.id}
-                            className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium truncate">{w.titulo}</p>
-                              <p className="text-[11px] text-muted-foreground">
-                                {w.ejercicios.length} ejercicios · {totalSets} series
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-0.5 shrink-0">
-                              {/** Details */ }
-                              {onWorkoutDetailsClick && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => {
-                                    onWorkoutDetailsClick(w.id);
-                                    setPopoverOpen(null);
-                                  }}
-                                  title="Ver detalles"
-                                >
-                                  <Eye className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => { onWorkoutClick(w.id); setPopoverOpen(null); }}
-                                title="Editar"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-destructive hover:text-destructive"
-                                onClick={() => { setConfirmDeleteWorkout(w); setPopoverOpen(null); }}
-                                title="Eliminar"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
+                const circleFill = isTrained
+                  ? "bg-gradient-to-br from-primary/65 via-primary/45 to-accent/70"
+                  : isScheduled
+                    ? "bg-gradient-to-br from-orange-500/55 via-orange-500/35 to-orange-400/50"
+                    : isPast
+                      ? "bg-card/80"
+                      : "bg-card/95";
+
+                const circleText = isTrained
+                  ? "text-primary-foreground"
+                  : isScheduled
+                    ? "text-foreground"
+                    : isPast
+                      ? "text-muted-foreground"
+                      : "text-foreground";
+
+                const circleBorder = isTrained
+                  ? isPast
+                    ? "border-primary/22"
+                    : "border-primary/40"
+                  : isPast
+                    ? "border-border/70"
+                    : "border-border/12";
+
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={handleClick}
+                    className={cn(
+                      "group relative min-h-[80px] md:min-h-[100px] p-1 cursor-pointer",
+                      isBottomLeft && "rounded-bl-xl",
+                      isBottomRight && "rounded-br-xl",
+                      !inMonth && "opacity-40",
+                      "flex items-center justify-center",
+                    )}
+                    aria-label={`Día ${format(day, "d")} ${inMonth ? "" : "(fuera de mes)"}`}
+                    aria-expanded={isSelected}
+                  >
+                    <span
+                      className={cn(
+                        "relative flex items-center justify-center select-none w-9 h-9 rounded-full",
+                        "p-0 bg-transparent",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "relative flex items-center justify-center select-none w-full h-full rounded-full border text-xs font-semibold",
+                          circleFill,
+                          circleText,
+                          today ? "border-transparent" : circleBorder,
+                          "transition-all duration-200",
+                          isSelected && !today && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background",
+                          today
+                            ? "group-hover:scale-[1.03]"
+                            : "group-hover:scale-[1.03] group-hover:border-primary/50 group-hover:ring-1 group-hover:ring-primary/25 group-hover:ring-offset-0",
+                        )}
+                      >
+                        <span className={cn("relative z-10", today && "text-primary font-bold")}>
+                          {format(day, "d")}
+                        </span>
+                        {today && (
+                          <span className="pointer-events-none absolute bottom-1 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full bg-primary" />
+                        )}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <AnimatePresence initial={false}>
+              {expandedWeekIndex === weekIndex && expandedDayKey && (
+                (() => {
+                  const expandedDate = new Date(`${expandedDayKey}T00:00:00`);
+                  const expandedWorkouts = workoutsByDay.get(expandedDayKey) || [];
+                  const expandedPlanned = plannedByDay.get(expandedDayKey) || [];
+                  const dayStart = startOfDay(expandedDate);
+                  const now = startOfDay(new Date());
+
+                  return (
+                    <motion.div
+                      key={expandedDayKey}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+                      className="bg-card"
+                    >
+                      <div className="px-4 py-3">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">
+                          {format(expandedDate, "d MMM yyyy", { locale: es })}
+                        </p>
+
+                        {/* Entrenamientos realizados */}
+                        {expandedWorkouts.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+                              Entrenamientos realizados
+                            </p>
+                            <div className="space-y-1.5">
+                              {expandedWorkouts.map((w) => {
+                                const totalSets = w.ejercicios.reduce((acc, ej) => acc + (ej.series?.length ?? 0), 0);
+                                return (
+                                  <div
+                                    key={w.id}
+                                    className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2"
+                                  >
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-medium truncate">{w.titulo}</p>
+                                      <p className="text-[11px] text-muted-foreground">
+                                        {w.ejercicios.length} ejercicios · {totalSets} series
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-0.5 shrink-0">
+                                      {onWorkoutDetailsClick && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-7 w-7"
+                                          onClick={() => onWorkoutDetailsClick(w.id)}
+                                          title="Ver detalles"
+                                        >
+                                          <Eye className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        onClick={() => onWorkoutClick(w.id)}
+                                        title="Editar"
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 text-destructive hover:text-destructive"
+                                        onClick={() => setConfirmDeleteWorkout(w)}
+                                        title="Eliminar"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                        )}
 
-                {/* Programado */}
-                {dayPlanned.length > 0 && (
-                  <div className={dayWorkouts.length > 0 ? "mb-3" : ""}>
-                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5 px-1">
-                      Programado
-                    </p>
-                <div className="space-y-1.5">
-                  {dayPlanned.map((p) => {
-                    const isCompleted = !!p.actividad_id;
-                    const isMissed = !p.actividad_id && isBefore(dayStart, now);
-                    const isPending = !p.actividad_id && !isBefore(dayStart, now);
-                    return (
-                      <div
-                        key={p.id}
-                        className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{p.rutina?.nombre ?? "Rutina"}</p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {isCompleted && "Completado"}
-                            {isPending && "Pendiente"}
-                            {isMissed && "Perdido"}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          {onPlannedStart && isPending && (
-                            <Button
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={() => {
-                                onPlannedStart(p);
-                                setPopoverOpen(null);
-                              }}
-                            >
-                              Iniciar
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => {
-                              setEditPlanned(p);
-                              setEditDate(p.fecha_programada.slice(0, 10));
-                              setEditRutinaId(p.rutina_id);
-                              setPopoverOpen(null);
-                            }}
-                            title="Editar"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => {
-                              setConfirmDeletePlanned(p);
-                              setPopoverOpen(null);
-                            }}
-                            title="Eliminar"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                        {/* Programado */}
+                        {expandedPlanned.length > 0 && (
+                          <div className={expandedWorkouts.length > 0 ? "mb-3" : ""}>
+                            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+                              Programado
+                            </p>
+                            <div className="space-y-1.5">
+                              {expandedPlanned.map((p) => {
+                                const isCompleted = !!p.actividad_id;
+                                const isMissed = !p.actividad_id && isBefore(dayStart, now);
+                                const isPending = !p.actividad_id && !isBefore(dayStart, now);
+                                return (
+                                  <div
+                                    key={p.id}
+                                    className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2"
+                                  >
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-medium truncate">
+                                        {p.rutina?.nombre ?? "Rutina"}
+                                      </p>
+                                      <p className="text-[11px] text-muted-foreground">
+                                        {isCompleted && "Completado"}
+                                        {isPending && "Pendiente"}
+                                        {isMissed && "Perdido"}
+                                      </p>
+                                    </div>
+                                    <div className="flex items-center gap-0.5 shrink-0">
+                                      {onPlannedStart && isPending && (
+                                        <Button
+                                          size="sm"
+                                          className="h-7 text-xs"
+                                          onClick={() => onPlannedStart(p)}
+                                        >
+                                          Iniciar
+                                        </Button>
+                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        onClick={() => {
+                                          setEditPlanned(p);
+                                          setEditDate(p.fecha_programada.slice(0, 10));
+                                          setEditRutinaId(p.rutina_id);
+                                        }}
+                                        title="Editar"
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 text-destructive hover:text-destructive"
+                                        onClick={() => setConfirmDeletePlanned(p)}
+                                        title="Eliminar"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-2 gap-2"
+                          onClick={() => onDayClick(expandedDate)}
+                        >
+                          <Dumbbell className="h-4 w-4" />
+                          Nuevo entrenamiento
+                        </Button>
                       </div>
-                    );
-                  })}
-                </div>
-                  </div>
-                )}
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-2 gap-2"
-                  onClick={() => {
-                    onDayClick(day);
-                    setPopoverOpen(null);
-                  }}
-                >
-                  <Dumbbell className="h-4 w-4" />
-                  Nuevo entrenamiento
-                </Button>
-              </PopoverContent>
-            </Popover>
-          );
-        })}
+                    </motion.div>
+                  );
+                })()
+              )}
+            </AnimatePresence>
+          </div>
+        ))}
       </div>
 
       {/* Confirmar eliminar entrenamiento */}
