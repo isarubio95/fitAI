@@ -413,7 +413,7 @@ const Dashboard = () => {
                 </Tabs>
               </div>
             </CardHeader>
-            <CardContent className="p-0 pb-8 pt-0">
+            <CardContent className="p-0 pb-7 pt-0">
               {calendarView === "month" ? (
                 <MonthlyPlanner
                   month={calendarMonth}
