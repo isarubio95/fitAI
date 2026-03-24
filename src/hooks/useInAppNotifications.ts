@@ -17,7 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
  * `gym-log.notifications.dismissed:<userId>` los ids `design-preview-*`, o cambia
  * esos ids en `buildDesignPreviewInAppNotifications` abajo.
  */
-const HARDCODE_ALL_IN_APP_NOTIFICATIONS_FOR_DESIGN = true;
+const HARDCODE_ALL_IN_APP_NOTIFICATIONS_FOR_DESIGN = false;
 
 const FOLLOWER_SEED_LS = (userId: string) => `gym-log.notifications.follower-seed:${userId}`;
 const FOLLOWER_TOAST_SESSION = (userId: string) => `gym-log.follower-toast-session:${userId}`;
