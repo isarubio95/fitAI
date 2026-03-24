@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   DndContext,
@@ -95,6 +96,7 @@ const Routines = () => {
   const [sortDir, setSortDir] = useState<SortDir>(() => loadRoutinesSortPreference().sortDir);
 
   const [customOrder, setCustomOrder] = useState<RutinaWithDetails[] | null>(null);
+  const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     if (location.state?.action === "new") {
@@ -111,6 +113,11 @@ const Routines = () => {
   useEffect(() => {
     saveRoutinesSortPreference(sortMode, sortDir);
   }, [sortMode, sortDir]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setHeaderActionsSlot(document.getElementById("header-actions-slot"));
+  }, []);
 
   const isDragMode = sortMode === "custom";
 
@@ -235,12 +242,9 @@ const Routines = () => {
 
   return (
     <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
-      <header className="flex items-center justify-between px-6 md:px-0">
-        <div>
-          <h1 className="text-2xl font-bold">Rutinas</h1>
-          <p className="text-sm text-muted-foreground">Tus plantillas de entrenamiento</p>
-        </div>
-        {!!routines?.length && (
+      {headerActionsSlot &&
+        routines?.length &&
+        createPortal(
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1.5">
@@ -278,9 +282,9 @@ const Routines = () => {
                 Orden manual {sortMode === "custom" && <Check className="ml-auto h-4 w-4" />}
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu>,
+          headerActionsSlot
         )}
-      </header>
 
       {isLoading ? (
         <div className="grid gap-3">

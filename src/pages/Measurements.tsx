@@ -111,10 +111,6 @@ const Measurements = () => {
   return (
     <div className="w-full min-w-0 p-4 md:p-8 pt-6 max-w-2xl mx-auto pb-28">
       <header>
-        <div>
-          <h1 className="text-2xl font-bold">Medidas Corporales</h1>
-          <p className="text-sm text-muted-foreground">Seguimiento de tu composición</p>
-        </div>
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
             <SheetHeader>

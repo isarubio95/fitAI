@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Users, UserPlus, UserCheck } from "lucide-react";
+import { UserPlus, UserCheck } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useUserSearch } from "@/hooks/useUserSearch";
@@ -39,14 +39,6 @@ export default function Community() {
 
   return (
     <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
-      <header className="space-y-2 px-6 md:px-0">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold">Comunidad</h1>
-        </div>
-        <p className="text-sm text-muted-foreground">Busca usuarios y sigue sus entrenos públicos.</p>
-      </header>
-
       <section className="space-y-3">
         <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
           <CardHeader>

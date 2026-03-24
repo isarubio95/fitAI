@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
@@ -173,6 +174,7 @@ const Dashboard = () => {
   }, [pendingOpenPlanWizard, plannedLoading, plannedKnown, hasPlanned]);
 
   const [isDragMode, setIsDragMode] = useState(false); // Estado para controlar el modo edición
+  const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLElement | null>(null);
 
   const [workoutDetailsOpen, setWorkoutDetailsOpen] = useState(false);
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
@@ -200,6 +202,11 @@ const Dashboard = () => {
   useEffect(() => {
     localStorage.setItem('dashboard-widget-order', JSON.stringify(widgetOrder));
   }, [widgetOrder]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setHeaderActionsSlot(document.getElementById("header-actions-slot"));
+  }, []);
 
   const totalSets = lastWorkout?.ejercicios.reduce(
     (acc, ej) => acc + ej.series.length,
@@ -366,7 +373,7 @@ const Dashboard = () => {
         );
       case 'calendar':
         return (
-          <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x bg-transparent shadow-none">
+          <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
             <CardHeader className="space-y-3 px-6 pt-8 pb-6">
               <div className="flex w-full flex-row items-center justify-between gap-2">
                 <Button
@@ -575,25 +582,19 @@ const Dashboard = () => {
 
   return (
     <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
-      <header className="flex items-center justify-between px-6 md:px-0">
-        <div>
-          <h1 className="text-2xl font-bold">TrackGym</h1>
-          <p className="text-sm text-muted-foreground">Tu progreso esta semana</p>
-        </div>
-        
-        {/* Botón explícito para habilitar el Drag & Drop */}
-        <Button 
-          variant={isDragMode ? "default" : "outline"} 
-          size="sm" 
-          onClick={() => setIsDragMode(!isDragMode)}
-          className="gap-2 transition-all"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-          <span className="hidden sm:inline">
-            {isDragMode ? "Hecho" : "Reordenar"}
-          </span>
-        </Button>
-      </header>
+      {headerActionsSlot &&
+        createPortal(
+          <Button
+            variant={isDragMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setIsDragMode(!isDragMode)}
+            className="gap-2 transition-all"
+          >
+            <ArrowUpDown className="h-4 w-4" />
+            <span>{isDragMode ? "Hecho" : "Reordenar"}</span>
+          </Button>,
+          headerActionsSlot
+        )}
 
       <DashboardNotificationPills />
 

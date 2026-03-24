@@ -139,7 +139,7 @@ export function BottomNav() {
         >
           <Activity className="h-6 w-6 shrink-0 text-primary" />
           <div className="min-w-0">
-            <p className="font-medium">Entrenamiento Libre</p>
+            <p className="font-medium">Entreno Libre</p>
             <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
           </div>
         </button>

@@ -51,7 +51,7 @@ export function DesktopSidebar() {
             <DropdownMenuItem className="text-base" onClick={() => openNew()}>
               <Activity className="h-5 w-5 mr-2 shrink-0 text-primary" />
               <div className="min-w-0">
-                <p className="font-medium">Entrenamiento Libre</p>
+                <p className="font-medium">Entreno Libre</p>
                 <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
               </div>
             </DropdownMenuItem>

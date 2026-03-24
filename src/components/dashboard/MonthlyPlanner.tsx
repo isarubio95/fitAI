@@ -283,7 +283,7 @@ export function MonthlyPlanner({
                           "relative flex items-center justify-center select-none w-full h-full rounded-full border text-xs font-semibold",
                           circleFill,
                           circleText,
-                          today ? "border-transparent" : circleBorder,
+                          today ? "border-primary" : circleBorder,
                           "transition-all duration-200",
                           isSelected && !today && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background",
                           today
@@ -294,9 +294,6 @@ export function MonthlyPlanner({
                         <span className={cn("relative z-10", today && "text-primary font-bold")}>
                           {format(day, "d")}
                         </span>
-                        {today && (
-                          <span className="pointer-events-none absolute bottom-1 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full bg-primary" />
-                        )}
                       </span>
                     </span>
                   </button>

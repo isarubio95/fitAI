@@ -151,12 +151,7 @@ const WorkoutHistory = () => {
 
   return (
     <div className="w-full min-w-0 pb-28 pt-6 md:mx-auto md:max-w-2xl md:px-8">
-      <header className="px-6 md:px-0">
-        <h1 className="text-2xl font-bold">Progreso</h1>
-        <p className="text-sm text-muted-foreground">Tu rendimiento y estadísticas</p>
-      </header>
-
-      <div className="mt-6 space-y-3">
+      <div className="space-y-3">
       {/* ── KPI Grid (sin gap ni fondo de card; solo líneas divisorias) ── */}
       <div className="grid grid-cols-2 gap-0">
         {kpiCards.map((kpi, i) => {

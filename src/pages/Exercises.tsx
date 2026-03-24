@@ -136,11 +136,7 @@ const Exercises = () => {
 
   return (
     <div className="w-full min-w-0 p-4 md:p-8 pt-6 space-y-6 max-w-2xl mx-auto">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Ejercicios</h1>
-          <p className="text-sm text-muted-foreground">Catálogo de ejercicios disponibles</p>
-        </div>
+      <header className="flex items-center justify-end">
         {!!exercises?.length && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

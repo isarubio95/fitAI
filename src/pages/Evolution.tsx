@@ -29,7 +29,7 @@ export default function EvolutionPage() {
     >
       <TabsList className={sectionPillTabsList}>
         <TabsTrigger value="history" className={sectionPillTabsTrigger}>
-          Entrenamientos
+          Entrenos
         </TabsTrigger>
         <TabsTrigger value="measurements" className={sectionPillTabsTrigger}>
           Medidas
