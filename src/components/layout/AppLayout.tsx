@@ -85,8 +85,6 @@ export function AppLayout() {
         setAreHeaderPillsCollapsed(false);
       } else if (currentY > lastY + 6 && currentY > 56) {
         setAreHeaderPillsCollapsed(true);
-      } else if (currentY < lastY - 6) {
-        setAreHeaderPillsCollapsed(false);
       }
 
       lastScrollYRef.current = currentY;
