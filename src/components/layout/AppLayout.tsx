@@ -40,28 +40,6 @@ export function AppLayout() {
     },
   });
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!user) return <Navigate to="/auth" replace />;
-
-  if (profileLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!profileSetup?.username || !profileSetup.username.trim()) {
-    return <UsernameSetup />;
-  }
-
   const currentTab = searchParams.get("tab") || "";
   const pageTitle =
     location.pathname === "/"
@@ -90,11 +68,13 @@ export function AppLayout() {
         : "";
 
   useEffect(() => {
+    if (loading || !user || profileLoading || !profileSetup?.username || !profileSetup.username.trim()) return;
     setAreHeaderPillsCollapsed(false);
     lastScrollYRef.current = window.scrollY;
-  }, [location.pathname, currentTab]);
+  }, [location.pathname, currentTab, loading, user, profileLoading, profileSetup]);
 
   useEffect(() => {
+    if (loading || !user || profileLoading || !profileSetup?.username || !profileSetup.username.trim()) return;
     if (!showHeaderPills) return;
 
     const onScroll = () => {
@@ -114,7 +94,29 @@ export function AppLayout() {
 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [showHeaderPills]);
+  }, [showHeaderPills, loading, user, profileLoading, profileSetup]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/auth" replace />;
+
+  if (profileLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!profileSetup?.username || !profileSetup.username.trim()) {
+    return <UsernameSetup />;
+  }
 
   return (
     <GlobalWorkoutDrawerProvider>
