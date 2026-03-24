@@ -38,7 +38,7 @@ export default function Community() {
   }, [feed]);
 
   return (
-    <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
+    <div className="w-full min-w-0 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
       <section className="space-y-3">
         <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
           <CardHeader>

@@ -581,7 +581,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
+    <div className="w-full min-w-0 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
       {headerActionsSlot &&
         createPortal(
           <Button
@@ -591,7 +591,7 @@ const Dashboard = () => {
             className="gap-2 transition-all"
           >
             <ArrowUpDown className="h-4 w-4" />
-            <span>{isDragMode ? "Hecho" : "Reordenar"}</span>
+            <span>{isDragMode ? "Hecho" : ""}</span>
           </Button>,
           headerActionsSlot
         )}
