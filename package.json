@@ -10,7 +10,14 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "scrape:exercises": "node scripts/scrape-fitcron-exercises.mjs",
+    "normalize:instructions-csv": "node scripts/normalizar-instrucciones-csv.mjs",
+    "fill:gif-url-csv": "node scripts/rellenar-gif-url-ejercicios.mjs",
+    "compare:exercises": "node scripts/comparar-ejercicios.mjs",
+    "generate:rename-sql": "node scripts/generar-sql-renombres.mjs",
+    "generate:delete-types-sql": "node scripts/generar-sql-borrar-tipos-ejercicio.mjs",
+    "generate:insert-fitcron-sql": "node scripts/generar-sql-insert-fitcron.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

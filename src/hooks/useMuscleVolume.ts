@@ -64,7 +64,7 @@ export function useMuscleVolume(period: TimePeriod = "week") {
       // Get exercises with their tipo_ejercicio (for body_part)
       const { data: ejercicios, error: ejErr } = await supabase
         .from("ejercicio")
-        .select("id, tipo_ejercicio:tipo_ejercicio_id(body_part)")
+        .select("id, tipo_ejercicio:tipo_ejercicio_id(musculos_involucrados)")
         .in("actividad_id", actIds);
 
       if (ejErr) throw ejErr;
@@ -98,7 +98,7 @@ export function useMuscleVolume(period: TimePeriod = "week") {
         const sets = setCountMap[ej.id] || 0;
         if (sets === 0) continue;
 
-        const bodyParts: string[] = (ej.tipo_ejercicio as any)?.body_part || [];
+        const bodyParts: string[] = (ej.tipo_ejercicio as any)?.musculos_involucrados || [];
         for (const muscle of bodyParts) {
           specificVolume[muscle] = (specificVolume[muscle] || 0) + sets;
           const group = getMainGroup(muscle);

@@ -11,7 +11,10 @@ import { Search, User } from "lucide-react";
 interface ExerciseSelectorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (tipoId: string, nombre: string) => void;
+  onSelect: (
+    catalogRef: { tipo_ejercicio_id?: string; usuario_ejercicio_id?: string },
+    nombre: string
+  ) => void;
 }
 
 export function ExerciseSelector({ open, onOpenChange, onSelect }: ExerciseSelectorProps) {
@@ -40,11 +43,16 @@ export function ExerciseSelector({ open, onOpenChange, onSelect }: ExerciseSelec
             <CommandGroup>
               {filtered?.map((tipo) => {
                 const isOwn = (tipo as any).usuario_id === user?.id;
+                const source = (tipo as any).__source as "usuario" | "catalogo" | undefined;
+                const catalogRef =
+                  source === "usuario"
+                    ? { usuario_ejercicio_id: tipo.id }
+                    : { tipo_ejercicio_id: tipo.id };
                 return (
                   <CommandItem
                     key={tipo.id}
                     value={tipo.nombre}
-                    onSelect={() => onSelect(tipo.id, tipo.nombre)}
+                    onSelect={() => onSelect(catalogRef, tipo.nombre)}
                     className="cursor-pointer flex items-center justify-between"
                   >
                     <span>{tipo.nombre}</span>

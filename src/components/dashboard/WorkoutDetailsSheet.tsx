@@ -58,7 +58,7 @@ function getMainGroup(muscle: string): MainMuscleGroup | null {
 }
 
 function getMainGroupsForExercise(ex: EjercicioWithDetails): MainMuscleGroup[] {
-  const bodyParts: string[] = ex.tipo_ejercicio?.body_part ?? [];
+  const bodyParts: string[] = ex.tipo_ejercicio?.musculos_involucrados ?? [];
   const groups = new Set<MainMuscleGroup>();
   for (const muscle of bodyParts) {
     const group = getMainGroup(muscle);

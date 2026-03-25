@@ -64,8 +64,8 @@ const MUSCLE_GROUP_ICONS: Record<MainMuscleGroup, typeof Dumbbell> = {
   Core: LayoutGrid,
 };
 
-function getExerciseIcon(ex: { body_part?: string[] | null }) {
-  const group = getMainGroupFromBodyPart(ex.body_part as string[] | null);
+function getExerciseIcon(ex: { musculos_involucrados?: string[] | null }) {
+  const group = getMainGroupFromBodyPart(ex.musculos_involucrados as string[] | null);
   return group ? MUSCLE_GROUP_ICONS[group] : Dumbbell;
 }
 
@@ -111,7 +111,7 @@ const Exercises = () => {
         nombre: newName,
         descripcion: newDesc,
         usuario_id: user.id,
-        body_part: newBodyParts,
+        musculos_involucrados: newBodyParts,
       });
       toast({ title: "Ejercicio creado" });
       setCreateOpen(false);
@@ -177,7 +177,7 @@ const Exercises = () => {
             ))
           : sortedExercises.map((ex) => {
               const isOwn = (ex as any).usuario_id === user?.id;
-              const IconComponent = getExerciseIcon(ex as { body_part?: string[] | null });
+              const IconComponent = getExerciseIcon(ex as { musculos_involucrados?: string[] | null });
               return (
                 <Card
                   key={ex.id}

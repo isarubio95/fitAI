@@ -9,21 +9,38 @@ export function useExerciseCatalog(search?: string) {
     queryKey: ["exerciseCatalog", search, user?.id],
     staleTime: 5 * 60 * 1000, // 5 minutos: catálogo cambia poco
     queryFn: async () => {
-      let query = supabase
+      // Catálogo (FitCron/sistema)
+      let queryCatalogo = supabase
         .from("tipo_ejercicio")
-        .select("*")
+        .select("*, body_part:musculos_involucrados")
+        .order("nombre");
+
+      // Ejercicios del usuario (privados)
+      let queryUsuario = supabase
+        .from("usuario_ejercicio")
+        .select("*, body_part:musculos_involucrados")
         .order("nombre");
 
       if (search) {
-        query = query.ilike("nombre", `%${search}%`);
+        queryCatalogo = queryCatalogo.ilike("nombre", `%${search}%`);
+        queryUsuario = queryUsuario.ilike("nombre", `%${search}%`);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      // Importante: usuario_ejercicio tiene RLS, así que sin user devolverá vacío
+      const [{ data: catalogo, error: catErr }, { data: usuario, error: usrErr }] =
+        await Promise.all([queryCatalogo, user ? queryUsuario.eq("usuario_id", user.id) : queryUsuario]);
+
+      if (catErr) throw catErr;
+      if (usrErr) throw usrErr;
+
+      const userId = user?.id;
+      const merged = [
+        ...(usuario ?? []).map((x) => ({ ...(x as any), __source: "usuario" as const })),
+        ...(catalogo ?? []).map((x) => ({ ...(x as any), __source: "catalogo" as const })),
+      ];
 
       // Sort: user exercises first, then system, then alphabetical within each group
-      const userId = user?.id;
-      return (data ?? []).sort((a, b) => {
+      return merged.sort((a, b) => {
         const aIsUser = (a as any).usuario_id === userId ? 0 : 1;
         const bIsUser = (b as any).usuario_id === userId ? 0 : 1;
         if (aIsUser !== bIsUser) return aIsUser - bIsUser;
@@ -37,10 +54,26 @@ export function useCreateExercise() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ nombre, descripcion, usuario_id, body_part }: { nombre: string; descripcion?: string; usuario_id: string; body_part?: string[] }) => {
+    mutationFn: async ({
+      nombre,
+      descripcion,
+      usuario_id,
+      musculos_involucrados,
+    }: {
+      nombre: string;
+      descripcion?: string;
+      usuario_id: string;
+      musculos_involucrados?: string[];
+    }) => {
       const { data, error } = await supabase
-        .from("tipo_ejercicio")
-        .insert({ nombre: nombre.trim(), descripcion: descripcion?.trim() || null, usuario_id, body_part: body_part?.length ? body_part : null } as any)
+        .from("usuario_ejercicio")
+        .insert({
+          nombre: nombre.trim(),
+          descripcion: descripcion?.trim() || null,
+          usuario_id,
+          musculos_involucrados:
+            musculos_involucrados?.length ? musculos_involucrados : null,
+        } as any)
         .select()
         .single();
       if (error) throw error;
@@ -57,7 +90,7 @@ export function useDeleteExercise() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("tipo_ejercicio").delete().eq("id", id);
+      const { error } = await supabase.from("usuario_ejercicio").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

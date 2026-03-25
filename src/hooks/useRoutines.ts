@@ -22,7 +22,7 @@ export function useRoutines() {
       const rutinaIds = rutinas.map((r) => r.id);
       const { data: ejercicios, error: ejError } = await supabase
         .from("rutina_ejercicio")
-        .select("*, tipo_ejercicio(*)")
+        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
         .in("rutina_id", rutinaIds)
         .order("orden");
       if (ejError) throw ejError;
@@ -31,7 +31,10 @@ export function useRoutines() {
         ...r,
         ejercicios: (ejercicios || [])
           .filter((ej) => ej.rutina_id === r.id)
-          .map((ej) => ({ ...ej, tipo_ejercicio: ej.tipo_ejercicio! })),
+          .map((ej) => ({
+            ...ej,
+            tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
+          })),
       }));
     },
   });
@@ -54,7 +57,7 @@ export function useRoutineById(id: string | null) {
 
       const { data: ejercicios, error: ejError } = await supabase
         .from("rutina_ejercicio")
-        .select("*, tipo_ejercicio(*)")
+        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
         .eq("rutina_id", id)
         .order("orden");
       if (ejError) throw ejError;
@@ -63,7 +66,7 @@ export function useRoutineById(id: string | null) {
         ...rutina,
         ejercicios: (ejercicios || []).map((ej) => ({
           ...ej,
-          tipo_ejercicio: ej.tipo_ejercicio!,
+          tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
         })),
       };
     },

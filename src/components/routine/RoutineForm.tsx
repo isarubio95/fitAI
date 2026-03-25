@@ -95,7 +95,8 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
       setDescripcion(existingRoutine.descripcion || "");
       setEjercicios(
         existingRoutine.ejercicios.map((ej) => ({
-          tipo_ejercicio_id: ej.tipo_ejercicio_id,
+          tipo_ejercicio_id: (ej as any).tipo_ejercicio_id ?? undefined,
+          usuario_ejercicio_id: (ej as any).usuario_ejercicio_id ?? undefined,
           nombre: ej.tipo_ejercicio.nombre,
           series_objetivo: ej.series_objetivo,
           repes_min: ej.repes_min,
@@ -119,7 +120,11 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   }, [open, isEdit]);
 
   const addExercise = useCallback(
-    (tipoId: string, nombreEj: string) => {
+    (
+      catalogRef: { tipo_ejercicio_id?: string; usuario_ejercicio_id?: string },
+      nombreEj: string
+    ) => {
+      const { tipo_ejercicio_id, usuario_ejercicio_id } = catalogRef;
       if (supersetLink) {
         // Insert immediately after the linking exercise with same superset_id
         const { afterIndex, supersetId } = supersetLink;
@@ -129,7 +134,8 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
             i === afterIndex ? { ...ej, superset_id: supersetId } : ej
           );
           const newExercise: RoutineExerciseFormData = {
-            tipo_ejercicio_id: tipoId,
+            tipo_ejercicio_id,
+            usuario_ejercicio_id,
             nombre: nombreEj,
             series_objetivo: 3,
             repes_min: 8,
@@ -152,7 +158,8 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
         setEjercicios((prev) => [
           ...prev,
           {
-            tipo_ejercicio_id: tipoId,
+            tipo_ejercicio_id,
+            usuario_ejercicio_id,
             nombre: nombreEj,
             series_objetivo: 3,
             repes_min: 8,
@@ -237,7 +244,8 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
       const inserts = ejercicios.map((ej, i) => ({
         rutina_id: rutinaId,
-        tipo_ejercicio_id: ej.tipo_ejercicio_id,
+        tipo_ejercicio_id: ej.tipo_ejercicio_id ?? null,
+        usuario_ejercicio_id: (ej as any).usuario_ejercicio_id ?? null,
         series_objetivo: ej.series_objetivo,
         repes_min: ej.repes_min,
         repes_max: ej.repes_max,

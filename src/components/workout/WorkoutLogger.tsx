@@ -128,7 +128,8 @@ export function WorkoutLogger() {
       setFecha(new Date(existingWorkout.fecha).toISOString().slice(0, 10));
       setExercises(
         existingWorkout.ejercicios.map((ej) => ({
-          tipo_ejercicio_id: ej.tipo_ejercicio_id,
+          tipo_ejercicio_id: (ej as any).tipo_ejercicio_id ?? undefined,
+          usuario_ejercicio_id: (ej as any).usuario_ejercicio_id ?? undefined,
           nombre: ej.tipo_ejercicio.nombre,
           id: ej.id,
           descanso: ej.descanso ?? undefined,
@@ -188,7 +189,8 @@ export function WorkoutLogger() {
 
       const ejercicioInserts = templateExercises.map((ex) => ({
         actividad_id: actividad.id,
-        tipo_ejercicio_id: ex.tipo_ejercicio_id,
+        tipo_ejercicio_id: (ex as any).tipo_ejercicio_id ?? null,
+        usuario_ejercicio_id: (ex as any).usuario_ejercicio_id ?? null,
         usuario_id: user.id,
         descanso: ex.descanso ?? null,
         rep_range: ex.repRange ?? null,
@@ -238,12 +240,21 @@ export function WorkoutLogger() {
     }
   };
 
-  const addExercise = async (tipoId: string, nombre: string) => {
+  const addExercise = async (
+    catalogRef: { tipo_ejercicio_id?: string; usuario_ejercicio_id?: string },
+    nombre: string
+  ) => {
+    const { tipo_ejercicio_id, usuario_ejercicio_id } = catalogRef;
     if (effectiveWorkoutId && user) {
       try {
         const { data: ej, error } = await supabase
           .from("ejercicio")
-          .insert({ actividad_id: effectiveWorkoutId, tipo_ejercicio_id: tipoId, usuario_id: user.id })
+          .insert({
+            actividad_id: effectiveWorkoutId,
+            tipo_ejercicio_id: tipo_ejercicio_id ?? null,
+            usuario_ejercicio_id: usuario_ejercicio_id ?? null,
+            usuario_id: user.id,
+          } as any)
           .select("id")
           .single();
         if (error) throw error;
@@ -254,7 +265,13 @@ export function WorkoutLogger() {
           .single();
         setExercises((prev) => [
           ...prev,
-          { tipo_ejercicio_id: tipoId, nombre, id: ej.id, sets: [{ repeticiones: 0, peso_kg: 0, id: serie?.id, completed: false }] },
+          {
+            tipo_ejercicio_id,
+            usuario_ejercicio_id,
+            nombre,
+            id: ej.id,
+            sets: [{ repeticiones: 0, peso_kg: 0, id: serie?.id, completed: false }],
+          },
         ]);
       } catch (e: any) {
         toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -262,7 +279,7 @@ export function WorkoutLogger() {
     } else {
       setExercises((prev) => [
         ...prev,
-        { tipo_ejercicio_id: tipoId, nombre, sets: [{ repeticiones: 0, peso_kg: 0 }] },
+        { tipo_ejercicio_id, usuario_ejercicio_id, nombre, sets: [{ repeticiones: 0, peso_kg: 0 }] },
       ]);
     }
     setExercisePickerOpen(false);
@@ -396,8 +413,9 @@ export function WorkoutLogger() {
 
   const handleViewExerciseDetails = useCallback(
     (exercise: ExerciseFormData) => {
-      if (!exercise.tipo_ejercicio_id || !exerciseCatalog) return;
-      const found = exerciseCatalog.find((t) => t.id === exercise.tipo_ejercicio_id);
+      const catalogId = (exercise as any).tipo_ejercicio_id ?? (exercise as any).usuario_ejercicio_id;
+      if (!catalogId || !exerciseCatalog) return;
+      const found = exerciseCatalog.find((t) => t.id === catalogId);
       if (!found) return;
       setSelectedExerciseDetail(found);
     },
@@ -611,7 +629,8 @@ export function WorkoutLogger() {
 
     const ejercicioInserts = ejerciciosLimpios.map((ex) => ({
       actividad_id: actividad.id,
-      tipo_ejercicio_id: ex.tipo_ejercicio_id,
+      tipo_ejercicio_id: (ex as any).tipo_ejercicio_id ?? null,
+      usuario_ejercicio_id: (ex as any).usuario_ejercicio_id ?? null,
       usuario_id: user!.id,
     }));
 

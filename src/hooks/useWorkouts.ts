@@ -25,7 +25,7 @@ export function useLastWorkout() {
 
       const { data: ejercicios, error: ejError } = await supabase
         .from("ejercicio")
-        .select("*, tipo_ejercicio(*)")
+        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
         .eq("actividad_id", actividad.id);
 
       if (ejError) throw ejError;
@@ -43,7 +43,7 @@ export function useLastWorkout() {
 
       const ejerciciosWithDetails: EjercicioWithDetails[] = (ejercicios || []).map((ej) => ({
         ...ej,
-        tipo_ejercicio: ej.tipo_ejercicio!,
+        tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
         series: series.filter((s) => s.ejercicio_id === ej.id),
       }));
 
@@ -128,7 +128,7 @@ export function useMonthWorkouts(month: Date) {
       const actIds = actividades.map((a) => a.id);
       const { data: ejercicios, error: ejError } = await supabase
         .from("ejercicio")
-        .select("*, tipo_ejercicio(*)")
+        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
         .in("actividad_id", actIds);
       if (ejError) throw ejError;
 
@@ -148,7 +148,7 @@ export function useMonthWorkouts(month: Date) {
           .filter((ej) => ej.actividad_id === act.id)
           .map((ej) => ({
             ...ej,
-            tipo_ejercicio: ej.tipo_ejercicio!,
+            tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
             series: series.filter((s) => s.ejercicio_id === ej.id),
           }));
         return { ...act, ejercicios: actEjercicios };
@@ -181,7 +181,7 @@ export function useWorkoutsForDate(date: Date | undefined) {
       const actIds = actividades.map((a) => a.id);
       const { data: ejercicios, error: ejError } = await supabase
         .from("ejercicio")
-        .select("*, tipo_ejercicio(*)")
+        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
         .in("actividad_id", actIds);
       if (ejError) throw ejError;
 
@@ -201,7 +201,7 @@ export function useWorkoutsForDate(date: Date | undefined) {
           .filter((ej) => ej.actividad_id === act.id)
           .map((ej) => ({
             ...ej,
-            tipo_ejercicio: ej.tipo_ejercicio!,
+            tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
             series: series.filter((s) => s.ejercicio_id === ej.id),
           }));
         return { ...act, ejercicios: actEjercicios };
@@ -226,7 +226,7 @@ export function useWorkoutById(id: string | null) {
 
       const { data: ejercicios, error: ejError } = await supabase
         .from("ejercicio")
-        .select("*, tipo_ejercicio(*)")
+        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
         .eq("actividad_id", id);
       if (ejError) throw ejError;
 
@@ -243,7 +243,7 @@ export function useWorkoutById(id: string | null) {
 
       const ejerciciosWithDetails: EjercicioWithDetails[] = (ejercicios || []).map((ej) => ({
         ...ej,
-        tipo_ejercicio: ej.tipo_ejercicio!,
+        tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
         series: series.filter((s) => s.ejercicio_id === ej.id),
       }));
 
@@ -271,7 +271,7 @@ export function useWorkoutHistory(profileUserId?: string) {
       const actIds = actividades.map((a) => a.id);
       const { data: ejercicios, error: ejError } = await supabase
         .from("ejercicio")
-        .select("*, tipo_ejercicio(*)")
+        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
         .in("actividad_id", actIds);
 
       if (ejError) throw ejError;
@@ -292,7 +292,7 @@ export function useWorkoutHistory(profileUserId?: string) {
           .filter((ej) => ej.actividad_id === act.id)
           .map((ej) => ({
             ...ej,
-            tipo_ejercicio: ej.tipo_ejercicio!,
+            tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
             series: series.filter((s) => s.ejercicio_id === ej.id),
           }));
         return { ...act, ejercicios: actEjercicios };

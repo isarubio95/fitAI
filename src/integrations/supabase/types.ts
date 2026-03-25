@@ -52,7 +52,8 @@ export type Database = {
           id: string
           rep_range: string | null
           rir_objetivo: number | null
-          tipo_ejercicio_id: string
+          tipo_ejercicio_id: string | null
+          usuario_ejercicio_id: string | null
           usuario_id: string
         }
         Insert: {
@@ -62,7 +63,8 @@ export type Database = {
           id?: string
           rep_range?: string | null
           rir_objetivo?: number | null
-          tipo_ejercicio_id: string
+          tipo_ejercicio_id?: string | null
+          usuario_ejercicio_id?: string | null
           usuario_id: string
         }
         Update: {
@@ -72,7 +74,8 @@ export type Database = {
           id?: string
           rep_range?: string | null
           rir_objetivo?: number | null
-          tipo_ejercicio_id?: string
+          tipo_ejercicio_id?: string | null
+          usuario_ejercicio_id?: string | null
           usuario_id?: string
         }
         Relationships: [
@@ -88,6 +91,13 @@ export type Database = {
             columns: ["tipo_ejercicio_id"]
             isOneToOne: false
             referencedRelation: "tipo_ejercicio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ejercicio_usuario_ejercicio_id_fkey"
+            columns: ["usuario_ejercicio_id"]
+            isOneToOne: false
+            referencedRelation: "usuario_ejercicio"
             referencedColumns: ["id"]
           },
         ]
@@ -187,7 +197,8 @@ export type Database = {
           rir: number | null
           rutina_id: string
           series_objetivo: number
-          tipo_ejercicio_id: string
+          tipo_ejercicio_id: string | null
+          usuario_ejercicio_id: string | null
         }
         Insert: {
           created_at?: string
@@ -199,7 +210,8 @@ export type Database = {
           rir?: number | null
           rutina_id: string
           series_objetivo?: number
-          tipo_ejercicio_id: string
+          tipo_ejercicio_id?: string | null
+          usuario_ejercicio_id?: string | null
         }
         Update: {
           created_at?: string
@@ -211,7 +223,8 @@ export type Database = {
           rir?: number | null
           rutina_id?: string
           series_objetivo?: number
-          tipo_ejercicio_id?: string
+          tipo_ejercicio_id?: string | null
+          usuario_ejercicio_id?: string | null
         }
         Relationships: [
           {
@@ -226,6 +239,13 @@ export type Database = {
             columns: ["tipo_ejercicio_id"]
             isOneToOne: false
             referencedRelation: "tipo_ejercicio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rutina_ejercicio_usuario_ejercicio_id_fkey"
+            columns: ["usuario_ejercicio_id"]
+            isOneToOne: false
+            referencedRelation: "usuario_ejercicio"
             referencedColumns: ["id"]
           },
         ]
@@ -315,7 +335,7 @@ export type Database = {
       }
       tipo_ejercicio: {
         Row: {
-          body_part: string[] | null
+          musculos_involucrados: string[] | null
           created_at: string
           descripcion: string | null
           equipment: string | null
@@ -327,7 +347,7 @@ export type Database = {
           nombre: string
         }
         Insert: {
-          body_part?: string[] | null
+          musculos_involucrados?: string[] | null
           created_at?: string
           descripcion?: string | null
           equipment?: string | null
@@ -339,7 +359,7 @@ export type Database = {
           nombre: string
         }
         Update: {
-          body_part?: string[] | null
+          musculos_involucrados?: string[] | null
           created_at?: string
           descripcion?: string | null
           equipment?: string | null
@@ -349,6 +369,54 @@ export type Database = {
           imagen?: string | null
           instructions?: string[] | null
           nombre?: string
+        }
+        Relationships: []
+      }
+      usuario_ejercicio: {
+        Row: {
+          id: string
+          usuario_id: string
+          nombre: string
+          descripcion: string | null
+          imagen: string | null
+          created_at: string
+          gif_url: string | null
+          musculos_involucrados: string[] | null
+          equipment: string | null
+          instructions: string[] | null
+          tipo: string | null
+          grupo_muscular: string | null
+          dificultad: string | null
+        }
+        Insert: {
+          id?: string
+          usuario_id?: string
+          nombre: string
+          descripcion?: string | null
+          imagen?: string | null
+          created_at?: string
+          gif_url?: string | null
+          musculos_involucrados?: string[] | null
+          equipment?: string | null
+          instructions?: string[] | null
+          tipo?: string | null
+          grupo_muscular?: string | null
+          dificultad?: string | null
+        }
+        Update: {
+          id?: string
+          usuario_id?: string
+          nombre?: string
+          descripcion?: string | null
+          imagen?: string | null
+          created_at?: string
+          gif_url?: string | null
+          musculos_involucrados?: string[] | null
+          equipment?: string | null
+          instructions?: string[] | null
+          tipo?: string | null
+          grupo_muscular?: string | null
+          dificultad?: string | null
         }
         Relationships: []
       }

@@ -65,7 +65,7 @@ export default function AdminImport() {
           external_id: ex.id,
           nombre: capitalize(ex.name),
           gif_url: ex.gifUrl,
-          body_part: ex.bodyPart,
+          musculos_involucrados: ex.bodyPart,
           equipment: ex.equipment,
           instructions: ex.instructions,
           imagen: ex.gifUrl,

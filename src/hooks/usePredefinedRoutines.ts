@@ -22,7 +22,7 @@ export interface PredefinedRoutine {
     tipo_ejercicio: {
       id: string;
       nombre: string;
-      body_part: string[] | null;
+      musculos_involucrados: string[] | null;
       gif_url: string | null;
     };
   }[];
@@ -79,7 +79,7 @@ export function usePredefinedRoutines(filters?: PredefinedRoutinesFilters) {
       const rutinaIds = rutinasFinal.map((r: any) => r.id);
       const { data: ejercicios, error: ejError } = await supabase
         .from("rutina_ejercicio")
-        .select("*, tipo_ejercicio(id, nombre, body_part, gif_url)")
+        .select("*, tipo_ejercicio(id, nombre, musculos_involucrados, gif_url)")
         .in("rutina_id", rutinaIds)
         .order("orden");
       if (ejError) throw ejError;

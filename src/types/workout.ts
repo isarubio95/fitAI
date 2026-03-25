@@ -1,6 +1,7 @@
 import type { Tables } from "@/integrations/supabase/types";
 
 export type TipoEjercicio = Tables<"tipo_ejercicio">;
+export type UsuarioEjercicio = Tables<"usuario_ejercicio">;
 export type Actividad = Tables<"actividad">;
 export type Ejercicio = Tables<"ejercicio">;
 export type Serie = Tables<"serie">;
@@ -16,7 +17,8 @@ export interface SetFormData {
 }
 
 export interface ExerciseFormData {
-  tipo_ejercicio_id: string;
+  tipo_ejercicio_id?: string;
+  usuario_ejercicio_id?: string;
   nombre: string;
   sets: SetFormData[];
   id?: string;
@@ -36,7 +38,8 @@ export interface WorkoutFormData {
 
 // Extended types with relations
 export interface EjercicioWithDetails extends Ejercicio {
-  tipo_ejercicio: TipoEjercicio;
+  // Unificado: viene de tipo_ejercicio o usuario_ejercicio
+  tipo_ejercicio: TipoEjercicio | UsuarioEjercicio;
   series: Serie[];
 }
 

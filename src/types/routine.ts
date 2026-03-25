@@ -4,7 +4,7 @@ export type Rutina = Tables<"rutina">;
 export type RutinaEjercicio = Tables<"rutina_ejercicio">;
 
 export interface RutinaEjercicioWithDetails extends RutinaEjercicio {
-  tipo_ejercicio: Tables<"tipo_ejercicio">;
+  tipo_ejercicio: Tables<"tipo_ejercicio"> | Tables<"usuario_ejercicio">;
 }
 
 export interface RutinaWithDetails extends Rutina {
@@ -12,7 +12,8 @@ export interface RutinaWithDetails extends Rutina {
 }
 
 export interface RoutineExerciseFormData {
-  tipo_ejercicio_id: string;
+  tipo_ejercicio_id?: string;
+  usuario_ejercicio_id?: string;
   nombre: string;
   series_objetivo: number;
   repes_min: number;
