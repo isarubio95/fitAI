@@ -125,9 +125,12 @@ const Exercises = () => {
   const {
     data,
     isLoading,
+    isError,
+    error,
     isFetchingNextPage,
     fetchNextPage,
     hasNextPage,
+    refetch,
   } = useExerciseCatalogInfinite(search, 30);
   const createExercise = useCreateExercise();
   const deleteExercise = useDeleteExercise();
@@ -263,6 +266,21 @@ const Exercises = () => {
         />
       </div>
 
+      {isError && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="p-4 text-sm space-y-2">
+            <p className="font-medium text-destructive">Error al cargar el catálogo</p>
+            <p className="text-muted-foreground">
+              {(error as Error)?.message ??
+                "Revisa la consola del navegador (F12) y la respuesta de Supabase."}
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
+              Reintentar
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {isLoading
           ? Array.from({ length: 5 }).map((_, i) => (
@@ -339,6 +357,12 @@ const Exercises = () => {
                 </Card>
               );
             })}
+        {!isLoading && !isError && sortedExercises.length === 0 && (
+          <p className="col-span-full text-center text-sm text-muted-foreground py-8">
+            No hay ejercicios que coincidan. Prueba otra búsqueda o revisa en Supabase que existan filas en{" "}
+            <code className="text-xs">tipo_ejercicio</code> y las políticas RLS permitan leerlas.
+          </p>
+        )}
       </div>
 
       {/* Sentinel para infinite scroll */}
