@@ -21,6 +21,7 @@ import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashb
 import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { usePlannedRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -588,10 +589,11 @@ const Dashboard = () => {
             variant={isDragMode ? "default" : "outline"}
             size="sm"
             onClick={() => setIsDragMode(!isDragMode)}
-            className="gap-2 transition-all"
+            title={isDragMode ? "Salir del modo ordenar" : "Ordenar widgets del inicio"}
+            className={cn("transition-all", isDragMode && "gap-2")}
           >
             <ArrowUpDown className="h-4 w-4" />
-            <span>{isDragMode ? "Hecho" : ""}</span>
+            {isDragMode ? <span>Hecho</span> : null}
           </Button>,
           headerActionsSlot
         )}
