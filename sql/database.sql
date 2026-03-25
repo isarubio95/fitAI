@@ -15,16 +15,18 @@ CREATE TABLE public.actividad (
 CREATE TABLE public.ejercicio (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   actividad_id uuid NOT NULL,
-  tipo_ejercicio_id uuid NOT NULL,
+  tipo_ejercicio_id uuid,
   usuario_id uuid NOT NULL DEFAULT auth.uid(),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   superset_id uuid,
   descanso integer DEFAULT 120,
   rir_objetivo integer,
   rep_range text,
+  usuario_ejercicio_id uuid,
   CONSTRAINT ejercicio_pkey PRIMARY KEY (id),
   CONSTRAINT ejercicio_actividad_id_fkey FOREIGN KEY (actividad_id) REFERENCES public.actividad(id),
-  CONSTRAINT ejercicio_tipo_ejercicio_id_fkey FOREIGN KEY (tipo_ejercicio_id) REFERENCES public.tipo_ejercicio(id)
+  CONSTRAINT ejercicio_tipo_ejercicio_id_fkey FOREIGN KEY (tipo_ejercicio_id) REFERENCES public.tipo_ejercicio(id),
+  CONSTRAINT ejercicio_usuario_ejercicio_id_fkey FOREIGN KEY (usuario_ejercicio_id) REFERENCES public.usuario_ejercicio(id)
 );
 CREATE TABLE public.logro (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -84,7 +86,7 @@ CREATE TABLE public.rutina (
 CREATE TABLE public.rutina_ejercicio (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   rutina_id uuid NOT NULL,
-  tipo_ejercicio_id uuid NOT NULL,
+  tipo_ejercicio_id uuid,
   series_objetivo integer NOT NULL DEFAULT 3,
   repes_min integer NOT NULL DEFAULT 8,
   repes_max integer NOT NULL DEFAULT 12,
@@ -93,9 +95,11 @@ CREATE TABLE public.rutina_ejercicio (
   rir integer DEFAULT 1 CHECK (rir >= 0 AND rir <= 3),
   superset_id uuid,
   descanso integer DEFAULT 120,
+  usuario_ejercicio_id uuid,
   CONSTRAINT rutina_ejercicio_pkey PRIMARY KEY (id),
   CONSTRAINT rutina_ejercicio_rutina_id_fkey FOREIGN KEY (rutina_id) REFERENCES public.rutina(id),
-  CONSTRAINT rutina_ejercicio_tipo_ejercicio_id_fkey FOREIGN KEY (tipo_ejercicio_id) REFERENCES public.tipo_ejercicio(id)
+  CONSTRAINT rutina_ejercicio_tipo_ejercicio_id_fkey FOREIGN KEY (tipo_ejercicio_id) REFERENCES public.tipo_ejercicio(id),
+  CONSTRAINT rutina_ejercicio_usuario_ejercicio_id_fkey FOREIGN KEY (usuario_ejercicio_id) REFERENCES public.usuario_ejercicio(id)
 );
 CREATE TABLE public.rutina_programada (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -137,7 +141,6 @@ CREATE TABLE public.tipo_ejercicio (
   descripcion text,
   imagen text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
-  usuario_id uuid,
   gif_url text,
   musculos_involucrados ARRAY DEFAULT '{}'::text[],
   equipment text,
@@ -145,8 +148,24 @@ CREATE TABLE public.tipo_ejercicio (
   tipo text,
   grupo_muscular text,
   dificultad text,
-  CONSTRAINT tipo_ejercicio_pkey PRIMARY KEY (id),
-  CONSTRAINT tipo_ejercicio_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES auth.users(id)
+  CONSTRAINT tipo_ejercicio_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.usuario_ejercicio (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  usuario_id uuid NOT NULL DEFAULT auth.uid(),
+  nombre text NOT NULL,
+  descripcion text,
+  imagen text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  gif_url text,
+  musculos_involucrados ARRAY DEFAULT '{}'::text[],
+  equipment text,
+  instructions ARRAY,
+  tipo text,
+  grupo_muscular text,
+  dificultad text,
+  CONSTRAINT usuario_ejercicio_pkey PRIMARY KEY (id),
+  CONSTRAINT usuario_ejercicio_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.usuario_logro (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

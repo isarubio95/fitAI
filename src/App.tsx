@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { RestTimerProvider } from "@/components/workout/RestTimerProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Library from "./pages/Library";
@@ -28,6 +29,7 @@ const App = () => {
               <Toaster />
               <Sonner />
               <BrowserRouter>
+                <ScrollToTop />
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
                   <Route element={<AppLayout />}>

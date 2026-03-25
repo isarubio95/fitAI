@@ -125,7 +125,7 @@ export function SortableRoutineCard({
                   {idx > 0 && <Separator className="my-2" />}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-medium truncate">
-                      {ej.tipo_ejercicio.nombre}
+                      {ej.tipo_ejercicio?.nombre ?? "Ejercicio sin datos"}
                     </span>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0">

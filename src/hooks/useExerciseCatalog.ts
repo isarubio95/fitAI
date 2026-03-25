@@ -1,6 +1,60 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+
+export function useExerciseCatalogInfinite(search?: string, pageSize = 30) {
+  const { user } = useAuth();
+
+  return useInfiniteQuery({
+    queryKey: ["exerciseCatalogInfinite", search, user?.id, pageSize],
+    initialPageParam: 0,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async ({ pageParam }) => {
+      const offset = Number(pageParam ?? 0);
+
+      // Catálogo (FitCron/sistema) paginado
+      let queryCatalogo = supabase
+        .from("tipo_ejercicio")
+        .select("*, body_part:musculos_involucrados")
+        .order("nombre")
+        .range(offset, offset + pageSize - 1);
+
+      if (search) {
+        queryCatalogo = queryCatalogo.ilike("nombre", `%${search}%`);
+      }
+
+      // Ejercicios del usuario: normalmente son pocos; los traemos en la primera página
+      let queryUsuario = supabase
+        .from("usuario_ejercicio")
+        .select("*, body_part:musculos_involucrados")
+        .order("nombre");
+
+      if (search) {
+        queryUsuario = queryUsuario.ilike("nombre", `%${search}%`);
+      }
+
+      const [catRes, usrRes] = await Promise.all([
+        queryCatalogo,
+        offset === 0 && user ? queryUsuario.eq("usuario_id", user.id) : Promise.resolve({ data: null, error: null } as any),
+      ]);
+
+      if (catRes.error) throw catRes.error;
+      if (usrRes?.error) throw usrRes.error;
+
+      const catalogo = (catRes.data ?? []).map((x: any) => ({ ...x, __source: "catalogo" as const }));
+      const usuario = (usrRes?.data ?? []).map((x: any) => ({ ...x, __source: "usuario" as const }));
+
+      return {
+        offset,
+        catalogo,
+        usuario,
+        fetched: catalogo.length,
+        hasMore: catalogo.length === pageSize,
+      };
+    },
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.offset + pageSize : undefined),
+  });
+}
 
 export function useExerciseCatalog(search?: string) {
   const { user } = useAuth();

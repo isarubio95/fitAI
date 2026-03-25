@@ -1,10 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
-import { useExerciseCatalog, useCreateExercise, useDeleteExercise } from "@/hooks/useExerciseCatalog";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
+import { useExerciseCatalogInfinite, useCreateExercise, useDeleteExercise } from "@/hooks/useExerciseCatalog";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,7 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, SignalMedium } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
@@ -69,12 +72,63 @@ function getExerciseIcon(ex: { musculos_involucrados?: string[] | null }) {
   return group ? MUSCLE_GROUP_ICONS[group] : Dumbbell;
 }
 
+function difficultyToLevel(d: unknown): 1 | 2 | 3 | null {
+  if (d == null) return null;
+  if (typeof d === "number" && Number.isFinite(d)) {
+    const n = Math.max(1, Math.min(3, Math.round(d)));
+    return n as 1 | 2 | 3;
+  }
+  const s = String(d).trim().toLowerCase();
+  const num = Number.parseInt(s, 10);
+  if (Number.isFinite(num)) {
+    const n = Math.max(1, Math.min(3, num));
+    return n as 1 | 2 | 3;
+  }
+  if (s.includes("baja")) return 1;
+  if (s.includes("media")) return 2;
+  if (s.includes("alta")) return 3;
+  return null;
+}
+
+function DifficultyBars({ level }: { level: 1 | 2 | 3 }) {
+  const color =
+    level === 1
+      ? "text-emerald-600 dark:text-emerald-400"
+      : level === 2
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-orange-600 dark:text-orange-400";
+
+  return (
+    <span className={cn("inline-flex items-center gap-1", color)}>
+      <SignalMedium className="h-3.5 w-3.5" />
+      <span className="inline-flex items-end gap-[3px]">
+        {[1, 2, 3].map((i) => (
+          <span
+            key={i}
+            className={cn(
+              "inline-block w-[4px] rounded-sm",
+              i === 1 ? "h-[6px]" : i === 2 ? "h-[9px]" : "h-[12px]",
+              i <= level ? "bg-current" : "bg-current/25",
+            )}
+          />
+        ))}
+      </span>
+    </span>
+  );
+}
+
 const Exercises = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const { data: exercises, isLoading } = useExerciseCatalog(search);
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useExerciseCatalogInfinite(search, 30);
   const createExercise = useCreateExercise();
   const deleteExercise = useDeleteExercise();
   const { toast } = useToast();
@@ -86,6 +140,17 @@ const Exercises = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLElement | null>(null);
+
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  // Flatten: ejercicios de usuario (solo primera página) + páginas del catálogo
+  const exercises = useMemo(() => {
+    const pages = data?.pages ?? [];
+    const usuario = pages[0]?.usuario ?? [];
+    const catalogo = pages.flatMap((p) => p.catalogo ?? []);
+    return [...usuario, ...catalogo];
+  }, [data]);
 
   const sortedExercises = useMemo(() => {
     if (!exercises?.length) return [];
@@ -96,6 +161,33 @@ const Exercises = () => {
     });
     return list;
   }, [exercises, sortOrder]);
+
+  // UX: al cambiar la búsqueda, volvemos arriba
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [search, sortOrder]);
+
+  useEffect(() => {
+    setHeaderActionsSlot(document.getElementById("header-actions-slot"));
+  }, []);
+
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (!first?.isIntersecting) return;
+        if (!hasNextPage || isFetchingNextPage) return;
+        fetchNextPage();
+      },
+      { root: null, rootMargin: "400px", threshold: 0 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   useEffect(() => {
     if (location.state?.action === "new") {
@@ -136,8 +228,9 @@ const Exercises = () => {
 
   return (
     <div className="w-full min-w-0 p-4 md:p-8 pt-6 space-y-6 max-w-2xl mx-auto">
-      <header className="flex items-center justify-end">
-        {!!exercises?.length && (
+      {headerActionsSlot &&
+        !!exercises?.length &&
+        createPortal(
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1.5">
@@ -156,9 +249,9 @@ const Exercises = () => {
                 Z → A {sortOrder === "desc" && <Check className="ml-auto h-4 w-4" />}
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu>,
+          headerActionsSlot
         )}
-      </header>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -201,9 +294,36 @@ const Exercises = () => {
                         <p className="font-semibold truncate">{ex.nombre}</p>
                         {isOwn && <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {ex.descripcion || "Sin descripción"}
-                      </p>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {isOwn && (
+                          <Badge variant="secondary" className="text-[11px]">
+                            Personal
+                          </Badge>
+                        )}
+                        {(ex as any).tipo && (
+                          <Badge variant="outline" className="text-[11px]">
+                            <Dumbbell className="mr-1 h-3 w-3" />
+                            {(ex as any).tipo}
+                          </Badge>
+                        )}
+                        {(ex as any).grupo_muscular && (
+                          <Badge variant="outline" className="text-[11px]">
+                            <Layers className="mr-1 h-3 w-3" />
+                            {(ex as any).grupo_muscular}
+                          </Badge>
+                        )}
+                        {difficultyToLevel((ex as any).dificultad) && (
+                          <Badge variant="outline" className="text-[11px]">
+                            <DifficultyBars level={difficultyToLevel((ex as any).dificultad)!} />
+                          </Badge>
+                        )}
+                        {(ex as any).equipment && (
+                          <Badge variant="outline" className="text-[11px]">
+                            <Wrench className="mr-1 h-3 w-3" />
+                            {(ex as any).equipment}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     {isOwn && (
                       <Button
@@ -220,6 +340,15 @@ const Exercises = () => {
               );
             })}
       </div>
+
+      {/* Sentinel para infinite scroll */}
+      <div ref={loadMoreRef} className="h-10" />
+
+      {isFetchingNextPage && (
+        <div className="flex justify-center py-2 text-sm text-muted-foreground">
+          Cargando más...
+        </div>
+      )}
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

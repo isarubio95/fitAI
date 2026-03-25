@@ -338,37 +338,46 @@ export type Database = {
           musculos_involucrados: string[] | null
           created_at: string
           descripcion: string | null
+          dificultad: string | null
           equipment: string | null
           external_id: string | null
           gif_url: string | null
+          grupo_muscular: string | null
           id: string
           imagen: string | null
           instructions: string[] | null
           nombre: string
+          tipo: string | null
         }
         Insert: {
           musculos_involucrados?: string[] | null
           created_at?: string
           descripcion?: string | null
+          dificultad?: string | null
           equipment?: string | null
           external_id?: string | null
           gif_url?: string | null
+          grupo_muscular?: string | null
           id?: string
           imagen?: string | null
           instructions?: string[] | null
           nombre: string
+          tipo?: string | null
         }
         Update: {
           musculos_involucrados?: string[] | null
           created_at?: string
           descripcion?: string | null
+          dificultad?: string | null
           equipment?: string | null
           external_id?: string | null
           gif_url?: string | null
+          grupo_muscular?: string | null
           id?: string
           imagen?: string | null
           instructions?: string[] | null
           nombre?: string
+          tipo?: string | null
         }
         Relationships: []
       }
