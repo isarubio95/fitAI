@@ -31,14 +31,17 @@ export function ExerciseSelector({ open, onOpenChange, onSelect }: ExerciseSelec
           <Search className="h-4 w-4 mr-2" /> Agregar Ejercicio
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[320px] p-0 max-h-[70vh] overflow-hidden" align="start">
+      <PopoverContent className="w-[320px] p-0 max-h-[70vh] overflow-auto" align="start">
         <div className="flex items-center justify-between px-3 py-2 border-b border-border">
           <Label className="text-xs text-muted-foreground">Solo mis ejercicios</Label>
           <Switch checked={onlyMine} onCheckedChange={setOnlyMine} />
         </div>
         <Command>
           <CommandInput placeholder="Buscar ejercicio..." />
-          <CommandList className="max-h-[60vh] overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+          <CommandList
+            className="max-h-[60vh] overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
+            onWheelCapture={(e) => e.stopPropagation()}
+          >
             <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
             <CommandGroup>
               {filtered?.map((tipo) => {
