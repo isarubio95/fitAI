@@ -31,40 +31,43 @@ export function ExerciseSelector({ open, onOpenChange, onSelect }: ExerciseSelec
           <Search className="h-4 w-4 mr-2" /> Agregar Ejercicio
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[320px] p-0 max-h-[70vh] overflow-auto" align="start">
+      <PopoverContent className="w-[320px] p-0 max-h-[70svh] overflow-hidden" align="start">
         <div className="flex items-center justify-between px-3 py-2 border-b border-border">
           <Label className="text-xs text-muted-foreground">Solo mis ejercicios</Label>
           <Switch checked={onlyMine} onCheckedChange={setOnlyMine} />
         </div>
         <Command>
           <CommandInput placeholder="Buscar ejercicio..." />
-          <CommandList
-            className="max-h-[60vh] overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
+          <div
+            className="max-h-[60svh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
             onWheelCapture={(e) => e.stopPropagation()}
+            onTouchMoveCapture={(e) => e.stopPropagation()}
           >
-            <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
-            <CommandGroup>
-              {filtered?.map((tipo) => {
-                const isOwn = (tipo as any).usuario_id === user?.id;
-                const source = (tipo as any).__source as "usuario" | "catalogo" | undefined;
-                const catalogRef =
-                  source === "usuario"
-                    ? { usuario_ejercicio_id: tipo.id }
-                    : { tipo_ejercicio_id: tipo.id };
-                return (
-                  <CommandItem
-                    key={tipo.id}
-                    value={tipo.nombre}
-                    onSelect={() => onSelect(catalogRef, tipo.nombre)}
-                    className="cursor-pointer flex items-center justify-between"
-                  >
-                    <span>{tipo.nombre}</span>
-                    {isOwn && <User className="h-3.5 w-3.5 text-muted-foreground ml-2 shrink-0" />}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
+            <CommandList className="max-h-none overflow-visible">
+              <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
+              <CommandGroup>
+                {filtered?.map((tipo) => {
+                  const isOwn = (tipo as any).usuario_id === user?.id;
+                  const source = (tipo as any).__source as "usuario" | "catalogo" | undefined;
+                  const catalogRef =
+                    source === "usuario"
+                      ? { usuario_ejercicio_id: tipo.id }
+                      : { tipo_ejercicio_id: tipo.id };
+                  return (
+                    <CommandItem
+                      key={tipo.id}
+                      value={tipo.nombre}
+                      onSelect={() => onSelect(catalogRef, tipo.nombre)}
+                      className="cursor-pointer flex items-center justify-between"
+                    >
+                      <span>{tipo.nombre}</span>
+                      {isOwn && <User className="h-3.5 w-3.5 text-muted-foreground ml-2 shrink-0" />}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </div>
         </Command>
       </PopoverContent>
     </Popover>

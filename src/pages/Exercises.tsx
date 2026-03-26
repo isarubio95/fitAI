@@ -1,13 +1,15 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useExerciseCatalogInfinite, useCreateExercise, useDeleteExercise } from "@/hooks/useExerciseCatalog";
 import { useAuth } from "@/hooks/useAuth";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -36,11 +38,103 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, SignalMedium } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, SignalMedium, Filter, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
+import { EXERCISE_SYNONYMS } from "@/constants/exerciseSynonyms";
+
+type DifficultyLevel = 1 | 2 | 3;
+
+type ExerciseFilters = {
+  q: string;
+  tipos: string[];
+  grupos: string[];
+  equipments: string[];
+  difs: DifficultyLevel[];
+};
+
+function uniqNonEmpty(values: (string | null | undefined)[]) {
+  return [...new Set(values.map((v) => String(v ?? "").trim()).filter(Boolean))];
+}
+
+function parseCsvListParam(v: string | null): string[] {
+  if (!v) return [];
+  return v
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+function parseDifficultyListParam(v: string | null): DifficultyLevel[] {
+  const xs = parseCsvListParam(v);
+  const out: DifficultyLevel[] = [];
+  for (const x of xs) {
+    const n = Number.parseInt(x, 10);
+    if (n === 1 || n === 2 || n === 3) out.push(n);
+  }
+  return [...new Set(out)];
+}
+
+function parseFiltersFromSearchParams(sp: URLSearchParams): ExerciseFilters {
+  return {
+    q: (sp.get("q") ?? "").trim(),
+    tipos: parseCsvListParam(sp.get("tipo")),
+    grupos: parseCsvListParam(sp.get("grupo")),
+    equipments: parseCsvListParam(sp.get("eq")),
+    difs: parseDifficultyListParam(sp.get("dif")),
+  };
+}
+
+function serializeFiltersToSearchParams(sp: URLSearchParams, f: ExerciseFilters): URLSearchParams {
+  const next = new URLSearchParams(sp);
+  const setOrDelete = (key: string, val: string) => {
+    if (val) next.set(key, val);
+    else next.delete(key);
+  };
+
+  setOrDelete("q", f.q.trim());
+  setOrDelete("tipo", uniqNonEmpty(f.tipos).join(","));
+  setOrDelete("grupo", uniqNonEmpty(f.grupos).join(","));
+  setOrDelete("eq", uniqNonEmpty(f.equipments).join(","));
+  setOrDelete("dif", [...new Set(f.difs)].sort().join(","));
+  return next;
+}
+
+function toggleInList(list: string[], value: string) {
+  return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
+}
+
+function normalizeText(s: unknown) {
+  return String(s ?? "")
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function expandQueryTerms(q: string): string[] {
+  const nq = normalizeText(q);
+  if (!nq) return [];
+
+  const out = new Set([nq]);
+  // Añade sinónimos por presencia de frase clave
+  for (const [kRaw, syns] of Object.entries(EXERCISE_SYNONYMS)) {
+    const k = normalizeText(kRaw);
+    if (!k) continue;
+    if (nq.includes(k)) {
+      for (const s of syns) out.add(normalizeText(s));
+    }
+  }
+
+  // Añade tokens individuales (para que \"press banca\" funcione incluso si no hay frase exacta)
+  for (const term of [...out]) {
+    for (const token of term.split(" ")) out.add(token);
+  }
+  return [...out].filter(Boolean);
+}
 
 /** Devuelve el grupo principal del primer músculo en body_part, o null */
 function getMainGroupFromBodyPart(bodyPart: string[] | null | undefined): MainMuscleGroup | null {
@@ -121,17 +215,25 @@ const Exercises = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(() => parseFiltersFromSearchParams(searchParams), [searchParams]);
+
   const {
     data,
     isLoading,
     isError,
     error,
-    isFetchingNextPage,
-    fetchNextPage,
-    hasNextPage,
     refetch,
-  } = useExerciseCatalogInfinite(search, 30);
+  } = useExerciseCatalogInfinite(
+    {
+      // Filtrado server-side básico; la búsqueda inteligente completa se hace client-side
+      q: filters.q,
+      tipos: filters.tipos,
+      grupos: filters.grupos,
+      equipments: filters.equipments,
+    },
+    1000,
+  );
   const createExercise = useCreateExercise();
   const deleteExercise = useDeleteExercise();
   const { toast } = useToast();
@@ -145,8 +247,6 @@ const Exercises = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLElement | null>(null);
 
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
-
   // Flatten: ejercicios de usuario (solo primera página) + páginas del catálogo
   const exercises = useMemo(() => {
     const pages = data?.pages ?? [];
@@ -154,6 +254,25 @@ const Exercises = () => {
     const catalogo = pages.flatMap((p) => p.catalogo ?? []);
     return [...usuario, ...catalogo];
   }, [data]);
+
+  const tipoOptions = useMemo(
+    () => uniqNonEmpty(exercises.map((x: any) => x.tipo)).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
+    [exercises],
+  );
+  const grupoOptions = useMemo(
+    () =>
+      uniqNonEmpty(exercises.map((x: any) => x.grupo_muscular)).sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" }),
+      ),
+    [exercises],
+  );
+  const equipmentOptions = useMemo(
+    () =>
+      uniqNonEmpty(exercises.map((x: any) => x.equipment)).sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" }),
+      ),
+    [exercises],
+  );
 
   const sortedExercises = useMemo(() => {
     if (!exercises?.length) return [];
@@ -165,32 +284,51 @@ const Exercises = () => {
     return list;
   }, [exercises, sortOrder]);
 
-  // UX: al cambiar la búsqueda, volvemos arriba
+  const filteredExercises = useMemo(() => {
+    const qTerms = expandQueryTerms(filters.q);
+
+    return sortedExercises.filter((ex: any) => {
+      // Multi-select exact match filters
+      if (filters.tipos.length && !filters.tipos.includes(String(ex.tipo ?? "").trim())) return false;
+      if (filters.grupos.length && !filters.grupos.includes(String(ex.grupo_muscular ?? "").trim())) return false;
+      if (filters.equipments.length && !filters.equipments.includes(String(ex.equipment ?? "").trim())) return false;
+
+      if (filters.difs.length) {
+        const lvl = difficultyToLevel(ex.dificultad);
+        if (!lvl || !filters.difs.includes(lvl)) return false;
+      }
+
+      if (qTerms.length) {
+        const hay = [
+          normalizeText(ex.nombre),
+          normalizeText(ex.equipment),
+          normalizeText(ex.tipo),
+          normalizeText(ex.grupo_muscular),
+        ].join(" | ");
+        // OR entre términos: si alguno encaja, vale
+        const ok = qTerms.some((t) => hay.includes(t));
+        if (!ok) return false;
+      }
+
+      return true;
+    });
+  }, [sortedExercises, filters]);
+
+  const anyFilterActive =
+    !!filters.q.trim() ||
+    filters.tipos.length > 0 ||
+    filters.grupos.length > 0 ||
+    filters.equipments.length > 0 ||
+    filters.difs.length > 0;
+
+  // UX: al cambiar la búsqueda/orden, volvemos arriba
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [search, sortOrder]);
+  }, [filters.q, sortOrder]);
 
   useEffect(() => {
     setHeaderActionsSlot(document.getElementById("header-actions-slot"));
   }, []);
-
-  useEffect(() => {
-    const el = loadMoreRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (!first?.isIntersecting) return;
-        if (!hasNextPage || isFetchingNextPage) return;
-        fetchNextPage();
-      },
-      { root: null, rootMargin: "400px", threshold: 0 }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   useEffect(() => {
     if (location.state?.action === "new") {
@@ -260,10 +398,231 @@ const Exercises = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar ejercicio..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={filters.q}
+          onChange={(e) => {
+            const q = e.target.value;
+            const next = serializeFiltersToSearchParams(searchParams, { ...filters, q });
+            setSearchParams(next, { replace: true });
+          }}
           className="pl-10 h-12"
         />
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-4 w-4" /> Tipo
+                {filters.tipos.length > 0 && <Badge variant="secondary">{filters.tipos.length}</Badge>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Buscar tipo..." />
+                <CommandList className="max-h-[260px]">
+                  <CommandEmpty>Sin resultados.</CommandEmpty>
+                  <CommandGroup heading="Tipo">
+                    {tipoOptions.map((t) => (
+                      <CommandItem
+                        key={t}
+                        value={t}
+                        onSelect={() => {
+                          const nextFilters: ExerciseFilters = { ...filters, tipos: toggleInList(filters.tipos, t) };
+                          setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", filters.tipos.includes(t) ? "opacity-100" : "opacity-0")} />
+                        {t}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Layers className="h-4 w-4" /> Grupo
+                {filters.grupos.length > 0 && <Badge variant="secondary">{filters.grupos.length}</Badge>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Buscar grupo..." />
+                <CommandList className="max-h-[260px]">
+                  <CommandEmpty>Sin resultados.</CommandEmpty>
+                  <CommandGroup heading="Grupo muscular">
+                    {grupoOptions.map((g) => (
+                      <CommandItem
+                        key={g}
+                        value={g}
+                        onSelect={() => {
+                          const nextFilters: ExerciseFilters = { ...filters, grupos: toggleInList(filters.grupos, g) };
+                          setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", filters.grupos.includes(g) ? "opacity-100" : "opacity-0")} />
+                        {g}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Wrench className="h-4 w-4" /> Equipo
+                {filters.equipments.length > 0 && <Badge variant="secondary">{filters.equipments.length}</Badge>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Buscar equipamiento..." />
+                <CommandList className="max-h-[260px]">
+                  <CommandEmpty>Sin resultados.</CommandEmpty>
+                  <CommandGroup heading="Equipamiento">
+                    {equipmentOptions.map((eq) => (
+                      <CommandItem
+                        key={eq}
+                        value={eq}
+                        onSelect={() => {
+                          const nextFilters: ExerciseFilters = {
+                            ...filters,
+                            equipments: toggleInList(filters.equipments, eq),
+                          };
+                          setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.equipments.includes(eq) ? "opacity-100" : "opacity-0",
+                          )}
+                        />
+                        {eq}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant={filters.difs.includes(1) ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                const difs = filters.difs.includes(1) ? filters.difs.filter((d) => d !== 1) : [...filters.difs, 1];
+                setSearchParams(serializeFiltersToSearchParams(searchParams, { ...filters, difs }), { replace: true });
+              }}
+            >
+              Dif 1
+            </Button>
+            <Button
+              type="button"
+              variant={filters.difs.includes(2) ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                const difs = filters.difs.includes(2) ? filters.difs.filter((d) => d !== 2) : [...filters.difs, 2];
+                setSearchParams(serializeFiltersToSearchParams(searchParams, { ...filters, difs }), { replace: true });
+              }}
+            >
+              Dif 2
+            </Button>
+            <Button
+              type="button"
+              variant={filters.difs.includes(3) ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                const difs = filters.difs.includes(3) ? filters.difs.filter((d) => d !== 3) : [...filters.difs, 3];
+                setSearchParams(serializeFiltersToSearchParams(searchParams, { ...filters, difs }), { replace: true });
+              }}
+            >
+              Dif 3
+            </Button>
+          </div>
+
+          {anyFilterActive && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                const cleared: ExerciseFilters = { q: "", tipos: [], grupos: [], equipments: [], difs: [] };
+                setSearchParams(serializeFiltersToSearchParams(searchParams, cleared), { replace: true });
+              }}
+            >
+              <X className="h-4 w-4" /> Limpiar
+            </Button>
+          )}
+        </div>
+
+        {/* Chips de filtros activos */}
+        {anyFilterActive && (
+          <div className="flex flex-wrap gap-2">
+            {filters.tipos.map((t) => (
+              <Badge key={`tipo:${t}`} variant="secondary" className="gap-1">
+                Tipo: {t}
+                <X
+                  className="h-3 w-3 cursor-pointer hover:text-destructive"
+                  onClick={() => {
+                    const nextFilters: ExerciseFilters = { ...filters, tipos: filters.tipos.filter((x) => x !== t) };
+                    setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                  }}
+                />
+              </Badge>
+            ))}
+            {filters.grupos.map((g) => (
+              <Badge key={`grupo:${g}`} variant="secondary" className="gap-1">
+                Grupo: {g}
+                <X
+                  className="h-3 w-3 cursor-pointer hover:text-destructive"
+                  onClick={() => {
+                    const nextFilters: ExerciseFilters = { ...filters, grupos: filters.grupos.filter((x) => x !== g) };
+                    setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                  }}
+                />
+              </Badge>
+            ))}
+            {filters.equipments.map((eq) => (
+              <Badge key={`eq:${eq}`} variant="secondary" className="gap-1">
+                Eq: {eq}
+                <X
+                  className="h-3 w-3 cursor-pointer hover:text-destructive"
+                  onClick={() => {
+                    const nextFilters: ExerciseFilters = {
+                      ...filters,
+                      equipments: filters.equipments.filter((x) => x !== eq),
+                    };
+                    setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                  }}
+                />
+              </Badge>
+            ))}
+            {filters.difs.map((d) => (
+              <Badge key={`dif:${d}`} variant="secondary" className="gap-1">
+                Dif: {d}
+                <X
+                  className="h-3 w-3 cursor-pointer hover:text-destructive"
+                  onClick={() => {
+                    const nextFilters: ExerciseFilters = { ...filters, difs: filters.difs.filter((x) => x !== d) };
+                    setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                  }}
+                />
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       {isError && (
@@ -286,7 +645,7 @@ const Exercises = () => {
           ? Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-24 rounded-xl" />
             ))
-          : sortedExercises.map((ex) => {
+          : filteredExercises.map((ex) => {
               const isOwn = (ex as any).usuario_id === user?.id;
               const IconComponent = getExerciseIcon(ex as { musculos_involucrados?: string[] | null });
               return (
@@ -357,22 +716,13 @@ const Exercises = () => {
                 </Card>
               );
             })}
-        {!isLoading && !isError && sortedExercises.length === 0 && (
+        {!isLoading && !isError && filteredExercises.length === 0 && (
           <p className="col-span-full text-center text-sm text-muted-foreground py-8">
             No hay ejercicios que coincidan. Prueba otra búsqueda o revisa en Supabase que existan filas en{" "}
             <code className="text-xs">tipo_ejercicio</code> y las políticas RLS permitan leerlas.
           </p>
         )}
       </div>
-
-      {/* Sentinel para infinite scroll */}
-      <div ref={loadMoreRef} className="h-10" />
-
-      {isFetchingNextPage && (
-        <div className="flex justify-center py-2 text-sm text-muted-foreground">
-          Cargando más...
-        </div>
-      )}
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

@@ -2,11 +2,22 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tansta
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export function useExerciseCatalogInfinite(search?: string, pageSize = 30) {
+export type ExerciseCatalogFilters = {
+  q?: string;
+  tipos?: string[];
+  grupos?: string[];
+  equipments?: string[];
+};
+
+export function useExerciseCatalogInfinite(filters?: ExerciseCatalogFilters, pageSize = 30) {
   const { user } = useAuth();
+  const q = (filters?.q ?? "").trim();
+  const tipos = filters?.tipos?.filter(Boolean) ?? [];
+  const grupos = filters?.grupos?.filter(Boolean) ?? [];
+  const equipments = filters?.equipments?.filter(Boolean) ?? [];
 
   return useInfiniteQuery({
-    queryKey: ["exerciseCatalogInfinite", search, user?.id, pageSize],
+    queryKey: ["exerciseCatalogInfinite", q, tipos, grupos, equipments, user?.id, pageSize],
     initialPageParam: 0,
     staleTime: 5 * 60 * 1000,
     queryFn: async ({ pageParam }) => {
@@ -19,9 +30,12 @@ export function useExerciseCatalogInfinite(search?: string, pageSize = 30) {
         .order("nombre")
         .range(offset, offset + pageSize - 1);
 
-      if (search) {
-        queryCatalogo = queryCatalogo.ilike("nombre", `%${search}%`);
+      if (q) {
+        queryCatalogo = queryCatalogo.ilike("nombre", `%${q}%`);
       }
+      if (tipos.length) queryCatalogo = queryCatalogo.in("tipo", tipos);
+      if (grupos.length) queryCatalogo = queryCatalogo.in("grupo_muscular", grupos);
+      if (equipments.length) queryCatalogo = queryCatalogo.in("equipment", equipments);
 
       // Ejercicios del usuario: normalmente son pocos; los traemos en la primera página
       let queryUsuario = supabase
@@ -29,9 +43,12 @@ export function useExerciseCatalogInfinite(search?: string, pageSize = 30) {
         .select("*, body_part:musculos_involucrados")
         .order("nombre");
 
-      if (search) {
-        queryUsuario = queryUsuario.ilike("nombre", `%${search}%`);
+      if (q) {
+        queryUsuario = queryUsuario.ilike("nombre", `%${q}%`);
       }
+      if (tipos.length) queryUsuario = queryUsuario.in("tipo", tipos);
+      if (grupos.length) queryUsuario = queryUsuario.in("grupo_muscular", grupos);
+      if (equipments.length) queryUsuario = queryUsuario.in("equipment", equipments);
 
       const [catRes, usrRes] = await Promise.all([
         queryCatalogo,
