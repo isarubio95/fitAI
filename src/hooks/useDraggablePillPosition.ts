@@ -76,9 +76,13 @@ export function useDraggablePillPosition(
   boundsMode: DraggablePillBoundsMode = "activeWorkout",
 ) {
   const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
   const elRef = useRef<HTMLDivElement>(null);
   const offsetRef = useRef<Point>({ x: 0, y: 0 });
   offsetRef.current = offset;
+  const pendingOffsetRef = useRef<Point>(offset);
+  const rafRef = useRef<number | null>(null);
+  const momentumRafRef = useRef<number | null>(null);
 
   const modeRef = useRef(boundsMode);
   modeRef.current = boundsMode;
@@ -88,8 +92,33 @@ export function useDraggablePillPosition(
     pointerId: -1,
     startClient: { x: 0, y: 0 },
     startOffset: { x: 0, y: 0 },
+    lastClient: { x: 0, y: 0 },
+    lastTs: 0,
+    velocity: { x: 0, y: 0 },
     moved: false,
   });
+
+  const flushOffset = useCallback(() => {
+    rafRef.current = null;
+    const next = pendingOffsetRef.current;
+    setOffset(next);
+  }, []);
+
+  const scheduleOffset = useCallback(
+    (next: Point) => {
+      pendingOffsetRef.current = next;
+      if (rafRef.current != null) return;
+      rafRef.current = requestAnimationFrame(flushOffset);
+    },
+    [flushOffset],
+  );
+
+  const stopMomentum = useCallback(() => {
+    if (momentumRafRef.current != null) {
+      cancelAnimationFrame(momentumRafRef.current);
+      momentumRafRef.current = null;
+    }
+  }, []);
 
   /** Antes del primer paint: evita un frame en (0,0) y luego salto desde localStorage. */
   useLayoutEffect(() => {
@@ -120,27 +149,43 @@ export function useDraggablePillPosition(
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return;
+    stopMomentum();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    const now = performance.now();
     drag.current = {
       active: true,
       pointerId: e.pointerId,
       startClient: { x: e.clientX, y: e.clientY },
       startOffset: { ...offsetRef.current },
+      lastClient: { x: e.clientX, y: e.clientY },
+      lastTs: now,
+      velocity: { x: 0, y: 0 },
       moved: false,
     };
-  }, []);
+    setIsDragging(true);
+  }, [stopMomentum]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!drag.current.active || e.pointerId !== drag.current.pointerId) return;
+    const now = performance.now();
     const dx = e.clientX - drag.current.startClient.x;
     const dy = e.clientY - drag.current.startClient.y;
     if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) drag.current.moved = true;
+
+    const dtMs = Math.max(1, now - drag.current.lastTs);
+    const vx = (e.clientX - drag.current.lastClient.x) / dtMs; // px/ms
+    const vy = (e.clientY - drag.current.lastClient.y) / dtMs; // px/ms
+    drag.current.velocity = { x: vx, y: vy };
+    drag.current.lastClient = { x: e.clientX, y: e.clientY };
+    drag.current.lastTs = now;
+
     const next = {
       x: drag.current.startOffset.x + dx,
       y: drag.current.startOffset.y + dy,
     };
-    setOffset(clampOffset(next, elRef.current, offsetRef.current, modeRef.current));
-  }, []);
+    const clamped = clampOffset(next, elRef.current, offsetRef.current, modeRef.current);
+    scheduleOffset(clamped);
+  }, [scheduleOffset]);
 
   const endDrag = useCallback(
     (e: React.PointerEvent) => {
@@ -151,13 +196,51 @@ export function useDraggablePillPosition(
       } catch {
         /* already released */
       }
-      setOffset((prev) => {
-        const c = clampOffset(prev, elRef.current, prev, modeRef.current);
+
+      const start = offsetRef.current;
+      const startV = drag.current.velocity;
+      const speed = Math.hypot(startV.x, startV.y);
+      const shouldMomentum = drag.current.moved && speed > 0.05; // ~50 px/s
+
+      if (!shouldMomentum) {
+        const c = clampOffset(start, elRef.current, start, modeRef.current);
+        scheduleOffset(c);
         persist(c);
-        return c;
-      });
+        setIsDragging(false);
+        return;
+      }
+
+      // Inercia simple con desaceleración exponencial para sensación "native"
+      let v = { ...startV };
+      let p = { ...start };
+      let last = performance.now();
+      const decayPerMs = 0.992;
+      const minSpeed = 0.01;
+
+      const tick = () => {
+        const now = performance.now();
+        const dt = Math.max(1, now - last);
+        last = now;
+
+        const decay = Math.pow(decayPerMs, dt);
+        v = { x: v.x * decay, y: v.y * decay };
+        p = { x: p.x + v.x * dt, y: p.y + v.y * dt };
+        p = clampOffset(p, elRef.current, offsetRef.current, modeRef.current);
+        scheduleOffset(p);
+
+        if (Math.hypot(v.x, v.y) < minSpeed) {
+          momentumRafRef.current = null;
+          persist(p);
+          setIsDragging(false);
+          return;
+        }
+        momentumRafRef.current = requestAnimationFrame(tick);
+      };
+
+      stopMomentum();
+      momentumRafRef.current = requestAnimationFrame(tick);
     },
-    [persist],
+    [persist, scheduleOffset, stopMomentum],
   );
 
   const onPointerUp = useCallback(
@@ -176,12 +259,19 @@ export function useDraggablePillPosition(
 
   const style =
     bottomPxFromViewport == null
-      ? ({ transform: `translate(${offset.x}px, ${offset.y}px)` } as const)
-      : ({ transform: `translateX(calc(-50% + ${offset.x}px)) translateY(${offset.y}px)` } as const);
+      ? ({
+          transform: `translate(${offset.x}px, ${offset.y}px)`,
+          willChange: "transform",
+        } as const)
+      : ({
+          transform: `translateX(calc(-50% + ${offset.x}px)) translateY(${offset.y}px)`,
+          willChange: "transform",
+        } as const);
 
   return {
     elRef,
     style,
+    isDragging,
     onPointerDown,
     onPointerMove,
     onPointerUp,

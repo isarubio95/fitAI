@@ -226,8 +226,9 @@ const Exercises = () => {
     refetch,
   } = useExerciseCatalogInfinite(
     {
-      // Filtrado server-side básico; la búsqueda inteligente completa se hace client-side
-      q: filters.q,
+      // Importante: la búsqueda por texto se hace solo client-side (normalizeText),
+      // para que no distinga acentos: "bíceps" = "biceps".
+      q: "",
       tipos: filters.tipos,
       grupos: filters.grupos,
       equipments: filters.equipments,

@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Dumbbell } from "lucide-react";
 import { WorkoutDetailsContent } from "@/components/dashboard/WorkoutDetailsSheet";
 import { cn } from "@/lib/utils";
+import { buildAuthAvatarCandidates, useUserAvatar } from "@/hooks/useUserAvatar";
 
 const iconMap: Record<string, React.ElementType> = {
   Swords,
@@ -90,10 +91,8 @@ export function ProfileDrawerTrigger() {
   const { user } = useAuth();
   const { openMyProfile } = useProfileDrawer();
 
-  const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : "U";
-  const avatarUrl =
-    (user?.user_metadata?.avatar_url as string | undefined) ||
-    (user?.user_metadata?.picture as string | undefined);
+  const initials = user?.email?.trim()?.[0]?.toUpperCase() || "U";
+  const avatar = useUserAvatar(useMemo(() => buildAuthAvatarCandidates(user), [user]));
 
   return (
     <button
@@ -102,7 +101,7 @@ export function ProfileDrawerTrigger() {
       className="flex items-center justify-center rounded-full pl-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Avatar className="h-8 w-8">
-        {avatarUrl && <AvatarImage src={avatarUrl} alt="" />}
+        {avatar.src && <AvatarImage src={avatar.src} alt="" onError={avatar.onError} />}
         <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
           {initials}
         </AvatarFallback>
@@ -112,11 +111,25 @@ export function ProfileDrawerTrigger() {
 }
 
 function initialsFromUsername(username?: string | null) {
-  if (!username) return "U";
-  const parts = username.trim().split(/[\s_\-]+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? "U";
-  const second = parts[1]?.[0] ?? "";
-  return (first + second).toUpperCase();
+  return username?.trim()?.[0]?.toUpperCase() || "U";
+}
+
+function UserAvatar({
+  avatarUrl,
+  username,
+  className,
+}: {
+  avatarUrl?: string | null;
+  username?: string | null;
+  className?: string;
+}) {
+  const avatar = useUserAvatar([avatarUrl]);
+  return (
+    <Avatar className={className}>
+      {avatar.src ? <AvatarImage src={avatar.src} alt="" onError={avatar.onError} /> : null}
+      <AvatarFallback className="text-[10px]">{initialsFromUsername(username)}</AvatarFallback>
+    </Avatar>
+  );
 }
 
 function ProfileDrawerSheet() {
@@ -126,10 +139,6 @@ function ProfileDrawerSheet() {
 
   const profileUserId = targetUserId ?? user?.id ?? "";
   const isViewingSelf = !targetUserId || targetUserId === user?.id;
-
-  const avatarUrlMeta =
-    (user?.user_metadata?.avatar_url as string | undefined) ||
-    (user?.user_metadata?.picture as string | undefined);
 
   const statsUserId = profileUserId || undefined;
   const { data: stats } = useProfileStats(statsUserId);
@@ -196,17 +205,22 @@ function ProfileDrawerSheet() {
 
   const lastWorkouts = workoutsHistory.slice(0, 5);
 
-  const displayAvatar = isViewingSelf
-    ? perfilRow?.avatar_url || avatarUrlMeta
-    : perfilRow?.avatar_url || undefined;
+  const displayAvatar = useUserAvatar(
+    useMemo(() => {
+      const fromProfile = perfilRow?.avatar_url;
+      if (!isViewingSelf) return fromProfile ? [fromProfile] : [];
+      const base = buildAuthAvatarCandidates(user);
+      return fromProfile ? [fromProfile, ...base] : base;
+    }, [isViewingSelf, perfilRow?.avatar_url, user]),
+  );
 
   const displayNameLine = loadingPerfil
     ? "..."
     : (perfilRow?.username ?? (isViewingSelf ? user?.email : null) ?? "Usuario");
 
   const headerInitials =
-    isViewingSelf && user?.email && !displayAvatar
-      ? user.email.slice(0, 2).toUpperCase()
+    isViewingSelf && user?.email && !displayAvatar.src
+      ? user.email.trim()?.[0]?.toUpperCase() || "U"
       : initialsFromUsername(perfilRow?.username);
 
   if (!user) return null;
@@ -224,8 +238,8 @@ function ProfileDrawerSheet() {
 
           <div className="flex gap-4 items-start">
             <Avatar className="h-16 w-16 shrink-0 ring-2 ring-border/60 mr-1">
-              {displayAvatar && (
-                <AvatarImage src={displayAvatar} alt="" className="object-cover" />
+              {displayAvatar.src && (
+                <AvatarImage src={displayAvatar.src} alt="" className="object-cover" onError={displayAvatar.onError} />
               )}
               <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
                 {headerInitials}
@@ -289,12 +303,7 @@ function ProfileDrawerSheet() {
                         openUserProfile(p.id);
                       }}
                     >
-                      <Avatar className="h-8 w-8">
-                        {p.avatar_url && <AvatarImage src={p.avatar_url} alt="" />}
-                        <AvatarFallback className="text-[10px]">
-                          {initialsFromUsername(p.username)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar avatarUrl={p.avatar_url} username={p.username} className="h-8 w-8" />
                       <p className="text-sm font-medium truncate">{p.username ?? "Usuario"}</p>
                     </button>
                   ))}

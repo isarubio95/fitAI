@@ -39,10 +39,10 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
       <div
         className={cn(
           "relative flex h-8 w-8 items-center justify-center rounded-full border",
-          timer.finished ? "bg-emerald-500/10 border-emerald-500/20" : "bg-sky-500/10 border-sky-500/20",
+            timer.finished ? "bg-emerald-500/10 border-emerald-500/20" : "bg-blue-500/25 border-blue-300/60",
         )}
       >
-        <Timer className={cn("h-4 w-4", timer.finished ? "text-emerald-400" : "text-sky-400")} />
+        <Timer className={cn("h-4 w-4", timer.finished ? "text-emerald-400" : "text-blue-200")} />
       </div>
 
       <div className="flex flex-col items-start gap-1 min-w-[160px]">
@@ -50,14 +50,14 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
           <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 leading-none">
             Descanso
           </span>
-          <span className={cn("text-sm font-mono tabular-nums leading-none", timer.finished ? "text-emerald-400" : "text-sky-400")}>
+          <span className={cn("text-sm font-mono tabular-nums leading-none", timer.finished ? "text-emerald-400" : "text-blue-200")}>
             {label}
           </span>
         </div>
 
-        <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+        <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
           <div
-            className={cn("h-full rounded-full transition-[width] duration-200 ease-linear", timer.finished ? "bg-emerald-400/70" : "bg-sky-400/70")}
+            className={cn("h-full rounded-full transition-[width] duration-200 ease-linear", timer.finished ? "bg-emerald-400/70" : "bg-blue-400")}
             style={{ width: `${timer.finished ? 0 : percent}%` }}
           />
         </div>

@@ -8,6 +8,7 @@ import { useUserSearch } from "@/hooks/useUserSearch";
 import { useFollows } from "@/hooks/useFollows";
 import { useCommunityFeed } from "@/hooks/useCommunityFeed";
 import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
+import { useUserAvatar } from "@/hooks/useUserAvatar";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,11 +17,25 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function initialsFromUsername(username?: string | null) {
-  if (!username) return "U";
-  const parts = username.trim().split(/[\s_\\-]+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? "U";
-  const second = parts[1]?.[0] ?? "";
-  return (first + second).toUpperCase();
+  return username?.trim()?.[0]?.toUpperCase() || "U";
+}
+
+function CommunityAvatar({
+  avatarUrl,
+  username,
+  className,
+}: {
+  avatarUrl?: string | null;
+  username?: string | null;
+  className: string;
+}) {
+  const avatar = useUserAvatar([avatarUrl]);
+  return (
+    <Avatar className={className}>
+      {avatar.src ? <AvatarImage src={avatar.src} alt="" onError={avatar.onError} /> : null}
+      <AvatarFallback>{initialsFromUsername(username)}</AvatarFallback>
+    </Avatar>
+  );
 }
 
 export default function Community() {
@@ -85,10 +100,7 @@ export default function Community() {
                         onClick={openProfile}
                         className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring -m-1 p-1"
                       >
-                        <Avatar className="h-10 w-10 shrink-0">
-                          {p.avatar_url && <AvatarImage src={p.avatar_url} alt="" />}
-                          <AvatarFallback>{initialsFromUsername(p.username)}</AvatarFallback>
-                        </Avatar>
+                        <CommunityAvatar avatarUrl={p.avatar_url} username={p.username} className="h-10 w-10 shrink-0" />
                         <div className="min-w-0">
                           <p className="font-semibold truncate">{p.username}</p>
                           <p className="text-xs text-muted-foreground truncate">
@@ -154,10 +166,11 @@ export default function Community() {
                         className="shrink-0 rounded-full outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         aria-label={`Ver perfil de ${item.author.username ?? "usuario"}`}
                       >
-                        <Avatar className="h-9 w-9">
-                          {item.author.avatar_url && <AvatarImage src={item.author.avatar_url} alt="" />}
-                          <AvatarFallback>{initialsFromUsername(item.author.username)}</AvatarFallback>
-                        </Avatar>
+                        <CommunityAvatar
+                          avatarUrl={item.author.avatar_url}
+                          username={item.author.username}
+                          className="h-9 w-9"
+                        />
                       </button>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{item.author.username}</p>

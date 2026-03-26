@@ -4,14 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
 import { useFollows } from "@/hooks/useFollows";
+import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { cn } from "@/lib/utils";
 
 function initialsFromUsername(username?: string | null) {
-  if (!username) return "U";
-  const parts = username.trim().split(/[\s_\\-]+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? "U";
-  const second = parts[1]?.[0] ?? "";
-  return (first + second).toUpperCase();
+  return username?.trim()?.[0]?.toUpperCase() || "U";
 }
 
 type Props = {
@@ -37,6 +34,7 @@ export function NewFollowerNotificationContent({
 }: Props) {
   const { openUserProfile } = useProfileDrawer();
   const { followingIds, toggleFollow, isToggling } = useFollows();
+  const avatar = useUserAvatar([avatarUrl]);
   const displayName = username?.trim() || "Usuario";
   const isFollowing = followingIds.has(seguidorId);
 
@@ -64,7 +62,7 @@ export function NewFollowerNotificationContent({
           className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring -m-1 p-1"
         >
           <Avatar className={cn("shrink-0", compact ? "h-10 w-10" : "h-11 w-11")}>
-            {avatarUrl ? <AvatarImage src={avatarUrl} alt="" className="object-cover" /> : null}
+            {avatar.src ? <AvatarImage src={avatar.src} alt="" className="object-cover" onError={avatar.onError} /> : null}
             <AvatarFallback className="text-xs font-semibold">{initialsFromUsername(username)}</AvatarFallback>
           </Avatar>
           <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight">{displayName}</p>
