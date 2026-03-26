@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 type Point = { x: number; y: number };
 
@@ -120,6 +120,23 @@ export function useDraggablePillPosition(
     }
   }, []);
 
+  const stopRafs = useCallback(() => {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (momentumRafRef.current != null) {
+      cancelAnimationFrame(momentumRafRef.current);
+      momentumRafRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopRafs();
+    };
+  }, [stopRafs]);
+
   /** Antes del primer paint: evita un frame en (0,0) y luego salto desde localStorage. */
   useLayoutEffect(() => {
     const el = elRef.current;
@@ -129,12 +146,44 @@ export function useDraggablePillPosition(
       if (!raw) return;
       const p = JSON.parse(raw) as Point;
       if (typeof p.x !== "number" || typeof p.y !== "number") return;
-      const c = clampOffset(p, el, p, modeRef.current);
+      const c = clampOffset(p, el, offsetRef.current, modeRef.current);
       setOffset((prev) => (prev.x === c.x && prev.y === c.y ? prev : c));
     } catch {
       /* ignore */
     }
   }, [storageKey, boundsMode]);
+
+  // Failsafe: si por cualquier motivo la pill queda fuera de pantalla (offset guardado raro),
+  // reseteamos a posición segura para evitar que "desaparezca".
+  useEffect(() => {
+    const el = elRef.current;
+    if (!el) return;
+    const mode = modeRef.current;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const minTop = minTopPx(mode);
+    const maxBottom = maxBottomPx(mode, vh);
+
+    const check = () => {
+      const rect = el.getBoundingClientRect();
+      const completelyOff =
+        rect.right < EDGE_PX ||
+        rect.left > vw - EDGE_PX ||
+        rect.bottom < minTop ||
+        rect.top > maxBottom;
+      if (!completelyOff) return;
+      const safe: Point = { x: 0, y: 0 };
+      scheduleOffset(safe);
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(safe));
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const id = requestAnimationFrame(check);
+    return () => cancelAnimationFrame(id);
+  }, [storageKey, boundsMode, scheduleOffset]);
 
   const persist = useCallback(
     (p: Point) => {
