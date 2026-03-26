@@ -2,8 +2,16 @@ import * as React from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 
 import { cn } from "@/lib/utils";
+import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
 
-const Popover = PopoverPrimitive.Root;
+const Popover = ({
+  open,
+  onOpenChange,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Root>) => {
+  useBackCloseLayer({ open: !!open, onOpenChange, kind: "popover" });
+  return <PopoverPrimitive.Root open={open} onOpenChange={onOpenChange} {...props} />;
+};
 
 const PopoverTrigger = PopoverPrimitive.Trigger;
 

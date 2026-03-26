@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
 
 /** Overlay y panel con la misma duración/curva + capa GPU (evita desfase y tirones). */
 const sheetOverlayAnimation =
@@ -11,7 +12,14 @@ const sheetOverlayAnimation =
 const sheetContentAnimation =
   "backface-hidden transform-gpu ease-out data-[state=closed]:duration-300 data-[state=open]:duration-300";
 
-const Sheet = SheetPrimitive.Root;
+const Sheet = ({
+  open,
+  onOpenChange,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SheetPrimitive.Root>) => {
+  useBackCloseLayer({ open: !!open, onOpenChange, kind: "sheet" });
+  return <SheetPrimitive.Root open={open} onOpenChange={onOpenChange} {...props} />;
+};
 
 const SheetTrigger = SheetPrimitive.Trigger;
 

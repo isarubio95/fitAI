@@ -659,19 +659,6 @@ export function WorkoutLogger() {
 
   const saveButtonLabel = isActiveWorkout ? "Finalizar" : isEdit ? "Actualizar" : "Guardar";
 
-  // Intercept hardware back button: push a fake history entry when open
-  useEffect(() => {
-    if (!open) return;
-    window.history.pushState({ workoutDrawerOpen: true }, "", window.location.href);
-    const handlePopState = () => {
-      setOpen(false);
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [open, setOpen]);
-
   // Evita que Radix deje algún elemento con foco visible al abrir el drawer
   useEffect(() => {
     if (!open) return;
