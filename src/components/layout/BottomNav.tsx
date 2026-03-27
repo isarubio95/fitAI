@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity, Sparkles, ChevronDown, FileUp, Calendar, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
+import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
 
 // Añadimos un objeto especial de tipo "add" para representarlo en el centro
@@ -18,6 +19,7 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { openNew } = useGlobalWorkoutDrawer();
+  const { openNew: openCardioNew } = useGlobalCardioDrawer();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showRoutineSubmenu, setShowRoutineSubmenu] = useState(false);
   const [explorerOpen, setExplorerOpen] = useState(false);
@@ -81,9 +83,9 @@ export function BottomNav() {
             onClick={() => { setShowRoutineSubmenu(!showRoutineSubmenu); }}
           >
             <span className="flex items-center gap-3 min-w-0">
-              <ClipboardList className="h-6 w-6 shrink-0 text-blue-500" />
+              <ClipboardList className="h-6 w-6 shrink-0 text-primary" />
               <div className="min-w-0">
-                <p className="font-medium">Rutina</p>
+                <p className="font-medium">Rutina de Gimnasio</p>
                 <p className="text-xs text-muted-foreground">Crea o explora plantillas de entrenamiento</p>
               </div>
             </span>
@@ -135,12 +137,32 @@ export function BottomNav() {
         </div>
         <button
           className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
+          onClick={() => { navigate("/cardio-routines"); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
+        >
+          <ClipboardList className="h-6 w-6 shrink-0 text-cyan-500" />
+          <div className="min-w-0">
+            <p className="font-medium">Rutinas de Cardio</p>
+            <p className="text-xs text-muted-foreground">Crea y lanza plantillas cardio</p>
+          </div>
+        </button>
+        <button
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
           onClick={() => { openNew(); setIsMenuOpen(false); }}
         >
           <Activity className="h-6 w-6 shrink-0 text-primary" />
           <div className="min-w-0">
-            <p className="font-medium">Entreno Libre</p>
+            <p className="font-medium">Entreno de Gimnasio</p>
             <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
+          </div>
+        </button>
+        <button
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
+          onClick={() => { openCardioNew(); setIsMenuOpen(false); }}
+        >
+          <Activity className="h-6 w-6 shrink-0 text-blue-500" />
+          <div className="min-w-0">
+            <p className="font-medium">Entreno de Cardio</p>
+            <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>
           </div>
         </button>
         <button

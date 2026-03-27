@@ -14,6 +14,7 @@ import Library from "./pages/Library";
 import Community from "./pages/Community";
 import WorkoutHistory from "./pages/WorkoutHistory";
 import Evolution from "./pages/Evolution";
+import CardioRoutines from "./pages/CardioRoutines";
 import NotFound from "./pages/NotFound";
 import AdminImport from "./pages/AdminImport";
 
@@ -39,6 +40,7 @@ const App = () => {
                     <Route path="/community" element={<Community />} />
                     <Route path="/history" element={<WorkoutHistory />} />
                     <Route path="/evolution" element={<Evolution />} />
+                    <Route path="/cardio-routines" element={<CardioRoutines />} />
                   </Route>
                   <Route path="/admin-import" element={<AdminImport />} />
                   <Route path="*" element={<NotFound />} />

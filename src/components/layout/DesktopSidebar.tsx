@@ -8,6 +8,7 @@ import { ProfileDrawerTrigger } from "./ProfileDrawer";
 import { SettingsDrawer } from "./SettingsDrawer";
 import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
+import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
 import {
   DropdownMenu,
@@ -30,6 +31,7 @@ export function DesktopSidebar() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const { openNew } = useGlobalWorkoutDrawer();
+  const { openNew: openCardioNew } = useGlobalCardioDrawer();
   const [explorerOpen, setExplorerOpen] = useState(false);
 
   return (
@@ -51,15 +53,22 @@ export function DesktopSidebar() {
             <DropdownMenuItem className="text-base" onClick={() => openNew()}>
               <Activity className="h-5 w-5 mr-2 shrink-0 text-primary" />
               <div className="min-w-0">
-                <p className="font-medium">Entreno Libre</p>
+                <p className="font-medium">Entreno de Gimnasio</p>
                 <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-base" onClick={() => openCardioNew()}>
+              <Activity className="h-5 w-5 mr-2 shrink-0 text-blue-500" />
+              <div className="min-w-0">
+                <p className="font-medium">Entreno de Cardio</p>
+                <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>
               </div>
             </DropdownMenuItem>
             <DropdownMenuSub>
               <DropdownMenuSubTrigger className="gap-2 text-base [&_svg]:h-5 [&_svg]:w-5">
-                <ClipboardList className="h-5 w-5 shrink-0 text-blue-500" />
+                <ClipboardList className="h-5 w-5 shrink-0 text-primary" />
                 <div className="min-w-0">
-                  <p className="font-medium">Rutina</p>
+                  <p className="font-medium">Rutina de Gimnasio</p>
                   <p className="text-xs text-muted-foreground">Crea o explora plantillas de entrenamiento</p>
                 </div>
               </DropdownMenuSubTrigger>
@@ -87,6 +96,13 @@ export function DesktopSidebar() {
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
+            <DropdownMenuItem className="text-base" onClick={() => navigate("/cardio-routines")}>
+              <ClipboardList className="h-5 w-5 mr-2 shrink-0 text-cyan-500" />
+              <div className="min-w-0">
+                <p className="font-medium">Rutinas de Cardio</p>
+                <p className="text-xs text-muted-foreground">Gestiona plantillas de cardio</p>
+              </div>
+            </DropdownMenuItem>
             <DropdownMenuItem className="text-base" onClick={() => navigate("/routines?tab=ejercicios", { state: { action: "new" } })}>
               <Dumbbell className="h-5 w-5 mr-2 shrink-0 text-orange-500" />
               <div className="min-w-0">

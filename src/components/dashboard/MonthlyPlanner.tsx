@@ -43,6 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ActividadWithDetails } from "@/types/workout";
+import type { CardioSesion } from "@/types/cardio";
 import { usePlannedRoutines, useDeletePlannedRoutine, useUpdatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useDeleteWorkout } from "@/hooks/useWorkouts";
@@ -54,8 +55,10 @@ interface MonthlyPlannerProps {
   month: Date;
   onMonthChange: (d: Date) => void;
   workouts: ActividadWithDetails[];
+  cardioSessions: CardioSesion[];
   onDayClick: (date: Date) => void;
   onWorkoutClick: (workoutId: string) => void;
+  onCardioClick?: (sessionId: string) => void;
   onWorkoutDetailsClick?: (workoutId: string) => void;
   onPlannedStart?: (planned: PlannedRoutine) => void;
 }
@@ -66,8 +69,10 @@ export function MonthlyPlanner({
   month,
   onMonthChange,
   workouts,
+  cardioSessions,
   onDayClick,
   onWorkoutClick,
+  onCardioClick,
   onWorkoutDetailsClick,
   onPlannedStart,
 }: MonthlyPlannerProps) {
@@ -116,6 +121,16 @@ export function MonthlyPlanner({
     });
     return map;
   }, [planned]);
+
+  const cardioByDay = useMemo(() => {
+    const map = new Map<string, CardioSesion[]>();
+    cardioSessions.forEach((s) => {
+      const key = format(new Date(s.fecha_inicio), "yyyy-MM-dd");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(s);
+    });
+    return map;
+  }, [cardioSessions]);
 
   const deletePlan = useDeletePlannedRoutine();
   const updatePlan = useUpdatePlannedRoutine();
@@ -201,8 +216,10 @@ export function MonthlyPlanner({
                 const key = format(day, "yyyy-MM-dd");
                 const dayWorkouts = workoutsByDay.get(key) || [];
                 const dayPlanned = plannedByDay.get(key) || [];
-                const hasContent = dayWorkouts.length > 0 || dayPlanned.length > 0;
+                const dayCardio = cardioByDay.get(key) || [];
+                const hasContent = dayWorkouts.length > 0 || dayPlanned.length > 0 || dayCardio.length > 0;
                 const isTrained = dayWorkouts.length > 0;
+                const isCardioTrained = !isTrained && dayCardio.length > 0;
                 const isScheduled = !isTrained && dayPlanned.length > 0;
 
                 const now = startOfDay(new Date());
@@ -235,13 +252,15 @@ export function MonthlyPlanner({
 
                 const circleFill = isTrained
                   ? "bg-gradient-to-br from-primary/65 via-primary/45 to-accent/70"
+                  : isCardioTrained
+                    ? "bg-gradient-to-br from-blue-500/70 via-blue-500/45 to-cyan-500/60"
                   : isScheduled
                     ? "bg-gradient-to-br from-orange-500/55 via-orange-500/35 to-orange-400/50"
                     : isPast
                       ? "bg-card/80"
                       : "bg-card/95";
 
-                const circleText = isTrained
+                const circleText = isTrained || isCardioTrained
                   ? "text-primary-foreground"
                   : isScheduled
                     ? "text-foreground"
@@ -253,6 +272,8 @@ export function MonthlyPlanner({
                   ? isPast
                     ? "border-primary/22"
                     : "border-primary/40"
+                  : isCardioTrained
+                    ? "border-blue-400/50"
                   : isPast
                     ? "border-border/70"
                     : "border-border/12";
@@ -307,6 +328,7 @@ export function MonthlyPlanner({
                   const expandedDate = new Date(`${expandedDayKey}T00:00:00`);
                   const expandedWorkouts = workoutsByDay.get(expandedDayKey) || [];
                   const expandedPlanned = plannedByDay.get(expandedDayKey) || [];
+                  const expandedCardio = cardioByDay.get(expandedDayKey) || [];
                   const dayStart = startOfDay(expandedDate);
                   const now = startOfDay(new Date());
 
@@ -444,6 +466,43 @@ export function MonthlyPlanner({
                                   </div>
                                 );
                               })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Cardio realizado */}
+                        {expandedCardio.length > 0 && (
+                          <div className={expandedWorkouts.length > 0 || expandedPlanned.length > 0 ? "mb-3" : ""}>
+                            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+                              Cardio realizado
+                            </p>
+                            <div className="space-y-1.5">
+                              {expandedCardio.map((s) => (
+                                <div
+                                  key={s.id}
+                                  className="flex items-center justify-between gap-2 rounded-md border border-blue-400/30 bg-blue-500/10 p-2"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium truncate">{s.titulo}</p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                      {s.deporte ?? "Cardio"}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {onCardioClick && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        onClick={() => onCardioClick(s.id)}
+                                        title="Editar cardio"
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         )}

@@ -9,6 +9,8 @@ import { SettingsDrawer } from "./SettingsDrawer";
 import { ActiveWorkoutPill } from "@/components/workout/ActiveWorkoutPill";
 import { GlobalWorkoutDrawerProvider } from "@/hooks/useGlobalWorkoutDrawer";
 import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
+import { GlobalCardioDrawerProvider } from "@/hooks/useGlobalCardioDrawer";
+import { CardioLogger } from "@/components/cardio/CardioLogger";
 import { Loader2 } from "lucide-react";
 // import { SwipeableRoutesWrapper } from "./SwipeableRoutesWrapper";
 import { cn } from "@/lib/utils";
@@ -47,9 +49,11 @@ export function AppLayout() {
       : location.pathname === "/evolution"
         ? "Evolución"
         : location.pathname === "/routines"
-          ? "Rutinas"
+          ? "Rutinas de Gimnasio"
           : location.pathname === "/community"
             ? "Comunidad"
+          : location.pathname === "/cardio-routines"
+            ? "Rutinas de Cardio"
             : location.pathname === "/profile"
               ? "Perfil"
               : "TrackGym";
@@ -64,7 +68,7 @@ export function AppLayout() {
       : location.pathname === "/routines"
         ? (currentTab || "rutinas") === "ejercicios"
           ? "Ejercicios"
-          : "Rutinas"
+          : "Rutinas de Gimnasio"
         : "";
 
   useEffect(() => {
@@ -118,7 +122,8 @@ export function AppLayout() {
 
   return (
     <GlobalWorkoutDrawerProvider>
-      <InAppNotificationsProvider>
+      <GlobalCardioDrawerProvider>
+        <InAppNotificationsProvider>
       <ProfileDrawerProvider>
       <div className="flex min-h-screen bg-background">
         <DesktopSidebar />
@@ -210,7 +215,7 @@ export function AppLayout() {
                       : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
                   )}
                 >
-                  Rutinas
+                  Rutinas de Gimnasio
                 </button>
                 <button
                   type="button"
@@ -239,9 +244,11 @@ export function AppLayout() {
         <ActiveWorkoutPill />
         <BottomNav />
         <WorkoutLogger />
+        <CardioLogger />
       </div>
       </ProfileDrawerProvider>
       </InAppNotificationsProvider>
+      </GlobalCardioDrawerProvider>
     </GlobalWorkoutDrawerProvider>
   );
 }

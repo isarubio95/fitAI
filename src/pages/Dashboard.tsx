@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
+import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
+import { useMonthCardioSessionDates, useMonthCardioSessions } from "@/hooks/useCardioSessions";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -125,6 +127,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { openNew, openEdit, openActiveWorkout, openFromPlannedRoutine } = useGlobalWorkoutDrawer();
+  const { openEdit: openCardioEdit } = useGlobalCardioDrawer();
   const { data: activeWorkout } = useActiveWorkout();
   const { toast } = useToast();
 
@@ -184,6 +187,8 @@ const Dashboard = () => {
   const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyWorkouts();
   const { data: monthWorkouts } = useMonthWorkouts(calendarMonth);
   const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
+  const { data: monthCardioSessions } = useMonthCardioSessions(calendarMonth);
+  const { data: cardioSessionDates } = useMonthCardioSessionDates(calendarMonth);
 
   const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
     const saved = localStorage.getItem('dashboard-widget-order');
@@ -427,11 +432,13 @@ const Dashboard = () => {
                   month={calendarMonth}
                   onMonthChange={handleMonthChange}
                   workouts={monthWorkouts ?? []}
+                  cardioSessions={monthCardioSessions ?? []}
                   onDayClick={(date) => {
                     handleDateSelect(date);
                     if (!isDragMode) openNew(format(date, "yyyy-MM-dd"));
                   }}
                   onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
+                  onCardioClick={(id) => { if (!isDragMode) openCardioEdit(id); }}
                   onWorkoutDetailsClick={(id) => openWorkoutDetails(id)}
                   onPlannedStart={!isDragMode ? startPlanned : undefined}
                 />
@@ -441,6 +448,7 @@ const Dashboard = () => {
                   displayWeekStart={weekViewStart}
                   onDateSelect={handleWeekDaySelect}
                   workoutDates={workoutDates ?? []}
+                  cardioSessionDates={cardioSessionDates ?? []}
                   onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
                   onWorkoutDetailsClick={(id) => openWorkoutDetails(id)}
                   onPlannedClick={(p) => { if (!isDragMode) startPlanned(p); }}

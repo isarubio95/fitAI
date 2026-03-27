@@ -44,9 +44,11 @@ import {
 } from "@/components/ui/dialog";
 import type { ActividadWithDetails } from "@/types/workout";
 import { useMonthWorkouts } from "@/hooks/useWorkouts";
+import { useMonthCardioSessions } from "@/hooks/useCardioSessions";
 import { usePlannedRoutines, useDeletePlannedRoutine, useUpdatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useToast } from "@/hooks/use-toast";
+import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 
 interface WeekCalendarProps {
   selectedDate: Date | null;
@@ -54,6 +56,7 @@ interface WeekCalendarProps {
   displayWeekStart?: Date | null;
   onDateSelect: (date: Date) => void;
   workoutDates: Date[];
+  cardioSessionDates?: Date[];
   onWorkoutClick?: (id: string) => void;
   onWorkoutDetailsClick?: (id: string) => void;
   onPlannedClick?: (planned: PlannedRoutine) => void;
@@ -64,6 +67,7 @@ export function WeekCalendar({
   displayWeekStart,
   onDateSelect,
   workoutDates,
+  cardioSessionDates = [],
   onWorkoutClick,
   onWorkoutDetailsClick,
   onPlannedClick,
@@ -79,6 +83,8 @@ export function WeekCalendar({
   );
 
   const { data: monthWorkouts } = useMonthWorkouts(monthForWeek);
+  const { data: monthCardioSessions } = useMonthCardioSessions(monthForWeek);
+  const { openEdit: openCardioEdit } = useGlobalCardioDrawer();
   const { data: planned } = usePlannedRoutines(weekStart, addDays(weekStart, 6));
   const deletePlan = useDeletePlannedRoutine();
   const updatePlan = useUpdatePlannedRoutine();
@@ -137,6 +143,9 @@ export function WeekCalendar({
   const hasWorkout = (day: Date) =>
     workoutDates.some((d) => isSameDay(d, day));
 
+  const hasCardioSession = (day: Date) =>
+    cardioSessionDates.some((d) => isSameDay(d, day));
+
   const goBack = () => onDateSelect(subWeeks(selectedDate ?? weekStart ?? new Date(), 1));
   const goForward = () => onDateSelect(addWeeks(selectedDate ?? weekStart ?? new Date(), 1));
 
@@ -177,8 +186,10 @@ export function WeekCalendar({
           }
 
           const hasWorkouts = dayWorkouts.length > 0;
+          const dayCardio = (monthCardioSessions ?? []).filter((s) => isSameDay(new Date(s.fecha_inicio), day));
+          const hasCardio = dayCardio.length > 0;
           const hasPlanned = dayPlanned.length > 0;
-          const isOpen = selected && (hasWorkouts || hasPlanned);
+          const isOpen = selected && (hasWorkouts || hasPlanned || hasCardio);
 
           const now = startOfDay(new Date());
           const dayStart = startOfDay(day);
@@ -233,8 +244,11 @@ export function WeekCalendar({
                         Hoy
                       </span>
                     )}
-                    {hasWorkouts && (
+                    {(hasWorkouts || hasWorkout(day)) && (
                       <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                    )}
+                    {(hasCardio || hasCardioSession(day)) && (
+                      <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
                     )}
                     {planDotClass && (
                       <span className={cn("h-2 w-2 rounded-full shrink-0", planDotClass)} />
@@ -383,6 +397,31 @@ export function WeekCalendar({
                                 {ej.tipo_ejercicio.nombre}
                               </span>
                             ))}
+                          </div>
+                        </div>
+                      ))}
+
+                      {dayCardio.map((s) => (
+                        <div
+                          key={s.id}
+                          className="py-2 first:pt-1 last:pb-0 border-b border-border/20 last:border-b-0"
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="font-medium text-[13px] text-blue-500">{s.titulo}</span>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0"
+                                onClick={() => openCardioEdit(s.id)}
+                                title="Editar cardio"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {s.deporte ?? "Cardio"}
                           </div>
                         </div>
                       ))}
