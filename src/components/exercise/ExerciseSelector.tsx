@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
+import { useExerciseCatalogInfinite } from "@/hooks/useExerciseCatalog";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Search, User } from "lucide-react";
+import { Loader2, Search, User } from "lucide-react";
 
 interface ExerciseSelectorProps {
   open: boolean;
@@ -19,10 +19,32 @@ interface ExerciseSelectorProps {
 
 export function ExerciseSelector({ open, onOpenChange, onSelect }: ExerciseSelectorProps) {
   const { user } = useAuth();
-  const { data: catalog } = useExerciseCatalog();
+  const [search, setSearch] = useState("");
   const [onlyMine, setOnlyMine] = useState(false);
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useExerciseCatalogInfinite(
+    {
+      q: search,
+    },
+    30,
+  );
 
-  const filtered = catalog?.filter((tipo) => !onlyMine || (tipo as any).usuario_id === user?.id);
+  const catalog = useMemo(() => {
+    const pages = data?.pages ?? [];
+    const usuario = pages[0]?.usuario ?? [];
+    const catalogo = pages.flatMap((p) => p.catalogo ?? []);
+    return [...usuario, ...catalogo];
+  }, [data]);
+
+  const filtered = useMemo(
+    () => catalog.filter((tipo) => !onlyMine || (tipo as any).usuario_id === user?.id),
+    [catalog, onlyMine, user?.id],
+  );
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -37,15 +59,32 @@ export function ExerciseSelector({ open, onOpenChange, onSelect }: ExerciseSelec
           <Switch checked={onlyMine} onCheckedChange={setOnlyMine} />
         </div>
         <Command>
-          <CommandInput placeholder="Buscar ejercicio..." />
+          <CommandInput
+            placeholder="Buscar ejercicio..."
+            value={search}
+            onValueChange={setSearch}
+          />
           <div
             className="max-h-[60svh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
             onWheelCapture={(e) => e.stopPropagation()}
             onTouchMoveCapture={(e) => e.stopPropagation()}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+              if (nearBottom && hasNextPage && !isFetchingNextPage) {
+                void fetchNextPage();
+              }
+            }}
           >
             <CommandList className="max-h-none overflow-visible">
               <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
               <CommandGroup>
+                {isLoading && (
+                  <CommandItem value="_loading" disabled>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Cargando ejercicios...
+                  </CommandItem>
+                )}
                 {filtered?.map((tipo) => {
                   const isOwn = (tipo as any).usuario_id === user?.id;
                   const source = (tipo as any).__source as "usuario" | "catalogo" | undefined;
@@ -65,6 +104,12 @@ export function ExerciseSelector({ open, onOpenChange, onSelect }: ExerciseSelec
                     </CommandItem>
                   );
                 })}
+                {!isLoading && isFetchingNextPage && (
+                  <CommandItem value="_loading_more" disabled>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Cargando más...
+                  </CommandItem>
+                )}
               </CommandGroup>
             </CommandList>
           </div>

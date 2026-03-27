@@ -38,12 +38,23 @@ export function useCommunitySettings() {
         .eq("usuario_id", user.id);
 
       if (actErr) throw actErr;
+
+      const { error: cardioErr } = await supabase
+        .from("cardio_sesion")
+        .update({ es_publica: value } as any)
+        .eq("usuario_id", user.id);
+
+      if (cardioErr) throw cardioErr;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["communitySettings", user?.id] });
       queryClient.invalidateQueries({ queryKey: ["communityFeed"] });
       queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
       queryClient.invalidateQueries({ queryKey: ["lastWorkout"] });
+      queryClient.invalidateQueries({ queryKey: ["cardioSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["cardioSession"] });
+      queryClient.invalidateQueries({ queryKey: ["monthCardioSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["monthCardioSessionDates"] });
     },
   });
 

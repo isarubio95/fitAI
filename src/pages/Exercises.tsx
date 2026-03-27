@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useExerciseCatalogInfinite, useCreateExercise, useDeleteExercise } from "@/hooks/useExerciseCatalog";
 import { useAuth } from "@/hooks/useAuth";
@@ -224,6 +224,9 @@ const Exercises = () => {
     isError,
     error,
     refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useExerciseCatalogInfinite(
     {
       // Importante: la búsqueda por texto se hace solo client-side (normalizeText),
@@ -233,7 +236,7 @@ const Exercises = () => {
       grupos: filters.grupos,
       equipments: filters.equipments,
     },
-    1000,
+    30,
   );
   const createExercise = useCreateExercise();
   const deleteExercise = useDeleteExercise();
@@ -247,6 +250,7 @@ const Exercises = () => {
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLElement | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   // Flatten: ejercicios de usuario (solo primera página) + páginas del catálogo
   const exercises = useMemo(() => {
@@ -337,6 +341,24 @@ const Exercises = () => {
       navigate(`${location.pathname}${location.search}`, { replace: true, state: {} });
     }
   }, [location.state]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { root: null, rootMargin: "300px 0px", threshold: 0 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, filteredExercises.length]);
 
   const handleCreate = async () => {
     if (!user || !newName.trim()) return;
@@ -724,6 +746,12 @@ const Exercises = () => {
           </p>
         )}
       </div>
+
+      {!isLoading && hasNextPage && (
+        <div ref={loadMoreRef} className="flex items-center justify-center py-2">
+          {isFetchingNextPage && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+        </div>
+      )}
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

@@ -6,6 +6,7 @@ import type { CardioRoutineBlockInput } from "@/types/cardio";
 type CardioRoutineInput = {
   nombre: string;
   descripcion?: string | null;
+  cardio_disciplina_id?: string | null;
   bloques: CardioRoutineBlockInput[];
 };
 
@@ -17,7 +18,7 @@ export function useCardioRoutines() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cardio_rutina")
-        .select("*, cardio_rutina_bloque(*)")
+        .select("*, cardio_disciplina(*), cardio_rutina_bloque(*)")
         .eq("usuario_id", user!.id)
         .order("created_at", { ascending: false })
         .order("orden", { referencedTable: "cardio_rutina_bloque", ascending: true });
@@ -41,6 +42,7 @@ export function useUpsertCardioRoutine() {
       const payload = {
         nombre: input.nombre,
         descripcion: input.descripcion ?? null,
+        cardio_disciplina_id: input.cardio_disciplina_id ?? null,
         usuario_id: user!.id,
       };
       let routineId = id ?? null;

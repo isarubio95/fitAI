@@ -11,6 +11,8 @@ import { GlobalWorkoutDrawerProvider } from "@/hooks/useGlobalWorkoutDrawer";
 import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 import { GlobalCardioDrawerProvider } from "@/hooks/useGlobalCardioDrawer";
 import { CardioLogger } from "@/components/cardio/CardioLogger";
+import { CardioLiveRecorder } from "@/components/cardio/CardioLiveRecorder";
+import { ActiveCardioPill } from "@/components/cardio/ActiveCardioPill";
 import { Loader2 } from "lucide-react";
 // import { SwipeableRoutesWrapper } from "./SwipeableRoutesWrapper";
 import { cn } from "@/lib/utils";
@@ -49,7 +51,7 @@ export function AppLayout() {
       : location.pathname === "/evolution"
         ? "Evolución"
         : location.pathname === "/routines"
-          ? "Rutinas de Gimnasio"
+          ? "Rutinas"
           : location.pathname === "/community"
             ? "Comunidad"
           : location.pathname === "/cardio-routines"
@@ -68,7 +70,7 @@ export function AppLayout() {
       : location.pathname === "/routines"
         ? (currentTab || "rutinas") === "ejercicios"
           ? "Ejercicios"
-          : "Rutinas de Gimnasio"
+          : "Rutinas"
         : "";
 
   useEffect(() => {
@@ -148,7 +150,7 @@ export function AppLayout() {
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center justify-end gap-0.5">
+              <div className="flex shrink-0 items-center justify-end gap-1">
                 <div id="header-actions-slot" className="flex items-center gap-2" />
                 {showNotificationsBell && <InAppNotificationsBell />}
                 <SettingsDrawer />
@@ -215,7 +217,7 @@ export function AppLayout() {
                       : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
                   )}
                 >
-                  Rutinas de Gimnasio
+                  Rutinas
                 </button>
                 <button
                   type="button"
@@ -242,9 +244,11 @@ export function AppLayout() {
           </main>
         </div>
         <ActiveWorkoutPill />
+        <ActiveCardioPill />
         <BottomNav />
         <WorkoutLogger />
         <CardioLogger />
+        <CardioLiveRecorder />
       </div>
       </ProfileDrawerProvider>
       </InAppNotificationsProvider>

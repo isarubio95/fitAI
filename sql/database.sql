@@ -130,9 +130,11 @@ CREATE TABLE public.cardio_sesion (
   comentarios text,
   es_publica boolean NOT NULL DEFAULT false,
   deporte text,
+  cardio_disciplina_id uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT cardio_sesion_pkey PRIMARY KEY (id),
-  CONSTRAINT cardio_sesion_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES auth.users(id)
+  CONSTRAINT cardio_sesion_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES auth.users(id),
+  CONSTRAINT cardio_sesion_cardio_disciplina_id_fkey FOREIGN KEY (cardio_disciplina_id) REFERENCES public.cardio_disciplina(id)
 );
 CREATE TABLE public.cardio_bloque (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -161,9 +163,87 @@ CREATE TABLE public.cardio_rutina (
   nombre text NOT NULL,
   descripcion text,
   orden integer DEFAULT 0,
+  cardio_disciplina_id uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT cardio_rutina_pkey PRIMARY KEY (id),
-  CONSTRAINT cardio_rutina_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES auth.users(id)
+  CONSTRAINT cardio_rutina_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES auth.users(id),
+  CONSTRAINT cardio_rutina_cardio_disciplina_id_fkey FOREIGN KEY (cardio_disciplina_id) REFERENCES public.cardio_disciplina(id)
+);
+CREATE TABLE public.cardio_disciplina (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  codigo text NOT NULL,
+  nombre text NOT NULL,
+  icono text,
+  orden integer NOT NULL DEFAULT 0,
+  activo boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT cardio_disciplina_pkey PRIMARY KEY (id),
+  CONSTRAINT cardio_disciplina_codigo_key UNIQUE (codigo)
+);
+CREATE TABLE public.cardio_sesion_running (
+  cardio_sesion_id uuid NOT NULL,
+  ritmo_medio_seg_km integer,
+  cadencia_media_spm integer,
+  desnivel_positivo_m numeric,
+  zancada_media_cm numeric,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT cardio_sesion_running_pkey PRIMARY KEY (cardio_sesion_id),
+  CONSTRAINT cardio_sesion_running_cardio_sesion_id_fkey FOREIGN KEY (cardio_sesion_id) REFERENCES public.cardio_sesion(id),
+  CONSTRAINT cardio_sesion_running_ritmo_chk CHECK (ritmo_medio_seg_km IS NULL OR ritmo_medio_seg_km >= 0),
+  CONSTRAINT cardio_sesion_running_cadencia_chk CHECK (cadencia_media_spm IS NULL OR cadencia_media_spm >= 0),
+  CONSTRAINT cardio_sesion_running_desnivel_chk CHECK (desnivel_positivo_m IS NULL OR desnivel_positivo_m >= 0::numeric),
+  CONSTRAINT cardio_sesion_running_zancada_chk CHECK (zancada_media_cm IS NULL OR zancada_media_cm >= 0::numeric)
+);
+CREATE TABLE public.cardio_sesion_cycling (
+  cardio_sesion_id uuid NOT NULL,
+  potencia_media_w integer,
+  potencia_normalizada_w integer,
+  cadencia_media_rpm integer,
+  desnivel_positivo_m numeric,
+  tipo_bici text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT cardio_sesion_cycling_pkey PRIMARY KEY (cardio_sesion_id),
+  CONSTRAINT cardio_sesion_cycling_cardio_sesion_id_fkey FOREIGN KEY (cardio_sesion_id) REFERENCES public.cardio_sesion(id),
+  CONSTRAINT cardio_sesion_cycling_pot_media_chk CHECK (potencia_media_w IS NULL OR potencia_media_w >= 0),
+  CONSTRAINT cardio_sesion_cycling_pot_np_chk CHECK (potencia_normalizada_w IS NULL OR potencia_normalizada_w >= 0),
+  CONSTRAINT cardio_sesion_cycling_cadencia_chk CHECK (cadencia_media_rpm IS NULL OR cadencia_media_rpm >= 0),
+  CONSTRAINT cardio_sesion_cycling_desnivel_chk CHECK (desnivel_positivo_m IS NULL OR desnivel_positivo_m >= 0::numeric)
+);
+CREATE TABLE public.cardio_track (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cardio_sesion_id uuid NOT NULL,
+  fuente text,
+  distancia_total_m numeric,
+  duracion_total_seg integer,
+  elevacion_positiva_m numeric,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT cardio_track_pkey PRIMARY KEY (id),
+  CONSTRAINT cardio_track_cardio_sesion_id_key UNIQUE (cardio_sesion_id),
+  CONSTRAINT cardio_track_cardio_sesion_id_fkey FOREIGN KEY (cardio_sesion_id) REFERENCES public.cardio_sesion(id),
+  CONSTRAINT cardio_track_distancia_chk CHECK (distancia_total_m IS NULL OR distancia_total_m >= 0::numeric),
+  CONSTRAINT cardio_track_duracion_chk CHECK (duracion_total_seg IS NULL OR duracion_total_seg >= 0),
+  CONSTRAINT cardio_track_elevacion_chk CHECK (elevacion_positiva_m IS NULL OR elevacion_positiva_m >= 0::numeric)
+);
+CREATE TABLE public.cardio_track_point (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cardio_track_id uuid NOT NULL,
+  orden integer NOT NULL,
+  lat numeric(9,6) NOT NULL,
+  lng numeric(9,6) NOT NULL,
+  elevacion_m numeric,
+  timestamp_utc timestamp with time zone,
+  velocidad_m_s numeric,
+  fc integer,
+  cadencia integer,
+  potencia_w integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT cardio_track_point_pkey PRIMARY KEY (id),
+  CONSTRAINT cardio_track_point_orden_unique UNIQUE (cardio_track_id, orden),
+  CONSTRAINT cardio_track_point_cardio_track_id_fkey FOREIGN KEY (cardio_track_id) REFERENCES public.cardio_track(id),
+  CONSTRAINT cardio_track_point_velocidad_chk CHECK (velocidad_m_s IS NULL OR velocidad_m_s >= 0::numeric),
+  CONSTRAINT cardio_track_point_fc_chk CHECK (fc IS NULL OR fc >= 0),
+  CONSTRAINT cardio_track_point_cadencia_chk CHECK (cadencia IS NULL OR cadencia >= 0),
+  CONSTRAINT cardio_track_point_potencia_chk CHECK (potencia_w IS NULL OR potencia_w >= 0)
 );
 CREATE TABLE public.cardio_rutina_bloque (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -195,10 +275,14 @@ CREATE TABLE public.cardio_rutina_programada (
   CONSTRAINT cardio_rutina_programada_cardio_sesion_id_fkey FOREIGN KEY (cardio_sesion_id) REFERENCES public.cardio_sesion(id)
 );
 CREATE INDEX cardio_sesion_usuario_fecha_idx ON public.cardio_sesion USING btree (usuario_id, fecha_inicio DESC);
+CREATE INDEX cardio_sesion_usuario_disciplina_fecha_idx ON public.cardio_sesion USING btree (usuario_id, cardio_disciplina_id, fecha_inicio DESC);
 CREATE INDEX cardio_bloque_sesion_orden_idx ON public.cardio_bloque USING btree (cardio_sesion_id, orden);
 CREATE INDEX cardio_rutina_usuario_created_idx ON public.cardio_rutina USING btree (usuario_id, created_at DESC);
+CREATE INDEX cardio_rutina_usuario_disciplina_created_idx ON public.cardio_rutina USING btree (usuario_id, cardio_disciplina_id, created_at DESC);
 CREATE INDEX cardio_rutina_bloque_rutina_orden_idx ON public.cardio_rutina_bloque USING btree (cardio_rutina_id, orden);
 CREATE INDEX cardio_rutina_programada_usuario_fecha_idx ON public.cardio_rutina_programada USING btree (usuario_id, fecha_programada);
+CREATE INDEX cardio_track_sesion_idx ON public.cardio_track USING btree (cardio_sesion_id);
+CREATE INDEX cardio_track_point_track_orden_idx ON public.cardio_track_point USING btree (cardio_track_id, orden);
 CREATE TABLE public.serie (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   ejercicio_id uuid NOT NULL,

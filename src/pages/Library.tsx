@@ -31,7 +31,7 @@ export default function Library() {
       {/* En móvil los pills se muestran en el header (igual que Evolución). */}
       <TabsList className={sectionPillTabsList}>
         <TabsTrigger value="rutinas" className={sectionPillTabsTrigger}>
-          Rutinas de Gimnasio
+          Rutinas
         </TabsTrigger>
         <TabsTrigger value="ejercicios" className={sectionPillTabsTrigger}>
           Ejercicios

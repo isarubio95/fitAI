@@ -44,11 +44,22 @@ import {
 } from "@/components/ui/dialog";
 import type { ActividadWithDetails } from "@/types/workout";
 import { useMonthWorkouts } from "@/hooks/useWorkouts";
-import { useMonthCardioSessions } from "@/hooks/useCardioSessions";
+import { useMonthCardioSessions, useDeleteCardioSession } from "@/hooks/useCardioSessions";
 import { usePlannedRoutines, useDeletePlannedRoutine, useUpdatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useToast } from "@/hooks/use-toast";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
+
+type CardioSessionLabelData = {
+  deporte?: string | null;
+  cardio_disciplina?: { nombre?: string | null } | { nombre?: string | null }[] | null;
+};
+
+function getCardioSessionLabel(session: CardioSessionLabelData): string {
+  const disciplina = session.cardio_disciplina;
+  const disciplinaNombre = Array.isArray(disciplina) ? disciplina[0]?.nombre : disciplina?.nombre;
+  return disciplinaNombre ?? session.deporte ?? "Cardio";
+}
 
 interface WeekCalendarProps {
   selectedDate: Date | null;
@@ -87,10 +98,12 @@ export function WeekCalendar({
   const { openEdit: openCardioEdit } = useGlobalCardioDrawer();
   const { data: planned } = usePlannedRoutines(weekStart, addDays(weekStart, 6));
   const deletePlan = useDeletePlannedRoutine();
+  const deleteCardioSession = useDeleteCardioSession();
   const updatePlan = useUpdatePlannedRoutine();
   const { data: routines } = useRoutines();
   const { toast } = useToast();
   const [confirmDeletePlanned, setConfirmDeletePlanned] = useState<PlannedRoutine | null>(null);
+  const [confirmDeleteCardio, setConfirmDeleteCardio] = useState<{ id: string; titulo: string } | null>(null);
   const [editPlanned, setEditPlanned] = useState<PlannedRoutine | null>(null);
   const [editDate, setEditDate] = useState("");
   const [editRutinaId, setEditRutinaId] = useState("");
@@ -404,10 +417,17 @@ export function WeekCalendar({
                       {dayCardio.map((s) => (
                         <div
                           key={s.id}
-                          className="py-2 first:pt-1 last:pb-0 border-b border-border/20 last:border-b-0"
+                          className="pt-2 pb-3 border-b border-border/20 last:border-b-0"
                         >
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <span className="font-medium text-[13px] text-blue-500">{s.titulo}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <span className="font-medium text-[13px] text-blue-500 truncate block">
+                                {s.titulo}
+                              </span>
+                              <div className="text-[11px] text-muted-foreground mt-0.5">
+                                {getCardioSessionLabel(s)}
+                              </div>
+                            </div>
                             <div className="flex items-center gap-1 shrink-0">
                               <Button
                                 variant="ghost"
@@ -418,10 +438,16 @@ export function WeekCalendar({
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
+                                onClick={() => setConfirmDeleteCardio({ id: s.id, titulo: s.titulo })}
+                                title="Eliminar cardio"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
                             </div>
-                          </div>
-                          <div className="text-[11px] text-muted-foreground">
-                            {s.deporte ?? "Cardio"}
                           </div>
                         </div>
                       ))}
@@ -458,6 +484,37 @@ export function WeekCalendar({
                 }
               }}
               disabled={deletePlan.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmar eliminar cardio */}
+      <AlertDialog open={!!confirmDeleteCardio} onOpenChange={(open) => !open && setConfirmDeleteCardio(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este cardio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se borrará &quot;{confirmDeleteCardio?.titulo}&quot; y sus datos asociados. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteCardioSession.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!confirmDeleteCardio) return;
+                try {
+                  await deleteCardioSession.mutateAsync(confirmDeleteCardio.id);
+                  toast({ title: "Entrenamiento de cardio eliminado" });
+                  setConfirmDeleteCardio(null);
+                } catch (e: unknown) {
+                  toast({ title: "Error al eliminar", description: (e as Error).message, variant: "destructive" });
+                }
+              }}
+              disabled={deleteCardioSession.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Eliminar

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { Home, Dumbbell, BarChart3, LogOut, ClipboardList, Plus, Activity, Scale, FileUp, Sparkles, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,7 +11,10 @@ import { SettingsDrawer } from "./SettingsDrawer";
 import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
+import { useStartCardioLiveSession, useCardioDisciplinas } from "@/hooks/useCardioSessions";
+import { useToast } from "@/hooks/use-toast";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
+import { CardioTypePickerDialog } from "@/components/cardio/CardioTypePickerDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,8 +36,12 @@ export function DesktopSidebar() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const { openNew } = useGlobalWorkoutDrawer();
-  const { openNew: openCardioNew } = useGlobalCardioDrawer();
+  const { openNewWithDiscipline, openLiveRecording } = useGlobalCardioDrawer();
+  const startCardioLive = useStartCardioLiveSession();
+  const { data: cardioDisciplinas } = useCardioDisciplinas();
+  const { toast } = useToast();
   const [explorerOpen, setExplorerOpen] = useState(false);
+  const [cardioTypeDialogOpen, setCardioTypeDialogOpen] = useState(false);
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-white/50 dark:bg-zinc-950/50 backdrop-blur-2xl h-dvh sticky top-0">
@@ -57,7 +66,7 @@ export function DesktopSidebar() {
                 <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
               </div>
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-base" onClick={() => openCardioNew()}>
+            <DropdownMenuItem className="text-base" onClick={() => setCardioTypeDialogOpen(true)}>
               <Activity className="h-5 w-5 mr-2 shrink-0 text-blue-500" />
               <div className="min-w-0">
                 <p className="font-medium">Entreno de Cardio</p>
@@ -121,6 +130,35 @@ export function DesktopSidebar() {
         </DropdownMenu>
 
         <PredefinedRoutinesExplorer open={explorerOpen} onOpenChange={setExplorerOpen} />
+        <CardioTypePickerDialog
+          open={cardioTypeDialogOpen}
+          onOpenChange={setCardioTypeDialogOpen}
+          isConfirmPending={startCardioLive.isPending}
+          onConfirm={async (disciplineId) => {
+            const d = cardioDisciplinas?.find((x) => x.id === disciplineId);
+            const titulo = `${(d?.nombre ?? "Cardio").trim()} · ${format(new Date(), "d MMM HH:mm", { locale: es })}`;
+            try {
+              const id = await startCardioLive.mutateAsync({
+                cardio_disciplina_id: disciplineId,
+                titulo,
+              });
+              openLiveRecording(id);
+              setCardioTypeDialogOpen(false);
+            } catch (e: unknown) {
+              const msg =
+                e && typeof e === "object" && "message" in e && typeof (e as { message: string }).message === "string"
+                  ? (e as { message: string }).message
+                  : e instanceof Error
+                    ? e.message
+                    : "Inténtalo de nuevo.";
+              toast({ title: "No se pudo iniciar la sesión", description: msg, variant: "destructive" });
+            }
+          }}
+          onConfirmManual={(disciplineId) => {
+            openNewWithDiscipline(disciplineId);
+            setCardioTypeDialogOpen(false);
+          }}
+        />
 
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink

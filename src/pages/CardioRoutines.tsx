@@ -40,12 +40,14 @@ export default function CardioRoutines() {
             <CardContent className="space-y-3">
               {r.descripcion ? <p className="text-sm text-muted-foreground">{r.descripcion}</p> : null}
               <p className="text-xs text-muted-foreground">{(r.cardio_rutina_bloque ?? []).length} bloques</p>
+              {r.cardio_disciplina?.nombre ? <p className="text-xs text-muted-foreground">Disciplina: {r.cardio_disciplina.nombre}</p> : null}
               <div className="flex gap-2">
                 <Button
                   size="sm"
                   onClick={() =>
                     openFromTemplate(
                       r.nombre,
+                      r.cardio_disciplina_id,
                       (r.cardio_rutina_bloque ?? []).map((b) => ({
                         tipo_bloque: b.tipo_bloque,
                         distancia_objetivo_m: b.distancia_objetivo_m,
@@ -79,6 +81,7 @@ export default function CardioRoutines() {
                 id: editing.id,
                 nombre: editing.nombre,
                 descripcion: editing.descripcion,
+                cardio_disciplina_id: editing.cardio_disciplina_id,
                 bloques: (editing.cardio_rutina_bloque ?? []).map((b) => ({
                   tipo_bloque: b.tipo_bloque,
                   distancia_objetivo_m: b.distancia_objetivo_m,

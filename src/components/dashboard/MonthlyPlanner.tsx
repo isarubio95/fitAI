@@ -47,9 +47,21 @@ import type { CardioSesion } from "@/types/cardio";
 import { usePlannedRoutines, useDeletePlannedRoutine, useUpdatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useDeleteWorkout } from "@/hooks/useWorkouts";
+import { useDeleteCardioSession } from "@/hooks/useCardioSessions";
 import { useToast } from "@/hooks/use-toast";
 import { Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type CardioSessionLabelData = {
+  deporte?: string | null;
+  cardio_disciplina?: { nombre?: string | null } | { nombre?: string | null }[] | null;
+};
+
+function getCardioSessionLabel(session: CardioSessionLabelData): string {
+  const disciplina = session.cardio_disciplina;
+  const disciplinaNombre = Array.isArray(disciplina) ? disciplina[0]?.nombre : disciplina?.nombre;
+  return disciplinaNombre ?? session.deporte ?? "Cardio";
+}
 
 interface MonthlyPlannerProps {
   month: Date;
@@ -135,10 +147,12 @@ export function MonthlyPlanner({
   const deletePlan = useDeletePlannedRoutine();
   const updatePlan = useUpdatePlannedRoutine();
   const deleteWorkout = useDeleteWorkout();
+  const deleteCardioSession = useDeleteCardioSession();
   const { data: routines } = useRoutines();
   const { toast } = useToast();
   const [confirmDeletePlanned, setConfirmDeletePlanned] = useState<PlannedRoutine | null>(null);
   const [confirmDeleteWorkout, setConfirmDeleteWorkout] = useState<ActividadWithDetails | null>(null);
+  const [confirmDeleteCardio, setConfirmDeleteCardio] = useState<CardioSesion | null>(null);
   const [editPlanned, setEditPlanned] = useState<PlannedRoutine | null>(null);
   const [editDate, setEditDate] = useState("");
   const [editRutinaId, setEditRutinaId] = useState("");
@@ -358,7 +372,7 @@ export function MonthlyPlanner({
                                 return (
                                   <div
                                     key={w.id}
-                                    className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2"
+                                    className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-primary/85 bg-card p-2"
                                   >
                                     <div className="min-w-0 flex-1">
                                       <p className="text-sm font-medium truncate">{w.titulo}</p>
@@ -415,10 +429,18 @@ export function MonthlyPlanner({
                                 const isCompleted = !!p.actividad_id;
                                 const isMissed = !p.actividad_id && isBefore(dayStart, now);
                                 const isPending = !p.actividad_id && !isBefore(dayStart, now);
+                                const programStripe = isCompleted
+                                  ? "border-l-emerald-500/75"
+                                  : isMissed
+                                    ? "border-l-zinc-500/55"
+                                    : "border-l-orange-500/70";
                                 return (
                                   <div
                                     key={p.id}
-                                    className="flex items-center justify-between gap-2 rounded-md border border-border bg-card p-2"
+                                    className={cn(
+                                      "flex items-center justify-between gap-2 rounded-md border border-border border-l-4 bg-card p-2",
+                                      programStripe,
+                                    )}
                                   >
                                     <div className="min-w-0 flex-1">
                                       <p className="text-sm font-medium truncate">
@@ -430,7 +452,7 @@ export function MonthlyPlanner({
                                         {isMissed && "Perdido"}
                                       </p>
                                     </div>
-                                    <div className="flex items-center gap-1 shrink-0">
+                                    <div className="flex items-center gap-2 shrink-0">
                                       {onPlannedStart && isPending && (
                                         <Button
                                           size="sm"
@@ -472,7 +494,11 @@ export function MonthlyPlanner({
 
                         {/* Cardio realizado */}
                         {expandedCardio.length > 0 && (
-                          <div className={expandedWorkouts.length > 0 || expandedPlanned.length > 0 ? "mb-3" : ""}>
+                          <div
+                            className={cn(
+                              (expandedWorkouts.length > 0 || expandedPlanned.length > 0) && "mb-3",
+                            )}
+                          >
                             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
                               Cardio realizado
                             </p>
@@ -480,12 +506,12 @@ export function MonthlyPlanner({
                               {expandedCardio.map((s) => (
                                 <div
                                   key={s.id}
-                                  className="flex items-center justify-between gap-2 rounded-md border border-blue-400/30 bg-blue-500/10 p-2"
+                                  className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-blue-500/65 bg-card p-2"
                                 >
                                   <div className="min-w-0 flex-1">
                                     <p className="text-sm font-medium truncate">{s.titulo}</p>
                                     <p className="text-[11px] text-muted-foreground">
-                                      {s.deporte ?? "Cardio"}
+                                      {getCardioSessionLabel(s)}
                                     </p>
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
@@ -500,6 +526,15 @@ export function MonthlyPlanner({
                                         <Pencil className="h-3.5 w-3.5" />
                                       </Button>
                                     )}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-destructive hover:text-destructive"
+                                      onClick={() => setConfirmDeleteCardio(s)}
+                                      title="Eliminar cardio"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
                                   </div>
                                 </div>
                               ))}
@@ -579,6 +614,37 @@ export function MonthlyPlanner({
                 }
               }}
               disabled={deletePlan.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmar eliminar cardio */}
+      <AlertDialog open={!!confirmDeleteCardio} onOpenChange={(open) => !open && setConfirmDeleteCardio(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este cardio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se borrará &quot;{confirmDeleteCardio?.titulo}&quot; y sus datos asociados (bloques, track si hay). Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteCardioSession.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!confirmDeleteCardio) return;
+                try {
+                  await deleteCardioSession.mutateAsync(confirmDeleteCardio.id);
+                  toast({ title: "Entrenamiento de cardio eliminado" });
+                  setConfirmDeleteCardio(null);
+                } catch (e: unknown) {
+                  toast({ title: "Error al eliminar", description: (e as Error).message, variant: "destructive" });
+                }
+              }}
+              disabled={deleteCardioSession.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Eliminar

@@ -94,8 +94,39 @@ export type Database = {
           },
         ]
       }
+      cardio_disciplina: {
+        Row: {
+          activo: boolean
+          codigo: string
+          created_at: string
+          icono: string | null
+          id: string
+          nombre: string
+          orden: number
+        }
+        Insert: {
+          activo?: boolean
+          codigo: string
+          created_at?: string
+          icono?: string | null
+          id?: string
+          nombre: string
+          orden?: number
+        }
+        Update: {
+          activo?: boolean
+          codigo?: string
+          created_at?: string
+          icono?: string | null
+          id?: string
+          nombre?: string
+          orden?: number
+        }
+        Relationships: []
+      }
       cardio_rutina: {
         Row: {
+          cardio_disciplina_id: string | null
           created_at: string
           descripcion: string | null
           id: string
@@ -104,6 +135,7 @@ export type Database = {
           usuario_id: string
         }
         Insert: {
+          cardio_disciplina_id?: string | null
           created_at?: string
           descripcion?: string | null
           id?: string
@@ -112,6 +144,7 @@ export type Database = {
           usuario_id?: string
         }
         Update: {
+          cardio_disciplina_id?: string | null
           created_at?: string
           descripcion?: string | null
           id?: string
@@ -119,7 +152,15 @@ export type Database = {
           orden?: number | null
           usuario_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cardio_rutina_cardio_disciplina_id_fkey"
+            columns: ["cardio_disciplina_id"]
+            isOneToOne: false
+            referencedRelation: "cardio_disciplina"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cardio_rutina_bloque: {
         Row: {
@@ -206,9 +247,11 @@ export type Database = {
       }
       cardio_sesion: {
         Row: {
+          cardio_disciplina_id: string | null
           comentarios: string | null
           created_at: string
-          deporte: string | null
+          /** Legacy; omitida en muchas BDs (solo cardio_disciplina_id). */
+          deporte?: string | null
           es_publica: boolean
           fecha_fin: string | null
           fecha_inicio: string
@@ -217,9 +260,9 @@ export type Database = {
           usuario_id: string
         }
         Insert: {
+          cardio_disciplina_id?: string | null
           comentarios?: string | null
           created_at?: string
-          deporte?: string | null
           es_publica?: boolean
           fecha_fin?: string | null
           fecha_inicio: string
@@ -228,9 +271,9 @@ export type Database = {
           usuario_id?: string
         }
         Update: {
+          cardio_disciplina_id?: string | null
           comentarios?: string | null
           created_at?: string
-          deporte?: string | null
           es_publica?: boolean
           fecha_fin?: string | null
           fecha_inicio?: string
@@ -238,7 +281,179 @@ export type Database = {
           titulo?: string
           usuario_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cardio_sesion_cardio_disciplina_id_fkey"
+            columns: ["cardio_disciplina_id"]
+            isOneToOne: false
+            referencedRelation: "cardio_disciplina"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cardio_sesion_cycling: {
+        Row: {
+          cadencia_media_rpm: number | null
+          cardio_sesion_id: string
+          created_at: string
+          desnivel_positivo_m: number | null
+          potencia_media_w: number | null
+          potencia_normalizada_w: number | null
+          tipo_bici: string | null
+        }
+        Insert: {
+          cadencia_media_rpm?: number | null
+          cardio_sesion_id: string
+          created_at?: string
+          desnivel_positivo_m?: number | null
+          potencia_media_w?: number | null
+          potencia_normalizada_w?: number | null
+          tipo_bici?: string | null
+        }
+        Update: {
+          cadencia_media_rpm?: number | null
+          cardio_sesion_id?: string
+          created_at?: string
+          desnivel_positivo_m?: number | null
+          potencia_media_w?: number | null
+          potencia_normalizada_w?: number | null
+          tipo_bici?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cardio_sesion_cycling_cardio_sesion_id_fkey"
+            columns: ["cardio_sesion_id"]
+            isOneToOne: true
+            referencedRelation: "cardio_sesion"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cardio_sesion_running: {
+        Row: {
+          cadencia_media_spm: number | null
+          cardio_sesion_id: string
+          created_at: string
+          desnivel_positivo_m: number | null
+          ritmo_medio_seg_km: number | null
+          zancada_media_cm: number | null
+        }
+        Insert: {
+          cadencia_media_spm?: number | null
+          cardio_sesion_id: string
+          created_at?: string
+          desnivel_positivo_m?: number | null
+          ritmo_medio_seg_km?: number | null
+          zancada_media_cm?: number | null
+        }
+        Update: {
+          cadencia_media_spm?: number | null
+          cardio_sesion_id?: string
+          created_at?: string
+          desnivel_positivo_m?: number | null
+          ritmo_medio_seg_km?: number | null
+          zancada_media_cm?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cardio_sesion_running_cardio_sesion_id_fkey"
+            columns: ["cardio_sesion_id"]
+            isOneToOne: true
+            referencedRelation: "cardio_sesion"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cardio_track: {
+        Row: {
+          cardio_sesion_id: string
+          created_at: string
+          distancia_total_m: number | null
+          duracion_total_seg: number | null
+          elevacion_positiva_m: number | null
+          fuente: string | null
+          id: string
+        }
+        Insert: {
+          cardio_sesion_id: string
+          created_at?: string
+          distancia_total_m?: number | null
+          duracion_total_seg?: number | null
+          elevacion_positiva_m?: number | null
+          fuente?: string | null
+          id?: string
+        }
+        Update: {
+          cardio_sesion_id?: string
+          created_at?: string
+          distancia_total_m?: number | null
+          duracion_total_seg?: number | null
+          elevacion_positiva_m?: number | null
+          fuente?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cardio_track_cardio_sesion_id_fkey"
+            columns: ["cardio_sesion_id"]
+            isOneToOne: true
+            referencedRelation: "cardio_sesion"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cardio_track_point: {
+        Row: {
+          cadencia: number | null
+          cardio_track_id: string
+          created_at: string
+          elevacion_m: number | null
+          fc: number | null
+          id: string
+          lat: number
+          lng: number
+          orden: number
+          potencia_w: number | null
+          timestamp_utc: string | null
+          velocidad_m_s: number | null
+        }
+        Insert: {
+          cadencia?: number | null
+          cardio_track_id: string
+          created_at?: string
+          elevacion_m?: number | null
+          fc?: number | null
+          id?: string
+          lat: number
+          lng: number
+          orden: number
+          potencia_w?: number | null
+          timestamp_utc?: string | null
+          velocidad_m_s?: number | null
+        }
+        Update: {
+          cadencia?: number | null
+          cardio_track_id?: string
+          created_at?: string
+          elevacion_m?: number | null
+          fc?: number | null
+          id?: string
+          lat?: number
+          lng?: number
+          orden?: number
+          potencia_w?: number | null
+          timestamp_utc?: string | null
+          velocidad_m_s?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cardio_track_point_cardio_track_id_fkey"
+            columns: ["cardio_track_id"]
+            isOneToOne: false
+            referencedRelation: "cardio_track"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ejercicio: {
         Row: {

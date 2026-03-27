@@ -1,10 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity, Sparkles, ChevronDown, FileUp, Calendar, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
+import { useStartCardioLiveSession, useCardioDisciplinas } from "@/hooks/useCardioSessions";
+import { useToast } from "@/hooks/use-toast";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
+import { CardioTypePickerDialog } from "@/components/cardio/CardioTypePickerDialog";
 
 // Añadimos un objeto especial de tipo "add" para representarlo en el centro
 const navItems = [
@@ -19,10 +24,14 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { openNew } = useGlobalWorkoutDrawer();
-  const { openNew: openCardioNew } = useGlobalCardioDrawer();
+  const { openNewWithDiscipline, openLiveRecording } = useGlobalCardioDrawer();
+  const startCardioLive = useStartCardioLiveSession();
+  const { data: cardioDisciplinas } = useCardioDisciplinas();
+  const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showRoutineSubmenu, setShowRoutineSubmenu] = useState(false);
   const [explorerOpen, setExplorerOpen] = useState(false);
+  const [cardioTypeDialogOpen, setCardioTypeDialogOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
   // Cerrar el menú si se hace click fuera de la barra de navegación
@@ -141,7 +150,7 @@ export function BottomNav() {
         >
           <ClipboardList className="h-6 w-6 shrink-0 text-cyan-500" />
           <div className="min-w-0">
-            <p className="font-medium">Rutinas de Cardio</p>
+            <p className="font-medium">Rutina de Cardio</p>
             <p className="text-xs text-muted-foreground">Crea y lanza plantillas cardio</p>
           </div>
         </button>
@@ -157,7 +166,7 @@ export function BottomNav() {
         </button>
         <button
           className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
-          onClick={() => { openCardioNew(); setIsMenuOpen(false); }}
+          onClick={() => { setCardioTypeDialogOpen(true); setIsMenuOpen(false); }}
         >
           <Activity className="h-6 w-6 shrink-0 text-blue-500" />
           <div className="min-w-0">
@@ -188,6 +197,35 @@ export function BottomNav() {
       </div>
 
       <PredefinedRoutinesExplorer open={explorerOpen} onOpenChange={setExplorerOpen} />
+      <CardioTypePickerDialog
+        open={cardioTypeDialogOpen}
+        onOpenChange={setCardioTypeDialogOpen}
+        isConfirmPending={startCardioLive.isPending}
+        onConfirm={async (disciplineId) => {
+          const d = cardioDisciplinas?.find((x) => x.id === disciplineId);
+          const titulo = `${(d?.nombre ?? "Cardio").trim()} · ${format(new Date(), "d MMM HH:mm", { locale: es })}`;
+          try {
+            const id = await startCardioLive.mutateAsync({
+              cardio_disciplina_id: disciplineId,
+              titulo,
+            });
+            openLiveRecording(id);
+            setCardioTypeDialogOpen(false);
+            } catch (e: unknown) {
+              const msg =
+                e && typeof e === "object" && "message" in e && typeof (e as { message: string }).message === "string"
+                  ? (e as { message: string }).message
+                  : e instanceof Error
+                    ? e.message
+                    : "Inténtalo de nuevo.";
+              toast({ title: "No se pudo iniciar la sesión", description: msg, variant: "destructive" });
+            }
+        }}
+        onConfirmManual={(disciplineId) => {
+          openNewWithDiscipline(disciplineId);
+          setCardioTypeDialogOpen(false);
+        }}
+      />
 
       {/* BARRA DE NAVEGACIÓN */}
       <div className="flex h-[80px] items-center justify-around px-2 relative">
