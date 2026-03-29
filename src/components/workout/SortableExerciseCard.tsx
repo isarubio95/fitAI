@@ -12,7 +12,7 @@ interface SortableExerciseCardProps {
   onRemoveExercise: () => void;
   onAddSet: () => void;
   onRemoveSet: (setIndex: number) => void;
-  onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number) => void;
+  onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number | null) => void;
   onAutoSaveSet?: (setIndex: number) => void;
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
   onViewExerciseDetails?: (exercise: ExerciseFormData) => void;

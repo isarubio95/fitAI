@@ -47,7 +47,15 @@ import { checkAndAwardLogros } from "@/hooks/useLogros";
 import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import { startOfMonth } from "date-fns";
-import type { ExerciseFormData, SetFormData } from "@/types/workout";
+import {
+  type ExerciseFormData,
+  type SetFormData,
+  type RegistroSeries,
+  normalizeRegistroSeries,
+  defaultSetForMode,
+  setHasWork,
+  serieFieldsForRegistro,
+} from "@/types/workout";
 
 /** Agrupa ejercicios consecutivos con el mismo superset_id para mostrar el bloque superserie. */
 function groupExercisesBySuperset(exercises: ExerciseFormData[]): { supersetId: string | null; items: { exercise: ExerciseFormData; originalIndex: number }[] }[] {
@@ -135,11 +143,14 @@ export function WorkoutLogger() {
           descanso: ej.descanso ?? undefined,
           repRange: ej.rep_range ?? undefined,
           targetRir: ej.rir_objetivo ?? undefined,
+          registro_series: normalizeRegistroSeries((ej as any).registro_series),
           sets: ej.series
             .sort((a, b) => a.numero_serie - b.numero_serie)
             .map((s) => ({
               repeticiones: s.repeticiones,
               peso_kg: Number(s.peso_kg),
+              duracion_seg: s.duracion_seg ?? null,
+              ritmo_seg_km: s.ritmo_seg_km ?? null,
               id: s.id,
               completed: s.completed,
             })),
@@ -195,6 +206,7 @@ export function WorkoutLogger() {
         descanso: ex.descanso ?? null,
         rep_range: ex.repRange ?? null,
         rir_objetivo: ex.targetRir ?? null,
+        registro_series: normalizeRegistroSeries(ex.registro_series),
       }));
       const { data: ejercicios, error: ejError } = await supabase
         .from("ejercicio")
@@ -202,16 +214,23 @@ export function WorkoutLogger() {
         .select("id");
       if (ejError) throw ejError;
 
-      const serieInserts = templateExercises.flatMap((ex, i) =>
-        ex.sets.map((s, si) => ({
-          ejercicio_id: ejercicios![i].id,
-          usuario_id: user.id,
-          numero_serie: si + 1,
-          repeticiones: 0,
-          peso_kg: 0,
-          completed: false,
-        }))
-      );
+      const serieInserts = templateExercises.flatMap((ex, i) => {
+        const mode = normalizeRegistroSeries(ex.registro_series);
+        return ex.sets.map((s, si) => {
+          const durRit = serieFieldsForRegistro(mode, s);
+          return {
+            ejercicio_id: ejercicios![i].id,
+            usuario_id: user.id,
+            numero_serie: si + 1,
+            repeticiones: 0,
+            peso_kg: 0,
+            duracion_seg:
+              durRit.duracion_seg != null ? durRit.duracion_seg : mode !== "peso_reps" ? 0 : null,
+            ritmo_seg_km: durRit.ritmo_seg_km,
+            completed: false,
+          };
+        });
+      });
       const { data: series, error: sError } = await supabase
         .from("serie")
         .insert(serieInserts)
@@ -241,10 +260,16 @@ export function WorkoutLogger() {
   };
 
   const addExercise = async (
-    catalogRef: { tipo_ejercicio_id?: string; usuario_ejercicio_id?: string },
+    catalogRef: {
+      tipo_ejercicio_id?: string;
+      usuario_ejercicio_id?: string;
+      registro_series?: RegistroSeries;
+    },
     nombre: string
   ) => {
-    const { tipo_ejercicio_id, usuario_ejercicio_id } = catalogRef;
+    const { tipo_ejercicio_id, usuario_ejercicio_id, registro_series: rs } = catalogRef;
+    const registro_series = normalizeRegistroSeries(rs);
+    const firstSet = defaultSetForMode(registro_series, null, null);
     if (effectiveWorkoutId && user) {
       try {
         const { data: ej, error } = await supabase
@@ -254,13 +279,23 @@ export function WorkoutLogger() {
             tipo_ejercicio_id: tipo_ejercicio_id ?? null,
             usuario_ejercicio_id: usuario_ejercicio_id ?? null,
             usuario_id: user.id,
+            registro_series,
           } as any)
           .select("id")
           .single();
         if (error) throw error;
+        const modeNs = normalizeRegistroSeries(registro_series);
         const { data: serie } = await supabase
           .from("serie")
-          .insert({ ejercicio_id: ej.id, usuario_id: user.id, numero_serie: 1, repeticiones: 0, peso_kg: 0, completed: false })
+          .insert({
+            ejercicio_id: ej.id,
+            usuario_id: user.id,
+            numero_serie: 1,
+            repeticiones: 0,
+            peso_kg: 0,
+            ...serieFieldsForRegistro(modeNs, firstSet),
+            completed: false,
+          })
           .select("id")
           .single();
         setExercises((prev) => [
@@ -270,7 +305,8 @@ export function WorkoutLogger() {
             usuario_ejercicio_id,
             nombre,
             id: ej.id,
-            sets: [{ repeticiones: 0, peso_kg: 0, id: serie?.id, completed: false }],
+            registro_series,
+            sets: [{ ...firstSet, id: serie?.id, completed: false }],
           },
         ]);
       } catch (e: any) {
@@ -279,7 +315,13 @@ export function WorkoutLogger() {
     } else {
       setExercises((prev) => [
         ...prev,
-        { tipo_ejercicio_id, usuario_ejercicio_id, nombre, sets: [{ repeticiones: 0, peso_kg: 0 }] },
+        {
+          tipo_ejercicio_id,
+          usuario_ejercicio_id,
+          nombre,
+          registro_series,
+          sets: [{ ...firstSet }],
+        },
       ]);
     }
     setExercisePickerOpen(false);
@@ -303,6 +345,9 @@ export function WorkoutLogger() {
     const ex = exercises[exerciseIndex];
     if (ex.id && effectiveWorkoutId && user) {
       try {
+        const mode = normalizeRegistroSeries(ex.registro_series);
+        const blank = defaultSetForMode(mode, null, null);
+        const ins = serieFieldsForRegistro(mode, blank);
         const { data, error } = await supabase
           .from("serie")
           .insert({
@@ -311,6 +356,8 @@ export function WorkoutLogger() {
             numero_serie: ex.sets.length + 1,
             repeticiones: 0,
             peso_kg: 0,
+            duracion_seg: ins.duracion_seg != null ? ins.duracion_seg : mode !== "peso_reps" ? 0 : null,
+            ritmo_seg_km: ins.ritmo_seg_km,
             completed: false,
           })
           .select("id")
@@ -319,7 +366,7 @@ export function WorkoutLogger() {
         setExercises((prev) =>
           prev.map((e, i) =>
             i === exerciseIndex
-              ? { ...e, sets: [...e.sets, { repeticiones: 0, peso_kg: 0, id: data.id, completed: false }] }
+              ? { ...e, sets: [...e.sets, { ...blank, id: data.id, completed: false }] }
               : e
           )
         );
@@ -328,10 +375,12 @@ export function WorkoutLogger() {
         toast({ title: "Error", description: e.message, variant: "destructive" });
       }
     }
+    const mode = normalizeRegistroSeries(ex.registro_series);
+    const blank = defaultSetForMode(mode, null, null);
     setExercises((prev) =>
       prev.map((e, i) =>
         i === exerciseIndex
-          ? { ...e, sets: [...e.sets, { repeticiones: 0, peso_kg: 0 }] }
+          ? { ...e, sets: [...e.sets, { ...blank }] }
           : e
       )
     );
@@ -355,7 +404,12 @@ export function WorkoutLogger() {
     );
   };
 
-  const updateSet = (exerciseIndex: number, setIndex: number, field: keyof SetFormData, value: number) => {
+  const updateSet = (
+    exerciseIndex: number,
+    setIndex: number,
+    field: keyof SetFormData,
+    value: number | null
+  ) => {
     setExercises((prev) =>
       prev.map((ex, i) =>
         i === exerciseIndex
@@ -370,9 +424,16 @@ export function WorkoutLogger() {
       const set = exercises[exerciseIndex]?.sets[setIndex];
       if (!set?.id) return;
       try {
+        const exMode = normalizeRegistroSeries(exercises[exerciseIndex]?.registro_series);
+        const dr = serieFieldsForRegistro(exMode, set);
         await supabase
           .from("serie")
-          .update({ repeticiones: set.repeticiones, peso_kg: set.peso_kg })
+          .update({
+            repeticiones: set.repeticiones,
+            peso_kg: set.peso_kg,
+            duracion_seg: dr.duracion_seg,
+            ritmo_seg_km: dr.ritmo_seg_km,
+          })
           .eq("id", set.id);
       } catch {
         // Silent fail for auto-save
@@ -470,11 +531,9 @@ export function WorkoutLogger() {
       if (oldIds.length) {
         const { data: series } = await supabase
           .from("serie")
-          .select("id, repeticiones, peso_kg")
+          .select("id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km")
           .in("ejercicio_id", oldIds);
-        const seriesCompletadas = (series ?? []).filter(
-          (s) => Number(s.repeticiones) > 0 || Number(s.peso_kg) > 0
-        ).length;
+        const seriesCompletadas = (series ?? []).filter((s) => setHasWork(s as any)).length;
         if (seriesCompletadas > 0) {
           await removeXP(targetId, seriesCompletadas);
         }
@@ -507,7 +566,7 @@ export function WorkoutLogger() {
     // 1. Limpiamos los datos en memoria filtrando los 0
     const ejerciciosLimpios = exercises
       .map((ex) => {
-        const seriesValidas = ex.sets.filter((s) => Number(s.repeticiones) > 0 || Number(s.peso_kg) > 0);
+        const seriesValidas = ex.sets.filter((s) => setHasWork(s));
         return { ...ex, sets: seriesValidas };
       })
       .filter((ex) => ex.sets.length > 0);
@@ -522,8 +581,8 @@ export function WorkoutLogger() {
       if (isEdit && effectiveWorkoutId) {
         // 2. LIMPIEZA EN BASE DE DATOS (Para entrenamientos activos o en edición)
         for (const ex of exercises) {
-          const emptySets = ex.sets.filter((s) => Number(s.repeticiones) === 0 && Number(s.peso_kg) === 0);
-          const validSets = ex.sets.filter((s) => Number(s.repeticiones) > 0 || Number(s.peso_kg) > 0);
+          const emptySets = ex.sets.filter((s) => !setHasWork(s));
+          const validSets = ex.sets.filter((s) => setHasWork(s));
           
           // Borrar las series a 0 de Supabase
           if (emptySets.length > 0) {
@@ -560,7 +619,7 @@ export function WorkoutLogger() {
 
           // Calculate XP and show post-workout modal
           const completedSets = exercises.reduce(
-            (acc, ex) => acc + ex.sets.filter((s) => s.completed || (Number(s.repeticiones) > 0 && Number(s.peso_kg) > 0)).length,
+            (acc, ex) => acc + ex.sets.filter((s) => s.completed || setHasWork(s)).length,
             0
           );
           try {
@@ -632,6 +691,7 @@ export function WorkoutLogger() {
       tipo_ejercicio_id: (ex as any).tipo_ejercicio_id ?? null,
       usuario_ejercicio_id: (ex as any).usuario_ejercicio_id ?? null,
       usuario_id: user!.id,
+      registro_series: normalizeRegistroSeries(ex.registro_series),
     }));
 
     const { data: ejerciciosDB, error: ejError } = await supabase
@@ -640,16 +700,22 @@ export function WorkoutLogger() {
       .select("id");
     if (ejError) throw ejError;
 
-    const serieInserts = ejerciciosLimpios.flatMap((ex, i) =>
-      ex.sets.map((s, si) => ({
-        ejercicio_id: ejerciciosDB![i].id,
-        usuario_id: user!.id,
-        numero_serie: si + 1,
-        repeticiones: s.repeticiones,
-        peso_kg: s.peso_kg,
-        completed: true,
-      }))
-    );
+    const serieInserts = ejerciciosLimpios.flatMap((ex, i) => {
+      const mode = normalizeRegistroSeries(ex.registro_series);
+      return ex.sets.map((s, si) => {
+        const dr = serieFieldsForRegistro(mode, s);
+        return {
+          ejercicio_id: ejerciciosDB![i].id,
+          usuario_id: user!.id,
+          numero_serie: si + 1,
+          repeticiones: s.repeticiones,
+          peso_kg: s.peso_kg,
+          duracion_seg: dr.duracion_seg,
+          ritmo_seg_km: dr.ritmo_seg_km,
+          completed: true,
+        };
+      });
+    });
 
     if (serieInserts.length > 0) {
       const { error: sError } = await supabase.from("serie").insert(serieInserts);

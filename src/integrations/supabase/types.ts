@@ -461,6 +461,7 @@ export type Database = {
           created_at: string
           descanso: number | null
           id: string
+          registro_series: string
           rep_range: string | null
           rir_objetivo: number | null
           tipo_ejercicio_id: string | null
@@ -472,6 +473,7 @@ export type Database = {
           created_at?: string
           descanso?: number | null
           id?: string
+          registro_series?: string
           rep_range?: string | null
           rir_objetivo?: number | null
           tipo_ejercicio_id?: string | null
@@ -483,6 +485,7 @@ export type Database = {
           created_at?: string
           descanso?: number | null
           id?: string
+          registro_series?: string
           rep_range?: string | null
           rir_objetivo?: number | null
           tipo_ejercicio_id?: string | null
@@ -601,11 +604,14 @@ export type Database = {
         Row: {
           created_at: string
           descanso: number | null
+          duracion_objetivo_seg: number | null
           id: string
           orden: number
+          registro_series: string
           repes_max: number
           repes_min: number
           rir: number | null
+          ritmo_objetivo_seg_km: number | null
           rutina_id: string
           series_objetivo: number
           tipo_ejercicio_id: string | null
@@ -614,11 +620,14 @@ export type Database = {
         Insert: {
           created_at?: string
           descanso?: number | null
+          duracion_objetivo_seg?: number | null
           id?: string
           orden?: number
+          registro_series?: string
           repes_max?: number
           repes_min?: number
           rir?: number | null
+          ritmo_objetivo_seg_km?: number | null
           rutina_id: string
           series_objetivo?: number
           tipo_ejercicio_id?: string | null
@@ -627,11 +636,14 @@ export type Database = {
         Update: {
           created_at?: string
           descanso?: number | null
+          duracion_objetivo_seg?: number | null
           id?: string
           orden?: number
+          registro_series?: string
           repes_max?: number
           repes_min?: number
           rir?: number | null
+          ritmo_objetivo_seg_km?: number | null
           rutina_id?: string
           series_objetivo?: number
           tipo_ejercicio_id?: string | null
@@ -707,31 +719,37 @@ export type Database = {
         Row: {
           completed: boolean
           created_at: string
+          duracion_seg: number | null
           ejercicio_id: string
           id: string
           numero_serie: number
           peso_kg: number
           repeticiones: number
+          ritmo_seg_km: number | null
           usuario_id: string
         }
         Insert: {
           completed?: boolean
           created_at?: string
+          duracion_seg?: number | null
           ejercicio_id: string
           id?: string
           numero_serie?: number
           peso_kg?: number
           repeticiones?: number
+          ritmo_seg_km?: number | null
           usuario_id: string
         }
         Update: {
           completed?: boolean
           created_at?: string
+          duracion_seg?: number | null
           ejercicio_id?: string
           id?: string
           numero_serie?: number
           peso_kg?: number
           repeticiones?: number
+          ritmo_seg_km?: number | null
           usuario_id?: string
         }
         Relationships: [
@@ -758,6 +776,7 @@ export type Database = {
           imagen: string | null
           instructions: string[] | null
           nombre: string
+          registro_series: string
           tipo: string | null
         }
         Insert: {
@@ -773,6 +792,7 @@ export type Database = {
           imagen?: string | null
           instructions?: string[] | null
           nombre: string
+          registro_series?: string
           tipo?: string | null
         }
         Update: {
@@ -788,6 +808,7 @@ export type Database = {
           imagen?: string | null
           instructions?: string[] | null
           nombre?: string
+          registro_series?: string
           tipo?: string | null
         }
         Relationships: []
@@ -807,10 +828,11 @@ export type Database = {
           tipo: string | null
           grupo_muscular: string | null
           dificultad: string | null
+          registro_series: string
         }
         Insert: {
           id?: string
-          usuario_id?: string
+          usuario_id: string
           nombre: string
           descripcion?: string | null
           imagen?: string | null
@@ -822,6 +844,7 @@ export type Database = {
           tipo?: string | null
           grupo_muscular?: string | null
           dificultad?: string | null
+          registro_series?: string
         }
         Update: {
           id?: string
@@ -837,6 +860,7 @@ export type Database = {
           tipo?: string | null
           grupo_muscular?: string | null
           dificultad?: string | null
+          registro_series?: string
         }
         Relationships: []
       }

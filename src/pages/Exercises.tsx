@@ -13,6 +13,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -44,6 +45,7 @@ import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
 import { EXERCISE_SYNONYMS } from "@/constants/exerciseSynonyms";
+import type { RegistroSeries } from "@/types/workout";
 
 type DifficultyLevel = 1 | 2 | 3;
 
@@ -246,6 +248,7 @@ const Exercises = () => {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newBodyParts, setNewBodyParts] = useState<string[]>([]);
+  const [newRegistroSeries, setNewRegistroSeries] = useState<RegistroSeries>("peso_reps");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -368,12 +371,14 @@ const Exercises = () => {
         descripcion: newDesc,
         usuario_id: user.id,
         musculos_involucrados: newBodyParts,
+        registro_series: newRegistroSeries,
       });
       toast({ title: "Ejercicio creado" });
       setCreateOpen(false);
       setNewName("");
       setNewDesc("");
       setNewBodyParts([]);
+      setNewRegistroSeries("peso_reps");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -781,6 +786,22 @@ const Exercises = () => {
             <div className="space-y-1.5">
               <Label>Músculos Trabajados</Label>
               <MuscleMultiSelect value={newBodyParts} onChange={setNewBodyParts} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Registro de series</Label>
+              <Select
+                value={newRegistroSeries}
+                onValueChange={(v) => setNewRegistroSeries(v as RegistroSeries)}
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="peso_reps">Peso y repeticiones</SelectItem>
+                  <SelectItem value="duracion">Duración (segundos)</SelectItem>
+                  <SelectItem value="duracion_ritmo">Duración y ritmo (s/km)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

@@ -188,7 +188,20 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
           .single();
         if (errRutina) throw errRutina;
 
-        const inserts: { rutina_id: string; tipo_ejercicio_id: string; series_objetivo: number; repes_min: number; repes_max: number; rir: number; orden: number; descanso: number | null; superset_id: string | null }[] = [];
+        const inserts: {
+          rutina_id: string;
+          tipo_ejercicio_id: string;
+          series_objetivo: number;
+          repes_min: number;
+          repes_max: number;
+          rir: number;
+          orden: number;
+          descanso: number | null;
+          superset_id: string | null;
+          registro_series: string;
+          duracion_objetivo_seg: null;
+          ritmo_objetivo_seg_km: null;
+        }[] = [];
         for (let i = 0; i < parsed.rows.length; i++) {
           const row = parsed.rows[i];
           const tipoId = findTipoEjercicioId(row.nombre_ejercicio)!;
@@ -202,6 +215,9 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
             orden: i,
             descanso: row.descanso,
             superset_id: supersetIds[i],
+            registro_series: "peso_reps",
+            duracion_objetivo_seg: null,
+            ritmo_objetivo_seg_km: null,
           });
         }
 

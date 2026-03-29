@@ -17,7 +17,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash2, Plus, Info, Timer, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ExerciseFormData, SetFormData } from "@/types/workout";
+import {
+  type ExerciseFormData,
+  type SetFormData,
+  normalizeRegistroSeries,
+  formatRitmoSegKmLabel,
+} from "@/types/workout";
 import { ActiveWorkoutCheckbox } from "./ActiveWorkoutCheckbox";
 
 interface ExerciseCardProps {
@@ -27,7 +32,7 @@ interface ExerciseCardProps {
   onRemoveExercise: () => void;
   onAddSet: () => void;
   onRemoveSet: (setIndex: number) => void;
-  onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number) => void;
+  onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number | null) => void;
   onAutoSaveSet?: (setIndex: number) => void;
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
   dragHandleProps?: Record<string, any>;
@@ -47,7 +52,11 @@ export function ExerciseCard({
   dragHandleProps,
   onViewExerciseDetails,
 }: ExerciseCardProps) {
-  const { data: lastPerf } = useLastPerformance(exercise.tipo_ejercicio_id);
+  const { data: lastPerf } = useLastPerformance({
+    tipo_ejercicio_id: exercise.tipo_ejercicio_id,
+    usuario_ejercicio_id: exercise.usuario_ejercicio_id,
+  });
+  const mode = normalizeRegistroSeries(exercise.registro_series);
   const timer = useRestTimerContext();
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
   const [confirmDeleteSet, setConfirmDeleteSet] = useState<number | null>(null);
@@ -112,11 +121,21 @@ export function ExerciseCard({
             <span>Sesión anterior ({lastPerf.fecha ? new Date(lastPerf.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : "—"})</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {lastPerf.sets.map((s, i) => (
-              <Badge key={i} variant="secondary" className="text-xs font-normal">
-                S{s.numero_serie}: {s.peso_kg}kg × {s.repeticiones}
-              </Badge>
-            ))}
+            {lastPerf.sets.map((s, i) => {
+              const seg = s.duracion_seg != null && s.duracion_seg > 0;
+              const pace = s.ritmo_seg_km;
+              const txt =
+                mode === "duracion_ritmo" || (seg && pace != null && pace > 0)
+                  ? `S${s.numero_serie}: ${s.duracion_seg ?? 0}s · ${formatRitmoSegKmLabel(pace ?? null)}`
+                  : seg
+                    ? `S${s.numero_serie}: ${s.duracion_seg}s`
+                    : `S${s.numero_serie}: ${s.peso_kg}kg × ${s.repeticiones}`;
+              return (
+                <Badge key={i} variant="secondary" className="text-xs font-normal">
+                  {txt}
+                </Badge>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -126,59 +145,169 @@ export function ExerciseCard({
         </div>
       )}
 
-      {/* Sets header: # | Hecho | Reps | Peso | delete */}
-      <div className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1 items-center">
-        <span>#</span>
-        <span className="mr-4 flex justify-center">Hecho</span>
-        <span>Reps</span>
-        <span>Peso (kg)</span>
-        <span />
-      </div>
-
-      {exercise.sets.map((s, si) => (
-        <div key={si} className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 items-center">
-          <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
-          <div className="flex items-center justify-center justify-self-center mr-4">
-            {onSetCompleted ? (
-              <ActiveWorkoutCheckbox
-                checked={!!s.completed}
-                onChange={(next) => onSetCompleted(si, next)}
-                title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
-                size={32}
-              />
-            ) : (
-              <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
-            )}
+      {mode === "peso_reps" ? (
+        <>
+          <div className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1 items-center">
+            <span>#</span>
+            <span className="mr-4 flex justify-center">Hecho</span>
+            <span>Reps</span>
+            <span>Peso (kg)</span>
+            <span />
           </div>
-          <Input
-            type="number"
-            min={0}
-            value={s.repeticiones || ""}
-            onChange={(e) => onUpdateSet(si, "repeticiones", Number(e.target.value))}
-            onBlur={() => onAutoSaveSet?.(si)}
-            className="h-11"
-            placeholder={exercise.repRange || "0"}
-          />
-          <Input
-            type="number"
-            min={0}
-            step={0.5}
-            value={s.peso_kg || ""}
-            onChange={(e) => onUpdateSet(si, "peso_kg", Number(e.target.value))}
-            onBlur={() => onAutoSaveSet?.(si)}
-            className="h-11"
-            placeholder="0"
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-            onClick={() => setConfirmDeleteSet(si)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      ))}
+          {exercise.sets.map((s, si) => (
+            <div key={si} className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 items-center">
+              <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
+              <div className="flex items-center justify-center justify-self-center mr-4">
+                {onSetCompleted ? (
+                  <ActiveWorkoutCheckbox
+                    checked={!!s.completed}
+                    onChange={(next) => onSetCompleted(si, next)}
+                    title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
+                    size={32}
+                  />
+                ) : (
+                  <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
+                )}
+              </div>
+              <Input
+                type="number"
+                min={0}
+                value={s.repeticiones || ""}
+                onChange={(e) => onUpdateSet(si, "repeticiones", Number(e.target.value))}
+                onBlur={() => onAutoSaveSet?.(si)}
+                className="h-11"
+                placeholder={exercise.repRange || "0"}
+              />
+              <Input
+                type="number"
+                min={0}
+                step={0.5}
+                value={s.peso_kg || ""}
+                onChange={(e) => onUpdateSet(si, "peso_kg", Number(e.target.value))}
+                onBlur={() => onAutoSaveSet?.(si)}
+                className="h-11"
+                placeholder="0"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                onClick={() => setConfirmDeleteSet(si)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+        </>
+      ) : mode === "duracion" ? (
+        <>
+          <div className="grid grid-cols-[2rem_2.5rem_1fr_2rem] gap-2 text-xs text-muted-foreground px-1 items-center">
+            <span>#</span>
+            <span className="mr-4 flex justify-center">Hecho</span>
+            <span>Segundos</span>
+            <span />
+          </div>
+          {exercise.sets.map((s, si) => (
+            <div key={si} className="grid grid-cols-[2rem_2.5rem_1fr_2rem] gap-2 items-center">
+              <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
+              <div className="flex items-center justify-center justify-self-center mr-4">
+                {onSetCompleted ? (
+                  <ActiveWorkoutCheckbox
+                    checked={!!s.completed}
+                    onChange={(next) => onSetCompleted(si, next)}
+                    title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
+                    size={32}
+                  />
+                ) : (
+                  <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
+                )}
+              </div>
+              <Input
+                type="number"
+                min={0}
+                value={s.duracion_seg ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  onUpdateSet(si, "duracion_seg", v === "" ? null : Number(v));
+                }}
+                onBlur={() => onAutoSaveSet?.(si)}
+                className="h-11"
+                placeholder="s"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                onClick={() => setConfirmDeleteSet(si)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1 items-center">
+            <span>#</span>
+            <span className="mr-4 flex justify-center">Hecho</span>
+            <span>Tiempo (s)</span>
+            <span>Ritmo (s/km)</span>
+            <span />
+          </div>
+          <p className="text-[10px] text-muted-foreground px-1 -mt-1">
+            Ritmo en segundos por km (ej. 300 = 5:00/km)
+          </p>
+          {exercise.sets.map((s, si) => (
+            <div key={si} className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 items-center">
+              <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
+              <div className="flex items-center justify-center justify-self-center mr-4">
+                {onSetCompleted ? (
+                  <ActiveWorkoutCheckbox
+                    checked={!!s.completed}
+                    onChange={(next) => onSetCompleted(si, next)}
+                    title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
+                    size={32}
+                  />
+                ) : (
+                  <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
+                )}
+              </div>
+              <Input
+                type="number"
+                min={0}
+                value={s.duracion_seg ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  onUpdateSet(si, "duracion_seg", v === "" ? null : Number(v));
+                }}
+                onBlur={() => onAutoSaveSet?.(si)}
+                className="h-11"
+                placeholder="s"
+              />
+              <Input
+                type="number"
+                min={1}
+                value={s.ritmo_seg_km ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  onUpdateSet(si, "ritmo_seg_km", v === "" ? null : Number(v));
+                }}
+                onBlur={() => onAutoSaveSet?.(si)}
+                className="h-11"
+                placeholder="300"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                onClick={() => setConfirmDeleteSet(si)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+        </>
+      )}
 
       <Button
         variant="outline"

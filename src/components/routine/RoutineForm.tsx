@@ -42,6 +42,7 @@ import { Trash2, Loader2, GripVertical, Link, Unlink } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import type { RoutineExerciseFormData } from "@/types/routine";
+import { type RegistroSeries, normalizeRegistroSeries } from "@/types/workout";
 
 interface RoutineFormProps {
   open: boolean;
@@ -105,6 +106,9 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
           orden: ej.orden,
           superset_id: (ej as any).superset_id ?? null,
           descanso: (ej as any).descanso ?? 120,
+          registro_series: normalizeRegistroSeries((ej as any).registro_series),
+          duracion_objetivo_seg: (ej as any).duracion_objetivo_seg ?? null,
+          ritmo_objetivo_seg_km: (ej as any).ritmo_objetivo_seg_km ?? null,
         }))
       );
     }
@@ -121,10 +125,15 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
   const addExercise = useCallback(
     (
-      catalogRef: { tipo_ejercicio_id?: string; usuario_ejercicio_id?: string },
+      catalogRef: {
+        tipo_ejercicio_id?: string;
+        usuario_ejercicio_id?: string;
+        registro_series?: RegistroSeries;
+      },
       nombreEj: string
     ) => {
-      const { tipo_ejercicio_id, usuario_ejercicio_id } = catalogRef;
+      const { tipo_ejercicio_id, usuario_ejercicio_id, registro_series: rs } = catalogRef;
+      const registro_series = rs ?? "peso_reps";
       if (supersetLink) {
         // Insert immediately after the linking exercise with same superset_id
         const { afterIndex, supersetId } = supersetLink;
@@ -144,6 +153,14 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
             orden: 0,
             superset_id: supersetId,
             descanso: 120,
+            registro_series,
+            duracion_objetivo_seg:
+              registro_series === "duracion" || registro_series === "duracion_ritmo"
+                ? registro_series === "duracion_ritmo"
+                  ? 600
+                  : 45
+                : null,
+            ritmo_objetivo_seg_km: registro_series === "duracion_ritmo" ? 300 : null,
           };
           // Insert after afterIndex
           const result = [
@@ -168,6 +185,14 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
             orden: prev.length,
             superset_id: null,
             descanso: 120,
+            registro_series,
+            duracion_objetivo_seg:
+              registro_series === "duracion" || registro_series === "duracion_ritmo"
+                ? registro_series === "duracion_ritmo"
+                  ? 600
+                  : 45
+                : null,
+            ritmo_objetivo_seg_km: registro_series === "duracion_ritmo" ? 300 : null,
           },
         ]);
       }
@@ -195,9 +220,29 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
     setEjercicios((prev) => prev.filter((_, i) => i !== index).map((ej, i) => ({ ...ej, orden: i })));
   };
 
-  const updateExercise = (index: number, field: keyof RoutineExerciseFormData, value: number) => {
+  const updateExerciseField = <K extends keyof RoutineExerciseFormData>(
+    index: number,
+    field: K,
+    value: RoutineExerciseFormData[K]
+  ) => {
     setEjercicios((prev) =>
-      prev.map((ej, i) => (i === index ? { ...ej, [field]: value } : ej))
+      prev.map((ej, i) => {
+        if (i !== index) return ej;
+        const next = { ...ej, [field]: value } as RoutineExerciseFormData;
+        if (field === "registro_series") {
+          if (value === "duracion") {
+            next.duracion_objetivo_seg = next.duracion_objetivo_seg ?? 45;
+            next.ritmo_objetivo_seg_km = null;
+          } else if (value === "duracion_ritmo") {
+            next.duracion_objetivo_seg = next.duracion_objetivo_seg ?? 600;
+            next.ritmo_objetivo_seg_km = next.ritmo_objetivo_seg_km ?? 300;
+          } else {
+            next.duracion_objetivo_seg = null;
+            next.ritmo_objetivo_seg_km = null;
+          }
+        }
+        return next;
+      })
     );
   };
 
@@ -253,6 +298,9 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
         orden: i,
         superset_id: ej.superset_id || null,
         descanso: ej.descanso,
+        registro_series: ej.registro_series,
+        duracion_objetivo_seg: ej.duracion_objetivo_seg,
+        ritmo_objetivo_seg_km: ej.ritmo_objetivo_seg_km,
       }));
 
       if (inserts.length > 0) {
@@ -332,7 +380,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                               sortId={i}
                               exercise={ej}
                               index={i}
-                              onUpdate={updateExercise}
+                              onUpdateField={updateExerciseField}
                               onRemove={removeExercise}
                               onLinkSuperset={startSupersetLink}
                               onBreakSuperset={breakSuperset}
@@ -351,7 +399,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                       sortId={i}
                       exercise={ej}
                       index={i}
-                      onUpdate={updateExercise}
+                      onUpdateField={updateExerciseField}
                       onRemove={removeExercise}
                       onLinkSuperset={startSupersetLink}
                       onBreakSuperset={breakSuperset}
@@ -379,7 +427,11 @@ function SortableExerciseRow({ sortId, ...props }: {
   sortId: number;
   exercise: RoutineExerciseFormData;
   index: number;
-  onUpdate: (index: number, field: keyof RoutineExerciseFormData, value: number) => void;
+  onUpdateField: <K extends keyof RoutineExerciseFormData>(
+    index: number,
+    field: K,
+    value: RoutineExerciseFormData[K]
+  ) => void;
   onRemove: (index: number) => void;
   onLinkSuperset: (index: number) => void;
   onBreakSuperset: (index: number) => void;
@@ -404,7 +456,7 @@ function SortableExerciseRow({ sortId, ...props }: {
 function ExerciseRow({
   exercise: ej,
   index: i,
-  onUpdate,
+  onUpdateField,
   onRemove,
   onLinkSuperset,
   onBreakSuperset,
@@ -413,7 +465,11 @@ function ExerciseRow({
 }: {
   exercise: RoutineExerciseFormData;
   index: number;
-  onUpdate: (index: number, field: keyof RoutineExerciseFormData, value: number) => void;
+  onUpdateField: <K extends keyof RoutineExerciseFormData>(
+    index: number,
+    field: K,
+    value: RoutineExerciseFormData[K]
+  ) => void;
   onRemove: (index: number) => void;
   onLinkSuperset: (index: number) => void;
   onBreakSuperset: (index: number) => void;
@@ -490,57 +546,125 @@ function ExerciseRow({
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="grid grid-cols-5 gap-2">
+      <div className="space-y-2">
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Series</Label>
-          <Input
-            type="number"
-            min={1}
-            value={ej.series_objetivo}
-            onChange={(e) => onUpdate(i, "series_objetivo", Number(e.target.value))}
-            className="h-10"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Reps mín</Label>
-          <Input
-            type="number"
-            min={1}
-            value={ej.repes_min}
-            onChange={(e) => onUpdate(i, "repes_min", Number(e.target.value))}
-            className="h-10"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Reps máx</Label>
-          <Input
-            type="number"
-            min={1}
-            value={ej.repes_max}
-            onChange={(e) => onUpdate(i, "repes_max", Number(e.target.value))}
-            className="h-10"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">RIR</Label>
+          <Label className="text-xs text-muted-foreground">Registro de series</Label>
           <Select
-            value={String(ej.rir)}
-            onValueChange={(val) => onUpdate(i, "rir", Number(val))}
+            value={ej.registro_series}
+            onValueChange={(val) => onUpdateField(i, "registro_series", val as RegistroSeries)}
           >
             <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">0 - Fallo</SelectItem>
-              <SelectItem value="1">1</SelectItem>
-              <SelectItem value="2">2</SelectItem>
+              <SelectItem value="peso_reps">Peso y repeticiones</SelectItem>
+              <SelectItem value="duracion">Duración (segundos)</SelectItem>
+              <SelectItem value="duracion_ritmo">Duración y ritmo (s/km)</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <RestTimeInput
-          value={ej.descanso}
-          onChange={(val) => onUpdate(i, "descanso", val)}
-        />
+        <div className="grid grid-cols-5 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Series</Label>
+            <Input
+              type="number"
+              min={1}
+              value={ej.series_objetivo}
+              onChange={(e) => onUpdateField(i, "series_objetivo", Number(e.target.value))}
+              className="h-10"
+            />
+          </div>
+          {ej.registro_series === "peso_reps" ? (
+            <>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Reps mín</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={ej.repes_min}
+                  onChange={(e) => onUpdateField(i, "repes_min", Number(e.target.value))}
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Reps máx</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={ej.repes_max}
+                  onChange={(e) => onUpdateField(i, "repes_max", Number(e.target.value))}
+                  className="h-10"
+                />
+              </div>
+            </>
+          ) : ej.registro_series === "duracion" ? (
+            <div className="space-y-1 col-span-2">
+              <Label className="text-xs text-muted-foreground">Objetivo por serie (s)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={ej.duracion_objetivo_seg ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  onUpdateField(i, "duracion_objetivo_seg", v === "" ? null : Number(v));
+                }}
+                className="h-10"
+                placeholder="Ej: 45"
+              />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Tiempo (s)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={ej.duracion_objetivo_seg ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    onUpdateField(i, "duracion_objetivo_seg", v === "" ? null : Number(v));
+                  }}
+                  className="h-10"
+                  placeholder="Ej: 600"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Ritmo (s/km)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={ej.ritmo_objetivo_seg_km ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    onUpdateField(i, "ritmo_objetivo_seg_km", v === "" ? null : Number(v));
+                  }}
+                  className="h-10"
+                  placeholder="300 = 5:00/km"
+                />
+              </div>
+            </>
+          )}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">RIR</Label>
+            <Select
+              value={String(ej.rir)}
+              onValueChange={(val) => onUpdateField(i, "rir", Number(val))}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">0 - Fallo</SelectItem>
+                <SelectItem value="1">1</SelectItem>
+                <SelectItem value="2">2</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <RestTimeInput
+            value={ej.descanso}
+            onChange={(val) => onUpdateField(i, "descanso", val)}
+          />
+        </div>
       </div>
     </div>
   );

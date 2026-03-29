@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { normalizeRegistroSeries, type RegistroSeries } from "@/types/workout";
 import { useExerciseCatalogInfinite } from "@/hooks/useExerciseCatalog";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -88,10 +89,11 @@ export function ExerciseSelector({ open, onOpenChange, onSelect }: ExerciseSelec
                 {filtered?.map((tipo) => {
                   const isOwn = (tipo as any).usuario_id === user?.id;
                   const source = (tipo as any).__source as "usuario" | "catalogo" | undefined;
+                  const rs = normalizeRegistroSeries((tipo as any).registro_series);
                   const catalogRef =
                     source === "usuario"
-                      ? { usuario_ejercicio_id: tipo.id }
-                      : { tipo_ejercicio_id: tipo.id };
+                      ? { usuario_ejercicio_id: tipo.id, registro_series: rs }
+                      : { tipo_ejercicio_id: tipo.id, registro_series: rs };
                   return (
                     <CommandItem
                       key={tipo.id}

@@ -9,7 +9,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import { MUSCLE_GROUPS } from "@/constants/muscleGroups";
 import { useWorkoutById } from "@/hooks/useWorkouts";
-import type { ActividadWithDetails, EjercicioWithDetails, Serie } from "@/types/workout";
+import {
+  type ActividadWithDetails,
+  type EjercicioWithDetails,
+  type Serie,
+  normalizeRegistroSeries,
+  setHasWork,
+  formatRitmoSegKmLabel,
+} from "@/types/workout";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -35,9 +42,7 @@ function formatWeight(value: number) {
 }
 
 function isSerieDone(s: Serie) {
-  const reps = Number(s.repeticiones);
-  const kg = Number(s.peso_kg);
-  return !!s.completed || reps > 0 || kg > 0;
+  return !!s.completed || setHasWork(s);
 }
 
 function estimate1RM(weightKg: number, reps: number) {
@@ -117,10 +122,12 @@ function SeriesList({
   series,
   bestSerieId,
   bestRm,
+  registroSeries,
 }: {
   series: Serie[];
   bestSerieId: string | null;
   bestRm: number;
+  registroSeries: ReturnType<typeof normalizeRegistroSeries>;
 }) {
   const doneSeries = useMemo(
     () => [...series].filter(isSerieDone).sort((a, b) => a.numero_serie - b.numero_serie),
@@ -135,7 +142,13 @@ function SeriesList({
         const done = isSerieDone(s);
         const reps = Number(s.repeticiones);
         const kg = Number(s.peso_kg);
+        const ds = s.duracion_seg;
+        const pace = s.ritmo_seg_km;
         const isBest = bestSerieId && s.id === bestSerieId;
+        const showDurationPace =
+          registroSeries === "duracion_ritmo" || ((ds ?? 0) > 0 && (pace ?? 0) > 0);
+        const showDurationOnly =
+          !showDurationPace && (registroSeries === "duracion" || (ds != null && ds > 0));
         return (
           <div key={s.id} className="flex items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 min-w-0">
@@ -144,7 +157,7 @@ function SeriesList({
                 {done ? <Check className="ml-2 inline h-3.5 w-3.5 text-emerald-500" /> : null}
               </span>
 
-              {isBest && bestRm > 0 ? (
+              {isBest && bestRm > 0 && registroSeries === "peso_reps" ? (
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
@@ -178,7 +191,11 @@ function SeriesList({
                 done ? "text-foreground" : "text-muted-foreground opacity-70"
               )}
             >
-              {`${reps} reps · ${formatWeight(kg)} kg`}
+              {showDurationPace
+                ? `${ds ?? 0} s · ${formatRitmoSegKmLabel(pace ?? null)}`
+                : showDurationOnly
+                  ? `${ds ?? 0} s`
+                  : `${reps} reps · ${formatWeight(kg)} kg`}
             </span>
           </div>
         );
@@ -202,6 +219,7 @@ function ExerciseBlock({
   const title = ex.tipo_ejercicio?.nombre ?? "Ejercicio";
   const isTopExercise = topExerciseId === ex.id;
   const best = rmByExerciseId[ex.id];
+  const registroSeries = normalizeRegistroSeries((ex as { registro_series?: string }).registro_series);
 
   return (
     <div className="py-3 px-3">
@@ -217,6 +235,7 @@ function ExerciseBlock({
         series={series}
         bestSerieId={isTopExercise ? best?.bestSerieId ?? null : null}
         bestRm={isTopExercise ? best?.rm ?? 0 : 0}
+        registroSeries={registroSeries}
       />
     </div>
   );
@@ -295,6 +314,7 @@ export function WorkoutDetailsContent({
       for (const s of doneSeries) {
         const reps = Number(s.repeticiones);
         const kg = Number(s.peso_kg);
+        if (reps <= 0 || kg <= 0) continue;
         const rm = estimate1RM(kg, reps);
         if (rm > bestRmForExercise) {
           bestRmForExercise = rm;
@@ -315,6 +335,7 @@ export function WorkoutDetailsContent({
           const reps = Number(s.repeticiones);
           const kg = Number(s.peso_kg);
           const weight = reps * kg;
+          if (weight <= 0) continue;
           for (const g of mainGroups) {
             groupSetsAcc[g] += 1;
             groupWeightAcc[g] += weight;

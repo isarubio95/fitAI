@@ -17,7 +17,7 @@ import {
   startOfMonth, endOfMonth, subMonths,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import type { ActividadWithDetails } from "@/types/workout";
+import { type ActividadWithDetails, normalizeRegistroSeries, formatRitmoSegKmLabel } from "@/types/workout";
 import { MuscleRankingWidget } from "@/components/dashboard/MuscleRankingWidget";
 
 const INITIAL_SHOW = 5;
@@ -37,17 +37,24 @@ function inRange(fecha: string, start: Date, end: Date) {
 
 function calcMetrics(workouts: ActividadWithDetails[], start: Date, end: Date) {
   let volume = 0;
+  let durationSec = 0;
   let sets = 0;
   for (const w of workouts) {
     if (!inRange(w.fecha, start, end)) continue;
     for (const ej of w.ejercicios) {
       for (const s of ej.series) {
         sets++;
-        volume += s.repeticiones * Number(s.peso_kg);
+        const dur = Number(s.duracion_seg ?? 0);
+        const kgReps = s.repeticiones * Number(s.peso_kg);
+        if (dur > 0 && kgReps === 0) {
+          durationSec += dur;
+        } else {
+          volume += kgReps;
+        }
       }
     }
   }
-  return { volume, sets };
+  return { volume, durationSec, sets };
 }
 
 function pctChange(current: number, previous: number): number | null {
@@ -87,10 +94,22 @@ const WorkoutHistory = () => {
   const prevMonthEnd = useMemo(() => startOfMonth(now), [now]);
 
   // ── Metrics ──
-  const weekCurr = useMemo(() => workouts ? calcMetrics(workouts, thisWeekStart, thisWeekEnd) : { volume: 0, sets: 0 }, [workouts, thisWeekStart, thisWeekEnd]);
-  const weekPrev = useMemo(() => workouts ? calcMetrics(workouts, prevWeekStart, thisWeekStart) : { volume: 0, sets: 0 }, [workouts, prevWeekStart, thisWeekStart]);
-  const monthCurr = useMemo(() => workouts ? calcMetrics(workouts, thisMonthStart, thisMonthEnd) : { volume: 0, sets: 0 }, [workouts, thisMonthStart, thisMonthEnd]);
-  const monthPrev = useMemo(() => workouts ? calcMetrics(workouts, prevMonthStart, prevMonthEnd) : { volume: 0, sets: 0 }, [workouts, prevMonthStart, prevMonthEnd]);
+  const weekCurr = useMemo(
+    () => (workouts ? calcMetrics(workouts, thisWeekStart, thisWeekEnd) : { volume: 0, durationSec: 0, sets: 0 }),
+    [workouts, thisWeekStart, thisWeekEnd]
+  );
+  const weekPrev = useMemo(
+      () => (workouts ? calcMetrics(workouts, prevWeekStart, thisWeekStart) : { volume: 0, durationSec: 0, sets: 0 }),
+      [workouts, prevWeekStart, thisWeekStart]
+    );
+  const monthCurr = useMemo(
+      () => (workouts ? calcMetrics(workouts, thisMonthStart, thisMonthEnd) : { volume: 0, durationSec: 0, sets: 0 }),
+      [workouts, thisMonthStart, thisMonthEnd]
+    );
+  const monthPrev = useMemo(
+      () => (workouts ? calcMetrics(workouts, prevMonthStart, prevMonthEnd) : { volume: 0, durationSec: 0, sets: 0 }),
+      [workouts, prevMonthStart, prevMonthEnd]
+    );
 
   // ── Weekly bar chart (last 4 weeks) ──
   const weeklyData = useMemo(() => {
@@ -143,10 +162,22 @@ const WorkoutHistory = () => {
   const hasMore = (workouts?.length ?? 0) > INITIAL_SHOW;
 
   const kpiCards = [
-    { label: "Volumen semanal", value: `${(weekCurr.volume / 1000).toFixed(1)}t`, pct: pctChange(weekCurr.volume, weekPrev.volume), icon: Weight },
-    { label: "Series semanales", value: weekCurr.sets, pct: pctChange(weekCurr.sets, weekPrev.sets), icon: Layers },
-    { label: "Volumen mensual", value: `${(monthCurr.volume / 1000).toFixed(1)}t`, pct: pctChange(monthCurr.volume, monthPrev.volume), icon: TrendingUp },
-    { label: "Series mensuales", value: monthCurr.sets, pct: pctChange(monthCurr.sets, monthPrev.sets), icon: Activity },
+    {
+      label: "Volumen semanal",
+      value: `${(weekCurr.volume / 1000).toFixed(1)}t`,
+      sub: weekCurr.durationSec > 0 ? `Tiempo: ${Math.round(weekCurr.durationSec / 60)} min` : undefined,
+      pct: pctChange(weekCurr.volume, weekPrev.volume),
+      icon: Weight,
+    },
+    { label: "Series semanales", value: weekCurr.sets, sub: undefined, pct: pctChange(weekCurr.sets, weekPrev.sets), icon: Layers },
+    {
+      label: "Volumen mensual",
+      value: `${(monthCurr.volume / 1000).toFixed(1)}t`,
+      sub: monthCurr.durationSec > 0 ? `Tiempo: ${Math.round(monthCurr.durationSec / 60)} min` : undefined,
+      pct: pctChange(monthCurr.volume, monthPrev.volume),
+      icon: TrendingUp,
+    },
+    { label: "Series mensuales", value: monthCurr.sets, sub: undefined, pct: pctChange(monthCurr.sets, monthPrev.sets), icon: Activity },
   ];
 
   return (
@@ -172,8 +203,13 @@ const WorkoutHistory = () => {
                 </div>
                 <p className="text-xl font-bold leading-none">{isLoading ? "–" : kpi.value}</p>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] text-muted-foreground">{kpi.label}</p>
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[11px] text-muted-foreground">{kpi.label}</p>
+                  {kpi.sub && !isLoading && (
+                    <p className="text-[10px] text-muted-foreground/80 mt-0.5">{kpi.sub}</p>
+                  )}
+                </div>
                 {!isLoading && <ChangeBadge pct={kpi.pct} />}
               </div>
             </div>
@@ -303,11 +339,23 @@ const WorkoutHistory = () => {
                             <div className="space-y-0.5">
                               {ej.series
                                 .sort((a, b) => a.numero_serie - b.numero_serie)
-                                .map((s) => (
-                                  <p key={s.id} className="text-xs text-muted-foreground pl-3">
-                                    Serie {s.numero_serie}: {s.repeticiones} reps × {s.peso_kg} kg
-                                  </p>
-                                ))}
+                                .map((s) => {
+                                  const mode = normalizeRegistroSeries((ej as { registro_series?: string }).registro_series);
+                                  const ds = s.duracion_seg;
+                                  const pace = (s as { ritmo_seg_km?: number | null }).ritmo_seg_km;
+                                  const showPace =
+                                    mode === "duracion_ritmo" || ((ds ?? 0) > 0 && (pace ?? 0) > 0);
+                                  const txt = showPace
+                                    ? `Serie ${s.numero_serie}: ${ds ?? 0} s · ${formatRitmoSegKmLabel(pace ?? null)}`
+                                    : mode === "duracion" || (ds != null && ds > 0)
+                                      ? `Serie ${s.numero_serie}: ${ds ?? 0} s`
+                                      : `Serie ${s.numero_serie}: ${s.repeticiones} reps × ${s.peso_kg} kg`;
+                                  return (
+                                    <p key={s.id} className="text-xs text-muted-foreground pl-3">
+                                      {txt}
+                                    </p>
+                                  );
+                                })}
                             </div>
                           </div>
                         ))}

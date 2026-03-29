@@ -2,7 +2,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { startOfMonth, endOfMonth, startOfWeek, startOfDay, endOfDay } from "date-fns";
-import type { ActividadWithDetails, EjercicioWithDetails } from "@/types/workout";
+import { type ActividadWithDetails, type EjercicioWithDetails, setHasWork } from "@/types/workout";
 import { useRemoveWorkoutXP } from "@/hooks/useGamification";
 import { useToast } from "@/hooks/use-toast";
 
@@ -326,11 +326,9 @@ export function useDeleteWorkout() {
       if (oldIds.length) {
         const { data: series } = await supabase
           .from("serie")
-          .select("id, repeticiones, peso_kg")
+          .select("id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km")
           .in("ejercicio_id", oldIds);
-        const seriesCompletadas = (series ?? []).filter(
-          (s) => Number(s.repeticiones) > 0 || Number(s.peso_kg) > 0
-        ).length;
+        const seriesCompletadas = (series ?? []).filter((s) => setHasWork(s as any)).length;
         if (seriesCompletadas > 0) await removeXP(workoutId, seriesCompletadas);
       }
       if (oldIds.length) {

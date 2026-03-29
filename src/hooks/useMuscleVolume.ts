@@ -77,14 +77,18 @@ export function useMuscleVolume(period: TimePeriod = "week") {
       // Contar series con datos (marcadas completadas O con reps/peso): así el mapa refleja lo que realmente hiciste
       const { data: series, error: sErr } = await supabase
         .from("serie")
-        .select("ejercicio_id, repeticiones, peso_kg, completed")
+        .select("ejercicio_id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km, completed")
         .in("ejercicio_id", ejercicioIds);
 
       if (sErr) throw sErr;
 
       const setCountMap: Record<string, number> = {};
       for (const s of series || []) {
-        const hasData = Number(s.repeticiones) > 0 || Number(s.peso_kg) > 0;
+        const hasData =
+          Number(s.repeticiones) > 0 ||
+          Number(s.peso_kg) > 0 ||
+          Number((s as { duracion_seg?: number | null }).duracion_seg ?? 0) > 0 ||
+          Number((s as { ritmo_seg_km?: number | null }).ritmo_seg_km ?? 0) > 0;
         if (s.completed || hasData) {
           setCountMap[s.ejercicio_id] = (setCountMap[s.ejercicio_id] || 0) + 1;
         }

@@ -46,7 +46,8 @@ export function usePlannedRoutines(startDate: string | Date, endDate: string | D
             *,
             ejercicios:rutina_ejercicio!rutina_ejercicio_rutina_id_fkey (
               *,
-              tipo_ejercicio:tipo_ejercicio!rutina_ejercicio_tipo_ejercicio_id_fkey (*)
+              tipo_ejercicio:tipo_ejercicio!rutina_ejercicio_tipo_ejercicio_id_fkey (*),
+              usuario_ejercicio:usuario_ejercicio!rutina_ejercicio_usuario_ejercicio_id_fkey (*)
             )
           )
         `

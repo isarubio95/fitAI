@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import type { RegistroSeries } from "@/types/workout";
 
 export type ExerciseCatalogFilters = {
   q?: string;
@@ -130,11 +131,13 @@ export function useCreateExercise() {
       descripcion,
       usuario_id,
       musculos_involucrados,
+      registro_series,
     }: {
       nombre: string;
       descripcion?: string;
       usuario_id: string;
       musculos_involucrados?: string[];
+      registro_series?: RegistroSeries;
     }) => {
       const { data, error } = await supabase
         .from("usuario_ejercicio")
@@ -144,6 +147,7 @@ export function useCreateExercise() {
           usuario_id,
           musculos_involucrados:
             musculos_involucrados?.length ? musculos_involucrados : null,
+          registro_series: registro_series ?? "peso_reps",
         } as any)
         .select()
         .single();

@@ -35,7 +35,12 @@ import { SortableRoutineCard } from "@/components/routine/SortableRoutineCard";
 import { ImportRoutineFromCsvDialog } from "@/components/routine/ImportRoutineFromCsvDialog";
 import { useToast } from "@/hooks/use-toast";
 import type { RutinaWithDetails } from "@/types/routine";
-import type { ExerciseFormData } from "@/types/workout";
+import {
+  type ExerciseFormData,
+  normalizeRegistroSeries,
+  defaultSetForMode,
+  formatRitmoSegKmLabel,
+} from "@/types/workout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -218,18 +223,31 @@ const Routines = () => {
 
     const exercises: ExerciseFormData[] = routine.ejercicios
       .sort((a, b) => a.orden - b.orden)
-      .map((ej) => ({
-        tipo_ejercicio_id: ej.tipo_ejercicio_id,
-        nombre: ej.tipo_ejercicio.nombre,
-        repRange: `${ej.repes_min}-${ej.repes_max}`,
-        targetRir: (ej as any).rir ?? 1,
-        descanso: (ej as any).descanso ?? 120,
-        superset_id: (ej as any).superset_id ?? null,
-        sets: Array.from({ length: ej.series_objetivo }, () => ({
-          repeticiones: 0,
-          peso_kg: 0,
-        })),
-      }));
+      .map((ej) => {
+        const registro_series = normalizeRegistroSeries((ej as any).registro_series);
+        const durObj = (ej as any).duracion_objetivo_seg as number | null | undefined;
+        const ritmoObj = (ej as any).ritmo_objetivo_seg_km as number | null | undefined;
+        return {
+          tipo_ejercicio_id: ej.tipo_ejercicio_id ?? undefined,
+          usuario_ejercicio_id: (ej as any).usuario_ejercicio_id ?? undefined,
+          nombre: ej.tipo_ejercicio.nombre,
+          registro_series,
+          repRange:
+            registro_series === "duracion_ritmo"
+              ? `${durObj != null ? `${durObj}s` : "Tiempo"} · ${formatRitmoSegKmLabel(ritmoObj ?? null)}`
+              : registro_series === "duracion"
+                ? durObj != null
+                  ? `${durObj} s`
+                  : "Tiempo"
+                : `${ej.repes_min}-${ej.repes_max}`,
+          targetRir: (ej as any).rir ?? 1,
+          descanso: (ej as any).descanso ?? 120,
+          superset_id: (ej as any).superset_id ?? null,
+          sets: Array.from({ length: ej.series_objetivo }, () =>
+            defaultSetForMode(registro_series, durObj ?? null, ritmoObj ?? null)
+          ),
+        };
+      });
 
     openFromTemplate(routine.nombre, exercises);
   };

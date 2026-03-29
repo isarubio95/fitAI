@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Play, Pencil, Trash2, Dumbbell, GripVertical, ChevronDown } from "lucide-react";
 import type { RutinaWithDetails } from "@/types/routine";
+import { formatRitmoSegKmLabel } from "@/types/workout";
 import { cn } from "@/lib/utils";
 
 interface SortableRoutineCardProps {
@@ -120,7 +121,17 @@ export function SortableRoutineCard({
         >
           <div className="overflow-hidden">
             <div className="rounded-lg bg-muted/30 p-3 space-y-0">
-              {sortedEjercicios.map((ej, idx) => (
+              {sortedEjercicios.map((ej, idx) => {
+                const reg = (ej as { registro_series?: string }).registro_series;
+                const durObj = (ej as { duracion_objetivo_seg?: number | null }).duracion_objetivo_seg;
+                const ritmoObj = (ej as { ritmo_objetivo_seg_km?: number | null }).ritmo_objetivo_seg_km;
+                const setsBadge =
+                  reg === "duracion"
+                    ? `${ej.series_objetivo}×${durObj ?? "—"}s`
+                    : reg === "duracion_ritmo"
+                      ? `${ej.series_objetivo}×${durObj ?? "—"}s @ ${formatRitmoSegKmLabel(ritmoObj ?? null)}`
+                      : `${ej.series_objetivo}×${ej.repes_min}-${ej.repes_max}`;
+                return (
                 <div key={ej.id}>
                   {idx > 0 && <Separator className="my-2" />}
                   <div className="flex items-center justify-between gap-2">
@@ -129,7 +140,7 @@ export function SortableRoutineCard({
                     </span>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        {ej.series_objetivo}×{ej.repes_min}-{ej.repes_max}
+                        {setsBadge}
                       </Badge>
                       {ej.rir != null && (
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">
@@ -142,7 +153,8 @@ export function SortableRoutineCard({
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

@@ -36,7 +36,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { ExerciseFormData } from "@/types/workout";
+import {
+  type ExerciseFormData,
+  normalizeRegistroSeries,
+  defaultSetForMode,
+  formatRitmoSegKmLabel,
+} from "@/types/workout";
 
 // Importaciones de DND-Kit iguales a las de Rutinas
 import { 
@@ -273,8 +278,10 @@ const Dashboard = () => {
     }
 
     type RoutineExercise = {
-      tipo_ejercicio_id: string;
+      tipo_ejercicio_id?: string | null;
+      usuario_ejercicio_id?: string | null;
       tipo_ejercicio?: { nombre?: string | null } | null;
+      usuario_ejercicio?: { nombre?: string | null } | null;
       repes_min: number;
       repes_max: number;
       rir?: number | null;
@@ -282,6 +289,9 @@ const Dashboard = () => {
       superset_id?: string | null;
       series_objetivo: number;
       orden?: number | null;
+      registro_series?: string | null;
+      duracion_objetivo_seg?: number | null;
+      ritmo_objetivo_seg_km?: number | null;
     };
 
     type PlannedRoutineWithExercises = {
@@ -293,18 +303,33 @@ const Dashboard = () => {
 
     const ejercicios: ExerciseFormData[] = (routine.ejercicios ?? [])
       .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
-      .map((ej) => ({
-        tipo_ejercicio_id: ej.tipo_ejercicio_id,
-        nombre: ej.tipo_ejercicio?.nombre ?? "",
-        repRange: `${ej.repes_min}-${ej.repes_max}`,
-        targetRir: ej.rir ?? 1,
-        descanso: ej.descanso ?? 120,
-        superset_id: ej.superset_id ?? null,
-        sets: Array.from({ length: ej.series_objetivo }, () => ({
-          repeticiones: 0,
-          peso_kg: 0,
-        })),
-      }));
+      .map((ej) => {
+        const registro_series = normalizeRegistroSeries(ej.registro_series);
+        const durObj = ej.duracion_objetivo_seg;
+        const ritmoObj = ej.ritmo_objetivo_seg_km;
+        const nombre =
+          ej.tipo_ejercicio?.nombre ?? ej.usuario_ejercicio?.nombre ?? "";
+        return {
+          tipo_ejercicio_id: ej.tipo_ejercicio_id ?? undefined,
+          usuario_ejercicio_id: ej.usuario_ejercicio_id ?? undefined,
+          nombre,
+          registro_series,
+          repRange:
+            registro_series === "duracion_ritmo"
+              ? `${durObj != null ? `${durObj}s` : "Tiempo"} · ${formatRitmoSegKmLabel(ritmoObj ?? null)}`
+              : registro_series === "duracion"
+                ? durObj != null
+                  ? `${durObj} s`
+                  : "Tiempo"
+                : `${ej.repes_min}-${ej.repes_max}`,
+          targetRir: ej.rir ?? 1,
+          descanso: ej.descanso ?? 120,
+          superset_id: ej.superset_id ?? null,
+          sets: Array.from({ length: ej.series_objetivo }, () =>
+            defaultSetForMode(registro_series, durObj ?? null, ritmoObj ?? null)
+          ),
+        };
+      });
 
     const activeEl = document.activeElement as HTMLElement | null;
     activeEl?.blur?.();
