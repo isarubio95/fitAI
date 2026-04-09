@@ -8,6 +8,7 @@ import { Check, Trophy } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import { MUSCLE_GROUPS } from "@/constants/muscleGroups";
+import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
 import { useWorkoutById } from "@/hooks/useWorkouts";
 import {
   type ActividadWithDetails,
@@ -53,21 +54,16 @@ function estimate1RM(weightKg: number, reps: number) {
   return w * (1 + 0.0333 * r);
 }
 
-function getMainGroup(muscle: string): MainMuscleGroup | null {
-  for (const [group, muscles] of Object.entries(MUSCLE_GROUPS)) {
-    if ((muscles as readonly string[]).includes(muscle)) {
-      return group as MainMuscleGroup;
-    }
-  }
-  return null;
-}
-
 function getMainGroupsForExercise(ex: EjercicioWithDetails): MainMuscleGroup[] {
   const bodyParts: string[] = ex.tipo_ejercicio?.musculos_involucrados ?? [];
   const groups = new Set<MainMuscleGroup>();
   for (const muscle of bodyParts) {
-    const group = getMainGroup(muscle);
+    const group = resolveMainMuscleGroup(muscle);
     if (group) groups.add(group);
+  }
+  if (groups.size === 0) {
+    const fallback = resolveMainMuscleGroup(ex.tipo_ejercicio?.grupo_muscular ?? null);
+    if (fallback) groups.add(fallback);
   }
   return [...groups];
 }

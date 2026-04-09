@@ -43,9 +43,10 @@ import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Chec
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
-import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
+import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import { EXERCISE_SYNONYMS } from "@/constants/exerciseSynonyms";
 import type { RegistroSeries } from "@/types/workout";
+import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
 
 type DifficultyLevel = 1 | 2 | 3;
 
@@ -142,9 +143,8 @@ function expandQueryTerms(q: string): string[] {
 function getMainGroupFromBodyPart(bodyPart: string[] | null | undefined): MainMuscleGroup | null {
   if (!bodyPart?.length) return null;
   for (const muscle of bodyPart) {
-    for (const [group, muscles] of Object.entries(MUSCLE_GROUPS) as [MainMuscleGroup, readonly string[]][]) {
-      if (muscles.includes(muscle)) return group;
-    }
+    const group = resolveMainMuscleGroup(muscle);
+    if (group) return group;
   }
   return null;
 }

@@ -2,15 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
-
-function getMainGroup(muscle: string): MainMuscleGroup | null {
-  for (const [group, muscles] of Object.entries(MUSCLE_GROUPS)) {
-    if ((muscles as readonly string[]).includes(muscle)) {
-      return group as MainMuscleGroup;
-    }
-  }
-  return null;
-}
+import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
 
 export interface MuscleStatistics {
   mainGroupCounts: Record<MainMuscleGroup, number>;
@@ -42,7 +34,7 @@ export function useMuscleStatistics() {
       // Fetch all exercises with musculos_involucrados
       const { data: ejercicios, error: ejErr } = await supabase
         .from("ejercicio")
-        .select("id, tipo_ejercicio:tipo_ejercicio_id(musculos_involucrados)")
+        .select("id, tipo_ejercicio:tipo_ejercicio_id(musculos_involucrados, grupo_muscular)")
         .eq("usuario_id", user!.id);
 
       if (ejErr) throw ejErr;
@@ -76,13 +68,22 @@ export function useMuscleStatistics() {
         const sets = setCountMap[ej.id] || 0;
         if (sets === 0) continue;
         const bodyParts: string[] = (ej.tipo_ejercicio as any)?.musculos_involucrados || [];
+        let hasMappedGroup = false;
         for (const muscle of bodyParts) {
-          const group = getMainGroup(muscle);
+          const group = resolveMainMuscleGroup(muscle);
           if (group) {
+            hasMappedGroup = true;
             mainGroupCounts[group] += sets;
             if (subGroupCounts[group][muscle] !== undefined) {
               subGroupCounts[group][muscle] += sets;
             }
+          }
+        }
+
+        if (!hasMappedGroup) {
+          const fallbackGroup = resolveMainMuscleGroup((ej.tipo_ejercicio as any)?.grupo_muscular ?? null);
+          if (fallbackGroup) {
+            mainGroupCounts[fallbackGroup] += sets;
           }
         }
       }

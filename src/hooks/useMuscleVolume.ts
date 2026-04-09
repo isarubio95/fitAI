@@ -2,20 +2,10 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import { MUSCLE_GROUPS, type MainMuscleGroup, type SpecificMuscle } from "@/constants/muscleGroups";
+import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks } from "date-fns";
 
 export type TimePeriod = "week" | "month";
-
-/** Maps a specific muscle name back to its MainMuscleGroup */
-function getMainGroup(muscle: string): MainMuscleGroup | null {
-  for (const [group, muscles] of Object.entries(MUSCLE_GROUPS)) {
-    if ((muscles as readonly string[]).includes(muscle)) {
-      return group as MainMuscleGroup;
-    }
-  }
-  return null;
-}
 
 export interface MuscleVolumeData {
   /** Sets per MainMuscleGroup */
@@ -64,7 +54,7 @@ export function useMuscleVolume(period: TimePeriod = "week") {
       // Get exercises with their tipo_ejercicio (for body_part)
       const { data: ejercicios, error: ejErr } = await supabase
         .from("ejercicio")
-        .select("id, tipo_ejercicio:tipo_ejercicio_id(musculos_involucrados)")
+        .select("id, tipo_ejercicio:tipo_ejercicio_id(musculos_involucrados, grupo_muscular)")
         .in("actividad_id", actIds);
 
       if (ejErr) throw ejErr;
@@ -103,11 +93,21 @@ export function useMuscleVolume(period: TimePeriod = "week") {
         if (sets === 0) continue;
 
         const bodyParts: string[] = (ej.tipo_ejercicio as any)?.musculos_involucrados || [];
+        let hasMappedGroup = false;
         for (const muscle of bodyParts) {
           specificVolume[muscle] = (specificVolume[muscle] || 0) + sets;
-          const group = getMainGroup(muscle);
+          const group = resolveMainMuscleGroup(muscle);
           if (group) {
+            hasMappedGroup = true;
             groupVolume[group] = (groupVolume[group] || 0) + sets;
+          }
+        }
+
+        // Fallback: algunos catálogos traen músculos con nombres no canónicos.
+        if (!hasMappedGroup) {
+          const fallbackGroup = resolveMainMuscleGroup((ej.tipo_ejercicio as any)?.grupo_muscular ?? null);
+          if (fallbackGroup) {
+            groupVolume[fallbackGroup] = (groupVolume[fallbackGroup] || 0) + sets;
           }
         }
       }

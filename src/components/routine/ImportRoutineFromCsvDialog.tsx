@@ -269,15 +269,16 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
             <p className="font-medium">Estructura del archivo CSV</p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
               <li><strong>Primera línea:</strong> nombre de la rutina, descripción (opcional). Si la descripción lleva comas, escríbela entre comillas.</li>
-              <li><strong>Resto de líneas:</strong> nombre_ejercicio, series, repes_min, repes_max, descanso_segundos. Opcional: rir (0-10). Opcional: pon S para superserie con el siguiente.</li>
+              <li><strong>Resto de líneas:</strong> nombre_ejercicio, series, repes_min, repes_max, descanso_segundos. Opcional: rir (0-10). Opcional: pon S para superserie con el siguiente (solo en el primero del bloque).</li>
+              <li>Si quieres usar S pero sin indicar RIR, deja la columna de RIR vacía: <code>...,descanso,,S</code>.</li>
               <li>El nombre del ejercicio debe coincidir con uno del catálogo de ejercicios de la app.</li>
             </ul>
             <pre className="mt-2 text-xs bg-background/80 rounded p-2 overflow-x-auto border border-border">
-{`Mi rutina A,"Descripción"
-Press banca,3,8,12,90,2,S
-Curl bíceps,3,10,12,60,,S
-Sentadilla,4,6,10,120,2
-Peso muerto,3,5,8,180`}
+              {`Mi rutina A,"Descripción"
+              Press banca,3,8,12,90,2,S
+              Curl bíceps,3,10,12,60,
+              Sentadilla,4,6,10,120,2
+              Peso muerto,3,5,8,180`}
             </pre>
           </div>
 
