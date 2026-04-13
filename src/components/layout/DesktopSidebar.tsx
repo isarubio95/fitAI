@@ -15,6 +15,8 @@ import { useStartCardioLiveSession, useCardioDisciplinas } from "@/hooks/useCard
 import { useToast } from "@/hooks/use-toast";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
 import { CardioTypePickerDialog } from "@/components/cardio/CardioTypePickerDialog";
+import { GenerateRoutineDialog } from "@/components/routine/GenerateRoutineDialog";
+import { usePremium } from "@/hooks/usePremium";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,9 +41,11 @@ export function DesktopSidebar() {
   const { openNewWithDiscipline, openLiveRecording } = useGlobalCardioDrawer();
   const startCardioLive = useStartCardioLiveSession();
   const { data: cardioDisciplinas } = useCardioDisciplinas();
+  const { data: premiumStatus } = usePremium();
   const { toast } = useToast();
   const [explorerOpen, setExplorerOpen] = useState(false);
   const [cardioTypeDialogOpen, setCardioTypeDialogOpen] = useState(false);
+  const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-white/50 dark:bg-zinc-950/50 backdrop-blur-2xl h-dvh sticky top-0">
@@ -64,6 +68,26 @@ export function DesktopSidebar() {
               <div className="min-w-0">
                 <p className="font-medium">Entreno de Gimnasio</p>
                 <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-base"
+              onClick={() => {
+                if (!premiumStatus?.isPremium) {
+                  toast({
+                    title: "Funcion premium",
+                    description: "Necesitas cuenta premium para generar planes con IA.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                setPremiumDialogOpen(true);
+              }}
+            >
+              <Sparkles className="h-5 w-5 mr-2 shrink-0 text-violet-500" />
+              <div className="min-w-0">
+                <p className="font-medium">Generar plan de entrenamiento</p>
+                <p className="text-xs text-muted-foreground">IA premium para rutinas personalizadas</p>
               </div>
             </DropdownMenuItem>
             <DropdownMenuItem className="text-base" onClick={() => setCardioTypeDialogOpen(true)}>
@@ -158,6 +182,11 @@ export function DesktopSidebar() {
             openNewWithDiscipline(disciplineId);
             setCardioTypeDialogOpen(false);
           }}
+        />
+        <GenerateRoutineDialog
+          open={premiumDialogOpen}
+          onOpenChange={setPremiumDialogOpen}
+          onApplyPlan={() => navigate("/", { state: { openPlanWizard: true } })}
         />
 
         {navItems.map(({ to, icon: Icon, label }) => (

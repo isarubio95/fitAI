@@ -13,12 +13,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import { LogOut, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,8 +33,8 @@ export function SettingsDrawer() {
   const [open, setOpen] = useState(false);
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
+    <Drawer direction="right" open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
@@ -43,15 +43,15 @@ export function SettingsDrawer() {
         >
           <Settings />
         </Button>
-      </SheetTrigger>
+      </DrawerTrigger>
 
-      <SheetContent
+      <DrawerContent
         side="right"
         className="flex h-full w-full flex-col border-0 p-0 shadow-none"
       >
-        <SheetHeader className="px-6 pt-6 text-left">
-          <SheetTitle className="text-lg">Ajustes</SheetTitle>
-        </SheetHeader>
+        <DrawerHeader className="px-6 pt-6 text-left">
+          <DrawerTitle className="text-lg">Ajustes</DrawerTitle>
+        </DrawerHeader>
 
         <div className="mt-3 flex-1 space-y-6 overflow-y-auto px-6 pb-8">
           {/* Privacidad en comunidad */}
@@ -113,8 +113,8 @@ export function SettingsDrawer() {
             </Button>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

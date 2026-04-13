@@ -10,6 +10,8 @@ import { useStartCardioLiveSession, useCardioDisciplinas } from "@/hooks/useCard
 import { useToast } from "@/hooks/use-toast";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
 import { CardioTypePickerDialog } from "@/components/cardio/CardioTypePickerDialog";
+import { GenerateRoutineDialog } from "@/components/routine/GenerateRoutineDialog";
+import { usePremium } from "@/hooks/usePremium";
 
 // Añadimos un objeto especial de tipo "add" para representarlo en el centro
 const navItems = [
@@ -27,11 +29,13 @@ export function BottomNav() {
   const { openNewWithDiscipline, openLiveRecording } = useGlobalCardioDrawer();
   const startCardioLive = useStartCardioLiveSession();
   const { data: cardioDisciplinas } = useCardioDisciplinas();
+  const { data: premiumStatus } = usePremium();
   const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showRoutineSubmenu, setShowRoutineSubmenu] = useState(false);
   const [explorerOpen, setExplorerOpen] = useState(false);
   const [cardioTypeDialogOpen, setCardioTypeDialogOpen] = useState(false);
+  const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
   // Cerrar el menú si se hace click fuera de la barra de navegación
@@ -76,6 +80,27 @@ export function BottomNav() {
           isMenuOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-50 opacity-0 pointer-events-none"
         )}
       >
+        <button
+          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
+          onClick={() => {
+            if (!premiumStatus?.isPremium) {
+              toast({
+                title: "Funcion premium",
+                description: "Necesitas cuenta premium para generar planes con IA.",
+                variant: "destructive",
+              });
+              return;
+            }
+            setPremiumDialogOpen(true);
+            setIsMenuOpen(false);
+          }}
+        >
+          <Sparkles className="h-6 w-6 shrink-0 text-violet-500" />
+          <div className="min-w-0">
+            <p className="font-medium">Generar plan de entrenamiento</p>
+            <p className="text-xs text-muted-foreground">IA premium para crear rutinas personalizadas</p>
+          </div>
+        </button>
         <button
           className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
           onClick={() => { navigate("/", { state: { openPlanWizard: true } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
@@ -225,6 +250,11 @@ export function BottomNav() {
           openNewWithDiscipline(disciplineId);
           setCardioTypeDialogOpen(false);
         }}
+      />
+      <GenerateRoutineDialog
+        open={premiumDialogOpen}
+        onOpenChange={setPremiumDialogOpen}
+        onApplyPlan={() => navigate("/", { state: { openPlanWizard: true } })}
       />
 
       {/* BARRA DE NAVEGACIÓN */}

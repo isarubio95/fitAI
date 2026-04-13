@@ -44,7 +44,7 @@ export function useBackCloseLayer({
 }: {
   open: boolean;
   onOpenChange?: (open: boolean) => void;
-  kind: "sheet" | "dialog" | "alert-dialog" | "popover";
+  kind: "sheet" | "dialog" | "alert-dialog" | "popover" | "drawer";
 }) {
   const reactId = useId();
   const id = useMemo(() => `${kind}:${reactId}`, [kind, reactId]);

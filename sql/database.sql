@@ -184,6 +184,7 @@ CREATE TABLE public.perfil (
   id uuid NOT NULL DEFAULT auth.uid(),
   username text,
   avatar_url text,
+  es_premium boolean NOT NULL DEFAULT false,
   nivel integer NOT NULL DEFAULT 1,
   xp_total integer NOT NULL DEFAULT 0,
   racha_actual integer NOT NULL DEFAULT 0,
@@ -193,6 +194,15 @@ CREATE TABLE public.perfil (
   comunidad_publica_actividad boolean NOT NULL DEFAULT false,
   CONSTRAINT perfil_pkey PRIMARY KEY (id),
   CONSTRAINT perfil_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.plan_generado_ia (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  usuario_id uuid NOT NULL DEFAULT auth.uid(),
+  prompt text NOT NULL,
+  respuesta jsonb NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT plan_generado_ia_pkey PRIMARY KEY (id),
+  CONSTRAINT plan_generado_ia_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.rutina (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

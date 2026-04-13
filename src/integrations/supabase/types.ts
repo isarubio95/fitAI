@@ -564,6 +564,72 @@ export type Database = {
         }
         Relationships: []
       }
+      perfil: {
+        Row: {
+          avatar_url: string | null
+          comunidad_publica_actividad: boolean
+          created_at: string
+          es_premium: boolean
+          id: string
+          nivel: number
+          racha_actual: number
+          racha_maxima: number
+          ultima_actividad_fecha: string | null
+          username: string | null
+          xp_total: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          comunidad_publica_actividad?: boolean
+          created_at?: string
+          es_premium?: boolean
+          id?: string
+          nivel?: number
+          racha_actual?: number
+          racha_maxima?: number
+          ultima_actividad_fecha?: string | null
+          username?: string | null
+          xp_total?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          comunidad_publica_actividad?: boolean
+          created_at?: string
+          es_premium?: boolean
+          id?: string
+          nivel?: number
+          racha_actual?: number
+          racha_maxima?: number
+          ultima_actividad_fecha?: string | null
+          username?: string | null
+          xp_total?: number
+        }
+        Relationships: []
+      }
+      plan_generado_ia: {
+        Row: {
+          created_at: string
+          id: string
+          prompt: string
+          respuesta: Json
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt: string
+          respuesta: Json
+          usuario_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt?: string
+          respuesta?: Json
+          usuario_id?: string
+        }
+        Relationships: []
+      }
       rutina: {
         Row: {
           created_at: string

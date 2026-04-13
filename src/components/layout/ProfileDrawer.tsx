@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Dumbbell } from "lucide-react";
 import { WorkoutDetailsContent } from "@/components/dashboard/WorkoutDetailsSheet";
@@ -226,15 +226,15 @@ function ProfileDrawerSheet() {
   if (!user) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
+    <Drawer direction="left" open={open} onOpenChange={onOpenChange}>
+      <DrawerContent
         side="left"
         className="flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 p-0 shadow-none"
       >
         <div className="px-6 pb-2 pt-6">
-          <SheetHeader className="mb-4 text-left">
-            <SheetTitle className="text-lg">{isViewingSelf ? "Mi cuenta" : "Perfil"}</SheetTitle>
-          </SheetHeader>
+          <DrawerHeader className="mb-4 text-left">
+            <DrawerTitle className="text-lg">{isViewingSelf ? "Mi cuenta" : "Perfil"}</DrawerTitle>
+          </DrawerHeader>
 
           <div className="flex gap-4 items-start">
             <Avatar className="h-16 w-16 shrink-0 ring-2 ring-border/60 mr-1">
@@ -432,7 +432,7 @@ function ProfileDrawerSheet() {
             )}
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }
