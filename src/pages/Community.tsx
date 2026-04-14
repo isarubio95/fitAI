@@ -53,13 +53,13 @@ export default function Community() {
   }, [feed]);
 
   return (
-    <div className="w-full min-w-0 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
-      <section className="space-y-3">
-        <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-          <CardHeader>
+    <div className="w-full min-w-0 pb-8 space-y-0 md:max-w-2xl md:mx-auto md:px-8">
+      <section className="space-y-0">
+        <Card className="w-full rounded-none border-0 bg-card shadow-none">
+          <CardHeader className="pb-1">
             <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 pt-4">
             <div className="relative">
               <Input
                 placeholder="Ej: juan_gym"
@@ -135,10 +135,7 @@ export default function Community() {
             )}
           </CardContent>
         </Card>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="px-6 text-lg font-semibold md:px-0">Feed</h2>
+        <h2 className="rounded-none bg-card px-6 pt-4 pb-1 text-lg font-semibold">Feed</h2>
 
         {loadingFeed ? (
           <div className="space-y-3">
@@ -147,13 +144,20 @@ export default function Community() {
             ))}
           </div>
         ) : normalizedFeed.length === 0 ? (
-          <p className="px-6 py-6 text-center text-sm text-muted-foreground md:px-0">
+          <p className="px-6 py-6 text-center text-sm text-muted-foreground">
             Todavía no hay entrenos publicados.
           </p>
         ) : (
           <div className="space-y-3">
-            {normalizedFeed.map((item) => (
-              <Card key={item.id} className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
+            {normalizedFeed.map((item, index) => (
+              <Card
+                key={item.id}
+                className={
+                  index === 0
+                    ? "w-full rounded-none border-0 bg-card shadow-none"
+                    : "w-full rounded-none border-x-0 md:rounded-3xl md:border-x"
+                }
+              >
                 <CardContent className="space-y-2 px-6 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">

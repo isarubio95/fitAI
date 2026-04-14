@@ -66,9 +66,11 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
   });
   const [generatedPlan, setGeneratedPlan] = useState<GeneratedTrainingPlan | null>(null);
 
-  const selectedDaysTooMany = form.selectedDays.length > form.trainingDaysPerWeek;
-  const selectedDaysMissing = form.selectedDays.length !== form.trainingDaysPerWeek;
-  const canGenerate = !selectedDaysTooMany && !selectedDaysMissing;
+  const canGenerate =
+    form.selectedDays.length >= 1 &&
+    Number.isFinite(form.trainingDaysPerWeek) &&
+    form.trainingDaysPerWeek >= 1 &&
+    form.trainingDaysPerWeek <= 7;
 
   const selectedDaysLabel = useMemo(() => {
     return DAY_OPTIONS.filter((d) => form.selectedDays.includes(d.value))
@@ -104,9 +106,7 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
       missingOrInvalidFields.push("Minutos por sesion (20-180)");
     }
     if (form.selectedDays.length === 0) {
-      missingOrInvalidFields.push("Dias de entrenamiento");
-    } else if (form.selectedDays.length !== form.trainingDaysPerWeek) {
-      missingOrInvalidFields.push(`Dias seleccionados (${form.selectedDays.length}) deben coincidir con dias por semana (${form.trainingDaysPerWeek})`);
+      missingOrInvalidFields.push("Al menos un dia de entrenamiento");
     }
 
     if (missingOrInvalidFields.length > 0) {
@@ -363,7 +363,7 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Seleccionados ({form.selectedDays.length}/{form.trainingDaysPerWeek}): {selectedDaysLabel || "ninguno"}
+              Dias concretos (minimo 1): {form.selectedDays.length} · {selectedDaysLabel || "ninguno"}
             </p>
             </div>
 

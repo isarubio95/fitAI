@@ -25,7 +25,7 @@ import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { usePlannedRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -451,7 +451,7 @@ const Dashboard = () => {
                 </Tabs>
               </div>
             </CardHeader>
-            <CardContent className="p-0 pb-7 pt-0">
+            <CardContent className="p-0 pb-5 pt-0">
               {calendarView === "month" ? (
                 <MonthlyPlanner
                   month={calendarMonth}
@@ -492,11 +492,11 @@ const Dashboard = () => {
               initialRoutineByDay={planWizardReplaceExisting ? initialRoutineByDay : undefined}
             />
 
-            <Sheet open={editPlanSheetOpen} onOpenChange={setEditPlanSheetOpen}>
-              <SheetContent side="bottom" className="rounded-t-2xl">
-                <SheetHeader>
-                  <SheetTitle>Editar hoja de ruta</SheetTitle>
-                </SheetHeader>
+            <Drawer open={editPlanSheetOpen} onOpenChange={setEditPlanSheetOpen}>
+              <DrawerContent side="bottom" className="rounded-t-2xl">
+                <DrawerHeader>
+                  <DrawerTitle>Editar hoja de ruta</DrawerTitle>
+                </DrawerHeader>
                 <div className="mt-4 space-y-4">
                   <p className="text-sm text-muted-foreground">
                     Tienes <strong>{plannedCount}</strong> {plannedCount === 1 ? "día programado" : "días programados"}.
@@ -523,8 +523,8 @@ const Dashboard = () => {
                     </Button>
                   </div>
                 </div>
-              </SheetContent>
-            </Sheet>
+              </DrawerContent>
+            </Drawer>
 
             <AlertDialog open={confirmDeletePlan} onOpenChange={setConfirmDeletePlan}>
               <AlertDialogContent>

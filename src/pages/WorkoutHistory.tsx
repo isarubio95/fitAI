@@ -6,12 +6,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import {
   Calendar, Dumbbell, Hash, Pencil, TrendingUp, TrendingDown,
   Activity, Weight, Layers, Trophy, Star,
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import {
   format, startOfWeek, subWeeks, isAfter, isBefore, addWeeks,
   startOfMonth, endOfMonth, subMonths,
@@ -21,13 +20,6 @@ import { type ActividadWithDetails, normalizeRegistroSeries, formatRitmoSegKmLab
 import { MuscleRankingWidget } from "@/components/dashboard/MuscleRankingWidget";
 
 const INITIAL_SHOW = 5;
-
-const chartConfig = {
-  workouts: {
-    label: "Entrenamientos",
-    color: "hsl(var(--primary))",
-  },
-};
 
 // ── helpers ──────────────────────────────────────────────
 function inRange(fecha: string, start: Date, end: Date) {
@@ -183,39 +175,43 @@ const WorkoutHistory = () => {
   return (
     <div className="w-full min-w-0 pb-28 pt-6 md:mx-auto md:max-w-2xl md:px-8">
       <div className="space-y-3">
-      {/* ── KPI Grid (sin gap ni fondo de card; solo líneas divisorias) ── */}
-      <div className="grid grid-cols-2 gap-0">
-        {kpiCards.map((kpi, i) => {
-          const Icon = kpi.icon;
-          const cellBorder =
-            i === 0
-              ? "border-r border-b border-black/5 dark:border-white/10"
-              : i === 1
-                ? "border-b border-black/5 dark:border-white/10"
-                : i === 2
-                  ? "border-r border-black/5 dark:border-white/10"
-                  : "";
-          return (
-            <div key={kpi.label} className={`space-y-1 px-6 py-8 ${cellBorder}`}>
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                  <Icon className="h-4 w-4 text-primary" />
+      {/* ── KPI Grid (ahora dentro de Card, con líneas divisorias internas) ── */}
+      <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
+        <CardContent className="p-0">
+          <div className="grid grid-cols-2 gap-0">
+            {kpiCards.map((kpi, i) => {
+              const Icon = kpi.icon;
+              const cellBorder =
+                i === 0
+                  ? "border-r border-b border-black/5 dark:border-white/10"
+                  : i === 1
+                    ? "border-b border-black/5 dark:border-white/10"
+                    : i === 2
+                      ? "border-r border-black/5 dark:border-white/10"
+                      : "";
+              return (
+                <div key={kpi.label} className={`space-y-1 px-6 py-8 ${cellBorder}`}>
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <p className="text-xl font-bold leading-none">{isLoading ? "–" : kpi.value}</p>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[11px] text-muted-foreground">{kpi.label}</p>
+                      {kpi.sub && !isLoading && (
+                        <p className="text-[10px] text-muted-foreground/80 mt-0.5">{kpi.sub}</p>
+                      )}
+                    </div>
+                    {!isLoading && <ChangeBadge pct={kpi.pct} />}
+                  </div>
                 </div>
-                <p className="text-xl font-bold leading-none">{isLoading ? "–" : kpi.value}</p>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[11px] text-muted-foreground">{kpi.label}</p>
-                  {kpi.sub && !isLoading && (
-                    <p className="text-[10px] text-muted-foreground/80 mt-0.5">{kpi.sub}</p>
-                  )}
-                </div>
-                {!isLoading && <ChangeBadge pct={kpi.pct} />}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ── Weekly Consistency Chart ── */}
       <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
@@ -226,17 +222,53 @@ const WorkoutHistory = () => {
         </CardHeader>
         <CardContent className="px-6 pb-8 pt-0">
           {isLoading ? (
-            <Skeleton className="h-[180px] rounded-none md:rounded-lg" />
+            <div className="py-2">
+              <Skeleton className="h-44 w-full rounded-none md:rounded-lg" />
+            </div>
           ) : (
-            <ChartContainer config={chartConfig} className="aspect-2/1 w-full">
-              <BarChart data={weeklyData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/40" />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={11} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="workouts" fill="var(--color-workouts)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
+            <div className="-ml-4 py-2">
+              <ResponsiveContainer width="100%" height={176}>
+                <AreaChart data={weeklyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="weeklyConsistencyGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    stroke="hsl(var(--border))"
+                    strokeOpacity={0.45}
+                    vertical={false}
+                    horizontal
+                  />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={10}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    padding={{ left: 20, right: 20 }}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    interval={0}
+                  />
+                  <Tooltip content={<WeeklyConsistencyTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="workouts"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    fill="url(#weeklyConsistencyGradient)"
+                    dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
+                    activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -387,3 +419,18 @@ const WorkoutHistory = () => {
 };
 
 export default WorkoutHistory;
+
+function WeeklyConsistencyTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const data = payload[0]?.payload;
+  if (!data) return null;
+
+  return (
+    <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md text-popover-foreground">
+      <p className="font-medium">{data.name}</p>
+      <p className="text-primary font-semibold">
+        {data.workouts} entreno{data.workouts === 1 ? "" : "s"}
+      </p>
+    </div>
+  );
+}

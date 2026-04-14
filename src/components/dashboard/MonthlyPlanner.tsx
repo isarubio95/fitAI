@@ -210,7 +210,7 @@ export function MonthlyPlanner({
       </div>
 
       {/* Day labels */}
-      <div className="grid grid-cols-7 text-center text-xs font-medium text-muted-foreground mb-1">
+      <div className="grid grid-cols-7 text-center text-xs font-medium text-muted-foreground mb-1 px-2">
         {DAY_LABELS.map((d) => (
           <div key={d} className="py-1">
             {d}
@@ -219,7 +219,7 @@ export function MonthlyPlanner({
       </div>
 
       {/* Grid */}
-      <div className="bg-transparent rounded-b-xl overflow-hidden">
+      <div className="bg-transparent rounded-b-xl overflow-hidden px-2">
         {weeks.map((weekDays, weekIndex) => (
           <div key={weekIndex}>
             <div className="grid grid-cols-7">
@@ -309,7 +309,7 @@ export function MonthlyPlanner({
                   >
                     <span
                       className={cn(
-                        "relative flex items-center justify-center select-none w-9 h-9 rounded-full",
+                        "relative flex items-center justify-center select-none w-8 h-8 rounded-full",
                         "p-0 bg-transparent",
                       )}
                     >

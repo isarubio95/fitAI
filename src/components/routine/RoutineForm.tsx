@@ -22,7 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 import { useRoutineById } from "@/hooks/useRoutines";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -322,19 +322,19 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   const groups = groupExercises(ejercicios);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[20px] p-0">
-        <SheetHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[20px] p-0">
+        <DrawerHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
           <div className="flex items-center justify-between">
-            <SheetTitle className="text-lg">
+            <DrawerTitle className="text-lg">
               {isEdit ? "Editar Rutina" : "Nueva Rutina"}
-            </SheetTitle>
+            </DrawerTitle>
             <Button variant="default" onClick={handleSave} disabled={saving} size="sm">
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Actualizar" : "Guardar"}
             </Button>
           </div>
-        </SheetHeader>
+        </DrawerHeader>
 
         <div className="p-4 space-y-6">
           <div className="space-y-3">
@@ -417,8 +417,8 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
             </SortableContext>
           </DndContext>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

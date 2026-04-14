@@ -1,10 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
-type TrainingDay = {
-  day: number;
-  durationMinutes: number;
-};
-
 type GenerateRoutinePayload = {
   age: number;
   sex: "hombre" | "mujer" | "otro";
@@ -64,8 +59,7 @@ function parsePayload(raw: unknown): GenerateRoutinePayload | null {
     !Number.isFinite(payload.weightKg) || payload.weightKg < 35 || payload.weightKg > 250 ||
     !Number.isFinite(payload.trainingDaysPerWeek) || payload.trainingDaysPerWeek < 1 || payload.trainingDaysPerWeek > 7 ||
     !Number.isFinite(payload.sessionDurationMinutes) || payload.sessionDurationMinutes < 20 || payload.sessionDurationMinutes > 180 ||
-    payload.selectedDays.length === 0 ||
-    payload.selectedDays.length !== payload.trainingDaysPerWeek ||
+    payload.selectedDays.length < 1 ||
     !validGoal ||
     !validLevel
   ) {
@@ -88,9 +82,9 @@ Datos del usuario:
 - sexo: ${data.sex}
 - altura_cm: ${data.heightCm}
 - peso_kg: ${data.weightKg}
-- dias_por_semana: ${data.trainingDaysPerWeek}
+- dias_por_semana_objetivo: ${data.trainingDaysPerWeek} (frecuencia deseada; puede no coincidir con cuantos dias concretos marca el usuario)
 - minutos_por_sesion: ${data.sessionDurationMinutes}
-- dias_preferidos: ${selectedDayNames}
+- dias_concretos_entreno: ${selectedDayNames} (solo estos dias de la semana deben aparecer en weeklyStructure)
 - deporte_a_mejorar: ${data.targetSport || "ninguno"}
 - objetivo_principal: ${data.goal}
 - nivel: ${data.level}
@@ -119,8 +113,9 @@ Devuelve este JSON exacto:
 }
 
 Reglas:
-- Usa exactamente ${data.trainingDaysPerWeek} elementos en weeklyStructure.
-- dayOfWeek debe coincidir con los dias preferidos.
+- weeklyStructure debe tener exactamente ${data.selectedDays.length} elemento(s), uno por cada dia concreto indicado.
+- Cada dayOfWeek debe ser uno de estos valores: ${JSON.stringify(data.selectedDays)}.
+- Si dias_por_semana_objetivo es mayor que la cantidad de dias concretos, explica en summary o recommendations como repartir volumen (puede ser mas de una sesion el mismo dia o rotacion en roadmap).
 - durationMinutes no debe superar ${data.sessionDurationMinutes}.
 - Enfoca seguridad y progresion.
 - Si hay lesiones, adapta ejercicios y mencionalo en notes.
@@ -141,10 +136,10 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
   const authHeader = req.headers.get("Authorization");
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !OPENAI_API_KEY) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
     return new Response(JSON.stringify({ error: "Missing environment variables" }), {
       status: 500,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
@@ -203,32 +198,36 @@ Deno.serve(async (req) => {
 
   const prompt = buildPrompt(payload);
 
-  const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+  const aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${OPENAI_API_KEY}`,
       "Content-Type": "application/json",
+      "x-goog-api-key": GEMINI_API_KEY,
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.7,
-      messages: [
-        { role: "system", content: "Responde solo JSON valido." },
-        { role: "user", content: prompt },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: `Responde solo JSON valido.\n\n${prompt}` }],
+        },
       ],
+      generationConfig: {
+        temperature: 0.7,
+        responseMimeType: "application/json",
+      },
     }),
   });
 
   if (!aiResponse.ok) {
     const errText = await aiResponse.text();
-    return new Response(JSON.stringify({ error: "Fallo OpenAI", detail: errText }), {
+    return new Response(JSON.stringify({ error: "Fallo Gemini", detail: errText }), {
       status: 502,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
 
   const aiJson = await aiResponse.json();
-  const content = aiJson?.choices?.[0]?.message?.content;
+  const content = aiJson?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (typeof content !== "string") {
     return new Response(JSON.stringify({ error: "Respuesta IA vacia" }), {
       status: 502,
@@ -240,7 +239,7 @@ Deno.serve(async (req) => {
   try {
     parsedPlan = JSON.parse(content);
   } catch {
-    return new Response(JSON.stringify({ error: "La IA no devolvio JSON valido", raw: content }), {
+    return new Response(JSON.stringify({ error: "Gemini no devolvio JSON valido", raw: content }), {
       status: 502,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });

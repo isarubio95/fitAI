@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from "@/components/ui/sheet";
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle,
+} from "@/components/ui/drawer";
 import { useMuscleStatistics, type MuscleStatistics } from "@/hooks/useMuscleStatistics";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
 import { Flame, Snowflake } from "lucide-react";
@@ -70,13 +70,13 @@ export function MuscleRankingWidget() {
       </div>
 
       {/* Drill-down Sheet */}
-      <Sheet open={!!detailGroup} onOpenChange={(open) => !open && setDetailGroup(null)}>
-        <SheetContent side="bottom" className="max-h-[70dvh] overflow-y-auto">
+      <Drawer open={!!detailGroup} onOpenChange={(open) => !open && setDetailGroup(null)}>
+        <DrawerContent side="bottom" className="max-h-[70dvh] overflow-y-auto">
           {detailGroup && (
             <DetailContent group={detailGroup} data={data} />
           )}
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }
@@ -115,9 +115,9 @@ function DetailContent({ group, data }: { group: MainMuscleGroup; data: MuscleSt
 
   return (
     <>
-      <SheetHeader>
-        <SheetTitle>Detalle de {group}</SheetTitle>
-      </SheetHeader>
+      <DrawerHeader>
+        <DrawerTitle>Detalle de {group}</DrawerTitle>
+      </DrawerHeader>
       <div className="space-y-3 py-4">
         {muscles.map((muscle) => {
           const count = subCounts[muscle] || 0;

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useToast } from "@/hooks/use-toast";
 import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
@@ -314,22 +314,22 @@ export function CardioLogger() {
   }, [state.open]);
 
   return (
-    <Sheet open={state.open && !state.liveOpen} onOpenChange={setOpen}>
-      <SheetContent
+    <Drawer open={state.open && !state.liveOpen} onOpenChange={setOpen}>
+      <DrawerContent
         side="bottom"
         className="h-[92dvh] overflow-y-auto rounded-t-[20px] p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
-        <SheetHeader className="sticky top-0 z-10 border-b border-border bg-card p-4">
+        <DrawerHeader className="sticky top-0 z-10 border-b border-border bg-card p-4">
           <div className="flex items-center justify-between gap-3">
-            <SheetTitle className="text-lg">{sheetTitle}</SheetTitle>
+            <DrawerTitle className="text-lg">{sheetTitle}</DrawerTitle>
             <Button type="button" size="sm" onClick={save} disabled={upsert.isPending || isLoading}>
               {(upsert.isPending || isLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {upsert.isPending ? "Guardando..." : saveLabel}
             </Button>
           </div>
-        </SheetHeader>
+        </DrawerHeader>
 
         <div className="space-y-6 p-4">
           <div className="grid grid-cols-2 gap-3">
@@ -592,7 +592,7 @@ export function CardioLogger() {
             ))}
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }

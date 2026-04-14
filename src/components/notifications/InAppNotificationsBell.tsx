@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useInAppNotifications } from "@/hooks/useInAppNotifications";
 import { cn } from "@/lib/utils";
 import { isNewFollowerNotification, type InAppNotificationItem } from "@/types/inAppNotification";
@@ -118,13 +118,13 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
         ) : null}
       </Button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
+      <Drawer direction="right" open={open} onOpenChange={setOpen}>
+        <DrawerContent
           side="right"
-          className="flex h-full w-full flex-col gap-0 border-0 p-0 shadow-none"
+          className="flex h-full w-full flex-col gap-0 border-0 bg-card p-0 shadow-none"
         >
-          <SheetHeader className="border-b border-border/60 px-6 py-4 text-left">
-            <SheetTitle className="text-lg">Notificaciones</SheetTitle>
+          <DrawerHeader className="border-b border-border/60 px-6 py-4 text-left">
+            <DrawerTitle className="text-lg">Notificaciones</DrawerTitle>
             {dismissableCount > 0 ? (
               <button
                 type="button"
@@ -137,7 +137,7 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
                 Marcar todas como leídas
               </button>
             ) : null}
-          </SheetHeader>
+          </DrawerHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-4">
             {items.length === 0 ? (
@@ -158,8 +158,8 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
               </div>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }

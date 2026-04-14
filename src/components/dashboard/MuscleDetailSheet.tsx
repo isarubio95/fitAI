@@ -1,4 +1,4 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Progress } from "@/components/ui/progress";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
 
@@ -16,12 +16,12 @@ export function MuscleDetailSheet({ open, onOpenChange, group, specificVolume }:
   const maxSets = Math.max(1, ...muscles.map((m) => specificVolume[m] || 0));
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-[20px] h-auto max-h-[60dvh]">
-        <SheetHeader className="pb-4">
-          <SheetTitle>{group}</SheetTitle>
-          <SheetDescription>Desglose de series por músculo específico</SheetDescription>
-        </SheetHeader>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent side="bottom" className="rounded-t-[20px] h-auto max-h-[60dvh]">
+        <DrawerHeader className="pb-4">
+          <DrawerTitle>{group}</DrawerTitle>
+          <DrawerDescription>Desglose de series por músculo específico</DrawerDescription>
+        </DrawerHeader>
 
         <div className="space-y-4 pb-6">
           {muscles.map((muscle) => {
@@ -38,7 +38,7 @@ export function MuscleDetailSheet({ open, onOpenChange, group, specificVolume }:
             );
           })}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }

@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Dumbbell } from "lucide-react";
 import { WorkoutDetailsContent } from "@/components/dashboard/WorkoutDetailsSheet";
@@ -229,13 +229,9 @@ function ProfileDrawerSheet() {
     <Drawer direction="left" open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         side="left"
-        className="flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 p-0 shadow-none"
+        className="flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-card p-0 shadow-none"
       >
-        <div className="px-6 pb-2 pt-6">
-          <DrawerHeader className="mb-4 text-left">
-            <DrawerTitle className="text-lg">{isViewingSelf ? "Mi cuenta" : "Perfil"}</DrawerTitle>
-          </DrawerHeader>
-
+        <DrawerHeader className="px-6 pb-2 pt-6 text-left">
           <div className="flex gap-4 items-start">
             <Avatar className="h-16 w-16 shrink-0 ring-2 ring-border/60 mr-1">
               {displayAvatar.src && (
@@ -279,7 +275,7 @@ function ProfileDrawerSheet() {
               </div>
             </div>
           </div>
-        </div>
+        </DrawerHeader>
 
         <Dialog open={!!followListMode} onOpenChange={(next) => !next && setFollowListMode(null)}>
           <DialogContent className="max-w-md">
@@ -419,7 +415,7 @@ function ProfileDrawerSheet() {
                   : "Este usuario no tiene entrenos visibles."}
               </p>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4 bg-background">
                 {lastWorkouts.map((w) => (
                   <Card
                     key={w.id}

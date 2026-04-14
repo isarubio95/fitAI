@@ -3,7 +3,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpsertCardioRoutine } from "@/hooks/useCardioRoutines";
 import { useCardioDisciplinas } from "@/hooks/useCardioSessions";
@@ -80,22 +80,22 @@ export function CardioRoutineForm({ open, onOpenChange, initial }: Props) {
   const title = initial?.id ? "Editar rutina cardio" : "Nueva rutina cardio";
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent
         side="bottom"
         className="h-[92dvh] overflow-y-auto rounded-t-[20px] p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
-        <SheetHeader className="sticky top-0 z-10 border-b border-border bg-card p-4">
+        <DrawerHeader className="sticky top-0 z-10 border-b border-border bg-card p-4">
           <div className="flex items-center justify-between gap-3">
-            <SheetTitle className="text-lg">{title}</SheetTitle>
+            <DrawerTitle className="text-lg">{title}</DrawerTitle>
             <Button type="button" size="sm" onClick={save} disabled={upsert.isPending}>
               {upsert.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {upsert.isPending ? "Guardando..." : "Guardar"}
             </Button>
           </div>
-        </SheetHeader>
+        </DrawerHeader>
 
         <div className="space-y-6 p-4">
           <div className="grid grid-cols-2 gap-3">
@@ -213,7 +213,7 @@ export function CardioRoutineForm({ open, onOpenChange, initial }: Props) {
             ))}
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }

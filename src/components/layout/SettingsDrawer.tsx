@@ -47,7 +47,7 @@ export function SettingsDrawer() {
 
       <DrawerContent
         side="right"
-        className="flex h-full w-full flex-col border-0 p-0 shadow-none"
+        className="flex h-full w-full flex-col border-0 bg-card p-0 shadow-none"
       >
         <DrawerHeader className="px-6 pt-6 text-left">
           <DrawerTitle className="text-lg">Ajustes</DrawerTitle>

@@ -1,9 +1,9 @@
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -101,8 +101,8 @@ const ExerciseDetailSheet = ({
   const isOwn = exercise.usuario_id && exercise.usuario_id === currentUserId;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85dvh] rounded-t-2xl p-0">
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent side="bottom" className="h-[85dvh] rounded-t-2xl p-0">
         <ScrollArea className="h-full">
           <div className="flex flex-col">
             {/* Media */}
@@ -124,11 +124,11 @@ const ExerciseDetailSheet = ({
 
             <div className="p-5 space-y-5">
               {/* Header */}
-              <SheetHeader className="p-0">
+              <DrawerHeader className="p-0">
                 <div className="flex items-start justify-between gap-3">
-                  <SheetTitle className="text-xl text-left leading-tight">
+                  <DrawerTitle className="text-xl text-left leading-tight">
                     {exercise.nombre}
-                  </SheetTitle>
+                  </DrawerTitle>
                   {isOwn && onEdit && (
                     <Button
                       variant="outline"
@@ -140,7 +140,7 @@ const ExerciseDetailSheet = ({
                     </Button>
                   )}
                 </div>
-              </SheetHeader>
+              </DrawerHeader>
 
               {/* Metadatos en líneas separadas */}
               {(exercise.body_part || exercise.equipment || exercise.tipo || exercise.grupo_muscular || exercise.dificultad) && (
@@ -207,8 +207,8 @@ const ExerciseDetailSheet = ({
             </div>
           </div>
         </ScrollArea>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 };
 

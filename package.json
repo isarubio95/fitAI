@@ -6,20 +6,13 @@
   "author": "Isaías Rubio",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "dev": "cmd /d /s /c \"\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" \"node_modules\\\\vite\\\\bin\\\\vite.js\"\"",
+    "build": "cmd /d /s /c \"\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" \"node_modules\\\\vite\\\\bin\\\\vite.js\" build\"",
+    "build:dev": "cmd /d /s /c \"\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" \"node_modules\\\\vite\\\\bin\\\\vite.js\" build --mode development\"",
     "lint": "eslint .",
-    "preview": "vite preview",
+    "preview": "cmd /d /s /c \"\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" \"node_modules\\\\vite\\\\bin\\\\vite.js\" preview\"",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "scrape:exercises": "node scripts/scrape-fitcron-exercises.mjs",
-    "normalize:instructions-csv": "node scripts/normalizar-instrucciones-csv.mjs",
-    "fill:gif-url-csv": "node scripts/rellenar-gif-url-ejercicios.mjs",
-    "compare:exercises": "node scripts/comparar-ejercicios.mjs",
-    "generate:rename-sql": "node scripts/generar-sql-renombres.mjs",
-    "generate:delete-types-sql": "node scripts/generar-sql-borrar-tipos-ejercicio.mjs",
-    "generate:insert-fitcron-sql": "node scripts/generar-sql-insert-fitcron.mjs"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

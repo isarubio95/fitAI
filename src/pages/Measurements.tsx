@@ -16,8 +16,8 @@ import {
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
-} from "@/components/ui/sheet";
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle,
+} from "@/components/ui/drawer";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -111,11 +111,11 @@ const Measurements = () => {
   return (
     <div className="w-full min-w-0 p-4 md:p-8 pt-6 max-w-2xl mx-auto pb-28">
       <header>
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Registrar Medidas</SheetTitle>
-            </SheetHeader>
+        <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
+          <DrawerContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
+            <DrawerHeader>
+              <DrawerTitle>Registrar Medidas</DrawerTitle>
+            </DrawerHeader>
             <div className="space-y-4 py-4">
               {/* Date picker */}
               <div className="space-y-1">
@@ -170,8 +170,8 @@ const Measurements = () => {
                 {isAdding ? "Guardando…" : "Guardar Medida"}
               </Button>
             </div>
-          </SheetContent>
-        </Sheet>
+          </DrawerContent>
+        </Drawer>
       </header>
 
       <div className="mt-6 space-y-3">

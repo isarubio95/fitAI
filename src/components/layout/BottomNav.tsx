@@ -12,6 +12,7 @@ import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRouti
 import { CardioTypePickerDialog } from "@/components/cardio/CardioTypePickerDialog";
 import { GenerateRoutineDialog } from "@/components/routine/GenerateRoutineDialog";
 import { usePremium } from "@/hooks/usePremium";
+import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
 
 // Añadimos un objeto especial de tipo "add" para representarlo en el centro
 const navItems = [
@@ -37,6 +38,15 @@ export function BottomNav() {
   const [cardioTypeDialogOpen, setCardioTypeDialogOpen] = useState(false);
   const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+
+  useBackCloseLayer({
+    open: isMenuOpen,
+    onOpenChange: (next) => {
+      setIsMenuOpen(next);
+      if (!next) setShowRoutineSubmenu(false);
+    },
+    kind: "popover",
+  });
 
   // Cerrar el menú si se hace click fuera de la barra de navegación
   useEffect(() => {

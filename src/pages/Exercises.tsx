@@ -82,7 +82,7 @@ function parseDifficultyListParam(v: string | null): DifficultyLevel[] {
 
 function parseFiltersFromSearchParams(sp: URLSearchParams): ExerciseFilters {
   return {
-    q: (sp.get("q") ?? "").trim(),
+    q: sp.get("q") ?? "",
     tipos: parseCsvListParam(sp.get("tipo")),
     grupos: parseCsvListParam(sp.get("grupo")),
     equipments: parseCsvListParam(sp.get("eq")),
@@ -97,7 +97,7 @@ function serializeFiltersToSearchParams(sp: URLSearchParams, f: ExerciseFilters)
     else next.delete(key);
   };
 
-  setOrDelete("q", f.q.trim());
+  setOrDelete("q", f.q);
   setOrDelete("tipo", uniqNonEmpty(f.tipos).join(","));
   setOrDelete("grupo", uniqNonEmpty(f.grupos).join(","));
   setOrDelete("eq", uniqNonEmpty(f.equipments).join(","));
@@ -109,6 +109,13 @@ function toggleInList(list: string[], value: string) {
   return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
 }
 
+function splitEquipmentUnits(value: unknown): string[] {
+  return String(value ?? "")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
 function normalizeText(s: unknown) {
   return String(s ?? "")
     .toLowerCase()
@@ -116,6 +123,10 @@ function normalizeText(s: unknown) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, " ");
+}
+
+function normalizeSearchKey(s: unknown) {
+  return normalizeText(s).replace(/[^a-z0-9]/g, "");
 }
 
 function expandQueryTerms(q: string): string[] {
@@ -213,12 +224,39 @@ function DifficultyBars({ level }: { level: 1 | 2 | 3 }) {
   );
 }
 
+function DifficultyBarsMono({ level, active }: { level: 1 | 2 | 3; active: boolean }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1",
+        active ? "text-primary" : "text-foreground",
+      )}
+      aria-hidden
+    >
+      <SignalMedium className="h-3.5 w-3.5" />
+      <span className="inline-flex items-end gap-[3px]">
+        {[1, 2, 3].map((i) => (
+          <span
+            key={i}
+            className={cn(
+              "inline-block w-[4px] rounded-sm",
+              i === 1 ? "h-[6px]" : i === 2 ? "h-[9px]" : "h-[12px]",
+              i <= level ? "bg-current" : "bg-current/25",
+            )}
+          />
+        ))}
+      </span>
+    </span>
+  );
+}
+
 const Exercises = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => parseFiltersFromSearchParams(searchParams), [searchParams]);
+  const [searchInput, setSearchInput] = useState(filters.q);
 
   const {
     data,
@@ -236,7 +274,9 @@ const Exercises = () => {
       q: "",
       tipos: filters.tipos,
       grupos: filters.grupos,
-      equipments: filters.equipments,
+      // El filtro por equipamiento se hace client-side para soportar unidades atómicas
+      // cuando en BD viene una cadena combinada (p. ej. "Banco Inclinable, Polea").
+      equipments: [],
     },
     30,
   );
@@ -254,6 +294,8 @@ const Exercises = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [difficultyLoading, setDifficultyLoading] = useState(false);
+  const difficultyLoadingTimerRef = useRef<number | null>(null);
 
   // Flatten: ejercicios de usuario (solo primera página) + páginas del catálogo
   const exercises = useMemo(() => {
@@ -276,7 +318,7 @@ const Exercises = () => {
   );
   const equipmentOptions = useMemo(
     () =>
-      uniqNonEmpty(exercises.map((x: any) => x.equipment)).sort((a, b) =>
+      uniqNonEmpty(exercises.flatMap((x: any) => splitEquipmentUnits(x.equipment))).sort((a, b) =>
         a.localeCompare(b, undefined, { sensitivity: "base" }),
       ),
     [exercises],
@@ -293,28 +335,47 @@ const Exercises = () => {
   }, [exercises, sortOrder]);
 
   const filteredExercises = useMemo(() => {
+    const q = normalizeText(filters.q);
+    const qCompact = normalizeSearchKey(filters.q);
     const qTerms = expandQueryTerms(filters.q);
+    const qTokens = q.split(" ").filter(Boolean);
 
     return sortedExercises.filter((ex: any) => {
       // Multi-select exact match filters
       if (filters.tipos.length && !filters.tipos.includes(String(ex.tipo ?? "").trim())) return false;
       if (filters.grupos.length && !filters.grupos.includes(String(ex.grupo_muscular ?? "").trim())) return false;
-      if (filters.equipments.length && !filters.equipments.includes(String(ex.equipment ?? "").trim())) return false;
+      if (filters.equipments.length) {
+        const units = splitEquipmentUnits(ex.equipment);
+        const hasAnySelectedEquipment = filters.equipments.some((eq) => units.includes(eq));
+        if (!hasAnySelectedEquipment) return false;
+      }
 
       if (filters.difs.length) {
         const lvl = difficultyToLevel(ex.dificultad);
         if (!lvl || !filters.difs.includes(lvl)) return false;
       }
 
-      if (qTerms.length) {
-        const hay = [
+      if (qTokens.length) {
+        const hayBase = [
           normalizeText(ex.nombre),
           normalizeText(ex.equipment),
           normalizeText(ex.tipo),
           normalizeText(ex.grupo_muscular),
+          normalizeText((ex as { body_part?: string[] | null }).body_part?.join(" ")),
+          normalizeText((ex as { musculos_involucrados?: string[] | null }).musculos_involucrados?.join(" ")),
         ].join(" | ");
-        // OR entre términos: si alguno encaja, vale
-        const ok = qTerms.some((t) => hay.includes(t));
+
+        const hayCompact = normalizeSearchKey(hayBase);
+        const phraseMatch = hayBase.includes(q) || (qCompact.length > 0 && hayCompact.includes(qCompact));
+        const tokensMatch = qTokens.every((t) => {
+          const tk = normalizeSearchKey(t);
+          return hayBase.includes(t) || (tk.length > 0 && hayCompact.includes(tk));
+        });
+        const synonymMatch = qTerms.some((t) => {
+          const tk = normalizeSearchKey(t);
+          return hayBase.includes(t) || (tk.length > 0 && hayCompact.includes(tk));
+        });
+        const ok = phraseMatch || tokensMatch || synonymMatch;
         if (!ok) return false;
       }
 
@@ -338,12 +399,55 @@ const Exercises = () => {
     setHeaderActionsSlot(document.getElementById("header-actions-slot"));
   }, []);
 
+  // Sincroniza input local cuando la query cambia por navegación/filtros externos.
+  useEffect(() => {
+    if (filters.q !== searchInput) {
+      setSearchInput(filters.q);
+    }
+  }, [filters.q, searchInput]);
+
+  // Evita glitches al teclear: actualiza URL con pequeño debounce.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const next = serializeFiltersToSearchParams(searchParams, {
+        q: searchInput,
+        tipos: filters.tipos,
+        grupos: filters.grupos,
+        equipments: filters.equipments,
+        difs: filters.difs,
+      });
+      if (next.toString() !== searchParams.toString()) {
+        setSearchParams(next, { replace: true });
+      }
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [searchInput, filters.tipos, filters.grupos, filters.equipments, filters.difs, searchParams, setSearchParams]);
+
   useEffect(() => {
     if (location.state?.action === "new") {
       setCreateOpen(true);
       navigate(`${location.pathname}${location.search}`, { replace: true, state: {} });
     }
   }, [location.state]);
+
+  useEffect(() => {
+    return () => {
+      if (difficultyLoadingTimerRef.current != null) {
+        window.clearTimeout(difficultyLoadingTimerRef.current);
+      }
+    };
+  }, []);
+
+  const triggerDifficultyLoading = () => {
+    setDifficultyLoading(true);
+    if (difficultyLoadingTimerRef.current != null) {
+      window.clearTimeout(difficultyLoadingTimerRef.current);
+    }
+    difficultyLoadingTimerRef.current = window.setTimeout(() => {
+      setDifficultyLoading(false);
+      difficultyLoadingTimerRef.current = null;
+    }, 220);
+  };
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -426,12 +530,8 @@ const Exercises = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar ejercicio..."
-          value={filters.q}
-          onChange={(e) => {
-            const q = e.target.value;
-            const next = serializeFiltersToSearchParams(searchParams, { ...filters, q });
-            setSearchParams(next, { replace: true });
-          }}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           className="pl-10 h-12"
         />
       </div>
@@ -441,9 +541,20 @@ const Exercises = () => {
         <div className="flex flex-wrap items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "w-28 justify-center gap-2",
+                  filters.tipos.length > 0 && "border-primary text-primary hover:bg-primary/5",
+                )}
+              >
                 <Filter className="h-4 w-4" /> Tipo
-                {filters.tipos.length > 0 && <Badge variant="secondary">{filters.tipos.length}</Badge>}
+                {filters.tipos.length > 0 && (
+                  <Badge variant="outline" className="border-primary/40 bg-transparent text-primary">
+                    {filters.tipos.length}
+                  </Badge>
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-72 p-0" align="start">
@@ -473,9 +584,20 @@ const Exercises = () => {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "w-28 justify-center gap-2",
+                  filters.grupos.length > 0 && "border-primary text-primary hover:bg-primary/5",
+                )}
+              >
                 <Layers className="h-4 w-4" /> Grupo
-                {filters.grupos.length > 0 && <Badge variant="secondary">{filters.grupos.length}</Badge>}
+                {filters.grupos.length > 0 && (
+                  <Badge variant="outline" className="border-primary/40 bg-transparent text-primary">
+                    {filters.grupos.length}
+                  </Badge>
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-72 p-0" align="start">
@@ -505,9 +627,20 @@ const Exercises = () => {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "w-28 justify-center gap-2",
+                  filters.equipments.length > 0 && "border-primary text-primary hover:bg-primary/5",
+                )}
+              >
                 <Wrench className="h-4 w-4" /> Equipo
-                {filters.equipments.length > 0 && <Badge variant="secondary">{filters.equipments.length}</Badge>}
+                {filters.equipments.length > 0 && (
+                  <Badge variant="outline" className="border-primary/40 bg-transparent text-primary">
+                    {filters.equipments.length}
+                  </Badge>
+                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0" align="start">
@@ -546,36 +679,51 @@ const Exercises = () => {
           <div className="flex items-center gap-1">
             <Button
               type="button"
-              variant={filters.difs.includes(1) ? "default" : "outline"}
+              variant="outline"
               size="sm"
+              className={cn(
+                "w-28 justify-center",
+                filters.difs.includes(1) && "border-primary text-primary hover:bg-primary/5",
+              )}
               onClick={() => {
                 const difs = filters.difs.includes(1) ? filters.difs.filter((d) => d !== 1) : [...filters.difs, 1];
+                triggerDifficultyLoading();
                 setSearchParams(serializeFiltersToSearchParams(searchParams, { ...filters, difs }), { replace: true });
               }}
             >
-              Dif 1
+              <DifficultyBarsMono level={1} active={filters.difs.includes(1)} />
             </Button>
             <Button
               type="button"
-              variant={filters.difs.includes(2) ? "default" : "outline"}
+              variant="outline"
               size="sm"
+              className={cn(
+                "w-28 justify-center",
+                filters.difs.includes(2) && "border-primary text-primary hover:bg-primary/5",
+              )}
               onClick={() => {
                 const difs = filters.difs.includes(2) ? filters.difs.filter((d) => d !== 2) : [...filters.difs, 2];
+                triggerDifficultyLoading();
                 setSearchParams(serializeFiltersToSearchParams(searchParams, { ...filters, difs }), { replace: true });
               }}
             >
-              Dif 2
+              <DifficultyBarsMono level={2} active={filters.difs.includes(2)} />
             </Button>
             <Button
               type="button"
-              variant={filters.difs.includes(3) ? "default" : "outline"}
+              variant="outline"
               size="sm"
+              className={cn(
+                "w-28 justify-center",
+                filters.difs.includes(3) && "border-primary text-primary hover:bg-primary/5",
+              )}
               onClick={() => {
                 const difs = filters.difs.includes(3) ? filters.difs.filter((d) => d !== 3) : [...filters.difs, 3];
+                triggerDifficultyLoading();
                 setSearchParams(serializeFiltersToSearchParams(searchParams, { ...filters, difs }), { replace: true });
               }}
             >
-              Dif 3
+              <DifficultyBarsMono level={3} active={filters.difs.includes(3)} />
             </Button>
           </div>
 
@@ -644,6 +792,7 @@ const Exercises = () => {
                   className="h-3 w-3 cursor-pointer hover:text-destructive"
                   onClick={() => {
                     const nextFilters: ExerciseFilters = { ...filters, difs: filters.difs.filter((x) => x !== d) };
+                    triggerDifficultyLoading();
                     setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
                   }}
                 />
@@ -669,7 +818,7 @@ const Exercises = () => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {isLoading
+        {isLoading || difficultyLoading
           ? Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-24 rounded-xl" />
             ))
@@ -744,7 +893,7 @@ const Exercises = () => {
                 </Card>
               );
             })}
-        {!isLoading && !isError && filteredExercises.length === 0 && (
+        {!isLoading && !difficultyLoading && !isError && filteredExercises.length === 0 && (
           <p className="col-span-full text-center text-sm text-muted-foreground py-8">
             No hay ejercicios que coincidan. Prueba otra búsqueda o revisa en Supabase que existan filas en{" "}
             <code className="text-xs">tipo_ejercicio</code> y las políticas RLS permitan leerlas.
@@ -752,7 +901,7 @@ const Exercises = () => {
         )}
       </div>
 
-      {!isLoading && hasNextPage && (
+      {!isLoading && !difficultyLoading && hasNextPage && (
         <div ref={loadMoreRef} className="flex items-center justify-center py-2">
           {isFetchingNextPage && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
         </div>

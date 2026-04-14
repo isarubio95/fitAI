@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
@@ -241,8 +241,8 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
   const { data: workout, isLoading } = useWorkoutById(workoutId);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
+    <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
+      <DrawerContent
         side="right"
         className="w-full overflow-y-auto rounded-l-[20px] p-0 inset-y-auto top-8 bottom-0 h-[calc(100dvh-1.5rem)] sm:max-w-2xl"
       >
@@ -252,8 +252,8 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
           radarChartId={workout?.id ? `workout-radar-weight-${workout.id}` : undefined}
           containerClassName="p-6"
         />
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
@@ -397,12 +397,12 @@ export function WorkoutDetailsContent({
         </div>
       ) : (
         <>
-          <SheetHeader className="pb-4">
-            <SheetTitle className="text-xl">{workout.titulo}</SheetTitle>
-            <SheetDescription>
+          <DrawerHeader className="pb-4">
+            <DrawerTitle className="text-xl">{workout.titulo}</DrawerTitle>
+            <DrawerDescription>
               {workout.fecha ? format(new Date(workout.fecha), "d MMM yyyy", { locale: es }) : ""}
-            </SheetDescription>
-          </SheetHeader>
+            </DrawerDescription>
+          </DrawerHeader>
 
           {workout.comentarios ? (
             <Card className="mb-4">

@@ -209,3 +209,17 @@
   border-radius: 50%;
   background-color: hsl(var(--primary));
 }
+
+/* En móvil ocultamos barras de scroll dentro de drawers sin afectar desktop */
+@media (max-width: 767px) {
+  .drawer-mobile-scrollbars-hidden,
+  .drawer-mobile-scrollbars-hidden * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .drawer-mobile-scrollbars-hidden::-webkit-scrollbar,
+  .drawer-mobile-scrollbars-hidden *::-webkit-scrollbar {
+    display: none;
+  }
+}

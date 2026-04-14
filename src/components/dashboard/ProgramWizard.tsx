@@ -1,8 +1,9 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { format, addDays, startOfWeek, addWeeks, getDay } from "date-fns";
 import { es } from "date-fns/locale";
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Label } from "@/components/ui/label";
 import {
@@ -117,8 +118,10 @@ export function ProgramWizard({
   const deleteAll = useDeleteAllPlannedRoutines();
 
   const [step, setStep] = useState<1 | 2>(1);
+  const [transitioningStep, setTransitioningStep] = useState<1 | 2 | null>(null);
   const [routineByDay, setRoutineByDay] = useState<Record<string, string>>(defaultRoutineByDay);
   const [durationWeeks, setDurationWeeks] = useState<1 | 4 | 8>(4);
+  const stepTransitionTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (open && replaceExisting && initialRoutineByDay && Object.keys(initialRoutineByDay).length > 0) {
@@ -149,6 +152,7 @@ export function ProgramWizard({
 
   const canNext = step === 1 ? hasAtLeastOneRoutine : true;
   const canConfirm = hasAtLeastOneRoutine && schedules.length > 0 && totalDays > 0;
+  const isStepTransitioning = transitioningStep !== null;
 
   const isBusy = schedule.isPending || deleteAll.isPending || loadingRoutines || loadingTemplates;
 
@@ -157,10 +161,37 @@ export function ProgramWizard({
   };
 
   const reset = () => {
+    if (stepTransitionTimerRef.current != null) {
+      window.clearTimeout(stepTransitionTimerRef.current);
+      stepTransitionTimerRef.current = null;
+    }
+    setTransitioningStep(null);
     setStep(1);
     setRoutineByDay(defaultRoutineByDay());
     setDurationWeeks(4);
   };
+
+  const goToStep = (next: 1 | 2) => {
+    if (next === step) return;
+    if (stepTransitionTimerRef.current != null) {
+      window.clearTimeout(stepTransitionTimerRef.current);
+      stepTransitionTimerRef.current = null;
+    }
+    setTransitioningStep(next);
+    stepTransitionTimerRef.current = window.setTimeout(() => {
+      setStep(next);
+      setTransitioningStep(null);
+      stepTransitionTimerRef.current = null;
+    }, 120);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (stepTransitionTimerRef.current != null) {
+        window.clearTimeout(stepTransitionTimerRef.current);
+      }
+    };
+  }, []);
 
   const onConfirm = async () => {
     if (!schedules.length || totalDays === 0) return;
@@ -181,49 +212,66 @@ export function ProgramWizard({
   };
 
   return (
-    <Sheet
+    <Drawer
       open={open}
       onOpenChange={(o) => {
         onOpenChange(o);
         if (!o) reset();
       }}
     >
-      <SheetContent side="bottom" className="h-[88dvh] rounded-t-2xl p-0">
-        <SheetHeader className="p-5 pb-3 border-b border-border">
-          <SheetTitle className="flex items-center gap-2">
+      <DrawerContent side="bottom" className="h-[92dvh] rounded-t-2xl p-0 flex flex-col overflow-hidden">
+        <DrawerHeader className="p-5 pb-3 border-b border-border">
+          <DrawerTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Hoja de Ruta
-          </SheetTitle>
-          <p className="text-sm text-muted-foreground">
+          </DrawerTitle>
+          <p className="text-sm text-foreground/75">
             Planifica tus rutinas por días de la semana.
           </p>
-        </SheetHeader>
+        </DrawerHeader>
 
-        <div className="p-5 space-y-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-20">
           {/* Stepper */}
-          <div className="flex items-center gap-2 text-xs">
+          <div className="mb-6 flex items-center gap-2 text-xs">
             <span className={`px-2 py-1 rounded-full ${step === 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>1</span>
-            <span className="text-muted-foreground">Rutina por día</span>
-            <span className="text-muted-foreground">→</span>
+            <span className="text-foreground/70">Rutina por día</span>
+            <span className="text-foreground/60">→</span>
             <span className={`px-2 py-1 rounded-full ${step === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>2</span>
-            <span className="text-muted-foreground">Duración</span>
+            <span className="text-foreground/70">Duración</span>
           </div>
 
+          <AnimatePresence mode="wait" initial={false}>
           {step === 1 && (
-            <div className="space-y-3">
-              <Label>Asigna una rutina a cada día (deja vacío si no entrenas ese día)</Label>
+            <motion.div
+              key="wizard-step-1"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="space-y-4 min-h-[286px]"
+            >
+              <Label className="text-sm font-medium text-foreground/75 pb-3 block mb-0">Asigna una rutina a cada día (deja vacío si no entrenas ese día)</Label>
               {loadingRoutines || loadingTemplates ? (
                 <Skeleton className="h-64 w-full rounded-lg" />
               ) : (
                 <div className="space-y-2">
-                  {DAY_LABELS.map((d) => (
+                  {DAY_LABELS.map((d) => {
+                    const currentValue = routineByDay[String(d.key)] || EMPTY;
+                    const isNoneSelected = currentValue === EMPTY;
+                    return (
                     <div key={d.key} className="flex items-center gap-3">
-                      <span className="w-8 text-sm font-medium text-muted-foreground shrink-0">{d.label}</span>
+                      <span
+                        className={`w-8 shrink-0 text-sm font-medium ${
+                          isNoneSelected ? "text-muted-foreground" : "text-foreground/80"
+                        }`}
+                      >
+                        {d.label}
+                      </span>
                       <Select
-                        value={routineByDay[String(d.key)] || EMPTY}
+                        value={currentValue}
                         onValueChange={(v) => setRoutineForDay(d.key, v)}
                       >
-                        <SelectTrigger className="h-10 flex-1">
+                        <SelectTrigger className={`h-10 flex-1 ${isNoneSelected ? "text-muted-foreground" : ""}`}>
                           <SelectValue placeholder={`${d.name} — Ninguna`} />
                         </SelectTrigger>
                         <SelectContent>
@@ -251,21 +299,28 @@ export function ProgramWizard({
                         </SelectContent>
                       </Select>
                     </div>
-                  ))}
+                  )})}
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-foreground/70">
                 Semana base:{" "}
                 <span className="font-medium">
                   {format(startDate ?? new Date(), "d MMM yyyy", { locale: es })}
                 </span>
               </p>
-            </div>
+            </motion.div>
           )}
 
           {step === 2 && (
-            <div className="space-y-3">
-              <Label>Duración</Label>
+            <motion.div
+              key="wizard-step-2"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="space-y-4 min-h-[286px]"
+            >
+              <Label className="mb-2 block">Duración</Label>
               <ToggleGroup
                 type="single"
                 variant="outline"
@@ -283,10 +338,10 @@ export function ProgramWizard({
 
               <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Días resultantes</span>
+                  <span className="text-foreground/70">Días resultantes</span>
                   <span className="font-semibold">{totalDays}</span>
                 </div>
-                <div className="mt-2 text-xs text-muted-foreground flex flex-wrap gap-1.5">
+                <div className="mt-2 text-xs text-foreground/70 flex flex-wrap gap-1.5">
                   {schedules.flatMap((s) => s.fechasArray).slice(0, 8).map((d) => (
                     <span key={d} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5">
                       {format(new Date(d + "T12:00:00.000Z"), "d MMM", { locale: es })}
@@ -299,33 +354,45 @@ export function ProgramWizard({
                   )}
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
+          </AnimatePresence>
+        </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-2">
+        {/* Footer fijo para evitar saltos y mejorar alcance con pulgar */}
+        <div className="border-t border-border bg-card/95 px-5 py-3 backdrop-blur supports-[backdrop-filter]:bg-card/85 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+          <div className="flex items-center justify-between">
             <Button
               variant="outline"
-              disabled={step === 1 || isBusy}
-              onClick={() => setStep(1)}
+              className="disabled:opacity-100 disabled:bg-muted/70 disabled:text-muted-foreground dark:disabled:bg-muted/40"
+              disabled={step === 1 || isBusy || isStepTransitioning}
+              onClick={() => goToStep(1)}
             >
               Atrás
             </Button>
 
             {step < 2 ? (
-              <Button disabled={!canNext || isBusy} onClick={() => setStep(2)}>
+              <Button
+                className="disabled:opacity-100 disabled:bg-muted/70 disabled:text-muted-foreground dark:disabled:bg-muted/40"
+                disabled={!canNext || isBusy || isStepTransitioning}
+                onClick={() => goToStep(2)}
+              >
                 Siguiente
               </Button>
             ) : (
-              <Button disabled={!canConfirm || isBusy} onClick={onConfirm} className="gap-2">
+              <Button
+                disabled={!canConfirm || isBusy || isStepTransitioning}
+                onClick={onConfirm}
+                className="gap-2 disabled:opacity-100 disabled:bg-muted/70 disabled:text-muted-foreground dark:disabled:bg-muted/40"
+              >
                 <Check className="h-4 w-4" />
                 Confirmar
               </Button>
             )}
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
