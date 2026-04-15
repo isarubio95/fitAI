@@ -9,6 +9,7 @@ export type PremiumLevel = "principiante" | "intermedio" | "avanzado";
 export type PremiumSex = "hombre" | "mujer" | "otro";
 
 export interface PremiumRoutineFormData {
+  userId?: string;
   age: number;
   sex: PremiumSex;
   heightCm: number;

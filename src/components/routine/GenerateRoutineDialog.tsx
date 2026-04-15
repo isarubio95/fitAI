@@ -38,6 +38,18 @@ const LEVEL_OPTIONS: Array<{ value: PremiumLevel; label: string }> = [
   { value: "avanzado", label: "Avanzado" },
 ];
 
+const EMPTY_NUMBER = Number.NaN;
+
+function parseOptionalNumberInput(value: string): number {
+  if (value.trim() === "") return EMPTY_NUMBER;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : EMPTY_NUMBER;
+}
+
+function numericValueOrEmpty(value: number): number | "" {
+  return Number.isFinite(value) ? value : "";
+}
+
 interface GenerateRoutineDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -51,12 +63,12 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
   const scheduleRoutines = useScheduleRoutines();
 
   const [form, setForm] = useState<PremiumRoutineFormData>({
-    age: 0,
+    age: EMPTY_NUMBER,
     sex: "otro",
-    heightCm: 0,
-    weightKg: 0,
-    trainingDaysPerWeek: 0,
-    sessionDurationMinutes: 0,
+    heightCm: EMPTY_NUMBER,
+    weightKg: EMPTY_NUMBER,
+    trainingDaysPerWeek: EMPTY_NUMBER,
+    sessionDurationMinutes: EMPTY_NUMBER,
     selectedDays: [],
     targetSport: "",
     goal: "salud_general",
@@ -89,6 +101,11 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
   };
 
   const generatePlan = async () => {
+    if (!user?.id) {
+      toast({ title: "No autenticado", variant: "destructive" });
+      return;
+    }
+
     const missingOrInvalidFields: string[] = [];
     if (!Number.isFinite(form.age) || form.age < 14 || form.age > 90) {
       missingOrInvalidFields.push("Edad (14-90)");
@@ -119,7 +136,10 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
     }
 
     try {
-      const plan = await generateRoutine.mutateAsync(form);
+      const plan = await generateRoutine.mutateAsync({
+        ...form,
+        userId: user.id,
+      });
       setGeneratedPlan(plan);
       toast({
         title: "Plan generado con IA",
@@ -270,8 +290,11 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
                 type="number"
                 min={14}
                 max={90}
-                value={form.age}
-                onChange={(e) => setForm((p) => ({ ...p, age: Number(e.target.value) }))}
+                inputMode="numeric"
+                value={numericValueOrEmpty(form.age)}
+                onChange={(e) => setForm((p) => ({ ...p, age: parseOptionalNumberInput(e.target.value) }))}
+                placeholder="Ejemplo: 28"
+                aria-label="Edad en años, por ejemplo 28"
               />
             </div>
             <div className="space-y-2">
@@ -291,8 +314,11 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
                 type="number"
                 min={120}
                 max={230}
-                value={form.heightCm}
-                onChange={(e) => setForm((p) => ({ ...p, heightCm: Number(e.target.value) }))}
+                inputMode="numeric"
+                value={numericValueOrEmpty(form.heightCm)}
+                onChange={(e) => setForm((p) => ({ ...p, heightCm: parseOptionalNumberInput(e.target.value) }))}
+                placeholder="Ejemplo: 175"
+                aria-label="Altura en centímetros, por ejemplo 175"
               />
             </div>
             <div className="space-y-2">
@@ -301,8 +327,11 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
                 type="number"
                 min={35}
                 max={250}
-                value={form.weightKg}
-                onChange={(e) => setForm((p) => ({ ...p, weightKg: Number(e.target.value) }))}
+                inputMode="decimal"
+                value={numericValueOrEmpty(form.weightKg)}
+                onChange={(e) => setForm((p) => ({ ...p, weightKg: parseOptionalNumberInput(e.target.value) }))}
+                placeholder="Ejemplo: 72.5"
+                aria-label="Peso en kilogramos, por ejemplo 72.5"
               />
             </div>
             <div className="space-y-2">
@@ -311,8 +340,11 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
                 type="number"
                 min={1}
                 max={7}
-                value={form.trainingDaysPerWeek}
-                onChange={(e) => setForm((p) => ({ ...p, trainingDaysPerWeek: Number(e.target.value) }))}
+                inputMode="numeric"
+                value={numericValueOrEmpty(form.trainingDaysPerWeek)}
+                onChange={(e) => setForm((p) => ({ ...p, trainingDaysPerWeek: parseOptionalNumberInput(e.target.value) }))}
+                placeholder="Ejemplo: 4"
+                aria-label="Días de entrenamiento por semana, por ejemplo 4"
               />
             </div>
             <div className="space-y-2">
@@ -321,8 +353,11 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
                 type="number"
                 min={20}
                 max={180}
-                value={form.sessionDurationMinutes}
-                onChange={(e) => setForm((p) => ({ ...p, sessionDurationMinutes: Number(e.target.value) }))}
+                inputMode="numeric"
+                value={numericValueOrEmpty(form.sessionDurationMinutes)}
+                onChange={(e) => setForm((p) => ({ ...p, sessionDurationMinutes: parseOptionalNumberInput(e.target.value) }))}
+                placeholder="Ejemplo: 60"
+                aria-label="Duración de sesión en minutos, por ejemplo 60"
               />
             </div>
             <div className="space-y-2">
@@ -406,13 +441,6 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
           </div>
 
           <DrawerFooter className="mt-auto border-t border-border bg-background p-4">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={generateRoutine.isPending}
-            >
-              Cerrar
-            </Button>
             <Button
               onClick={generatePlan}
               disabled={generateRoutine.isPending || !canGenerate}

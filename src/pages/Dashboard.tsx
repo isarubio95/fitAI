@@ -61,6 +61,7 @@ import {
   useSortable 
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { AnimatePresence, motion } from "framer-motion";
 
 const DEFAULT_WIDGET_ORDER = ['gamification', 'heatmap', 'progress', 'weekly-chart', 'calendar', 'last-workout'];
 
@@ -137,6 +138,7 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   const [calendarView, setCalendarView] = useState<"month" | "week">(loadCalendarView);
+  const [calendarTransitionDirection, setCalendarTransitionDirection] = useState<1 | -1>(1);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   /** Semana mostrada en vista semanal; al cerrar el dropdown se mantiene en lugar de volver a hoy */
@@ -162,6 +164,12 @@ const Dashboard = () => {
   useEffect(() => {
     saveCalendarView(calendarView);
   }, [calendarView]);
+
+  const handleCalendarViewChange = (nextView: "month" | "week") => {
+    if (nextView === calendarView) return;
+    setCalendarTransitionDirection(nextView === "week" ? 1 : -1);
+    setCalendarView(nextView);
+  };
 
   // Abrir hoja de ruta cuando se llega desde el BottomNav (Añadir → Hoja de ruta)
   useEffect(() => {
@@ -439,7 +447,7 @@ const Dashboard = () => {
                     </>
                   )}
                 </Button>
-                <Tabs value={calendarView} onValueChange={(v) => setCalendarView(v as "month" | "week")}>
+                <Tabs value={calendarView} onValueChange={(v) => handleCalendarViewChange(v as "month" | "week")}>
                   <TabsList className="h-9 shrink-0 rounded-full p-1">
                     <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
                       Mes
@@ -452,33 +460,45 @@ const Dashboard = () => {
               </div>
             </CardHeader>
             <CardContent className="p-0 pb-5 pt-0">
-              {calendarView === "month" ? (
-                <MonthlyPlanner
-                  month={calendarMonth}
-                  onMonthChange={handleMonthChange}
-                  workouts={monthWorkouts ?? []}
-                  cardioSessions={monthCardioSessions ?? []}
-                  onDayClick={(date) => {
-                    handleDateSelect(date);
-                    if (!isDragMode) openNew(format(date, "yyyy-MM-dd"));
-                  }}
-                  onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
-                  onCardioClick={(id) => { if (!isDragMode) openCardioEdit(id); }}
-                  onWorkoutDetailsClick={(id) => openWorkoutDetails(id)}
-                  onPlannedStart={!isDragMode ? startPlanned : undefined}
-                />
-              ) : (
-                <WeekCalendar
-                  selectedDate={selectedDate}
-                  displayWeekStart={weekViewStart}
-                  onDateSelect={handleWeekDaySelect}
-                  workoutDates={workoutDates ?? []}
-                  cardioSessionDates={cardioSessionDates ?? []}
-                  onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
-                  onWorkoutDetailsClick={(id) => openWorkoutDetails(id)}
-                  onPlannedClick={(p) => { if (!isDragMode) startPlanned(p); }}
-                />
-              )}
+              <div className="relative overflow-hidden">
+                <AnimatePresence mode="wait" initial={false} custom={calendarTransitionDirection}>
+                  <motion.div
+                    key={calendarView}
+                    initial={{ opacity: 0, x: calendarTransitionDirection * 22 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: calendarTransitionDirection * -22 }}
+                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    {calendarView === "month" ? (
+                      <MonthlyPlanner
+                        month={calendarMonth}
+                        onMonthChange={handleMonthChange}
+                        workouts={monthWorkouts ?? []}
+                        cardioSessions={monthCardioSessions ?? []}
+                        onDayClick={(date) => {
+                          handleDateSelect(date);
+                          if (!isDragMode) openNew(format(date, "yyyy-MM-dd"));
+                        }}
+                        onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
+                        onCardioClick={(id) => { if (!isDragMode) openCardioEdit(id); }}
+                        onWorkoutDetailsClick={(id) => openWorkoutDetails(id)}
+                        onPlannedStart={!isDragMode ? startPlanned : undefined}
+                      />
+                    ) : (
+                      <WeekCalendar
+                        selectedDate={selectedDate}
+                        displayWeekStart={weekViewStart}
+                        onDateSelect={handleWeekDaySelect}
+                        workoutDates={workoutDates ?? []}
+                        cardioSessionDates={cardioSessionDates ?? []}
+                        onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
+                        onWorkoutDetailsClick={(id) => openWorkoutDetails(id)}
+                        onPlannedClick={(p) => { if (!isDragMode) startPlanned(p); }}
+                      />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </CardContent>
 
             <ProgramWizard

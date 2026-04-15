@@ -267,14 +267,14 @@ export function ProgramWizard({
                       >
                         {d.label}
                       </span>
-                      <Select
-                        value={currentValue}
-                        onValueChange={(v) => setRoutineForDay(d.key, v)}
-                      >
+                      <Select value={currentValue} onValueChange={(v) => setRoutineForDay(d.key, v)}>
                         <SelectTrigger className={`h-10 flex-1 ${isNoneSelected ? "text-muted-foreground" : ""}`}>
                           <SelectValue placeholder={`${d.name} — Ninguna`} />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent
+                          position="item-aligned"
+                          onCloseAutoFocus={(e) => e.preventDefault()}
+                        >
                           <SelectItem value={EMPTY}>Ninguna</SelectItem>
                           {routineOptions.mine.length > 0 && (
                             <>
@@ -360,7 +360,7 @@ export function ProgramWizard({
         </div>
 
         {/* Footer fijo para evitar saltos y mejorar alcance con pulgar */}
-        <div className="border-t border-border bg-card/95 px-5 py-3 backdrop-blur supports-[backdrop-filter]:bg-card/85 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+        <div className="border-t border-border bg-card/95 px-5 py-3 backdrop-blur supports-backdrop-filter:bg-card/85 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
           <div className="flex items-center justify-between">
             <Button
               variant="outline"

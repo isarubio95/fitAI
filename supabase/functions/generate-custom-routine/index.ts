@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 type GenerateRoutinePayload = {
+  userId?: string;
   age: number;
   sex: "hombre" | "mujer" | "otro";
   heightCm: number;
@@ -28,12 +29,20 @@ function badRequest(message: string) {
   });
 }
 
+function upstreamError(status: number, payload: Record<string, unknown>) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+  });
+}
+
 function parsePayload(raw: unknown): GenerateRoutinePayload | null {
   if (!raw || typeof raw !== "object") return null;
   const body = raw as Record<string, unknown>;
   const selectedDays = Array.isArray(body.selectedDays) ? body.selectedDays : [];
 
   const payload: GenerateRoutinePayload = {
+    userId: typeof body.userId === "string" ? body.userId.trim() : undefined,
     age: Number(body.age),
     sex: body.sex as GenerateRoutinePayload["sex"],
     heightCm: Number(body.heightCm),
@@ -51,10 +60,14 @@ function parsePayload(raw: unknown): GenerateRoutinePayload | null {
   const validSex = ["hombre", "mujer", "otro"].includes(payload.sex);
   const validGoal = ["fuerza", "hipertrofia", "perdida_grasa", "resistencia", "salud_general"].includes(payload.goal);
   const validLevel = ["principiante", "intermedio", "avanzado"].includes(payload.level);
+  const validUserId =
+    payload.userId === undefined ||
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.userId);
 
   if (
     !Number.isFinite(payload.age) || payload.age < 14 || payload.age > 90 ||
     !validSex ||
+    !validUserId ||
     !Number.isFinite(payload.heightCm) || payload.heightCm < 120 || payload.heightCm > 230 ||
     !Number.isFinite(payload.weightKg) || payload.weightKg < 35 || payload.weightKg > 250 ||
     !Number.isFinite(payload.trainingDaysPerWeek) || payload.trainingDaysPerWeek < 1 || payload.trainingDaysPerWeek > 7 ||
@@ -135,20 +148,14 @@ Deno.serve(async (req) => {
   }
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
   const authHeader = req.headers.get("Authorization");
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
     return new Response(JSON.stringify({ error: "Missing environment variables" }), {
       status: 500,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
-  }
-
-  if (!authHeader) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
@@ -165,18 +172,30 @@ Deno.serve(async (req) => {
     return badRequest("Datos del formulario invalidos");
   }
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  const jwt = authHeader.replace("Bearer ", "");
-  const { data: userData, error: userError } = await supabase.auth.getUser(jwt);
-  if (userError || !userData.user) {
+  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  let userId = payload.userId ?? "";
+  if (!userId && authHeader) {
+    const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    });
+    const { data: userData } = await supabaseAuth.auth.getUser();
+    if (userData?.user?.id) {
+      userId = userData.user.id;
+    }
+  }
+
+  if (!userId) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
   }
-
-  const userId = userData.user.id;
-  const { data: premiumProfile, error: premiumError } = await supabase
+  const { data: premiumProfile, error: premiumError } = await supabaseAdmin
     .from("perfil")
     .select("es_premium")
     .eq("id", userId)
@@ -220,10 +239,38 @@ Deno.serve(async (req) => {
 
   if (!aiResponse.ok) {
     const errText = await aiResponse.text();
-    return new Response(JSON.stringify({ error: "Fallo Gemini", detail: errText }), {
-      status: 502,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
+    try {
+      const parsed = JSON.parse(errText) as {
+        error?: {
+          code?: number;
+          status?: string;
+          message?: string;
+          details?: Array<{
+            "@type"?: string;
+            reason?: string;
+            metadata?: Record<string, string>;
+          }>;
+        };
+      };
+      const reason = parsed.error?.details?.find((d) => d?.reason)?.reason;
+      if (reason === "API_KEY_SERVICE_BLOCKED") {
+        return upstreamError(502, {
+          error: "Gemini API bloqueada para esta clave",
+          code: "GEMINI_API_KEY_SERVICE_BLOCKED",
+          hint:
+            "Tu API key no tiene permitido llamar a generativelanguage.googleapis.com. Activa la API 'Generative Language API' y revisa restricciones de la key en Google Cloud.",
+          detail: parsed.error?.message ?? errText,
+        });
+      }
+      return upstreamError(502, {
+        error: "Fallo Gemini",
+        code: "GEMINI_UPSTREAM_ERROR",
+        detail: parsed.error?.message ?? errText,
+        upstreamStatus: parsed.error?.status ?? null,
+      });
+    } catch {
+      return upstreamError(502, { error: "Fallo Gemini", code: "GEMINI_UPSTREAM_ERROR", detail: errText });
+    }
   }
 
   const aiJson = await aiResponse.json();
@@ -245,7 +292,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  await supabase.from("plan_generado_ia").insert({
+  await supabaseAdmin.from("plan_generado_ia").insert({
     usuario_id: userId,
     prompt,
     respuesta: parsedPlan,
