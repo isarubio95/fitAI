@@ -5,6 +5,59 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
 
+/**
+ * Fix para un bug conocido de Vaul con el teclado virtual en móvil.
+ *
+ * Vaul escucha `visualViewport.resize` para reposicionar el drawer cuando
+ * aparece el teclado y ajusta `style.height` y `style.bottom` inline. Su
+ * handler solo ejecuta la lógica si el elemento activo es un input o su
+ * flag interno `keyboardIsOpen.current` está activo. Sin embargo, acciones
+ * como tocar fuera del drawer (Radix llama a `onPointerDownOutside`, que
+ * pone `keyboardIsOpen.current = false`), un `blur` inesperado por scroll
+ * dentro del drawer, o simplemente que el evento `resize` no se vuelva a
+ * disparar al cerrar el teclado en ciertos navegadores, dejan los estilos
+ * inline puestos y el drawer recortado. Solo se arregla al reabrirlo.
+ *
+ * Instalamos un único listener global que, al detectar que el teclado se
+ * cerró (la altura del viewport visual vuelve a ≈ la del layout), limpia
+ * los estilos inline que Vaul haya dejado en cualquier drawer abierto.
+ * Dejamos que el `max-h-dvh` del CSS retome el control.
+ */
+let vaulKeyboardFixInstalled = false;
+function installVaulKeyboardFix() {
+  if (vaulKeyboardFixInstalled) return;
+  if (typeof window === "undefined" || !window.visualViewport) return;
+  vaulKeyboardFixInstalled = true;
+
+  const vv = window.visualViewport;
+  let raf = 0;
+
+  const resetOpenDrawers = () => {
+    const keyboardClosed = window.innerHeight - vv.height < 80;
+    if (!keyboardClosed) return;
+    const drawers = document.querySelectorAll<HTMLElement>(
+      "[data-vaul-drawer][data-vaul-drawer-visible='true']",
+    );
+    drawers.forEach((el) => {
+      if (el.style.height) el.style.height = "";
+      if (el.style.bottom) el.style.bottom = "";
+    });
+  };
+
+  const onResize = () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(resetOpenDrawers);
+  };
+
+  const onFocusOut = () => {
+    // Damos un margen para que el teclado termine de ocultarse en iOS/Android.
+    window.setTimeout(resetOpenDrawers, 120);
+  };
+
+  vv.addEventListener("resize", onResize);
+  document.addEventListener("focusout", onFocusOut, true);
+}
+
 const Drawer = ({
   open,
   onOpenChange,
@@ -12,6 +65,9 @@ const Drawer = ({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) => {
   useBackCloseLayer({ open: !!open, onOpenChange, kind: "drawer" });
+  React.useEffect(() => {
+    installVaulKeyboardFix();
+  }, []);
   return (
     <DrawerPrimitive.Root
       open={open}
