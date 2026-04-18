@@ -21,10 +21,10 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
   const percent = pctRemaining(timer.remaining, timer.duration);
   const label = timer.finished ? "¡Listo!" : formatMSS(timer.remaining);
 
-  // En sheet modal, Radix bloquea punteros fuera del Content (`disableOutsidePointerEvents`).
-  // `sticky bottom-0` mantiene la pill al pie del área visible; el arrastre usa translate local.
+  // En sheet: la pill va como último hijo de una columna flex con zona central `min-h-0 flex-1 overflow-y-auto`.
+  // No usar `sticky` aquí: en WebKit/Android suele provocar recortes y “huecos” negros (overlay) al montar la pill.
   const sheetOuterClass =
-    "sticky bottom-0 z-[60] flex w-full justify-center px-2 pt-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pointer-events-auto";
+    "shrink-0 z-[60] flex w-full justify-center bg-background px-2 pt-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pointer-events-auto border-t border-border";
 
   const pillInner = (
     <div

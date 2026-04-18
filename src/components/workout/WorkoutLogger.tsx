@@ -739,12 +739,12 @@ export function WorkoutLogger() {
     <>
       <Drawer open={open} onOpenChange={setOpen} shouldScaleBackground={false}>
         <DrawerContent
-          className="h-[92lvh] max-h-[92lvh] overflow-hidden rounded-t-[20px] p-0"
+          className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0"
         >
-          <div className="flex h-full flex-col overflow-hidden">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden">
             <DrawerHeader
               data-active-workout-sheet-header
-              className="sticky top-0 z-10 bg-card border-b border-border p-4"
+              className="sticky top-0 z-10 shrink-0 bg-card border-b border-border p-4"
             >
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
@@ -776,7 +776,7 @@ export function WorkoutLogger() {
               </div>
             </DrawerHeader>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-6">
             {/* Title & Date */}
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 sm:col-span-1 space-y-1.5">
