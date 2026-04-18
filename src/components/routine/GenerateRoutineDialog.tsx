@@ -271,7 +271,7 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
       }}
     >
       <DrawerContent className="max-w-3xl p-0 overflow-hidden">
-        <div className="flex h-[92dvh] flex-col">
+        <div className="flex h-[92lvh] max-h-[92lvh] flex-col">
           <div className="flex-1 overflow-y-auto p-6">
             <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2">

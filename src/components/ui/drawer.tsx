@@ -18,23 +18,29 @@ import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
  * disparar al cerrar el teclado en ciertos navegadores, dejan los estilos
  * inline puestos y el drawer recortado. Solo se arregla al reabrirlo.
  *
- * Instalamos un único listener global que, al detectar que el teclado se
- * cerró (la altura del viewport visual vuelve a ≈ la del layout), limpia
- * los estilos inline que Vaul haya dejado en cualquier drawer abierto.
- * Dejamos que el `max-h-dvh` del CSS retome el control.
+ * Red de seguridad: si algo deja `height`/`bottom` inline en el panel (p. ej.
+ * versiones anteriores de Vaul o `repositionInputs` activado en un drawer),
+ * los limpiamos cuando no hay foco en un campo editable. No usamos
+ * `innerHeight - visualViewport.height`: en Android esa diferencia suele ser
+ * grande siempre (barra de navegación), y el parche anterior no llegaba a ejecutar.
  */
 let vaulKeyboardFixInstalled = false;
+function isEditableField(el: Element | null): boolean {
+  if (!(el instanceof HTMLElement)) return false;
+  const t = el.tagName;
+  if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT") return true;
+  return el.isContentEditable;
+}
+
 function installVaulKeyboardFix() {
   if (vaulKeyboardFixInstalled) return;
-  if (typeof window === "undefined" || !window.visualViewport) return;
+  if (typeof window === "undefined") return;
   vaulKeyboardFixInstalled = true;
 
-  const vv = window.visualViewport;
   let raf = 0;
 
   const resetOpenDrawers = () => {
-    const keyboardClosed = window.innerHeight - vv.height < 80;
-    if (!keyboardClosed) return;
+    if (isEditableField(document.activeElement)) return;
     const drawers = document.querySelectorAll<HTMLElement>(
       "[data-vaul-drawer][data-vaul-drawer-visible='true']",
     );
@@ -44,24 +50,28 @@ function installVaulKeyboardFix() {
     });
   };
 
-  const onResize = () => {
+  const scheduleReset = () => {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(resetOpenDrawers);
   };
 
-  const onFocusOut = () => {
-    // Damos un margen para que el teclado termine de ocultarse en iOS/Android.
-    window.setTimeout(resetOpenDrawers, 120);
-  };
-
-  vv.addEventListener("resize", onResize);
-  document.addEventListener("focusout", onFocusOut, true);
+  window.visualViewport?.addEventListener("resize", scheduleReset);
+  window.visualViewport?.addEventListener("scroll", scheduleReset);
+  document.addEventListener(
+    "focusout",
+    () => {
+      window.setTimeout(scheduleReset, 150);
+    },
+    true,
+  );
 }
 
 const Drawer = ({
   open,
   onOpenChange,
   shouldScaleBackground = false,
+  /** Evita que Vaul ajuste height/bottom con el teclado (bug en Android: viewport visual ≠ innerHeight). */
+  repositionInputs = false,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) => {
   useBackCloseLayer({ open: !!open, onOpenChange, kind: "drawer" });
@@ -73,6 +83,7 @@ const Drawer = ({
       open={open}
       onOpenChange={onOpenChange}
       shouldScaleBackground={shouldScaleBackground}
+      repositionInputs={repositionInputs}
       {...props}
     />
   );
@@ -110,11 +121,11 @@ const DrawerContent = React.forwardRef<
       className={cn(
         "drawer-mobile-scrollbars-hidden fixed z-50 flex border bg-background",
         side === "bottom" &&
-          "inset-x-0 bottom-0 mt-24 max-h-dvh flex-col rounded-t-[10px] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2",
+          "inset-x-0 bottom-0 mt-24 max-h-lvh flex-col rounded-t-[10px] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2",
         side === "top" &&
-          "inset-x-0 top-0 mb-24 max-h-dvh flex-col rounded-b-[10px] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2",
-        side === "left" && "inset-y-0 left-0 h-dvh w-[92vw] max-w-md flex-col border-r border-l-0 border-t-0 border-b-0",
-        side === "right" && "inset-y-0 right-0 h-dvh w-[92vw] max-w-md flex-col border-l border-r-0 border-t-0 border-b-0",
+          "inset-x-0 top-0 mb-24 max-h-lvh flex-col rounded-b-[10px] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2",
+        side === "left" && "inset-y-0 left-0 h-lvh w-[92vw] max-w-md flex-col border-r border-l-0 border-t-0 border-b-0",
+        side === "right" && "inset-y-0 right-0 h-lvh w-[92vw] max-w-md flex-col border-l border-r-0 border-t-0 border-b-0",
         className,
       )}
       {...props}

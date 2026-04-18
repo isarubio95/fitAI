@@ -102,7 +102,7 @@ const ExerciseDetailSheet = ({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent side="bottom" className="h-[85dvh] rounded-t-2xl p-0">
+      <DrawerContent side="bottom" className="h-[85lvh] max-h-[85lvh] rounded-t-2xl p-0">
         <ScrollArea className="h-full">
           <div className="flex flex-col">
             {/* Media */}

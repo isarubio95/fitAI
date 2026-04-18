@@ -739,7 +739,7 @@ export function WorkoutLogger() {
     <>
       <Drawer open={open} onOpenChange={setOpen} shouldScaleBackground={false}>
         <DrawerContent
-          className="h-[92dvh] overflow-hidden rounded-t-[20px] p-0"
+          className="h-[92lvh] max-h-[92lvh] overflow-hidden rounded-t-[20px] p-0"
         >
           <div className="flex h-full flex-col overflow-hidden">
             <DrawerHeader

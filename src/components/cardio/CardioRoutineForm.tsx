@@ -83,7 +83,7 @@ export function CardioRoutineForm({ open, onOpenChange, initial }: Props) {
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         side="bottom"
-        className="h-[92dvh] overflow-y-auto rounded-t-[20px] p-0"
+        className="h-[92lvh] max-h-[92lvh] overflow-y-auto rounded-t-[20px] p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >

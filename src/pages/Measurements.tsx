@@ -112,7 +112,7 @@ const Measurements = () => {
     <div className="w-full min-w-0 p-4 md:p-8 pt-6 max-w-2xl mx-auto pb-28">
       <header>
         <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
-          <DrawerContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
+          <DrawerContent side="bottom" className="max-h-[85lvh] overflow-y-auto">
             <DrawerHeader>
               <DrawerTitle>Registrar Medidas</DrawerTitle>
             </DrawerHeader>

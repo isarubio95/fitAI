@@ -219,7 +219,7 @@ export function ProgramWizard({
         if (!o) reset();
       }}
     >
-      <DrawerContent side="bottom" className="h-[92dvh] rounded-t-2xl p-0 flex flex-col overflow-hidden">
+      <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] rounded-t-2xl p-0 flex flex-col overflow-hidden">
         <DrawerHeader className="p-5 pb-3 border-b border-border">
           <DrawerTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />

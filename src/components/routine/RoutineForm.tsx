@@ -323,7 +323,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent side="bottom" className="h-[92dvh] overflow-y-auto rounded-t-[20px] p-0">
+      <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] overflow-y-auto rounded-t-[20px] p-0">
         <DrawerHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
           <div className="flex items-center justify-between">
             <DrawerTitle className="text-lg">
