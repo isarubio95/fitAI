@@ -2,6 +2,8 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
+  useRef,
   useMemo,
   useState,
   type ReactNode,
@@ -15,12 +17,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Dumbbell } from "lucide-react";
+import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Dumbbell, Pencil, Loader2 } from "lucide-react";
 import { WorkoutDetailsContent } from "@/components/dashboard/WorkoutDetailsSheet";
 import { cn } from "@/lib/utils";
 import { buildAuthAvatarCandidates, useUserAvatar } from "@/hooks/useUserAvatar";
+import { useProfileAvatarUpload } from "@/hooks/useProfileAvatarUpload";
+import { useToast } from "@/hooks/use-toast";
 
 const iconMap: Record<string, React.ElementType> = {
   Swords,
@@ -90,9 +95,27 @@ export function ProfileDrawerProvider({ children }: { children: ReactNode }) {
 export function ProfileDrawerTrigger() {
   const { user } = useAuth();
   const { openMyProfile } = useProfileDrawer();
+  const { data: profileAvatar } = useQuery({
+    queryKey: ["profile-avatar", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("perfil")
+        .select("avatar_url")
+        .eq("id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.avatar_url as string | null) ?? null;
+    },
+  });
 
   const initials = user?.email?.trim()?.[0]?.toUpperCase() || "U";
-  const avatar = useUserAvatar(useMemo(() => buildAuthAvatarCandidates(user), [user]));
+  const avatar = useUserAvatar(
+    useMemo(() => {
+      const authCandidates = buildAuthAvatarCandidates(user);
+      return profileAvatar ? [profileAvatar, ...authCandidates] : authCandidates;
+    }, [profileAvatar, user]),
+  );
 
   return (
     <button
@@ -135,7 +158,11 @@ function UserAvatar({
 function ProfileDrawerSheet() {
   const { user } = useAuth();
   const { open, onOpenChange, targetUserId, openUserProfile } = useProfileDrawer();
+  const { toast } = useToast();
   const [followListMode, setFollowListMode] = useState<"seguidores" | "seguidos" | null>(null);
+  const [localAvatarPreview, setLocalAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadAvatar = useProfileAvatarUpload();
 
   const profileUserId = targetUserId ?? user?.id ?? "";
   const isViewingSelf = !targetUserId || targetUserId === user?.id;
@@ -207,12 +234,17 @@ function ProfileDrawerSheet() {
 
   const displayAvatar = useUserAvatar(
     useMemo(() => {
+      if (isViewingSelf && localAvatarPreview) return [localAvatarPreview];
       const fromProfile = perfilRow?.avatar_url;
       if (!isViewingSelf) return fromProfile ? [fromProfile] : [];
       const base = buildAuthAvatarCandidates(user);
       return fromProfile ? [fromProfile, ...base] : base;
-    }, [isViewingSelf, perfilRow?.avatar_url, user]),
+    }, [isViewingSelf, localAvatarPreview, perfilRow?.avatar_url, user]),
   );
+
+  useEffect(() => {
+    if (!open) setLocalAvatarPreview(null);
+  }, [open]);
 
   const displayNameLine = loadingPerfil
     ? "..."
@@ -229,19 +261,70 @@ function ProfileDrawerSheet() {
     <Drawer direction="left" open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         side="left"
-        className="flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-card p-0 shadow-none"
+        className="flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
       >
-        <DrawerHeader className="px-6 pb-2 pt-6 text-left">
+        <DrawerHeader className="bg-card px-6 pb-2 pt-6 text-left dark:bg-transparent">
           <div className="flex gap-4 items-start">
-            <Avatar className="h-16 w-16 shrink-0 ring-2 ring-border/60 mr-1">
-              {displayAvatar.src && (
-                <AvatarImage src={displayAvatar.src} alt="" className="object-cover" onError={displayAvatar.onError} />
+            <div className="relative mr-1 shrink-0">
+              <Avatar className="h-16 w-16 ring-2 ring-border/60">
+                {displayAvatar.src && (
+                  <AvatarImage src={displayAvatar.src} alt="" className="object-cover" onError={displayAvatar.onError} />
+                )}
+                <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
+                  {headerInitials}
+                </AvatarFallback>
+              </Avatar>
+              {isViewingSelf && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border border-border shadow-sm"
+                  disabled={uploadAvatar.isPending}
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label="Cambiar foto de perfil"
+                >
+                  {uploadAvatar.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Pencil className="h-3.5 w-3.5" />
+                  )}
+                </Button>
               )}
-              <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
-                {headerInitials}
-              </AvatarFallback>
-            </Avatar>
+            </div>
             <div className="min-w-0 flex-1 flex flex-col gap-3">
+              {isViewingSelf && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (event) => {
+                      const file = event.target.files?.[0];
+                      event.currentTarget.value = "";
+                      if (!file || !user?.id) return;
+                      try {
+                        const result = await uploadAvatar.mutateAsync({
+                          file,
+                          userId: user.id,
+                          currentAvatarPath: perfilRow?.avatar_url ?? null,
+                        });
+                        setLocalAvatarPreview(result.signedUrl);
+                        toast({ title: "Foto de perfil actualizada" });
+                      } catch (error) {
+                        const description =
+                          error instanceof Error ? error.message : "No se pudo actualizar la foto de perfil.";
+                        toast({
+                          title: "Error al subir foto",
+                          description,
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  />
+                </>
+              )}
               <p className="text-lg font-semibold leading-tight truncate">{displayNameLine}</p>
               <div className="grid w-full min-w-0 grid-cols-3 gap-x-5 gap-y-0">
                 <div className="min-w-0 w-full flex flex-col items-start text-left">
@@ -309,9 +392,9 @@ function ProfileDrawerSheet() {
           </DialogContent>
         </Dialog>
 
-        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto pb-6 pt-3">
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto bg-card pb-6 pt-3 dark:bg-transparent">
           {xp && stats && (
-            <Card className="w-full max-w-none rounded-none border-0 bg-transparent shadow-none md:rounded-3xl">
+            <Card className="w-full max-w-none rounded-none border-0 bg-card shadow-none dark:bg-transparent md:rounded-3xl">
               <CardContent className="space-y-3 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -347,7 +430,7 @@ function ProfileDrawerSheet() {
             </Card>
           )}
 
-          <div className="space-y-3">
+          <div className="space-y-3 bg-card dark:bg-transparent">
             <p className="flex items-center gap-2 px-6 text-sm font-medium">
               <Trophy className="h-4 w-4 text-muted-foreground" /> Logros
             </p>

@@ -47,7 +47,7 @@ export function AppLayout() {
   const currentTab = searchParams.get("tab") || "";
   const pageTitle =
     location.pathname === "/"
-      ? "TrackGym"
+      ? "FitAI"
       : location.pathname === "/evolution"
         ? "Evolución"
         : location.pathname === "/routines"
@@ -58,7 +58,7 @@ export function AppLayout() {
             ? "Rutinas de Cardio"
             : location.pathname === "/profile"
               ? "Perfil"
-              : "TrackGym";
+              : "FitAI";
 
   const showHeaderPills = location.pathname === "/evolution" || location.pathname === "/routines";
   const showNotificationsBell = location.pathname === "/";

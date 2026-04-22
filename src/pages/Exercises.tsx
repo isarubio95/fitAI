@@ -500,7 +500,7 @@ const Exercises = () => {
   };
 
   return (
-    <div className="w-full min-w-0 p-4 md:p-8 pt-6 space-y-6 max-w-2xl mx-auto">
+    <div className="w-full min-w-0 max-w-2xl mx-auto overflow-x-hidden px-0 pb-6 pt-6 space-y-4 md:px-8 md:pb-8">
       {headerActionsSlot &&
         !!exercises?.length &&
         createPortal(
@@ -526,26 +526,29 @@ const Exercises = () => {
           headerActionsSlot
         )}
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar ejercicio..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="pl-10 h-12"
-        />
-      </div>
+      <Card className="w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs md:rounded-3xl md:border-x">
+        <CardContent className="space-y-4 px-6 py-4 md:px-6 md:py-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar ejercicio..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-10 h-12"
+            />
+          </div>
 
-      {/* Filtros */}
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Popover>
+          {/* Filtros */}
+          <div className="flex flex-col gap-2">
+            <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-1 [-webkit-overflow-scrolling:touch]">
+              <div className="flex min-w-max items-center gap-2 whitespace-nowrap">
+                <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "w-28 justify-center gap-2",
+                  "w-28 shrink-0 justify-center gap-2",
                   filters.tipos.length > 0 && "border-primary text-primary hover:bg-primary/5",
                 )}
               >
@@ -580,15 +583,15 @@ const Exercises = () => {
                 </CommandList>
               </Command>
             </PopoverContent>
-          </Popover>
+                </Popover>
 
-          <Popover>
+                <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "w-28 justify-center gap-2",
+                  "w-28 shrink-0 justify-center gap-2",
                   filters.grupos.length > 0 && "border-primary text-primary hover:bg-primary/5",
                 )}
               >
@@ -623,15 +626,15 @@ const Exercises = () => {
                 </CommandList>
               </Command>
             </PopoverContent>
-          </Popover>
+                </Popover>
 
-          <Popover>
+                <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "w-28 justify-center gap-2",
+                  "w-28 shrink-0 justify-center gap-2",
                   filters.equipments.length > 0 && "border-primary text-primary hover:bg-primary/5",
                 )}
               >
@@ -674,136 +677,156 @@ const Exercises = () => {
                 </CommandList>
               </Command>
             </PopoverContent>
-          </Popover>
+                </Popover>
+              </div>
+            </div>
 
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={cn(
-                "w-28 justify-center",
-                filters.difs.includes(1) && "border-primary text-primary hover:bg-primary/5",
-              )}
-              onClick={() => {
-                const difs = filters.difs.includes(1) ? filters.difs.filter((d) => d !== 1) : [...filters.difs, 1];
-                triggerDifficultyLoading();
-                setSearchParams(serializeFiltersToSearchParams(searchParams, { ...filters, difs }), { replace: true });
-              }}
-            >
-              <DifficultyBarsMono level={1} active={filters.difs.includes(1)} />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={cn(
-                "w-28 justify-center",
-                filters.difs.includes(2) && "border-primary text-primary hover:bg-primary/5",
-              )}
-              onClick={() => {
-                const difs = filters.difs.includes(2) ? filters.difs.filter((d) => d !== 2) : [...filters.difs, 2];
-                triggerDifficultyLoading();
-                setSearchParams(serializeFiltersToSearchParams(searchParams, { ...filters, difs }), { replace: true });
-              }}
-            >
-              <DifficultyBarsMono level={2} active={filters.difs.includes(2)} />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={cn(
-                "w-28 justify-center",
-                filters.difs.includes(3) && "border-primary text-primary hover:bg-primary/5",
-              )}
-              onClick={() => {
-                const difs = filters.difs.includes(3) ? filters.difs.filter((d) => d !== 3) : [...filters.difs, 3];
-                triggerDifficultyLoading();
-                setSearchParams(serializeFiltersToSearchParams(searchParams, { ...filters, difs }), { replace: true });
-              }}
-            >
-              <DifficultyBarsMono level={3} active={filters.difs.includes(3)} />
-            </Button>
-          </div>
-
-          {anyFilterActive && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="gap-2 text-muted-foreground hover:text-foreground"
-              onClick={() => {
-                const cleared: ExerciseFilters = { q: "", tipos: [], grupos: [], equipments: [], difs: [] };
-                setSearchParams(serializeFiltersToSearchParams(searchParams, cleared), { replace: true });
-              }}
-            >
-              <X className="h-4 w-4" /> Limpiar
-            </Button>
-          )}
-        </div>
-
-        {/* Chips de filtros activos */}
-        {anyFilterActive && (
-          <div className="flex flex-wrap gap-2">
-            {filters.tipos.map((t) => (
-              <Badge key={`tipo:${t}`} variant="secondary" className="gap-1">
-                Tipo: {t}
-                <X
-                  className="h-3 w-3 cursor-pointer hover:text-destructive"
+            <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-1 [-webkit-overflow-scrolling:touch]">
+              <div className="flex min-w-max items-center gap-1 whitespace-nowrap">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "w-28 shrink-0 justify-center",
+                    filters.difs.includes(1) && "border-primary text-primary hover:bg-primary/5",
+                  )}
                   onClick={() => {
-                    const nextFilters: ExerciseFilters = { ...filters, tipos: filters.tipos.filter((x) => x !== t) };
-                    setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                  }}
-                />
-              </Badge>
-            ))}
-            {filters.grupos.map((g) => (
-              <Badge key={`grupo:${g}`} variant="secondary" className="gap-1">
-                Grupo: {g}
-                <X
-                  className="h-3 w-3 cursor-pointer hover:text-destructive"
-                  onClick={() => {
-                    const nextFilters: ExerciseFilters = { ...filters, grupos: filters.grupos.filter((x) => x !== g) };
-                    setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                  }}
-                />
-              </Badge>
-            ))}
-            {filters.equipments.map((eq) => (
-              <Badge key={`eq:${eq}`} variant="secondary" className="gap-1">
-                Eq: {eq}
-                <X
-                  className="h-3 w-3 cursor-pointer hover:text-destructive"
-                  onClick={() => {
-                    const nextFilters: ExerciseFilters = {
-                      ...filters,
-                      equipments: filters.equipments.filter((x) => x !== eq),
-                    };
-                    setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                  }}
-                />
-              </Badge>
-            ))}
-            {filters.difs.map((d) => (
-              <Badge key={`dif:${d}`} variant="secondary" className="gap-1">
-                Dif: {d}
-                <X
-                  className="h-3 w-3 cursor-pointer hover:text-destructive"
-                  onClick={() => {
-                    const nextFilters: ExerciseFilters = { ...filters, difs: filters.difs.filter((x) => x !== d) };
+                    const difs: DifficultyLevel[] = filters.difs.includes(1)
+                      ? filters.difs.filter((d) => d !== 1)
+                      : [...filters.difs, 1 as DifficultyLevel];
                     triggerDifficultyLoading();
-                    setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                    setSearchParams(
+                      serializeFiltersToSearchParams(searchParams, { ...filters, difs } as ExerciseFilters),
+                      { replace: true },
+                    );
                   }}
-                />
-              </Badge>
-            ))}
+                >
+                  <DifficultyBarsMono level={1} active={filters.difs.includes(1)} />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "w-28 shrink-0 justify-center",
+                    filters.difs.includes(2) && "border-primary text-primary hover:bg-primary/5",
+                  )}
+                  onClick={() => {
+                    const difs: DifficultyLevel[] = filters.difs.includes(2)
+                      ? filters.difs.filter((d) => d !== 2)
+                      : [...filters.difs, 2 as DifficultyLevel];
+                    triggerDifficultyLoading();
+                    setSearchParams(
+                      serializeFiltersToSearchParams(searchParams, { ...filters, difs } as ExerciseFilters),
+                      { replace: true },
+                    );
+                  }}
+                >
+                  <DifficultyBarsMono level={2} active={filters.difs.includes(2)} />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "w-28 shrink-0 justify-center",
+                    filters.difs.includes(3) && "border-primary text-primary hover:bg-primary/5",
+                  )}
+                  onClick={() => {
+                    const difs: DifficultyLevel[] = filters.difs.includes(3)
+                      ? filters.difs.filter((d) => d !== 3)
+                      : [...filters.difs, 3 as DifficultyLevel];
+                    triggerDifficultyLoading();
+                    setSearchParams(
+                      serializeFiltersToSearchParams(searchParams, { ...filters, difs } as ExerciseFilters),
+                      { replace: true },
+                    );
+                  }}
+                >
+                  <DifficultyBarsMono level={3} active={filters.difs.includes(3)} />
+                </Button>
+
+                {anyFilterActive && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 gap-2 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      const cleared: ExerciseFilters = { q: "", tipos: [], grupos: [], equipments: [], difs: [] };
+                      setSearchParams(serializeFiltersToSearchParams(searchParams, cleared), { replace: true });
+                    }}
+                  >
+                    <X className="h-4 w-4" /> Limpiar
+                  </Button>
+                )}
+              </div>
+            </div>
+
+          {/* Chips de filtros activos */}
+          {anyFilterActive && (
+            <div className="flex flex-wrap gap-2">
+              {filters.tipos.map((t) => (
+                <Badge key={`tipo:${t}`} variant="secondary" className="gap-1">
+                  Tipo: {t}
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => {
+                      const nextFilters: ExerciseFilters = { ...filters, tipos: filters.tipos.filter((x) => x !== t) };
+                      setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                    }}
+                  />
+                </Badge>
+              ))}
+              {filters.grupos.map((g) => (
+                <Badge key={`grupo:${g}`} variant="secondary" className="gap-1">
+                  Grupo: {g}
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => {
+                      const nextFilters: ExerciseFilters = { ...filters, grupos: filters.grupos.filter((x) => x !== g) };
+                      setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                    }}
+                  />
+                </Badge>
+              ))}
+              {filters.equipments.map((eq) => (
+                <Badge key={`eq:${eq}`} variant="secondary" className="gap-1">
+                  Eq: {eq}
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => {
+                      const nextFilters: ExerciseFilters = {
+                        ...filters,
+                        equipments: filters.equipments.filter((x) => x !== eq),
+                      };
+                      setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                    }}
+                  />
+                </Badge>
+              ))}
+              {filters.difs.map((d) => (
+                <Badge key={`dif:${d}`} variant="secondary" className="gap-1">
+                  Dif: {d}
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => {
+                      const nextFilters: ExerciseFilters = { ...filters, difs: filters.difs.filter((x) => x !== d) };
+                      triggerDifficultyLoading();
+                      setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                    }}
+                  />
+                </Badge>
+              ))}
+            </div>
+          )}
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
 
       {isError && (
-        <Card className="border-destructive/50 bg-destructive/5">
+        <Card className="w-full max-w-none overflow-hidden rounded-none border-x-0 border-destructive/50 bg-destructive/5 md:rounded-3xl md:border-x">
           <CardContent className="p-4 text-sm space-y-2">
             <p className="font-medium text-destructive">Error al cargar el catálogo</p>
             <p className="text-muted-foreground">
@@ -820,7 +843,7 @@ const Exercises = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {isLoading || difficultyLoading
           ? Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
+              <Skeleton key={i} className="h-24 rounded-none md:rounded-xl" />
             ))
           : filteredExercises.map((ex) => {
               const isOwn = (ex as any).usuario_id === user?.id;
@@ -828,7 +851,7 @@ const Exercises = () => {
               return (
                 <Card
                   key={ex.id}
-                  className={`transition-colors cursor-pointer ${
+                  className={`w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs transition-colors cursor-pointer md:rounded-3xl md:border-x ${
                     isOwn
                       ? "border-primary/30 bg-primary/5 hover:border-primary/50"
                       : "hover:border-primary/50"

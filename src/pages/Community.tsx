@@ -54,12 +54,12 @@ export default function Community() {
 
   return (
     <div className="w-full min-w-0 pb-8 space-y-0 md:max-w-2xl md:mx-auto md:px-8">
-      <section className="space-y-0">
-        <Card className="w-full rounded-none border-0 bg-card shadow-none">
+      <section className="space-y-0 md:space-y-3">
+        <Card className="w-full rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border">
           <CardHeader className="pb-1">
             <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 pt-4">
+          <CardContent className="pt-4">
             <div className="relative">
               <Input
                 placeholder="Ej: juan_gym"
@@ -68,15 +68,21 @@ export default function Community() {
                 className="h-12"
               />
             </div>
+            {usernameQuery.trim().length === 0 && (
+              <p className="mt-3 text-sm text-muted-foreground">Escribe un username para encontrar usuarios.</p>
+            )}
+          </CardContent>
+        </Card>
 
+        {(searching || usernameQuery.trim().length > 0) && (
+        <Card className="w-full rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border">
+          <CardContent className="space-y-3 pt-4">
             {searching ? (
               <div className="space-y-2">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <Skeleton key={i} className="h-16 rounded-none md:rounded-xl" />
                 ))}
               </div>
-            ) : usernameQuery.trim().length === 0 ? (
-              <p className="text-sm text-muted-foreground">Escribe un username para encontrar usuarios.</p>
             ) : searchResults.length === 0 ? (
               <p className="text-sm text-muted-foreground">No encontramos usuarios con ese nombre.</p>
             ) : (
@@ -135,8 +141,7 @@ export default function Community() {
             )}
           </CardContent>
         </Card>
-        <h2 className="rounded-none bg-card px-6 pt-4 pb-1 text-lg font-semibold">Feed</h2>
-
+        )}
         {loadingFeed ? (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (

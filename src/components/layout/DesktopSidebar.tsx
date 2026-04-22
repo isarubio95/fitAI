@@ -50,8 +50,8 @@ export function DesktopSidebar() {
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-white/50 dark:bg-zinc-950/50 backdrop-blur-2xl h-dvh sticky top-0">
       <div className="flex h-[calc(4rem+1px)] shrink-0 items-center gap-2 border-b border-border px-6">
-        <img src="/logo.svg" alt="TrackGym" className="h-9 w-9 rounded-lg shrink-0" />
-        <span className="text-lg font-bold flex-1 min-w-0 truncate">TrackGym</span>
+        <img src="/logo.svg" alt="FitAI" className="h-9 w-9 rounded-lg shrink-0" />
+        <span className="text-lg font-bold flex-1 min-w-0 truncate">FitAI</span>
         <ProfileDrawerTrigger />
       </div>
       <nav className="flex-1 space-y-1 p-4">

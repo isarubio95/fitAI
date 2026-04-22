@@ -14,13 +14,12 @@ import { GenerateRoutineDialog } from "@/components/routine/GenerateRoutineDialo
 import { usePremium } from "@/hooks/usePremium";
 import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
 
-// Añadimos un objeto especial de tipo "add" para representarlo en el centro
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
   { to: "/routines", icon: ClipboardList, label: "Rutinas" },
-  { type: "add" }, // El botón central
+  { type: "add" },
   { to: "/community", icon: Users, label: "Comunidad" },
-  { to: "/evolution", icon: BarChart3, label: "Evolución" }, // Nueva ruta unificada
+  { to: "/evolution", icon: BarChart3, label: "Evolución" },
 ];
 
 export function BottomNav() {
