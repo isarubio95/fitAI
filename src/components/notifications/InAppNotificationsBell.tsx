@@ -110,7 +110,7 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
         aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount})` : "Notificaciones"}
         onClick={() => setOpen(true)}
       >
-        <Bell className="text-foreground" />
+        <Bell className="text-current" />
         {unreadCount > 0 ? (
           <span className="absolute -right-[2.5px] top-[0.5px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground">
             {unreadCount > 9 ? "9+" : unreadCount}
