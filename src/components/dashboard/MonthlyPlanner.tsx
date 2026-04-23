@@ -265,14 +265,14 @@ export function MonthlyPlanner({
                 };
 
                 const circleFill = isTrained
-                  ? "bg-gradient-to-br from-primary/65 via-primary/45 to-accent/70"
+                  ? "bg-gradient-to-br from-primary/88 via-primary/72 to-accent/82 dark:from-primary/65 dark:via-primary/45 dark:to-accent/70"
                   : isCardioTrained
                     ? "bg-gradient-to-br from-blue-500/70 via-blue-500/45 to-cyan-500/60"
                   : isScheduled
                     ? "bg-gradient-to-br from-orange-500/55 via-orange-500/35 to-orange-400/50"
                     : isPast
-                      ? "bg-card/80"
-                      : "bg-card/95";
+                      ? "bg-secondary/75 dark:bg-card/80"
+                      : "bg-secondary/95 dark:bg-card/95";
 
                 const circleText = isTrained || isCardioTrained
                   ? "text-primary-foreground"

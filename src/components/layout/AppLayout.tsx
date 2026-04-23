@@ -175,7 +175,7 @@ export function AppLayout() {
                   className={cn(
                     "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
                     (searchParams.get("tab") || "history") === "history"
-                      ? "border-primary bg-primary text-black shadow-sm"
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
                   )}
                 >
@@ -187,7 +187,7 @@ export function AppLayout() {
                   className={cn(
                     "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
                     searchParams.get("tab") === "measurements"
-                      ? "border-primary bg-primary text-black shadow-sm"
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
                   )}
                 >
@@ -213,7 +213,7 @@ export function AppLayout() {
                   className={cn(
                     "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
                     (searchParams.get("tab") || "rutinas") === "rutinas"
-                      ? "border-primary bg-primary text-black shadow-sm"
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
                   )}
                 >
@@ -225,7 +225,7 @@ export function AppLayout() {
                   className={cn(
                     "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
                     searchParams.get("tab") === "ejercicios"
-                      ? "border-primary bg-primary text-black shadow-sm"
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
                   )}
                 >

@@ -258,10 +258,14 @@ const WorkoutHistory = () => {
                   />
                   <Tooltip content={<WeeklyConsistencyTooltip />} />
                   <Area
-                    type="monotone"
+                    type="linear"
                     dataKey="workouts"
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
+                    isAnimationActive
+                    animationBegin={0}
+                    animationDuration={900}
+                    animationEasing="linear"
                     fill="url(#weeklyConsistencyGradient)"
                     dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
                     activeDot={{ r: 5, fill: "hsl(var(--primary))" }}

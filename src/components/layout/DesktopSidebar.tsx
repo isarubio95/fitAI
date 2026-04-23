@@ -198,7 +198,7 @@ export function DesktopSidebar() {
               cn(
                 "flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
                 isActive
-                  ? "border-primary/20 bg-primary/10 text-primary dark:border-primary/42 dark:bg-primary/8"
+                  ? "border-primary/20 text-primary dark:bg-primary/10"
                   : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
               )
             }
