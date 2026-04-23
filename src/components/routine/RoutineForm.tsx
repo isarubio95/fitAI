@@ -43,6 +43,13 @@ import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import type { RoutineExerciseFormData } from "@/types/routine";
 import { type RegistroSeries, normalizeRegistroSeries } from "@/types/workout";
+import {
+  ROUTINE_ICON_OPTIONS,
+  getRoutineIconKey,
+  setRoutineIconKey,
+  type RoutineIconKey,
+} from "@/lib/routineIcons";
+import { cn } from "@/lib/utils";
 
 interface RoutineFormProps {
   open: boolean;
@@ -81,6 +88,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [icono, setIcono] = useState<RoutineIconKey | null>(null);
   const [ejercicios, setEjercicios] = useState<RoutineExerciseFormData[]>([]);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -94,6 +102,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
     if (isEdit && existingRoutine && open) {
       setNombre(existingRoutine.nombre);
       setDescripcion(existingRoutine.descripcion || "");
+      setIcono(getRoutineIconKey(existingRoutine.id) ?? null);
       setEjercicios(
         existingRoutine.ejercicios.map((ej) => ({
           tipo_ejercicio_id: (ej as any).tipo_ejercicio_id ?? undefined,
@@ -118,6 +127,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
     if (open && !isEdit) {
       setNombre("");
       setDescripcion("");
+      setIcono(null);
       setEjercicios([]);
       setSupersetLink(null);
     }
@@ -264,6 +274,14 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
       toast({ title: "Completa el formulario", description: "Agrega nombre y al menos un ejercicio.", variant: "destructive" });
       return;
     }
+    if (!icono) {
+      toast({
+        title: "Selecciona un icono",
+        description: "Debes elegir un icono para crear o actualizar la rutina.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -286,6 +304,8 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
         if (error) throw error;
         rutinaId = data.id;
       }
+
+      setRoutineIconKey(rutinaId, icono);
 
       const inserts = ejercicios.map((ej, i) => ({
         rutina_id: rutinaId,
@@ -322,21 +342,22 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   const groups = groupExercises(ejercicios);
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] overflow-y-auto rounded-t-[20px] p-0">
-        <DrawerHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
-          <div className="flex items-center justify-between">
-            <DrawerTitle className="text-lg">
-              {isEdit ? "Editar Rutina" : "Nueva Rutina"}
-            </DrawerTitle>
-            <Button variant="default" onClick={handleSave} disabled={saving} size="sm">
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEdit ? "Actualizar" : "Guardar"}
-            </Button>
-          </div>
-        </DrawerHeader>
+    <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+      <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+          <DrawerHeader className="sticky top-0 z-10 shrink-0 bg-card border-b border-border p-4">
+            <div className="flex items-center justify-between">
+              <DrawerTitle className="text-lg">
+                {isEdit ? "Editar Rutina" : "Nueva Rutina"}
+              </DrawerTitle>
+              <Button variant="default" onClick={handleSave} disabled={saving} size="sm">
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEdit ? "Actualizar" : "Guardar"}
+              </Button>
+            </div>
+          </DrawerHeader>
 
-        <div className="p-4 space-y-6">
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-6">
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="routine-name">Nombre</Label>
@@ -357,6 +378,35 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                 onChange={(e) => setDescripcion(e.target.value)}
                 rows={2}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Icono de rutina</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {ROUTINE_ICON_OPTIONS.map((opt) => {
+                  const isSelected = icono === opt.key;
+                  const Icon = opt.Icon;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setIcono((prev) => (prev === opt.key ? null : opt.key))}
+                      aria-pressed={isSelected}
+                      title={opt.label}
+                      className={cn(
+                        "h-14 rounded-lg border transition-colors flex items-center justify-center",
+                        isSelected
+                          ? "border-primary bg-primary/20 text-primary dark:bg-primary/25"
+                          : "border-border bg-background text-muted-foreground hover:bg-muted/55 hover:text-foreground",
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </button>
+                  );
+                })}
+              </div>
+              {!icono && (
+                <p className="text-xs text-muted-foreground">Selecciona un icono para continuar.</p>
+              )}
             </div>
           </div>
 
@@ -416,6 +466,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
               </div>
             </SortableContext>
           </DndContext>
+          </div>
         </div>
       </DrawerContent>
     </Drawer>
