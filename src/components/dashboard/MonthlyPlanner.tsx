@@ -271,8 +271,8 @@ export function MonthlyPlanner({
                   : isScheduled
                     ? "bg-gradient-to-br from-orange-500/55 via-orange-500/35 to-orange-400/50"
                     : isPast
-                      ? "bg-secondary/60 dark:bg-card/80"
-                      : "bg-secondary/70 dark:bg-card/95";
+                      ? "bg-secondary/60"
+                      : "bg-secondary/70";
 
                 const circleText = isTrained || isCardioTrained
                   ? "text-primary-foreground"
