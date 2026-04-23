@@ -389,7 +389,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                     <button
                       key={opt.key}
                       type="button"
-                      onClick={() => setIcono(opt.key)}
+                      onClick={() => setIcono((prev) => (prev === opt.key ? null : opt.key))}
                       aria-pressed={isSelected}
                       title={opt.label}
                       className={cn(
