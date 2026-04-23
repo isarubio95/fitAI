@@ -1,5 +1,18 @@
 import type { LucideIcon } from "lucide-react";
-import { Dumbbell, Flame, Shield, Zap, Target, Swords, Activity, HeartPulse } from "lucide-react";
+import {
+  Dumbbell,
+  Flame,
+  Shield,
+  Zap,
+  Target,
+  Swords,
+  Activity,
+  HeartPulse,
+  BicepsFlexed,
+  Footprints,
+  CircleDot,
+  LayoutGrid,
+} from "lucide-react";
 
 export type RoutineIconKey =
   | "dumbbell"
@@ -9,7 +22,11 @@ export type RoutineIconKey =
   | "target"
   | "swords"
   | "activity"
-  | "heartPulse";
+  | "heartPulse"
+  | "arm"
+  | "leg"
+  | "abs"
+  | "fullBody";
 
 export const ROUTINE_ICON_OPTIONS: Array<{ key: RoutineIconKey; label: string; Icon: LucideIcon }> = [
   { key: "dumbbell", label: "Mancuerna", Icon: Dumbbell },
@@ -20,6 +37,10 @@ export const ROUTINE_ICON_OPTIONS: Array<{ key: RoutineIconKey; label: string; I
   { key: "swords", label: "Espadas", Icon: Swords },
   { key: "activity", label: "Actividad", Icon: Activity },
   { key: "heartPulse", label: "Pulso", Icon: HeartPulse },
+  { key: "arm", label: "Brazo", Icon: BicepsFlexed },
+  { key: "leg", label: "Pierna", Icon: Footprints },
+  { key: "abs", label: "Abdomen", Icon: CircleDot },
+  { key: "fullBody", label: "Cuerpo entero", Icon: LayoutGrid },
 ];
 
 const ROUTINE_ICON_STORAGE_KEY = "gym-log.routine-icons.v1";
