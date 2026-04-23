@@ -9,6 +9,7 @@ import { Play, Pencil, Trash2, Dumbbell, GripVertical, ChevronDown } from "lucid
 import type { RutinaWithDetails } from "@/types/routine";
 import { formatRitmoSegKmLabel } from "@/types/workout";
 import { cn } from "@/lib/utils";
+import { getRoutineIconKey, resolveRoutineIcon } from "@/lib/routineIcons";
 
 interface SortableRoutineCardProps {
   routine: RutinaWithDetails;
@@ -26,6 +27,7 @@ export function SortableRoutineCard({
   onStart,
 }: SortableRoutineCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const RoutineTitleIcon = resolveRoutineIcon(getRoutineIconKey(r.id));
 
   const {
     attributes,
@@ -76,7 +78,10 @@ export function SortableRoutineCard({
               onClick={() => setIsOpen((v) => !v)}
               className="flex-1 min-w-0 text-left"
             >
-              <h2 className="font-semibold text-base">{r.nombre}</h2>
+              <h2 className="font-semibold text-base flex items-center gap-2 min-w-0">
+                <RoutineTitleIcon className="h-4 w-4 shrink-0 text-primary" />
+                <span className="truncate">{r.nombre}</span>
+              </h2>
               {r.descripcion && (
                 <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
                   {r.descripcion}
