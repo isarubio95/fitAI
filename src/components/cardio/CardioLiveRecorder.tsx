@@ -153,7 +153,9 @@ export function CardioLiveRecorder() {
   const buildSportDetail = (): CardioSportDetailInput => {
     if (code === "running") return { disciplina_codigo: "running", running: {} };
     if (code === "cycling") return { disciplina_codigo: "cycling", cycling: {} };
-    if (code) return { disciplina_codigo: code as CardioDisciplineCode };
+    if (code && code !== "running" && code !== "cycling") {
+      return { disciplina_codigo: code as Exclude<CardioDisciplineCode, "running" | "cycling"> };
+    }
     return { disciplina_codigo: "other" };
   };
 
@@ -218,7 +220,7 @@ export function CardioLiveRecorder() {
 
   if (sessionLoading || !sessionData) {
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-background">
+      <div className="fixed inset-0 z-100 flex flex-col items-center justify-center gap-3 bg-background">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
         <p className="text-sm text-muted-foreground">Cargando sesión…</p>
       </div>
@@ -228,7 +230,7 @@ export function CardioLiveRecorder() {
   const headerTitle = discipline?.nombre?.trim() || sessionData.titulo || "Cardio";
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-background">
+    <div className="fixed inset-0 z-100 flex flex-col bg-background">
       <header className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <Button type="button" size="icon" variant="ghost" className="shrink-0 rounded-full" onClick={() => closeLiveRecording()} aria-label="Minimizar">
           <ArrowLeft className="h-5 w-5" />
