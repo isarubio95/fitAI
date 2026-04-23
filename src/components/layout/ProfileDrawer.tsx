@@ -125,7 +125,7 @@ export function ProfileDrawerTrigger() {
     >
       <Avatar className="h-8 w-8">
         {avatar.src && <AvatarImage src={avatar.src} alt="" onError={avatar.onError} />}
-        <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+        <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold ring-1 ring-primary/35 ring-inset">
           {initials}
         </AvatarFallback>
       </Avatar>

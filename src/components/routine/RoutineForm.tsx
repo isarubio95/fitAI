@@ -345,7 +345,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
     <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
       <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0">
         <div className="flex h-full min-h-0 flex-col overflow-hidden">
-          <DrawerHeader className="sticky top-0 z-10 shrink-0 bg-card border-b border-border p-4">
+          <DrawerHeader className="sticky top-0 z-10 shrink-0 bg-card border-b border-border">
             <div className="flex items-center justify-between">
               <DrawerTitle className="text-lg">
                 {isEdit ? "Editar Rutina" : "Nueva Rutina"}
@@ -358,57 +358,57 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
           </DrawerHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-6">
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="routine-name">Nombre</Label>
-              <Input
-                id="routine-name"
-                placeholder="Ej: Push Day, Pierna A..."
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                className="h-12"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="routine-desc">Descripción</Label>
-              <Textarea
-                id="routine-desc"
-                placeholder="Descripción opcional..."
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                rows={2}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Icono de rutina</Label>
-              <div className="grid grid-cols-4 gap-2">
-                {ROUTINE_ICON_OPTIONS.map((opt) => {
-                  const isSelected = icono === opt.key;
-                  const Icon = opt.Icon;
-                  return (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      onClick={() => setIcono((prev) => (prev === opt.key ? null : opt.key))}
-                      aria-pressed={isSelected}
-                      title={opt.label}
-                      className={cn(
-                        "h-14 rounded-lg border transition-colors flex items-center justify-center",
-                        isSelected
-                          ? "border-primary bg-primary/20 text-primary dark:bg-primary/25"
-                          : "border-border bg-background text-muted-foreground hover:bg-muted/55 hover:text-foreground",
-                      )}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </button>
-                  );
-                })}
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="routine-name">Nombre</Label>
+                <Input
+                  id="routine-name"
+                  placeholder="Ej: Push Day, Pierna A..."
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  className="h-12"
+                />
               </div>
-              {!icono && (
-                <p className="text-xs text-muted-foreground">Selecciona un icono para continuar.</p>
-              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="routine-desc">Descripción</Label>
+                <Textarea
+                  id="routine-desc"
+                  placeholder="Descripción opcional..."
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Icono de rutina</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {ROUTINE_ICON_OPTIONS.map((opt) => {
+                    const isSelected = icono === opt.key;
+                    const Icon = opt.Icon;
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setIcono((prev) => (prev === opt.key ? null : opt.key))}
+                        aria-pressed={isSelected}
+                        title={opt.label}
+                        className={cn(
+                          "h-14 rounded-lg border transition-colors flex items-center justify-center",
+                          isSelected
+                            ? "border-primary bg-primary/20 text-primary dark:bg-primary/25"
+                            : "border-border bg-background text-muted-foreground hover:text-foreground [&_svg]:opacity-85 hover:[&_svg]:opacity-100 transition-colors",
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </button>
+                    );
+                  })}
+                </div>
+                {!icono && (
+                  <p className="text-xs text-muted-foreground">Selecciona un icono para continuar.</p>
+                )}
+              </div>
             </div>
-          </div>
 
           <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleRoutineDragEnd}>
             <SortableContext items={ejercicios.map((_, i) => i)} strategy={verticalListSortingStrategy}>
@@ -705,9 +705,10 @@ function ExerciseRow({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">0 - Fallo</SelectItem>
+                <SelectItem value="0">0</SelectItem>
                 <SelectItem value="1">1</SelectItem>
                 <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
               </SelectContent>
             </Select>
           </div>

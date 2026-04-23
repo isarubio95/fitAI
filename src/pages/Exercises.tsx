@@ -506,9 +506,15 @@ const Exercises = () => {
         createPortal(
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <ArrowUpDown className="h-4 w-4" />
-                <span className="hidden sm:inline">{sortOrder === "asc" ? "A → Z" : "Z → A"}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
+                title={sortOrder === "asc" ? "Orden: A → Z" : "Orden: Z → A"}
+                aria-label={`Ordenar ejercicios por nombre, ${sortOrder === "asc" ? "A a Z" : "Z a A"}`}
+              >
+                <ArrowUpDown />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44 bg-popover">

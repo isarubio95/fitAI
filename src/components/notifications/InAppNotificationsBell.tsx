@@ -34,7 +34,7 @@ function NotificationRow({
             item.dismissable ? (
               <button
                 type="button"
-                className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground [&_svg]:opacity-80 hover:[&_svg]:opacity-100"
                 aria-label="Descartar"
                 onClick={() => onDismiss(item.id)}
               >
@@ -65,7 +65,7 @@ function NotificationRow({
         {item.dismissable ? (
           <button
             type="button"
-            className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground [&_svg]:opacity-80 hover:[&_svg]:opacity-100"
             aria-label="Descartar"
             onClick={() => onDismiss(item.id)}
           >
@@ -104,7 +104,7 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
         variant="ghost"
         size="icon"
         className={cn(
-          "relative h-11 w-11 shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5",
+          "relative h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5",
           className,
         )}
         aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount})` : "Notificaciones"}

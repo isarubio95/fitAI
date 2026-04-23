@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil, ArrowUpDown, GripHorizontal } from "lucide-react";
+import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil, ArrowUpDown, GripHorizontal, Check } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
 import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
@@ -418,7 +418,6 @@ const Dashboard = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="shrink-0 gap-2 bg-card border-border hover:bg-card/80"
                   disabled={!plannedKnown}
                   onClick={() => {
                     if (!plannedKnown) return;
@@ -639,14 +638,19 @@ const Dashboard = () => {
       {headerActionsSlot &&
         createPortal(
           <Button
-            variant={isDragMode ? "default" : "outline"}
-            size="sm"
+            type="button"
+            variant={isDragMode ? "default" : "ghost"}
+            size="icon"
             onClick={() => setIsDragMode(!isDragMode)}
             title={isDragMode ? "Salir del modo ordenar" : "Ordenar widgets del inicio"}
-            className={cn("transition-all", isDragMode && "gap-2")}
+            aria-pressed={isDragMode}
+            className={cn(
+              "h-11 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5",
+              !isDragMode &&
+                "text-muted-foreground hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground",
+            )}
           >
-            <ArrowUpDown className="h-4 w-4" />
-            {isDragMode ? <span>Hecho</span> : null}
+            {isDragMode ? <Check /> : <ArrowUpDown />}
           </Button>,
           headerActionsSlot
         )}

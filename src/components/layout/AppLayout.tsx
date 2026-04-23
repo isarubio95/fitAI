@@ -131,7 +131,13 @@ export function AppLayout() {
         <DesktopSidebar />
         <div className="flex-1 flex flex-col">
           {/* Mobile header — fijo siempre visible */}
-          <header className="fixed left-0 right-0 top-0 z-40 w-full bg-background px-4 py-2 dark:bg-zinc-950/40 dark:backdrop-blur-xl">
+          <header
+            className={cn(
+              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/40 bg-card px-4 py-2 dark:border-b-0 dark:bg-zinc-950/40 dark:backdrop-blur-xl",
+              "transition-[gap] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+              showHeaderPills && !areHeaderPillsCollapsed ? "max-md:gap-2" : "gap-0",
+            )}
+          >
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 flex-1 flex-col">
                 <div className="flex min-w-0 items-center gap-2">
@@ -157,88 +163,106 @@ export function AppLayout() {
                 <ProfileDrawerTrigger />
               </div>
             </div>
+
+            {location.pathname === "/evolution" && (
+              <div
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none md:hidden",
+                  areHeaderPillsCollapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]",
+                )}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div
+                    className={cn(
+                      "flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5",
+                      "transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+                      areHeaderPillsCollapsed
+                        ? "pointer-events-none opacity-0 transform-[translate3d(0,4px,0)_scale(0.98)]"
+                        : "opacity-100 transform-[translate3d(0,0,0)_scale(1)]",
+                    )}
+                  >
+                  <button
+                    type="button"
+                    onClick={() => setSearchParams({ tab: "history" })}
+                    className={cn(
+                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                      (searchParams.get("tab") || "history") === "history"
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                    )}
+                  >
+                    Entrenos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSearchParams({ tab: "measurements" })}
+                    className={cn(
+                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                      searchParams.get("tab") === "measurements"
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                    )}
+                  >
+                    Medidas
+                  </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {location.pathname === "/routines" && (
+              <div
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none md:hidden",
+                  areHeaderPillsCollapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]",
+                )}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div
+                    className={cn(
+                      "flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5",
+                      "transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+                      areHeaderPillsCollapsed
+                        ? "pointer-events-none opacity-0 transform-[translate3d(0,4px,0)_scale(0.98)]"
+                        : "opacity-100 transform-[translate3d(0,0,0)_scale(1)]",
+                    )}
+                  >
+                  <button
+                    type="button"
+                    onClick={() => setSearchParams({ tab: "rutinas" })}
+                    className={cn(
+                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                      (searchParams.get("tab") || "rutinas") === "rutinas"
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                    )}
+                  >
+                    Rutinas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSearchParams({ tab: "ejercicios" })}
+                    className={cn(
+                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                      searchParams.get("tab") === "ejercicios"
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                    )}
+                  >
+                    Ejercicios
+                  </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </header>
 
-          {location.pathname === "/evolution" && (
-            <div
-              className={cn(
-                "fixed left-0 right-0 top-16 z-30 px-4 pt-1 md:hidden transition-all duration-300",
-                areHeaderPillsCollapsed
-                  ? "-translate-y-3 opacity-0 pointer-events-none"
-                  : "translate-y-0 opacity-100"
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ tab: "history" })}
-                  className={cn(
-                    "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                    (searchParams.get("tab") || "history") === "history"
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                      : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                  )}
-                >
-                  Entrenos
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ tab: "measurements" })}
-                  className={cn(
-                    "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                    searchParams.get("tab") === "measurements"
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                      : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                  )}
-                >
-                  Medidas
-                </button>
-              </div>
-            </div>
-          )}
-
-          {location.pathname === "/routines" && (
-            <div
-              className={cn(
-                "fixed left-0 right-0 top-16 z-30 px-4 pt-1 md:hidden transition-all duration-300",
-                areHeaderPillsCollapsed
-                  ? "-translate-y-3 opacity-0 pointer-events-none"
-                  : "translate-y-0 opacity-100"
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ tab: "rutinas" })}
-                  className={cn(
-                    "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                    (searchParams.get("tab") || "rutinas") === "rutinas"
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                      : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                  )}
-                >
-                  Rutinas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ tab: "ejercicios" })}
-                  className={cn(
-                    "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                    searchParams.get("tab") === "ejercicios"
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                      : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                  )}
-                >
-                  Ejercicios
-                </button>
-              </div>
-            </div>
-          )}
-
-          <main className={cn(
-            "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 md:pb-0 md:pt-14",
-            showHeaderPills && !areHeaderPillsCollapsed ? "pt-26" : "pt-12"
-          )}>
+          <main
+            className={cn(
+              "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 transition-[padding-top] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none md:pb-0 md:pt-14",
+              showHeaderPills && !areHeaderPillsCollapsed ? "pt-26" : "pt-12",
+            )}
+          >
             {/* Navegación por gestos desactivada: usamos solo el contenido de rutas directamente */}
             <Outlet />
           </main>

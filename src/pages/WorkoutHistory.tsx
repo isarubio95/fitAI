@@ -173,7 +173,7 @@ const WorkoutHistory = () => {
   ];
 
   return (
-    <div className="w-full min-w-0 pb-28 pt-6 md:mx-auto md:max-w-2xl md:px-8">
+    <div className="w-full min-w-0 pb-28 pt-3 md:mx-auto md:max-w-2xl md:px-8">
       <div className="space-y-3">
       {/* ── KPI Grid (ahora dentro de Card, con líneas divisorias internas) ── */}
       <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">

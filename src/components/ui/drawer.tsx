@@ -106,6 +106,8 @@ DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
 
 type DrawerSide = "left" | "right" | "top" | "bottom";
 
+const DrawerSideContext = React.createContext<DrawerSide | undefined>(undefined);
+
 interface DrawerContentProps extends React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> {
   side?: DrawerSide;
 }
@@ -130,20 +132,28 @@ const DrawerContent = React.forwardRef<
       )}
       {...props}
     >
-      <DrawerPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Cerrar</span>
-      </DrawerPrimitive.Close>
-      {(side === "bottom" || side === "top") && <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />}
-      {children}
+      <DrawerSideContext.Provider value={side}>{children}</DrawerSideContext.Provider>
     </DrawerPrimitive.Content>
   </DrawerPortal>
 ));
 DrawerContent.displayName = "DrawerContent";
 
-const DrawerHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("grid gap-1.5 p-4 text-center sm:text-left", className)} {...props} />
-);
+const drawerDragHandleClass = "mx-auto h-2 w-[100px] shrink-0 rounded-full bg-muted";
+
+const DrawerHeader = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
+  const side = React.useContext(DrawerSideContext);
+  const showEdgeHandle = side === "bottom" || side === "top";
+
+  return (
+    <div className={cn("grid gap-1.5 pt-3 pb-4 px-4 text-center sm:text-left", className)} {...props}>
+      {showEdgeHandle && side === "bottom" && (
+        <div className={cn(drawerDragHandleClass, "mb-1")} aria-hidden />
+      )}
+      {children}
+      {showEdgeHandle && side === "top" && <div className={cn(drawerDragHandleClass, "mt-1")} aria-hidden />}
+    </div>
+  );
+};
 DrawerHeader.displayName = "DrawerHeader";
 
 const DrawerFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
