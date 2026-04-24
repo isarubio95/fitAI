@@ -1,73 +1,219 @@
-# Welcome to your Lovable project
+# FitAI (Gym Log)
 
-## Project info
+Aplicación web de entrenamiento orientada a registro de fuerza y cardio, planificación semanal, analítica de progreso y funcionalidades sociales, construida con React + TypeScript + Supabase.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 1) Visión de Producto
 
-## How can I edit this code?
+FitAI centraliza el ciclo completo de entrenamiento:
+- **Planificación** de rutinas y hoja de ruta semanal.
+- **Ejecución** de entrenos de fuerza y cardio (incluye sesión cardio en vivo con GPS).
+- **Seguimiento** de métricas históricas y evolución.
+- **Comunidad** y notificaciones in-app.
+- **Personalización** de tema/acento, perfil y preferencias.
 
-There are several ways of editing your application.
+## 2) Stack Tecnológico
 
-**Use Lovable**
+- **Frontend:** React 19, TypeScript, Vite 7
+- **Routing:** React Router 7
+- **Estado de servidor:** TanStack Query 5
+- **UI System:** Tailwind CSS 4 + componentes Radix/shadcn + utilidades propias
+- **Animaciones / UX:** Framer Motion, Vaul (drawers)
+- **Backend BaaS:** Supabase (Auth, Postgres, Edge Functions)
+- **Mapas / GPS:** Leaflet + React Leaflet
+- **Testing:** Vitest + Testing Library (jsdom)
+- **PWA:** `vite-plugin-pwa`
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 3) Arquitectura de Alto Nivel
 
-Changes made via Lovable will be committed automatically to this repo.
+### Frontend (SPA)
 
-**Use your preferred IDE**
+La app funciona como SPA con un `AppLayout` común y páginas por dominio:
+- `Dashboard`
+- `Library` / `Routines` / `Exercises`
+- `WorkoutHistory`
+- `Evolution`
+- `Community`
+- `CardioRoutines`
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+`src/App.tsx` define el grafo de rutas y los providers globales:
+- `ThemeProvider`
+- `QueryClientProvider`
+- `AuthProvider`
+- `RestTimerProvider`
+- `TooltipProvider`
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Backend (Supabase)
 
-Follow these steps:
+- Cliente tipado en `src/integrations/supabase/client.ts`
+- Tipos de DB generados en `src/integrations/supabase/types.ts`
+- Edge Function relevante:
+  - `supabase/functions/generate-custom-routine/index.ts` (generación de planes con Gemini + validaciones + control de premium)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Flujo de datos
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. UI dispara acciones desde páginas/componentes.
+2. Hooks de dominio (`src/hooks`) ejecutan lecturas/escrituras contra Supabase.
+3. TanStack Query cachea y revalida datos.
+4. La UI se actualiza de forma reactiva con estados de carga/error.
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 4) Estructura del Proyecto
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```text
+.
+├─ src/
+│  ├─ components/
+│  │  ├─ cardio/            # logger, recorder en vivo, formularios cardio
+│  │  ├─ dashboard/         # widgets, planificador mensual, wizard
+│  │  ├─ exercise/          # selector/detalle de ejercicios
+│  │  ├─ layout/            # AppLayout, sidebar, drawers de perfil/ajustes
+│  │  ├─ notifications/     # campana y render de notificaciones
+│  │  ├─ routine/           # CRUD y utilidades de rutinas
+│  │  ├─ workout/           # logger de fuerza, componentes de sesión
+│  │  └─ ui/                # design system base (botones, select, drawer...)
+│  ├─ hooks/                # hooks de dominio y estado global
+│  ├─ integrations/
+│  │  └─ supabase/          # client + tipos generados
+│  ├─ pages/                # vistas de nivel ruta
+│  ├─ contexts/             # contextos React de soporte
+│  ├─ lib/, constants/, types/
+│  └─ test/                 # tests unitarios/integración UI
+├─ supabase/
+│  ├─ config.toml
+│  └─ functions/
+│     └─ generate-custom-routine/
+├─ .env.example
+├─ vite.config.ts
+├─ vitest.config.ts
+└─ eslint.config.js
+```
+
+## 5) Principios de Diseño (Codebase)
+
+- **Arquitectura por dominio:** cardio, workout, routines, dashboard, etc.
+- **UI desacoplada de acceso a datos:** componentes consumen hooks.
+- **Tipos primero:** modelos y payloads tipados (`src/types`, tipos Supabase).
+- **Reutilización de UI:** primitives de `src/components/ui` con variantes consistentes.
+- **UX móvil prioritaria:** drawers, pills, navegación inferior, estados transicionales.
+
+## 6) Módulos Funcionales Clave
+
+- **Workout Logger (fuerza):** creación/edición de sesiones, series, descanso, RIR.
+- **Cardio Logger / Live Recorder:** bloques cardio, `sport_detail`, track GPS.
+- **Rutinas:** creación/edición, ordenación drag & drop, iconografía y plantillas.
+- **Planificación:** wizard y calendario mensual para hoja de ruta.
+- **Evolución y analítica:** historial, métricas y widgets.
+- **Comunidad:** feed/perfil/seguimientos/notificaciones.
+
+## 7) Entorno y Configuración
+
+### Variables de entorno
+
+Definidas en `.env.example`:
+
+```bash
+VITE_SUPABASE_PROJECT_ID=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+VITE_SUPABASE_URL=
+```
+
+### Requisitos
+
+- Node.js LTS recomendado
+- npm
+- Proyecto Supabase configurado
+
+## 8) Inicio Rápido
+
+```bash
+npm install
+cp .env.example .env
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Servidor dev por defecto en `http://localhost:8080` (ver `vite.config.ts`).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 9) Scripts Disponibles
 
-**Use GitHub Codespaces**
+- `npm run dev` - desarrollo local
+- `npm run build` - build producción
+- `npm run build:dev` - build en modo desarrollo
+- `npm run preview` - servir build localmente
+- `npm run lint` - lint con ESLint
+- `npm run test` - tests una pasada
+- `npm run test:watch` - tests en modo watch
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 10) Calidad y Testing
 
-## What technologies are used for this project?
+### Estrategia actual
 
-This project is built with:
+- Tests con Vitest + Testing Library.
+- Configuración en `vitest.config.ts` (ambiente `jsdom`).
+- Suite en `src/test` y tests por hooks/componentes.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Convención sugerida para PRs
 
-## How can I deploy this project?
+- Añadir tests cuando se cambie lógica de negocio.
+- Mantener cobertura de hooks críticos y cálculos de dominio.
+- Validar manualmente flujos móviles (drawers, scroll, teclado).
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 11) Build y Despliegue
 
-## Can I connect a custom domain to my Lovable project?
+- Build con Vite.
+- Configurado `vercel.json` para SPA fallback a `index.html`.
+- PWA habilitada (`vite-plugin-pwa`) con registro `autoUpdate`.
 
-Yes, you can!
+## 12) Seguridad y Datos
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- Autenticación y sesión gestionadas por Supabase.
+- Cliente usa `persistSession` y `autoRefreshToken`.
+- Edge Function `generate-custom-routine`:
+  - valida payload de entrada,
+  - valida usuario/premium,
+  - consume proveedor IA,
+  - persiste resultados en Supabase.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+> Recomendación: documentar explícitamente políticas RLS por tabla en un documento dedicado de seguridad.
+
+## 13) Guía de Contribución (Nivel Profesional)
+
+### Flujo de trabajo recomendado
+
+1. Crear rama por feature/fix.
+2. Commits atómicos y descriptivos.
+3. Ejecutar `lint` + `test` antes de PR.
+4. Abrir PR con:
+   - objetivo de negocio,
+   - cambios técnicos,
+   - plan de prueba,
+   - riesgos/rollback.
+
+### Estándares técnicos
+
+- TypeScript estricto por módulo nuevo (progresivo).
+- Evitar lógica compleja en componentes de presentación.
+- Hooks para side-effects/acceso a datos.
+- Mantener naming consistente por dominio.
+
+## 14) Roadmap para “Nivel Big Tech”
+
+Para acercar el proyecto a estándares de compañías grandes:
+
+1. **ADR (Architecture Decision Records):** decisiones arquitectónicas versionadas.
+2. **Observabilidad:** logging estructurado, tracing y dashboards de errores.
+3. **CI/CD robusto:** pipelines con gates (lint, test, build, typecheck, bundle budget).
+4. **Seguridad SDLC:** SAST, dependencia vulnerable, secret scanning.
+5. **Calidad de API:** contrato tipado compartido y validación runtime sistemática.
+6. **Performance budget:** métricas Lighthouse/Web Vitals y alertas por regresión.
+7. **Documentación viva:** runbooks, onboarding, incident response, ownership por módulo.
+8. **Feature flags:** despliegues graduales y rollback operativo.
+
+## 15) Troubleshooting
+
+- **Pantalla en blanco en rutas directas:** verificar rewrite SPA (`vercel.json`).
+- **Error de Supabase env:** revisar `.env` y reiniciar dev server.
+- **Tipos de Supabase desactualizados:** regenerar `src/integrations/supabase/types.ts`.
+- **Problemas con mapas GPS:** validar permisos de geolocalización y contexto HTTPS en producción.
+
+## 16) Licencia
+
+Proyecto bajo **AGPL-3.0** (ver `package.json`).
