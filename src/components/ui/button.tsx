@@ -16,6 +16,7 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-accent/55 dark:hover:bg-accent/30",
         ghost: "hover:bg-accent/55 hover:text-accent-foreground dark:hover:bg-accent/30",
         link: "text-primary underline-offset-4 hover:underline",
+        new: "min-h-9 !h-9 shrink-0 gap-1.5 rounded-full border-border/50 bg-accent/50 px-4 py-0 text-sm font-semibold text-accent-foreground shadow-sm transition-[colors,box-shadow] hover:bg-accent/90 hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&_svg]:size-[1.1rem]",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -28,20 +29,6 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-    compoundVariants: [
-      {
-        variant: "ghost",
-        size: "icon",
-        class:
-          "hover:bg-transparent dark:hover:bg-transparent active:bg-transparent dark:active:bg-transparent [&_svg]:transition-opacity [&_svg]:opacity-[0.94] hover:[&_svg]:opacity-100 dark:[&_svg]:opacity-75 dark:hover:[&_svg]:opacity-100",
-      },
-      {
-        variant: "outline",
-        size: "icon",
-        class:
-          "hover:bg-transparent dark:hover:bg-transparent active:bg-transparent dark:active:bg-transparent [&_svg]:transition-opacity [&_svg]:opacity-[0.94] hover:[&_svg]:opacity-100 dark:[&_svg]:opacity-80 dark:hover:[&_svg]:opacity-100",
-      },
-    ],
   },
 );
 

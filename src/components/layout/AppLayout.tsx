@@ -174,37 +174,40 @@ export function AppLayout() {
                 <div className="min-h-0 overflow-hidden">
                   <div
                     className={cn(
-                      "flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5",
+                      "flex min-w-0 items-center gap-2 pb-0.5",
                       "transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
                       areHeaderPillsCollapsed
                         ? "pointer-events-none opacity-0 transform-[translate3d(0,4px,0)_scale(0.98)]"
                         : "opacity-100 transform-[translate3d(0,0,0)_scale(1)]",
                     )}
                   >
-                  <button
-                    type="button"
-                    onClick={() => setSearchParams({ tab: "history" })}
-                    className={cn(
-                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                      (searchParams.get("tab") || "history") === "history"
-                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                    )}
-                  >
-                    Entrenos
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSearchParams({ tab: "measurements" })}
-                    className={cn(
-                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                      searchParams.get("tab") === "measurements"
-                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                    )}
-                  >
-                    Medidas
-                  </button>
+                    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+                      <button
+                        type="button"
+                        onClick={() => setSearchParams({ tab: "history" })}
+                        className={cn(
+                          "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                          (searchParams.get("tab") || "history") === "history"
+                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                            : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                        )}
+                      >
+                        Entrenos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSearchParams({ tab: "measurements" })}
+                        className={cn(
+                          "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                          searchParams.get("tab") === "measurements"
+                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                            : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                        )}
+                      >
+                        Medidas
+                      </button>
+                    </div>
+                    <div id="section-pills-actions-slot" className="flex shrink-0 items-center" />
                   </div>
                 </div>
               </div>
@@ -220,37 +223,40 @@ export function AppLayout() {
                 <div className="min-h-0 overflow-hidden">
                   <div
                     className={cn(
-                      "flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5",
+                      "flex min-w-0 items-center gap-2 pb-0.5",
                       "transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
                       areHeaderPillsCollapsed
                         ? "pointer-events-none opacity-0 transform-[translate3d(0,4px,0)_scale(0.98)]"
                         : "opacity-100 transform-[translate3d(0,0,0)_scale(1)]",
                     )}
                   >
-                  <button
-                    type="button"
-                    onClick={() => setSearchParams({ tab: "rutinas" })}
-                    className={cn(
-                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                      (searchParams.get("tab") || "rutinas") === "rutinas"
-                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                    )}
-                  >
-                    Rutinas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSearchParams({ tab: "ejercicios" })}
-                    className={cn(
-                      "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                      searchParams.get("tab") === "ejercicios"
-                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                        : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                    )}
-                  >
-                    Ejercicios
-                  </button>
+                    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+                      <button
+                        type="button"
+                        onClick={() => setSearchParams({ tab: "rutinas" })}
+                        className={cn(
+                          "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                          (searchParams.get("tab") || "rutinas") === "rutinas"
+                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                            : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                        )}
+                      >
+                        Rutinas
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSearchParams({ tab: "ejercicios" })}
+                        className={cn(
+                          "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                          searchParams.get("tab") === "ejercicios"
+                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                            : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                        )}
+                      >
+                        Ejercicios
+                      </button>
+                    </div>
+                    <div id="section-pills-actions-slot" className="flex shrink-0 items-center" />
                   </div>
                 </div>
               </div>

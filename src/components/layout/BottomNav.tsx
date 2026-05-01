@@ -2,16 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Home, Dumbbell, BarChart3, ClipboardList, Scale, Plus, Activity, Sparkles, ChevronDown, FileUp, Calendar, Users } from "lucide-react";
+import { Home, BarChart3, ClipboardList, Scale, Plus, Activity, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useStartCardioLiveSession, useCardioDisciplinas } from "@/hooks/useCardioSessions";
 import { useToast } from "@/hooks/use-toast";
-import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
 import { CardioTypePickerDialog } from "@/components/cardio/CardioTypePickerDialog";
-import { GenerateRoutineDialog } from "@/components/routine/GenerateRoutineDialog";
-import { usePremium } from "@/hooks/usePremium";
 import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
 
 const navItems = [
@@ -29,20 +26,15 @@ export function BottomNav() {
   const { openNewWithDiscipline, openLiveRecording } = useGlobalCardioDrawer();
   const startCardioLive = useStartCardioLiveSession();
   const { data: cardioDisciplinas } = useCardioDisciplinas();
-  const { data: premiumStatus } = usePremium();
   const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showRoutineSubmenu, setShowRoutineSubmenu] = useState(false);
-  const [explorerOpen, setExplorerOpen] = useState(false);
   const [cardioTypeDialogOpen, setCardioTypeDialogOpen] = useState(false);
-  const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
   useBackCloseLayer({
     open: isMenuOpen,
     onOpenChange: (next) => {
       setIsMenuOpen(next);
-      if (!next) setShowRoutineSubmenu(false);
     },
     kind: "popover",
   });
@@ -63,7 +55,6 @@ export function BottomNav() {
   // Cerrar el menú automáticamente al cambiar de página
   useEffect(() => {
     setIsMenuOpen(false);
-    setShowRoutineSubmenu(false);
   }, [location.pathname]);
 
   return (
@@ -91,105 +82,6 @@ export function BottomNav() {
       >
         <button
           className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
-          onClick={() => {
-            if (!premiumStatus?.isPremium) {
-              toast({
-                title: "Funcion premium",
-                description: "Necesitas cuenta premium para generar planes con IA.",
-                variant: "destructive",
-              });
-              return;
-            }
-            setPremiumDialogOpen(true);
-            setIsMenuOpen(false);
-          }}
-        >
-          <Sparkles className="h-6 w-6 shrink-0 text-violet-500" />
-          <div className="min-w-0">
-            <p className="font-medium">Generar plan de entrenamiento</p>
-            <p className="text-xs text-muted-foreground">IA premium para crear rutinas personalizadas</p>
-          </div>
-        </button>
-        <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
-          onClick={() => { navigate("/", { state: { openPlanWizard: true } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
-        >
-          <Calendar className="h-6 w-6 shrink-0 text-violet-500" />
-          <div className="min-w-0">
-            <p className="font-medium">Hoja de Ruta</p>
-            <p className="text-xs text-muted-foreground">Planifica qué rutina hacer cada día</p>
-          </div>
-        </button>
-        <div>
-          <button
-            className="flex items-center justify-between w-full gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left"
-            onClick={() => { setShowRoutineSubmenu(!showRoutineSubmenu); }}
-          >
-            <span className="flex items-center gap-3 min-w-0">
-              <ClipboardList className="h-6 w-6 shrink-0 text-primary" />
-              <div className="min-w-0">
-                <p className="font-medium">Rutina de Gimnasio</p>
-                <p className="text-xs text-muted-foreground">Crea o explora plantillas de entrenamiento</p>
-              </div>
-            </span>
-            <ChevronDown
-              className={cn("h-5 w-5 shrink-0 transition-transform duration-300", showRoutineSubmenu && "rotate-180")}
-            />
-          </button>
-          <div
-            className={cn(
-              "grid transition-all duration-300 ease-in-out",
-              showRoutineSubmenu ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-            )}
-          >
-            <div className="overflow-hidden">
-              <div className="space-y-0.5 bg-muted/30 px-3 pb-2 pt-0">
-                <button
-                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-base text-left"
-                  onClick={() => { setExplorerOpen(true); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
-                >
-                  <Sparkles className="h-5 w-5 shrink-0 text-amber-400" />
-                  <div>
-                    <p className="font-medium">Explorar Predefinidas</p>
-                    <p className="text-xs text-muted-foreground">Descubre rutinas creadas por expertos</p>
-                  </div>
-                </button>
-                <button
-                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-base text-left"
-                  onClick={() => { navigate("/routines", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
-                >
-                  <Plus className="h-5 w-5 shrink-0 text-primary" />
-                  <div>
-                    <p className="font-medium">Crear desde cero</p>
-                    <p className="text-xs text-muted-foreground">Configura tus propios ejercicios</p>
-                  </div>
-                </button>
-                <button
-                  className="flex w-full items-center gap-3 rounded-lg p-2.5 hover:bg-accent/30 transition-colors text-base text-left"
-                  onClick={() => { navigate("/routines", { state: { action: "import-csv" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
-                >
-                  <FileUp className="h-5 w-5 shrink-0 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Importar desde CSV</p>
-                    <p className="text-xs text-muted-foreground">Sube un archivo con la rutina</p>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
-          onClick={() => { navigate("/cardio-routines"); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
-        >
-          <ClipboardList className="h-6 w-6 shrink-0 text-cyan-500" />
-          <div className="min-w-0">
-            <p className="font-medium">Rutina de Cardio</p>
-            <p className="text-xs text-muted-foreground">Crea y lanza plantillas cardio</p>
-          </div>
-        </button>
-        <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
           onClick={() => { openNew(); setIsMenuOpen(false); }}
         >
           <Activity className="h-6 w-6 shrink-0 text-primary" />
@@ -210,17 +102,7 @@ export function BottomNav() {
         </button>
         <button
           className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
-          onClick={() => { navigate("/routines?tab=ejercicios", { state: { action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
-        >
-          <Dumbbell className="h-6 w-6 shrink-0 text-orange-500" />
-          <div className="min-w-0">
-            <p className="font-medium">Ejercicio</p>
-            <p className="text-xs text-muted-foreground">Añade un ejercicio a tu biblioteca</p>
-          </div>
-        </button>
-        <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
-          onClick={() => { navigate("/evolution", { state: { tab: "measurements", action: "new" } }); setIsMenuOpen(false); setShowRoutineSubmenu(false); }}
+          onClick={() => { navigate("/evolution", { state: { tab: "measurements", action: "new" } }); setIsMenuOpen(false); }}
         >
           <Scale className="h-6 w-6 shrink-0 text-emerald-500" />
           <div className="min-w-0">
@@ -230,7 +112,6 @@ export function BottomNav() {
         </button>
       </div>
 
-      <PredefinedRoutinesExplorer open={explorerOpen} onOpenChange={setExplorerOpen} />
       <CardioTypePickerDialog
         open={cardioTypeDialogOpen}
         onOpenChange={setCardioTypeDialogOpen}
@@ -259,11 +140,6 @@ export function BottomNav() {
           openNewWithDiscipline(disciplineId);
           setCardioTypeDialogOpen(false);
         }}
-      />
-      <GenerateRoutineDialog
-        open={premiumDialogOpen}
-        onOpenChange={setPremiumDialogOpen}
-        onApplyPlan={() => navigate("/", { state: { openPlanWizard: true } })}
       />
 
       {/* BARRA DE NAVEGACIÓN */}

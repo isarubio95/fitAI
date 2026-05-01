@@ -121,7 +121,7 @@ const Routines = () => {
 
   useEffect(() => {
     if (typeof document === "undefined") return;
-    setHeaderActionsSlot(document.getElementById("header-actions-slot"));
+    setHeaderActionsSlot(document.getElementById("section-pills-actions-slot"));
   }, []);
 
   const isDragMode = sortMode === "custom";
@@ -261,52 +261,59 @@ const Routines = () => {
   return (
     <div className="w-full min-w-0 pt-3 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
       {headerActionsSlot &&
-        routines?.length &&
         createPortal(
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
-                title={`Orden: ${sortLabel()}`}
-                aria-label={`Ordenar rutinas, actual: ${sortLabel()}`}
-              >
-                <ArrowUpDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-popover">
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <Calendar className="h-3.5 w-3.5" /> Fecha
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => selectSort("date", "desc")}>
-                Más recientes {sortMode === "date" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => selectSort("date", "asc")}>
-                Más antiguas {sortMode === "date" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="new" onClick={openCreate} title="Crear rutina" aria-label="Nueva rutina">
+              <span className="whitespace-nowrap">Crear</span>
+              <Plus className="shrink-0" />
+            </Button>
+            {!!routines?.length && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
+                    title={`Orden: ${sortLabel()}`}
+                    aria-label={`Ordenar rutinas, actual: ${sortLabel()}`}
+                  >
+                    <ArrowUpDown />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-popover">
+                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                    <Calendar className="h-3.5 w-3.5" /> Fecha
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => selectSort("date", "desc")}>
+                    Más recientes {sortMode === "date" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => selectSort("date", "asc")}>
+                    Más antiguas {sortMode === "date" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
 
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <ArrowDownAZ className="h-3.5 w-3.5" /> Nombre
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => selectSort("name", "asc")}>
-                A → Z {sortMode === "name" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => selectSort("name", "desc")}>
-                Z → A {sortMode === "name" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                    <ArrowDownAZ className="h-3.5 w-3.5" /> Nombre
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => selectSort("name", "asc")}>
+                    A → Z {sortMode === "name" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => selectSort("name", "desc")}>
+                    Z → A {sortMode === "name" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
 
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <Hand className="h-3.5 w-3.5" /> Personalizado
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => selectSort("custom", "asc")}>
-                Orden manual {sortMode === "custom" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>,
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                    <Hand className="h-3.5 w-3.5" /> Personalizado
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => selectSort("custom", "asc")}>
+                    Orden manual {sortMode === "custom" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>,
           headerActionsSlot
         )}
 

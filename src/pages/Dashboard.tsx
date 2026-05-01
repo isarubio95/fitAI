@@ -371,7 +371,7 @@ const Dashboard = () => {
             <CardHeader className="space-y-3 px-6 pt-8 pb-6">
               <div className="flex w-full flex-row items-center justify-between gap-2">
                 <Button
-                  variant="outline"
+                  variant="new"
                   size="sm"
                   disabled={!plannedKnown}
                   onClick={() => {

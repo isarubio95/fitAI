@@ -39,7 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, SignalMedium, Filter, X } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, SignalMedium, Filter, X, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
@@ -396,7 +396,7 @@ const Exercises = () => {
   }, [filters.q, sortOrder]);
 
   useEffect(() => {
-    setHeaderActionsSlot(document.getElementById("header-actions-slot"));
+    setHeaderActionsSlot(document.getElementById("section-pills-actions-slot"));
   }, []);
 
   // Sincroniza input local cuando la query cambia por navegación/filtros externos.
@@ -502,33 +502,46 @@ const Exercises = () => {
   return (
     <div className="w-full min-w-0 max-w-2xl mx-auto overflow-x-hidden px-0 pb-6 pt-6 space-y-4 md:px-8 md:pb-8">
       {headerActionsSlot &&
-        !!exercises?.length &&
         createPortal(
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
-                title={sortOrder === "asc" ? "Orden: A → Z" : "Orden: Z → A"}
-                aria-label={`Ordenar ejercicios por nombre, ${sortOrder === "asc" ? "A a Z" : "Z a A"}`}
-              >
-                <ArrowUpDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 bg-popover">
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <ArrowDownAZ className="h-3.5 w-3.5" /> Ordenar por nombre
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => setSortOrder("asc")}>
-                A → Z {sortOrder === "asc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortOrder("desc")}>
-                Z → A {sortOrder === "desc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>,
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="new"
+              onClick={() => setCreateOpen(true)}
+              title="Crear ejercicio"
+              aria-label="Nuevo ejercicio"
+            >
+              <span className="whitespace-nowrap">Crear</span>
+              <Plus className="shrink-0" />
+            </Button>
+            {!!exercises?.length && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
+                    title={sortOrder === "asc" ? "Orden: A → Z" : "Orden: Z → A"}
+                    aria-label={`Ordenar ejercicios por nombre, ${sortOrder === "asc" ? "A a Z" : "Z a A"}`}
+                  >
+                    <ArrowUpDown />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44 bg-popover">
+                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                    <ArrowDownAZ className="h-3.5 w-3.5" /> Ordenar por nombre
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setSortOrder("asc")}>
+                    A → Z {sortOrder === "asc" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOrder("desc")}>
+                    Z → A {sortOrder === "desc" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>,
           headerActionsSlot
         )}
 
