@@ -129,25 +129,21 @@ function normalizeSearchKey(s: unknown) {
   return normalizeText(s).replace(/[^a-z0-9]/g, "");
 }
 
-function expandQueryTerms(q: string): string[] {
-  const nq = normalizeText(q);
-  if (!nq) return [];
-
-  const out = new Set([nq]);
-  // Añade sinónimos por presencia de frase clave
+/** Si la consulta contiene una clave de sinónimos, comprueba frases alternativas completas (no tokens sueltos). */
+function synonymPhraseMatches(hayBase: string, hayCompact: string, qRaw: string): boolean {
+  const nq = normalizeText(qRaw);
+  if (!nq) return false;
   for (const [kRaw, syns] of Object.entries(EXERCISE_SYNONYMS)) {
     const k = normalizeText(kRaw);
-    if (!k) continue;
-    if (nq.includes(k)) {
-      for (const s of syns) out.add(normalizeText(s));
+    if (!k || !nq.includes(k)) continue;
+    for (const s of syns) {
+      const sn = normalizeText(s);
+      if (!sn) continue;
+      const sk = normalizeSearchKey(sn);
+      if (hayBase.includes(sn) || (sk.length > 0 && hayCompact.includes(sk))) return true;
     }
   }
-
-  // Añade tokens individuales (para que \"press banca\" funcione incluso si no hay frase exacta)
-  for (const term of [...out]) {
-    for (const token of term.split(" ")) out.add(token);
-  }
-  return [...out].filter(Boolean);
+  return false;
 }
 
 /** Devuelve el grupo principal del primer músculo en body_part, o null */
@@ -337,7 +333,6 @@ const Exercises = () => {
   const filteredExercises = useMemo(() => {
     const q = normalizeText(filters.q);
     const qCompact = normalizeSearchKey(filters.q);
-    const qTerms = expandQueryTerms(filters.q);
     const qTokens = q.split(" ").filter(Boolean);
 
     return sortedExercises.filter((ex: any) => {
@@ -371,11 +366,8 @@ const Exercises = () => {
           const tk = normalizeSearchKey(t);
           return hayBase.includes(t) || (tk.length > 0 && hayCompact.includes(tk));
         });
-        const synonymMatch = qTerms.some((t) => {
-          const tk = normalizeSearchKey(t);
-          return hayBase.includes(t) || (tk.length > 0 && hayCompact.includes(tk));
-        });
-        const ok = phraseMatch || tokensMatch || synonymMatch;
+        const synonymOk = synonymPhraseMatches(hayBase, hayCompact, filters.q);
+        const ok = phraseMatch || tokensMatch || synonymOk;
         if (!ok) return false;
       }
 
@@ -399,12 +391,12 @@ const Exercises = () => {
     setHeaderActionsSlot(document.getElementById("section-pills-actions-slot"));
   }, []);
 
-  // Sincroniza input local cuando la query cambia por navegación/filtros externos.
+  // Sincroniza el input solo cuando `q` en la URL cambia (atrás/adelante, enlaces, etc.).
+  // No incluir `searchInput` en las dependencias: mientras tecleas, la URL va con debounce
+  // y `filters.q` sigue desactualizado; resetear aquí borraba el texto al instante.
   useEffect(() => {
-    if (filters.q !== searchInput) {
-      setSearchInput(filters.q);
-    }
-  }, [filters.q, searchInput]);
+    setSearchInput(filters.q);
+  }, [filters.q]);
 
   // Evita glitches al teclear: actualiza URL con pequeño debounce.
   useEffect(() => {

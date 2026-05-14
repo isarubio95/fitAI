@@ -21,7 +21,18 @@ import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Dumbbell, ArrowUpDown, Calendar, ArrowDownAZ, Hand, Check } from "lucide-react";
+import {
+  Plus,
+  Dumbbell,
+  ArrowUpDown,
+  Calendar,
+  ArrowDownAZ,
+  Hand,
+  Check,
+  PenLine,
+  Sparkles,
+  FileSpreadsheet,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +44,14 @@ import {
 import { RoutineForm } from "@/components/routine/RoutineForm";
 import { SortableRoutineCard } from "@/components/routine/SortableRoutineCard";
 import { ImportRoutineFromCsvDialog } from "@/components/routine/ImportRoutineFromCsvDialog";
+import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { RutinaWithDetails } from "@/types/routine";
 import {
@@ -96,6 +115,8 @@ const Routines = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [importCsvOpen, setImportCsvOpen] = useState(false);
+  const [createChoiceOpen, setCreateChoiceOpen] = useState(false);
+  const [predefinedExplorerOpen, setPredefinedExplorerOpen] = useState(false);
 
   const [sortMode, setSortMode] = useState<SortMode>(() => loadRoutinesSortPreference().sortMode);
   const [sortDir, setSortDir] = useState<SortDir>(() => loadRoutinesSortPreference().sortDir);
@@ -179,9 +200,29 @@ const Routines = () => {
     updateOrder.mutate(updates);
   };
 
-  const openCreate = () => {
-    setEditId(null);
-    setFormOpen(true);
+  const openCreateChoice = () => {
+    setCreateChoiceOpen(true);
+  };
+
+  /** Evita solapar dos modales Radix al cerrar uno y abrir otro. */
+  const afterCloseChoice = (fn: () => void) => {
+    setCreateChoiceOpen(false);
+    window.setTimeout(fn, 0);
+  };
+
+  const chooseDesdeCero = () => {
+    afterCloseChoice(() => {
+      setEditId(null);
+      setFormOpen(true);
+    });
+  };
+
+  const choosePredefined = () => {
+    afterCloseChoice(() => setPredefinedExplorerOpen(true));
+  };
+
+  const chooseImportCsv = () => {
+    afterCloseChoice(() => setImportCsvOpen(true));
   };
 
   const openEdit = (id: string) => {
@@ -263,7 +304,13 @@ const Routines = () => {
       {headerActionsSlot &&
         createPortal(
           <div className="flex items-center gap-2">
-            <Button type="button" variant="new" onClick={openCreate} title="Crear rutina" aria-label="Nueva rutina">
+            <Button
+              type="button"
+              variant="new"
+              onClick={openCreateChoice}
+              title="Crear rutina"
+              aria-label="Nueva rutina"
+            >
               <span className="whitespace-nowrap">Crear</span>
               <Plus className="shrink-0" />
             </Button>
@@ -327,7 +374,7 @@ const Routines = () => {
         <div className="space-y-3 px-6 py-12 text-center md:px-0">
           <Dumbbell className="h-12 w-12 mx-auto text-muted-foreground/50" />
           <p className="text-sm text-muted-foreground">Aún no tienes rutinas creadas.</p>
-          <Button onClick={openCreate}>
+          <Button onClick={openCreateChoice}>
             <Plus className="h-4 w-4 mr-2" /> Crear Rutina
           </Button>
         </div>
@@ -350,6 +397,45 @@ const Routines = () => {
         </DndContext>
       )}
 
+      <Dialog open={createChoiceOpen} onOpenChange={setCreateChoiceOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nueva rutina</DialogTitle>
+            <DialogDescription>Elige cómo quieres crearla.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-3 py-3 px-4 text-left"
+              onClick={chooseDesdeCero}
+            >
+              <PenLine className="h-5 w-5 shrink-0 text-primary" />
+              <span className="font-medium leading-snug">Desde cero</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-3 py-3 px-4 text-left"
+              onClick={choosePredefined}
+            >
+              <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+              <span className="font-medium leading-snug">Rutinas predefinidas</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-3 py-3 px-4 text-left"
+              onClick={chooseImportCsv}
+            >
+              <FileSpreadsheet className="h-5 w-5 shrink-0 text-primary" />
+              <span className="font-medium leading-snug">Importar desde CSV</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <PredefinedRoutinesExplorer open={predefinedExplorerOpen} onOpenChange={setPredefinedExplorerOpen} />
       <RoutineForm open={formOpen} onOpenChange={setFormOpen} routineId={editId} />
       <ImportRoutineFromCsvDialog open={importCsvOpen} onOpenChange={setImportCsvOpen} />
 

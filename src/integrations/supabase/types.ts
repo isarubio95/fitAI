@@ -832,10 +832,8 @@ export type Database = {
         Row: {
           musculos_involucrados: string[] | null
           created_at: string
-          descripcion: string | null
           dificultad: string | null
           equipment: string | null
-          external_id: string | null
           gif_url: string | null
           grupo_muscular: string | null
           id: string
@@ -848,10 +846,8 @@ export type Database = {
         Insert: {
           musculos_involucrados?: string[] | null
           created_at?: string
-          descripcion?: string | null
           dificultad?: string | null
           equipment?: string | null
-          external_id?: string | null
           gif_url?: string | null
           grupo_muscular?: string | null
           id?: string
@@ -864,10 +860,8 @@ export type Database = {
         Update: {
           musculos_involucrados?: string[] | null
           created_at?: string
-          descripcion?: string | null
           dificultad?: string | null
           equipment?: string | null
-          external_id?: string | null
           gif_url?: string | null
           grupo_muscular?: string | null
           id?: string
