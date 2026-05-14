@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, type ComponentProps } from "react";
 import { formatMSS, parseMSS } from "@/hooks/useRestTimer";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -22,6 +22,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 import { useRoutineById } from "@/hooks/useRoutines";
+import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
+import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +40,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Loader2, GripVertical, Link, Unlink } from "lucide-react";
+import { Trash2, Loader2, GripVertical, Link, Unlink, Info } from "lucide-react";
+import { badgeVariants } from "@/components/ui/badge";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import type { RoutineExerciseFormData } from "@/types/routine";
@@ -85,6 +88,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   const queryClient = useQueryClient();
   
   const { data: existingRoutine } = useRoutineById(routineId);
+  const { data: exerciseCatalog } = useExerciseCatalog();
 
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -92,6 +96,9 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   const [ejercicios, setEjercicios] = useState<RoutineExerciseFormData[]>([]);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedExerciseDetail, setSelectedExerciseDetail] = useState<
+    ComponentProps<typeof ExerciseDetailSheet>["exercise"]
+  >(null);
 
   // When linking a superset, we store the index + generated superset_id
   const [supersetLink, setSupersetLink] = useState<{ afterIndex: number; supersetId: string } | null>(null);
@@ -341,7 +348,19 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
   const groups = groupExercises(ejercicios);
 
+  const handleViewExerciseInfo = useCallback(
+    (ej: RoutineExerciseFormData) => {
+      const catalogId = ej.tipo_ejercicio_id ?? ej.usuario_ejercicio_id;
+      if (!catalogId || !exerciseCatalog?.length) return;
+      const found = exerciseCatalog.find((t) => t.id === catalogId);
+      if (!found) return;
+      setSelectedExerciseDetail(found as ComponentProps<typeof ExerciseDetailSheet>["exercise"]);
+    },
+    [exerciseCatalog]
+  );
+
   return (
+    <>
     <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
       <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0">
         <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -435,6 +454,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                               onLinkSuperset={startSupersetLink}
                               onBreakSuperset={breakSuperset}
                               isInSuperset
+                              onViewExerciseInfo={handleViewExerciseInfo}
                             />
                           ))}
                         </div>
@@ -454,6 +474,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                       onLinkSuperset={startSupersetLink}
                       onBreakSuperset={breakSuperset}
                       isInSuperset={false}
+                      onViewExerciseInfo={handleViewExerciseInfo}
                     />
                   );
                 })}
@@ -470,6 +491,16 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
         </div>
       </DrawerContent>
     </Drawer>
+
+    <ExerciseDetailSheet
+      exercise={selectedExerciseDetail}
+      open={!!selectedExerciseDetail}
+      onOpenChange={(o) => {
+        if (!o) setSelectedExerciseDetail(null);
+      }}
+      currentUserId={user?.id}
+    />
+    </>
   );
 }
 
@@ -487,6 +518,7 @@ function SortableExerciseRow({ sortId, ...props }: {
   onLinkSuperset: (index: number) => void;
   onBreakSuperset: (index: number) => void;
   isInSuperset: boolean;
+  onViewExerciseInfo: (ej: RoutineExerciseFormData) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging, isSorting } = useSortable({ id: sortId });
   const shouldAnimate = isSorting && !isDragging;
@@ -513,6 +545,7 @@ function ExerciseRow({
   onBreakSuperset,
   isInSuperset,
   dragHandleProps,
+  onViewExerciseInfo,
 }: {
   exercise: RoutineExerciseFormData;
   index: number;
@@ -526,6 +559,7 @@ function ExerciseRow({
   onBreakSuperset: (index: number) => void;
   isInSuperset: boolean;
   dragHandleProps?: Record<string, any>;
+  onViewExerciseInfo: (ej: RoutineExerciseFormData) => void;
 }) {
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
   const wrapperClass = isInSuperset
@@ -535,11 +569,25 @@ function ExerciseRow({
   return (
     <div className={wrapperClass}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing shrink-0">
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
-          <h3 className="font-semibold text-sm">{ej.nombre}</h3>
+          <h3 className="font-semibold text-sm truncate">{ej.nombre}</h3>
+          {(ej.tipo_ejercicio_id || ej.usuario_ejercicio_id) && (
+            <button
+              type="button"
+              title="Ver cómo se hace este ejercicio"
+              onClick={() => onViewExerciseInfo(ej)}
+              className={cn(
+                badgeVariants({ variant: "outline" }),
+                "h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              )}
+            >
+              <Info className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-0.5">
           {isInSuperset ? (
