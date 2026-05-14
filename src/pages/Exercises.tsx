@@ -757,23 +757,25 @@ const Exercises = () => {
                 >
                   <DifficultyBarsMono level={3} active={filters.difs.includes(3)} />
                 </Button>
-
-                {anyFilterActive && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0 gap-2 text-muted-foreground hover:text-foreground"
-                    onClick={() => {
-                      const cleared: ExerciseFilters = { q: "", tipos: [], grupos: [], equipments: [], difs: [] };
-                      setSearchParams(serializeFiltersToSearchParams(searchParams, cleared), { replace: true });
-                    }}
-                  >
-                    <X className="h-4 w-4" /> Limpiar
-                  </Button>
-                )}
               </div>
             </div>
+
+            {anyFilterActive && (
+              <div className="flex w-full min-w-0 justify-start">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    const cleared: ExerciseFilters = { q: "", tipos: [], grupos: [], equipments: [], difs: [] };
+                    setSearchParams(serializeFiltersToSearchParams(searchParams, cleared), { replace: true });
+                  }}
+                >
+                  <X className="h-4 w-4" /> Limpiar
+                </Button>
+              </div>
+            )}
 
           {/* Chips de filtros activos */}
           {anyFilterActive && (
