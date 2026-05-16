@@ -265,9 +265,13 @@ const Routines = () => {
         createPortal(
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <ArrowUpDown className="h-4 w-4" />
-                <span className="hidden sm:inline">{sortLabel()}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
+                aria-label={`Ordenar: ${sortLabel()}`}
+              >
+                <ArrowUpDown className="text-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-popover">

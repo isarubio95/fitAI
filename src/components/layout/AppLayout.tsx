@@ -47,7 +47,7 @@ export function AppLayout() {
   const currentTab = searchParams.get("tab") || "";
   const pageTitle =
     location.pathname === "/"
-      ? "TrackGym"
+      ? "Inicio"
       : location.pathname === "/evolution"
         ? "Evolución"
         : location.pathname === "/routines"
@@ -127,38 +127,40 @@ export function AppLayout() {
       <GlobalCardioDrawerProvider>
         <InAppNotificationsProvider>
       <ProfileDrawerProvider>
-      <div className="flex min-h-screen bg-background">
-        <DesktopSidebar />
-        <div className="flex-1 flex flex-col">
-          {/* Mobile header — fijo siempre visible */}
-          <header className="fixed left-0 right-0 top-0 z-40 w-full bg-background px-4 py-2 dark:bg-zinc-950/40 dark:backdrop-blur-xl">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 flex-1 flex-col">
-                <div className="flex min-w-0 items-center gap-2">
-                  <h1 className="truncate text-lg font-semibold md:text-xl">{pageTitle}</h1>
-                </div>
-
+      <div className="flex min-h-screen flex-col bg-background">
+        <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-stretch border-b border-border bg-background">
+          <div className="hidden w-64 shrink-0 md:block" aria-hidden />
+          <div className="flex min-w-0 flex-1 justify-center px-5 md:px-4">
+            <div className="flex w-full min-w-0 max-w-4xl items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-col justify-center overflow-hidden">
+                <h1 className="truncate text-lg font-semibold md:text-xl">
+                  {pageTitle}
+                </h1>
                 <p
-                  className={cn(
-                    "text-xs leading-tight text-muted-foreground transition-all duration-300",
-                    showHeaderPills && areHeaderPillsCollapsed
-                      ? "max-h-6 translate-y-0 opacity-100 mt-0.5"
-                      : "max-h-0 -translate-y-1 opacity-0"
-                  )}
-                >
-                  {activeSubsectionLabel}
+                className={cn(
+                  "text-xs leading-tight text-muted-foreground transition-all duration-300",
+                  showHeaderPills && areHeaderPillsCollapsed
+                    ? "max-h-6 translate-y-0 opacity-100 mt-0.5"
+                    : "max-h-0 -translate-y-1 opacity-0"
+                )}
+              >
+                {activeSubsectionLabel}
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center justify-end gap-1">
-                <div id="header-actions-slot" className="flex items-center gap-2" />
-                {showNotificationsBell && <InAppNotificationsBell />}
-                <SettingsDrawer />
-                <ProfileDrawerTrigger />
+              <div className="flex shrink-0 items-center justify-end gap-2 md:gap-3">
+              <div id="header-actions-slot" className="flex items-center gap-3 md:gap-4" />
+              {showNotificationsBell && <InAppNotificationsBell />}
+              <SettingsDrawer />
+              <ProfileDrawerTrigger />
               </div>
             </div>
-          </header>
+          </div>
+        </header>
 
+        <div className="flex min-h-0 flex-1 pt-14">
+          <DesktopSidebar />
+          <div className="flex min-w-0 flex-1 flex-col md:ml-64">
           {location.pathname === "/evolution" && (
             <div
               className={cn(
@@ -236,12 +238,12 @@ export function AppLayout() {
           )}
 
           <main className={cn(
-            "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 md:pb-0 md:pt-14",
-            showHeaderPills && !areHeaderPillsCollapsed ? "pt-26" : "pt-12"
+            "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 md:pb-0 md:pt-6",
+            showHeaderPills && !areHeaderPillsCollapsed ? "pt-12" : ""
           )}>
-            {/* Navegación por gestos desactivada: usamos solo el contenido de rutas directamente */}
             <Outlet />
           </main>
+          </div>
         </div>
         <ActiveWorkoutPill />
         <ActiveCardioPill />

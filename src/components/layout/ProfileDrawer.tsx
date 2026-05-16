@@ -100,7 +100,7 @@ export function ProfileDrawerTrigger() {
       onClick={openMyProfile}
       className="flex items-center justify-center rounded-full pl-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <Avatar className="h-8 w-8">
+      <Avatar className="h-6.5 w-6.5">
         {avatar.src && <AvatarImage src={avatar.src} alt="" onError={avatar.onError} />}
         <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
           {initials}

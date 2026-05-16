@@ -639,14 +639,13 @@ const Dashboard = () => {
       {headerActionsSlot &&
         createPortal(
           <Button
-            variant={isDragMode ? "default" : "outline"}
-            size="sm"
+            variant={isDragMode ? "default" : "ghost"}
+            size="icon"
             onClick={() => setIsDragMode(!isDragMode)}
-            title={isDragMode ? "Salir del modo ordenar" : "Ordenar widgets del inicio"}
-            className={cn("transition-all", isDragMode && "gap-2")}
+            className="h-11 w-11 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
+            aria-label={isDragMode ? "Salir del modo ordenar" : "Ordenar widgets del inicio"}
           >
-            <ArrowUpDown className="h-4 w-4" />
-            {isDragMode ? <span>Hecho</span> : null}
+            <ArrowUpDown />
           </Button>,
           headerActionsSlot
         )}
