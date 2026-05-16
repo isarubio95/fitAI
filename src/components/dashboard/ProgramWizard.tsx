@@ -220,19 +220,19 @@ export function ProgramWizard({
       }}
     >
       <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] rounded-t-2xl p-0 flex flex-col overflow-hidden">
-        <DrawerHeader className="p-5 pb-3 border-b border-border">
+        <DrawerHeader className="border-b border-border bg-card">
           <DrawerTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Hoja de Ruta
           </DrawerTitle>
-          <p className="text-sm text-foreground/75">
+          <p className="text-sm text-left text-foreground/75">
             Planifica tus rutinas por días de la semana.
           </p>
         </DrawerHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-20">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-20 bg-card">
           {/* Stepper */}
-          <div className="mb-6 flex items-center gap-2 text-xs">
+          <div className="mb-6 mt-1 flex justify-center items-center gap-2 text-xs">
             <span className={`px-2 py-1 rounded-full ${step === 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>1</span>
             <span className="text-foreground/70">Rutina por día</span>
             <span className="text-foreground/60">→</span>
@@ -262,7 +262,7 @@ export function ProgramWizard({
                     <div key={d.key} className="flex items-center gap-3">
                       <span
                         className={`w-8 shrink-0 text-sm font-medium ${
-                          isNoneSelected ? "text-muted-foreground" : "text-foreground/80"
+                          isNoneSelected ? "text-muted-foreground" : "text-accent font-semibold"
                         }`}
                       >
                         {d.label}
@@ -373,7 +373,7 @@ export function ProgramWizard({
 
             {step < 2 ? (
               <Button
-                className="disabled:opacity-100 disabled:bg-muted/70 disabled:text-muted-foreground dark:disabled:bg-muted/40"
+                className="disabled:opacity-100 disabled:border-border disabled:bg-muted/70 disabled:text-muted-foreground disabled:shadow-none dark:disabled:bg-muted/40"
                 disabled={!canNext || isBusy || isStepTransitioning}
                 onClick={() => goToStep(2)}
               >

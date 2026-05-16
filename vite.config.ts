@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/],
       },
       manifest: {
-        name: 'TrackGym',
-        short_name: 'TrackGym',
-        description: 'TrackGym - Tu compañero de entrenamiento',
+        name: 'FitAI',
+        short_name: 'FitAI',
+        description: 'FitAI - Tu compañero de entrenamiento',
         theme_color: '#09090b',
         background_color: '#22c55e',
         display: 'standalone',

@@ -38,7 +38,7 @@ export function SettingsDrawer() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-11 w-11 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
+          className="h-11 w-11 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
           aria-label="Ajustes"
         >
           <Settings />

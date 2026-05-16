@@ -1,91 +1,10 @@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import { startOfMonth, endOfMonth, startOfWeek, startOfDay, endOfDay } from "date-fns";
+import { startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
 import { type ActividadWithDetails, type EjercicioWithDetails, setHasWork } from "@/types/workout";
 import { useRemoveWorkoutXP } from "@/hooks/useGamification";
 import { useToast } from "@/hooks/use-toast";
-
-export function useLastWorkout() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["lastWorkout", user?.id],
-    enabled: !!user,
-    queryFn: async (): Promise<ActividadWithDetails | null> => {
-      const { data: actividad, error } = await supabase
-        .from("actividad")
-        .select("*")
-        .eq("usuario_id", user!.id)
-        .order("fecha", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!actividad) return null;
-
-      const { data: ejercicios, error: ejError } = await supabase
-        .from("ejercicio")
-        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
-        .eq("actividad_id", actividad.id);
-
-      if (ejError) throw ejError;
-
-      const ejercicioIds = (ejercicios || []).map((e) => e.id);
-      let series: any[] = [];
-      if (ejercicioIds.length > 0) {
-        const { data, error: sError } = await supabase
-          .from("serie")
-          .select("*")
-          .in("ejercicio_id", ejercicioIds);
-        if (sError) throw sError;
-        series = data || [];
-      }
-
-      const ejerciciosWithDetails: EjercicioWithDetails[] = (ejercicios || []).map((ej) => ({
-        ...ej,
-        tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
-        series: series.filter((s) => s.ejercicio_id === ej.id),
-      }));
-
-      return { ...actividad, ejercicios: ejerciciosWithDetails };
-    },
-  });
-}
-
-export function useWeeklyWorkouts() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["weeklyWorkouts", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const now = new Date();
-      
-      const startOfCurrentWeek = startOfWeek(now, { weekStartsOn: 1 });
-
-      const { data, error } = await supabase
-        .from("actividad")
-        .select("fecha")
-        .eq("usuario_id", user!.id)
-        .gte("fecha", startOfCurrentWeek.toISOString());
-
-      if (error) throw error;
-
-      const days = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-      
-      const counts = days.map((name, index) => {
-        
-        const targetDay = index === 6 ? 0 : index + 1;
-        
-        return {
-          name,
-          workouts: (data || []).filter((a) => new Date(a.fecha).getDay() === targetDay).length,
-        };
-      });
-
-      return counts;
-    },
-  });
-}
 
 export function useMonthWorkoutDates(month: Date) {
   const { user } = useAuth();

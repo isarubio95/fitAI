@@ -247,8 +247,10 @@ export function CardioLogger() {
           tipo_bici: cyclingTipoBici.trim() || null,
         },
       };
-    } else if (code) {
-      sport_detail = { disciplina_codigo: code as CardioDisciplineCode };
+    } else if (code && code !== "running" && code !== "cycling") {
+      sport_detail = {
+        disciplina_codigo: code as Exclude<CardioDisciplineCode, "running" | "cycling">,
+      };
     }
 
     let track: CardioTrackInput | null = null;

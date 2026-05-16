@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMeasurements, type Medida } from "@/hooks/useMeasurements";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +24,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   Scale, TrendingUp, TrendingDown, CalendarIcon,
-  ChevronDown, ChevronUp, Trash2,
+  ChevronDown, ChevronUp, Trash2, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +52,7 @@ const Measurements = () => {
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     if (location.state?.action === "new") {
@@ -58,6 +60,11 @@ const Measurements = () => {
       navigate(location.pathname, { replace: true, state: { tab: location.state?.tab } });
     }
   }, [location.state]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setHeaderActionsSlot(document.getElementById("section-pills-actions-slot"));
+  }, []);
 
   // ── Form state ──
   const [formDate, setFormDate] = useState<Date>(new Date());
@@ -110,6 +117,20 @@ const Measurements = () => {
 
   return (
     <div className="w-full min-w-0 p-4 md:p-8 pt-6 max-w-2xl mx-auto pb-28">
+      {headerActionsSlot &&
+        createPortal(
+          <Button
+            type="button"
+            variant="new"
+            onClick={() => setSheetOpen(true)}
+            title="Registrar medida"
+            aria-label="Nueva medida"
+          >
+            <span className="whitespace-nowrap">Nueva</span>
+            <Plus className="shrink-0" />
+          </Button>,
+          headerActionsSlot
+        )}
       <header>
         <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
           <DrawerContent side="bottom" className="max-h-[85lvh] overflow-y-auto">

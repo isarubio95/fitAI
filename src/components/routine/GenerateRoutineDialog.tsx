@@ -272,8 +272,7 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
     >
       <DrawerContent className="max-w-3xl p-0 overflow-hidden">
         <div className="flex h-[92lvh] max-h-[92lvh] flex-col">
-          <div className="flex-1 overflow-y-auto p-6">
-            <DrawerHeader>
+          <DrawerHeader className="shrink-0 px-6 pb-2 pt-4 text-left sm:text-left">
             <DrawerTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-violet-500" />
               Generar plan de entrenamiento
@@ -281,8 +280,9 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
             <DrawerDescription>
               Completa tu perfil de entrenamiento para crear una hoja de ruta personalizada con IA.
             </DrawerDescription>
-            </DrawerHeader>
+          </DrawerHeader>
 
+          <div className="min-h-0 flex-1 overflow-y-auto p-6 pt-0">
             <div className="mt-5 grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Edad</Label>

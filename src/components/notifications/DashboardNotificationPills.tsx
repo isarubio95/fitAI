@@ -24,7 +24,7 @@ function Pill({ item, onDismiss }: { item: InAppNotificationItem; onDismiss: (id
             item.dismissable ? (
               <button
                 type="button"
-                className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-background/80 hover:text-foreground"
+                className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground [&_svg]:opacity-80 hover:[&_svg]:opacity-100"
                 aria-label="Descartar"
                 onClick={() => onDismiss(item.id)}
               >
@@ -63,7 +63,7 @@ function Pill({ item, onDismiss }: { item: InAppNotificationItem; onDismiss: (id
         {item.dismissable ? (
           <button
             type="button"
-            className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-background/80 hover:text-foreground"
+            className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground [&_svg]:opacity-80 hover:[&_svg]:opacity-100"
             aria-label="Descartar"
             onClick={() => onDismiss(item.id)}
           >

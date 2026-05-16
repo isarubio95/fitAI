@@ -61,7 +61,7 @@ const Auth = () => {
         if (error) throw error;
         toast({
           title: "¡Comprueba tu correo!",
-          description: "Si este email no está registrado, te hemos enviado un enlace mágico. Si ya tienes cuenta, por favor inicia sesión.",
+          description: "Si este email no está registrado, te hemos enviado un enlace. Si ya tienes cuenta, por favor inicia sesión.",
         });
       }
     } catch (error: any) {
@@ -76,9 +76,9 @@ const Auth = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <img src="/logo.svg" alt="TrackGym" className="mx-auto mb-2 h-14 w-14 rounded-xl" />
+          <img src="/logo.svg" alt="FitAI" className="mx-auto mb-2 h-14 w-14 rounded-xl" />
           <CardTitle asChild className="text-2xl font-bold">
-            <h1>TrackGym</h1>
+            <h1>FitAI</h1>
           </CardTitle>
           <CardDescription>
             {isLogin ? "Inicia sesión para continuar" : "Crea tu cuenta"}

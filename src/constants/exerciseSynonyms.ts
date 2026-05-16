@@ -11,6 +11,7 @@ export const EXERCISE_SYNONYMS: Record<string, string[]> = {
   "remo con barra": ["barbell row", "bent over row", "remo inclinado"],
   "peso muerto": ["deadlift"],
   sentadilla: ["squat"],
+  "sentadilla hack": ["hack squat", "Hack Squat", "hack squat machine", "sled hack squat"],
   "curl biceps": ["biceps curl", "curl de biceps"],
   "elevacion lateral": ["lateral raise", "elevaciones laterales"],
   plancha: ["plank"],

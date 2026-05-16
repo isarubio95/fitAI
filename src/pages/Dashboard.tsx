@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useLastWorkout, useWeeklyWorkouts, useMonthWorkouts, useMonthWorkoutDates } from "@/hooks/useWorkouts";
+import { useMonthWorkouts, useMonthWorkoutDates } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useMonthCardioSessionDates, useMonthCardioSessions } from "@/hooks/useCardioSessions";
@@ -10,18 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Dumbbell, Calendar as CalendarIcon, Hash, Pencil, ArrowUpDown, GripHorizontal } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
+import { Plus, Calendar as CalendarIcon, Pencil, ArrowUpDown, GripHorizontal, Check } from "lucide-react";
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
 import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
+import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
 import { DashboardNotificationPills } from "@/components/notifications/DashboardNotificationPills";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashboard/ProgramWizard";
 import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears } from "date-fns";
-import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { usePlannedRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
@@ -63,7 +62,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { AnimatePresence, motion } from "framer-motion";
 
-const DEFAULT_WIDGET_ORDER = ['gamification', 'heatmap', 'progress', 'weekly-chart', 'calendar', 'last-workout'];
+const DEFAULT_WIDGET_ORDER = ['gamification', 'heatmap', 'progress', 'training-load', 'calendar'];
 
 const CALENDAR_VIEW_STORAGE_KEY = "gym-log.dashboard.calendar-view";
 
@@ -196,8 +195,6 @@ const Dashboard = () => {
   const [workoutDetailsOpen, setWorkoutDetailsOpen] = useState(false);
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
 
-  const { data: lastWorkout, isLoading: loadingLast } = useLastWorkout();
-  const { data: weeklyData, isLoading: loadingWeekly } = useWeeklyWorkouts();
   const { data: monthWorkouts } = useMonthWorkouts(calendarMonth);
   const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
   const { data: monthCardioSessions } = useMonthCardioSessions(calendarMonth);
@@ -226,11 +223,6 @@ const Dashboard = () => {
     if (typeof document === "undefined") return;
     setHeaderActionsSlot(document.getElementById("header-actions-slot"));
   }, []);
-
-  const totalSets = lastWorkout?.ejercicios.reduce(
-    (acc, ej) => acc + ej.series.length,
-    0
-  ) ?? 0;
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
@@ -371,54 +363,16 @@ const Dashboard = () => {
         return <BodyHeatmap />;
       case 'progress':
         return <ExerciseProgressWidget />;
-      case 'weekly-chart':
-        return (
-          <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-            <CardHeader className="px-6 pt-8 pb-2">
-              <CardTitle asChild className="text-base">
-                <h2>Consistencia Semanal</h2>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-6 pb-8 pt-0">
-              {loadingWeekly ? (
-                <Skeleton className="h-32 w-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height={130}>
-                  <BarChart data={weeklyData} barCategoryGap="20%">
-                    <XAxis
-                      dataKey="name"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                    />
-                    <YAxis hide allowDecimals={false} />
-                    <Bar dataKey="workouts" radius={[6, 6, 0, 0]} maxBarSize={32}>
-                      {weeklyData?.map((entry, i) => (
-                        <Cell
-                          key={i}
-                          fill={
-                            entry.workouts > 0
-                              ? "hsl(var(--primary))"
-                              : "hsl(var(--muted))"
-                          }
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-        );
+      case 'training-load':
+        return <TrainingLoadWidget />;
       case 'calendar':
         return (
           <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
             <CardHeader className="space-y-3 px-6 pt-8 pb-6">
               <div className="flex w-full flex-row items-center justify-between gap-2">
                 <Button
-                  variant="outline"
+                  variant="new"
                   size="sm"
-                  className="shrink-0 gap-2 bg-card border-border hover:bg-card/80"
                   disabled={!plannedKnown}
                   onClick={() => {
                     if (!plannedKnown) return;
@@ -587,48 +541,6 @@ const Dashboard = () => {
             </AlertDialog>
           </Card>
         );
-      case 'last-workout':
-        return (
-          <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
-            <CardHeader className="px-6 pt-8 pb-2">
-              <CardTitle asChild className="text-base">
-                <h2>Último Entrenamiento</h2>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-6 pb-8 pt-0">
-              {loadingLast ? (
-                <Skeleton className="h-20 w-full" />
-              ) : lastWorkout ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold text-lg">{lastWorkout.titulo}</p>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(lastWorkout.id)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                      <CalendarIcon className="h-4 w-4" />
-                      {format(new Date(lastWorkout.fecha), "d MMM yyyy", { locale: es })}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Dumbbell className="h-4 w-4" />
-                      {lastWorkout.ejercicios.length} ejercicios
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Hash className="h-4 w-4" />
-                      {totalSets} series
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Aún no has registrado ningún entrenamiento.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        );
       default:
         return null;
     }
@@ -639,6 +551,7 @@ const Dashboard = () => {
       {headerActionsSlot &&
         createPortal(
           <Button
+<<<<<<< HEAD
             variant={isDragMode ? "default" : "ghost"}
             size="icon"
             onClick={() => setIsDragMode(!isDragMode)}
@@ -646,6 +559,21 @@ const Dashboard = () => {
             aria-label={isDragMode ? "Salir del modo ordenar" : "Ordenar widgets del inicio"}
           >
             <ArrowUpDown />
+=======
+            type="button"
+            variant={isDragMode ? "default" : "ghost"}
+            size="icon"
+            onClick={() => setIsDragMode(!isDragMode)}
+            title={isDragMode ? "Salir del modo ordenar" : "Ordenar widgets del inicio"}
+            aria-pressed={isDragMode}
+            className={cn(
+              "h-11 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5",
+              !isDragMode &&
+                "text-muted-foreground hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground",
+            )}
+          >
+            {isDragMode ? <Check /> : <ArrowUpDown />}
+>>>>>>> 1b4d1fa1922781bf04e1d603f02a0d7efad6e70c
           </Button>,
           headerActionsSlot
         )}

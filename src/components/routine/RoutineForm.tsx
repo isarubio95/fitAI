@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, type ComponentProps } from "react";
 import { formatMSS, parseMSS } from "@/hooks/useRestTimer";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -22,6 +22,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 import { useRoutineById } from "@/hooks/useRoutines";
+import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
+import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,11 +40,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Loader2, GripVertical, Link, Unlink } from "lucide-react";
+import { Trash2, Loader2, GripVertical, Link, Unlink, Info } from "lucide-react";
+import { badgeVariants } from "@/components/ui/badge";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import type { RoutineExerciseFormData } from "@/types/routine";
 import { type RegistroSeries, normalizeRegistroSeries } from "@/types/workout";
+import {
+  ROUTINE_ICON_OPTIONS,
+  getRoutineIconKey,
+  setRoutineIconKey,
+  type RoutineIconKey,
+} from "@/lib/routineIcons";
+import { cn } from "@/lib/utils";
 
 interface RoutineFormProps {
   open: boolean;
@@ -78,12 +88,17 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
   const queryClient = useQueryClient();
   
   const { data: existingRoutine } = useRoutineById(routineId);
+  const { data: exerciseCatalog } = useExerciseCatalog();
 
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [icono, setIcono] = useState<RoutineIconKey | null>(null);
   const [ejercicios, setEjercicios] = useState<RoutineExerciseFormData[]>([]);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedExerciseDetail, setSelectedExerciseDetail] = useState<
+    ComponentProps<typeof ExerciseDetailSheet>["exercise"]
+  >(null);
 
   // When linking a superset, we store the index + generated superset_id
   const [supersetLink, setSupersetLink] = useState<{ afterIndex: number; supersetId: string } | null>(null);
@@ -94,6 +109,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
     if (isEdit && existingRoutine && open) {
       setNombre(existingRoutine.nombre);
       setDescripcion(existingRoutine.descripcion || "");
+      setIcono(getRoutineIconKey(existingRoutine.id) ?? null);
       setEjercicios(
         existingRoutine.ejercicios.map((ej) => ({
           tipo_ejercicio_id: (ej as any).tipo_ejercicio_id ?? undefined,
@@ -118,6 +134,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
     if (open && !isEdit) {
       setNombre("");
       setDescripcion("");
+      setIcono(null);
       setEjercicios([]);
       setSupersetLink(null);
     }
@@ -264,6 +281,14 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
       toast({ title: "Completa el formulario", description: "Agrega nombre y al menos un ejercicio.", variant: "destructive" });
       return;
     }
+    if (!icono) {
+      toast({
+        title: "Selecciona un icono",
+        description: "Debes elegir un icono para crear o actualizar la rutina.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -286,6 +311,8 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
         if (error) throw error;
         rutinaId = data.id;
       }
+
+      setRoutineIconKey(rutinaId, icono);
 
       const inserts = ejercicios.map((ej, i) => ({
         rutina_id: rutinaId,
@@ -321,44 +348,86 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
   const groups = groupExercises(ejercicios);
 
-  return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] overflow-y-auto rounded-t-[20px] p-0">
-        <DrawerHeader className="sticky top-0 z-10 bg-card border-b border-border p-4">
-          <div className="flex items-center justify-between">
-            <DrawerTitle className="text-lg">
-              {isEdit ? "Editar Rutina" : "Nueva Rutina"}
-            </DrawerTitle>
-            <Button variant="default" onClick={handleSave} disabled={saving} size="sm">
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEdit ? "Actualizar" : "Guardar"}
-            </Button>
-          </div>
-        </DrawerHeader>
+  const handleViewExerciseInfo = useCallback(
+    (ej: RoutineExerciseFormData) => {
+      const catalogId = ej.tipo_ejercicio_id ?? ej.usuario_ejercicio_id;
+      if (!catalogId || !exerciseCatalog?.length) return;
+      const found = exerciseCatalog.find((t) => t.id === catalogId);
+      if (!found) return;
+      setSelectedExerciseDetail(found as ComponentProps<typeof ExerciseDetailSheet>["exercise"]);
+    },
+    [exerciseCatalog]
+  );
 
-        <div className="p-4 space-y-6">
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="routine-name">Nombre</Label>
-              <Input
-                id="routine-name"
-                placeholder="Ej: Push Day, Pierna A..."
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                className="h-12"
-              />
+  return (
+    <>
+    <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+      <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+          <DrawerHeader className="sticky top-0 z-10 shrink-0 bg-card border-b border-border">
+            <div className="flex items-center justify-between">
+              <DrawerTitle className="text-lg">
+                {isEdit ? "Editar Rutina" : "Nueva Rutina"}
+              </DrawerTitle>
+              <Button variant="default" onClick={handleSave} disabled={saving} size="sm">
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEdit ? "Actualizar" : "Guardar"}
+              </Button>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="routine-desc">Descripción</Label>
-              <Textarea
-                id="routine-desc"
-                placeholder="Descripción opcional..."
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                rows={2}
-              />
+          </DrawerHeader>
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="routine-name">Nombre</Label>
+                <Input
+                  id="routine-name"
+                  placeholder="Ej: Push Day, Pierna A..."
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  className="h-12"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="routine-desc">Descripción</Label>
+                <Textarea
+                  id="routine-desc"
+                  placeholder="Descripción opcional..."
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Icono de rutina</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {ROUTINE_ICON_OPTIONS.map((opt) => {
+                    const isSelected = icono === opt.key;
+                    const Icon = opt.Icon;
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setIcono((prev) => (prev === opt.key ? null : opt.key))}
+                        aria-pressed={isSelected}
+                        title={opt.label}
+                        className={cn(
+                          "h-14 rounded-lg border transition-colors flex items-center justify-center",
+                          isSelected
+                            ? "border-primary bg-primary/20 text-primary dark:bg-primary/25"
+                            : "border-border bg-background text-muted-foreground hover:text-foreground [&_svg]:opacity-85 hover:[&_svg]:opacity-100 transition-colors",
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </button>
+                    );
+                  })}
+                </div>
+                {!icono && (
+                  <p className="text-xs text-muted-foreground">Selecciona un icono para continuar.</p>
+                )}
+              </div>
             </div>
-          </div>
 
           <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleRoutineDragEnd}>
             <SortableContext items={ejercicios.map((_, i) => i)} strategy={verticalListSortingStrategy}>
@@ -385,6 +454,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                               onLinkSuperset={startSupersetLink}
                               onBreakSuperset={breakSuperset}
                               isInSuperset
+                              onViewExerciseInfo={handleViewExerciseInfo}
                             />
                           ))}
                         </div>
@@ -404,6 +474,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                       onLinkSuperset={startSupersetLink}
                       onBreakSuperset={breakSuperset}
                       isInSuperset={false}
+                      onViewExerciseInfo={handleViewExerciseInfo}
                     />
                   );
                 })}
@@ -416,9 +487,20 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
               </div>
             </SortableContext>
           </DndContext>
+          </div>
         </div>
       </DrawerContent>
     </Drawer>
+
+    <ExerciseDetailSheet
+      exercise={selectedExerciseDetail}
+      open={!!selectedExerciseDetail}
+      onOpenChange={(o) => {
+        if (!o) setSelectedExerciseDetail(null);
+      }}
+      currentUserId={user?.id}
+    />
+    </>
   );
 }
 
@@ -436,6 +518,7 @@ function SortableExerciseRow({ sortId, ...props }: {
   onLinkSuperset: (index: number) => void;
   onBreakSuperset: (index: number) => void;
   isInSuperset: boolean;
+  onViewExerciseInfo: (ej: RoutineExerciseFormData) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging, isSorting } = useSortable({ id: sortId });
   const shouldAnimate = isSorting && !isDragging;
@@ -462,6 +545,7 @@ function ExerciseRow({
   onBreakSuperset,
   isInSuperset,
   dragHandleProps,
+  onViewExerciseInfo,
 }: {
   exercise: RoutineExerciseFormData;
   index: number;
@@ -475,6 +559,7 @@ function ExerciseRow({
   onBreakSuperset: (index: number) => void;
   isInSuperset: boolean;
   dragHandleProps?: Record<string, any>;
+  onViewExerciseInfo: (ej: RoutineExerciseFormData) => void;
 }) {
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
   const wrapperClass = isInSuperset
@@ -484,11 +569,25 @@ function ExerciseRow({
   return (
     <div className={wrapperClass}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing shrink-0">
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
-          <h3 className="font-semibold text-sm">{ej.nombre}</h3>
+          <h3 className="font-semibold text-sm truncate">{ej.nombre}</h3>
+          {(ej.tipo_ejercicio_id || ej.usuario_ejercicio_id) && (
+            <button
+              type="button"
+              title="Ver cómo se hace este ejercicio"
+              onClick={() => onViewExerciseInfo(ej)}
+              className={cn(
+                badgeVariants({ variant: "outline" }),
+                "h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              )}
+            >
+              <Info className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-0.5">
           {isInSuperset ? (
@@ -654,9 +753,10 @@ function ExerciseRow({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">0 - Fallo</SelectItem>
+                <SelectItem value="0">0</SelectItem>
                 <SelectItem value="1">1</SelectItem>
                 <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -21,7 +21,18 @@ import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Dumbbell, ArrowUpDown, Calendar, ArrowDownAZ, Hand, Check } from "lucide-react";
+import {
+  Plus,
+  Dumbbell,
+  ArrowUpDown,
+  Calendar,
+  ArrowDownAZ,
+  Hand,
+  Check,
+  PenLine,
+  Sparkles,
+  FileSpreadsheet,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +44,14 @@ import {
 import { RoutineForm } from "@/components/routine/RoutineForm";
 import { SortableRoutineCard } from "@/components/routine/SortableRoutineCard";
 import { ImportRoutineFromCsvDialog } from "@/components/routine/ImportRoutineFromCsvDialog";
+import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { RutinaWithDetails } from "@/types/routine";
 import {
@@ -96,6 +115,8 @@ const Routines = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [importCsvOpen, setImportCsvOpen] = useState(false);
+  const [createChoiceOpen, setCreateChoiceOpen] = useState(false);
+  const [predefinedExplorerOpen, setPredefinedExplorerOpen] = useState(false);
 
   const [sortMode, setSortMode] = useState<SortMode>(() => loadRoutinesSortPreference().sortMode);
   const [sortDir, setSortDir] = useState<SortDir>(() => loadRoutinesSortPreference().sortDir);
@@ -121,7 +142,7 @@ const Routines = () => {
 
   useEffect(() => {
     if (typeof document === "undefined") return;
-    setHeaderActionsSlot(document.getElementById("header-actions-slot"));
+    setHeaderActionsSlot(document.getElementById("section-pills-actions-slot"));
   }, []);
 
   const isDragMode = sortMode === "custom";
@@ -179,9 +200,29 @@ const Routines = () => {
     updateOrder.mutate(updates);
   };
 
-  const openCreate = () => {
-    setEditId(null);
-    setFormOpen(true);
+  const openCreateChoice = () => {
+    setCreateChoiceOpen(true);
+  };
+
+  /** Evita solapar dos modales Radix al cerrar uno y abrir otro. */
+  const afterCloseChoice = (fn: () => void) => {
+    setCreateChoiceOpen(false);
+    window.setTimeout(fn, 0);
+  };
+
+  const chooseDesdeCero = () => {
+    afterCloseChoice(() => {
+      setEditId(null);
+      setFormOpen(true);
+    });
+  };
+
+  const choosePredefined = () => {
+    afterCloseChoice(() => setPredefinedExplorerOpen(true));
+  };
+
+  const chooseImportCsv = () => {
+    afterCloseChoice(() => setImportCsvOpen(true));
   };
 
   const openEdit = (id: string) => {
@@ -259,10 +300,10 @@ const Routines = () => {
   };
 
   return (
-    <div className="w-full min-w-0 pt-6 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
+    <div className="w-full min-w-0 pt-3 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
       {headerActionsSlot &&
-        routines?.length &&
         createPortal(
+<<<<<<< HEAD
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -284,27 +325,66 @@ const Routines = () => {
               <DropdownMenuItem onClick={() => selectSort("date", "asc")}>
                 Más antiguas {sortMode === "date" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
               </DropdownMenuItem>
+=======
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="new"
+              onClick={openCreateChoice}
+              title="Crear rutina"
+              aria-label="Nueva rutina"
+            >
+              <span className="whitespace-nowrap">Crear</span>
+              <Plus className="shrink-0" />
+            </Button>
+            {!!routines?.length && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
+                    title={`Orden: ${sortLabel()}`}
+                    aria-label={`Ordenar rutinas, actual: ${sortLabel()}`}
+                  >
+                    <ArrowUpDown />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-popover">
+                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                    <Calendar className="h-3.5 w-3.5" /> Fecha
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => selectSort("date", "desc")}>
+                    Más recientes {sortMode === "date" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => selectSort("date", "asc")}>
+                    Más antiguas {sortMode === "date" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+>>>>>>> 1b4d1fa1922781bf04e1d603f02a0d7efad6e70c
 
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <ArrowDownAZ className="h-3.5 w-3.5" /> Nombre
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => selectSort("name", "asc")}>
-                A → Z {sortMode === "name" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => selectSort("name", "desc")}>
-                Z → A {sortMode === "name" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                    <ArrowDownAZ className="h-3.5 w-3.5" /> Nombre
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => selectSort("name", "asc")}>
+                    A → Z {sortMode === "name" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => selectSort("name", "desc")}>
+                    Z → A {sortMode === "name" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
 
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <Hand className="h-3.5 w-3.5" /> Personalizado
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => selectSort("custom", "asc")}>
-                Orden manual {sortMode === "custom" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>,
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                    <Hand className="h-3.5 w-3.5" /> Personalizado
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => selectSort("custom", "asc")}>
+                    Orden manual {sortMode === "custom" && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>,
           headerActionsSlot
         )}
 
@@ -318,7 +398,7 @@ const Routines = () => {
         <div className="space-y-3 px-6 py-12 text-center md:px-0">
           <Dumbbell className="h-12 w-12 mx-auto text-muted-foreground/50" />
           <p className="text-sm text-muted-foreground">Aún no tienes rutinas creadas.</p>
-          <Button onClick={openCreate}>
+          <Button onClick={openCreateChoice}>
             <Plus className="h-4 w-4 mr-2" /> Crear Rutina
           </Button>
         </div>
@@ -341,6 +421,45 @@ const Routines = () => {
         </DndContext>
       )}
 
+      <Dialog open={createChoiceOpen} onOpenChange={setCreateChoiceOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nueva rutina</DialogTitle>
+            <DialogDescription>Elige cómo quieres crearla.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-3 py-3 px-4 text-left"
+              onClick={chooseDesdeCero}
+            >
+              <PenLine className="h-5 w-5 shrink-0 text-primary" />
+              <span className="font-medium leading-snug">Desde cero</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-3 py-3 px-4 text-left"
+              onClick={choosePredefined}
+            >
+              <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+              <span className="font-medium leading-snug">Rutinas predefinidas</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-3 py-3 px-4 text-left"
+              onClick={chooseImportCsv}
+            >
+              <FileSpreadsheet className="h-5 w-5 shrink-0 text-primary" />
+              <span className="font-medium leading-snug">Importar desde CSV</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <PredefinedRoutinesExplorer open={predefinedExplorerOpen} onOpenChange={setPredefinedExplorerOpen} />
       <RoutineForm open={formOpen} onOpenChange={setFormOpen} routineId={editId} />
       <ImportRoutineFromCsvDialog open={importCsvOpen} onOpenChange={setImportCsvOpen} />
 

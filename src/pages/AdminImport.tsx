@@ -62,18 +62,20 @@ export default function AdminImport() {
 
       for (let i = 0; i < data.length; i += BATCH) {
         const batch = data.slice(i, i + BATCH).map((ex) => ({
-          external_id: ex.id,
           nombre: capitalize(ex.name),
           gif_url: ex.gifUrl,
-          musculos_involucrados: ex.bodyPart,
+          musculos_involucrados:
+            typeof ex.bodyPart === "string"
+              ? [ex.bodyPart]
+              : Array.isArray(ex.bodyPart)
+                ? ex.bodyPart
+                : [],
           equipment: ex.equipment,
           instructions: ex.instructions,
           imagen: ex.gifUrl,
         }));
 
-        const { error } = await supabase
-          .from("tipo_ejercicio")
-          .upsert(batch as any, { onConflict: "external_id" });
+        const { error } = await supabase.from("tipo_ejercicio").insert(batch as any);
 
         if (error) throw error;
 

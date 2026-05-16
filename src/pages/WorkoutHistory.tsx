@@ -173,7 +173,7 @@ const WorkoutHistory = () => {
   ];
 
   return (
-    <div className="w-full min-w-0 pb-28 pt-6 md:mx-auto md:max-w-2xl md:px-8">
+    <div className="w-full min-w-0 pb-28 pt-3 md:mx-auto md:max-w-2xl md:px-8">
       <div className="space-y-3">
       {/* ── KPI Grid (ahora dentro de Card, con líneas divisorias internas) ── */}
       <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
@@ -258,10 +258,14 @@ const WorkoutHistory = () => {
                   />
                   <Tooltip content={<WeeklyConsistencyTooltip />} />
                   <Area
-                    type="monotone"
+                    type="linear"
                     dataKey="workouts"
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
+                    isAnimationActive
+                    animationBegin={0}
+                    animationDuration={900}
+                    animationEasing="linear"
                     fill="url(#weeklyConsistencyGradient)"
                     dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
                     activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
