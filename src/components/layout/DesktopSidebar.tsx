@@ -2,13 +2,13 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-<<<<<<< HEAD
-import { Home, Dumbbell, BarChart3, ClipboardList, Plus, Activity, Scale, FileUp, Sparkles, Users } from "lucide-react";
-=======
 import { Home, BarChart3, LogOut, ClipboardList, Plus, Activity, Scale, Users } from "lucide-react";
->>>>>>> 1b4d1fa1922781bf04e1d603f02a0d7efad6e70c
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { ProfileDrawerTrigger } from "./ProfileDrawer";
+import { SettingsDrawer } from "./SettingsDrawer";
+import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useStartCardioLiveSession, useCardioDisciplinas } from "@/hooks/useCardioSessions";
@@ -29,6 +29,7 @@ const navItems = [
 ];
 
 export function DesktopSidebar() {
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const { openNew } = useGlobalWorkoutDrawer();
   const { openNewWithDiscipline, openLiveRecording } = useGlobalCardioDrawer();
@@ -38,11 +39,6 @@ export function DesktopSidebar() {
   const [cardioTypeDialogOpen, setCardioTypeDialogOpen] = useState(false);
 
   return (
-<<<<<<< HEAD
-    <aside className="hidden md:fixed md:left-0 md:top-14 md:z-30 md:flex md:w-64 md:flex-col md:border-r md:border-border bg-background md:h-[calc(100dvh-3.5rem)] md:overflow-y-auto">
-      <div className="flex min-h-0 flex-1 flex-col justify-center p-4">
-      <nav className="space-y-1">
-=======
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-white/50 dark:bg-zinc-950/50 backdrop-blur-2xl h-dvh sticky top-0">
       <div className="flex h-[calc(4rem+1px)] shrink-0 items-center gap-2 border-b border-border px-6">
         <img src="/logo.svg" alt="FitAI" className="h-9 w-9 rounded-lg shrink-0" />
@@ -50,7 +46,6 @@ export function DesktopSidebar() {
         <ProfileDrawerTrigger />
       </div>
       <nav className="flex-1 space-y-1 p-4">
->>>>>>> 1b4d1fa1922781bf04e1d603f02a0d7efad6e70c
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="w-full justify-start gap-3 mb-3 text-base" size="sm">
@@ -132,6 +127,21 @@ export function DesktopSidebar() {
           </NavLink>
         ))}
       </nav>
+      <div className="mt-auto shrink-0 border-t border-border px-4 pb-4 pt-4">
+        <div className="flex items-center justify-end gap-0.5 pb-3">
+          <InAppNotificationsBell />
+          <SettingsDrawer />
+        </div>
+        <div className="flex justify-end border-t border-border pt-3">
+          <Button
+            variant="ghost"
+            className="gap-3 text-muted-foreground"
+            onClick={signOut}
+          >
+            <LogOut className="h-5 w-5" />
+            Cerrar Sesión
+          </Button>
+        </div>
       </div>
     </aside>
   );

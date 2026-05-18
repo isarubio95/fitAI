@@ -495,31 +495,6 @@ const Exercises = () => {
     <div className="w-full min-w-0 max-w-2xl mx-auto overflow-x-hidden px-0 pb-6 pt-6 space-y-4 md:px-8 md:pb-8">
       {headerActionsSlot &&
         createPortal(
-<<<<<<< HEAD
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
-                aria-label={`Ordenar: ${sortOrder === "asc" ? "A → Z" : "Z → A"}`}
-              >
-                <ArrowUpDown className="text-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 bg-popover">
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <ArrowDownAZ className="h-3.5 w-3.5" /> Ordenar por nombre
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => setSortOrder("asc")}>
-                A → Z {sortOrder === "asc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortOrder("desc")}>
-                Z → A {sortOrder === "desc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>,
-=======
           <div className="flex items-center gap-2">
             <Button
               type="button"
@@ -559,7 +534,6 @@ const Exercises = () => {
               </DropdownMenu>
             )}
           </div>,
->>>>>>> 1b4d1fa1922781bf04e1d603f02a0d7efad6e70c
           headerActionsSlot
         )}
 

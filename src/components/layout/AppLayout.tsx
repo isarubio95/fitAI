@@ -47,11 +47,7 @@ export function AppLayout() {
   const currentTab = searchParams.get("tab") || "";
   const pageTitle =
     location.pathname === "/"
-<<<<<<< HEAD
       ? "Inicio"
-=======
-      ? "FitAI"
->>>>>>> 1b4d1fa1922781bf04e1d603f02a0d7efad6e70c
       : location.pathname === "/evolution"
         ? "Evolución"
         : location.pathname === "/routines"
@@ -131,17 +127,6 @@ export function AppLayout() {
       <GlobalCardioDrawerProvider>
         <InAppNotificationsProvider>
       <ProfileDrawerProvider>
-<<<<<<< HEAD
-      <div className="flex min-h-screen flex-col bg-background">
-        <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-stretch border-b border-border bg-background">
-          <div className="hidden w-64 shrink-0 md:block" aria-hidden />
-          <div className="flex min-w-0 flex-1 justify-center px-5 md:px-4">
-            <div className="flex w-full min-w-0 max-w-4xl items-center justify-between gap-3">
-              <div className="flex min-w-0 flex-col justify-center overflow-hidden">
-                <h1 className="truncate text-lg font-semibold md:text-xl">
-                  {pageTitle}
-                </h1>
-=======
       <div className="flex min-h-screen bg-background">
         <DesktopSidebar />
         <div className="flex-1 flex flex-col">
@@ -159,114 +144,25 @@ export function AppLayout() {
                   <h1 className="truncate text-lg font-semibold md:text-xl">{pageTitle}</h1>
                 </div>
 
->>>>>>> 1b4d1fa1922781bf04e1d603f02a0d7efad6e70c
                 <p
-                className={cn(
-                  "text-xs leading-tight text-muted-foreground transition-all duration-300",
-                  showHeaderPills && areHeaderPillsCollapsed
-                    ? "max-h-6 translate-y-0 opacity-100 mt-0.5"
-                    : "max-h-0 -translate-y-1 opacity-0"
-                )}
-              >
-                {activeSubsectionLabel}
+                  className={cn(
+                    "text-xs leading-tight text-muted-foreground transition-all duration-300",
+                    showHeaderPills && areHeaderPillsCollapsed
+                      ? "max-h-6 translate-y-0 opacity-100 mt-0.5"
+                      : "max-h-0 -translate-y-1 opacity-0"
+                  )}
+                >
+                  {activeSubsectionLabel}
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center justify-end gap-2 md:gap-3">
-              <div id="header-actions-slot" className="flex items-center gap-3 md:gap-4" />
-              {showNotificationsBell && <InAppNotificationsBell />}
-              <SettingsDrawer />
-              <ProfileDrawerTrigger />
+              <div className="flex shrink-0 items-center justify-end gap-1">
+                <div id="header-actions-slot" className="flex items-center gap-2" />
+                {showNotificationsBell && <InAppNotificationsBell />}
+                <SettingsDrawer />
+                <ProfileDrawerTrigger />
               </div>
             </div>
-<<<<<<< HEAD
-          </div>
-        </header>
-
-        <div className="flex min-h-0 flex-1 pt-14">
-          <DesktopSidebar />
-          <div className="flex min-w-0 flex-1 flex-col md:ml-64">
-          {location.pathname === "/evolution" && (
-            <div
-              className={cn(
-                "fixed left-0 right-0 top-16 z-30 px-4 pt-1 md:hidden transition-all duration-300",
-                areHeaderPillsCollapsed
-                  ? "-translate-y-3 opacity-0 pointer-events-none"
-                  : "translate-y-0 opacity-100"
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ tab: "history" })}
-                  className={cn(
-                    "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                    (searchParams.get("tab") || "history") === "history"
-                      ? "border-primary bg-primary text-black shadow-sm"
-                      : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                  )}
-                >
-                  Entrenos
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ tab: "measurements" })}
-                  className={cn(
-                    "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                    searchParams.get("tab") === "measurements"
-                      ? "border-primary bg-primary text-black shadow-sm"
-                      : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                  )}
-                >
-                  Medidas
-                </button>
-              </div>
-            </div>
-          )}
-
-          {location.pathname === "/routines" && (
-            <div
-              className={cn(
-                "fixed left-0 right-0 top-16 z-30 px-4 pt-1 md:hidden transition-all duration-300",
-                areHeaderPillsCollapsed
-                  ? "-translate-y-3 opacity-0 pointer-events-none"
-                  : "translate-y-0 opacity-100"
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ tab: "rutinas" })}
-                  className={cn(
-                    "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                    (searchParams.get("tab") || "rutinas") === "rutinas"
-                      ? "border-primary bg-primary text-black shadow-sm"
-                      : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                  )}
-                >
-                  Rutinas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchParams({ tab: "ejercicios" })}
-                  className={cn(
-                    "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                    searchParams.get("tab") === "ejercicios"
-                      ? "border-primary bg-primary text-black shadow-sm"
-                      : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-                  )}
-                >
-                  Ejercicios
-                </button>
-              </div>
-            </div>
-          )}
-
-          <main className={cn(
-            "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 md:pb-0 md:pt-6",
-            showHeaderPills && !areHeaderPillsCollapsed ? "pt-12" : ""
-          )}>
-=======
 
             {location.pathname === "/evolution" && (
               <div
@@ -374,10 +270,8 @@ export function AppLayout() {
             )}
           >
             {/* Navegación por gestos desactivada: usamos solo el contenido de rutas directamente */}
->>>>>>> 1b4d1fa1922781bf04e1d603f02a0d7efad6e70c
             <Outlet />
           </main>
-          </div>
         </div>
         <ActiveWorkoutPill />
         <ActiveCardioPill />
