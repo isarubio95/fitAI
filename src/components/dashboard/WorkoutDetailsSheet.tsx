@@ -241,17 +241,36 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
   const { data: workout, isLoading } = useWorkoutById(workoutId);
 
   return (
-    <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
-        side="right"
-        className="w-full overflow-y-auto rounded-l-[20px] p-0 inset-y-auto top-8 bottom-0 h-[calc(100dvh-1.5rem)] sm:max-w-2xl"
+        side="bottom"
+        className="flex h-[92lvh] max-h-[92lvh] flex-col overflow-hidden rounded-t-2xl p-0"
       >
-        <WorkoutDetailsContent
-          workout={workout}
-          isLoading={isLoading}
-          radarChartId={workout?.id ? `workout-radar-weight-${workout.id}` : undefined}
-          containerClassName="p-6"
-        />
+        <DrawerHeader className="shrink-0 border-b border-border bg-card text-left">
+          <DrawerTitle className={isLoading || !workout ? "sr-only" : undefined}>
+            {workout?.titulo ?? "Detalle del entrenamiento"}
+          </DrawerTitle>
+          {isLoading || !workout ? (
+            <>
+              <Skeleton className="h-5 w-2/3" aria-hidden />
+              <Skeleton className="mt-2 h-4 w-1/3" aria-hidden />
+            </>
+          ) : (
+            <DrawerDescription>
+              {workout.fecha ? format(new Date(workout.fecha), "d MMM yyyy", { locale: es }) : ""}
+            </DrawerDescription>
+          )}
+        </DrawerHeader>
+
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <WorkoutDetailsContent
+            workout={workout}
+            isLoading={isLoading}
+            hideHeader
+            radarChartId={workout?.id ? `workout-radar-weight-${workout.id}` : undefined}
+            containerClassName="px-6 py-4 pb-20"
+          />
+        </div>
       </DrawerContent>
     </Drawer>
   );
@@ -262,14 +281,76 @@ type WorkoutDetailsContentProps = {
   isLoading?: boolean;
   radarChartId?: string;
   containerClassName?: string;
+  /** Resumen compacto (perfil): solo barras horizontales por grupo muscular. */
+  variant?: "full" | "compact";
+  /** Oculta título/fecha cuando el drawer ya los muestra en su header. */
+  hideHeader?: boolean;
+  /** Oculta la fecha en el resumen (p. ej. si ya va en la fila del autor). */
+  hideDate?: boolean;
 };
+
+function WorkoutCompactSummary({
+  workout,
+  visibleGroups,
+  groupSets,
+  maxSets,
+  hideDate = false,
+}: {
+  workout: ActividadWithDetails;
+  visibleGroups: MainMuscleGroup[];
+  groupSets: Record<MainMuscleGroup, number>;
+  maxSets: number;
+  hideDate?: boolean;
+}) {
+  const totalSets = visibleGroups.reduce((a, g) => a + (groupSets[g] ?? 0), 0);
+  const exerciseCount = workout.ejercicios.filter((ex) => (ex.series ?? []).some(isSerieDone)).length;
+  const statsLabel = `${exerciseCount} ejercicio${exerciseCount === 1 ? "" : "s"} · ${totalSets} series`;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="min-w-0 flex-1 text-sm font-semibold leading-snug">{workout.titulo}</h3>
+        <div className="shrink-0 text-right text-[11px] leading-tight text-muted-foreground tabular-nums">
+          {!hideDate && workout.fecha ? (
+            <time dateTime={workout.fecha}>{format(new Date(workout.fecha), "d MMM yyyy", { locale: es })}</time>
+          ) : null}
+          <p className={!hideDate && workout.fecha ? "mt-0.5" : undefined}>{statsLabel}</p>
+        </div>
+      </div>
+      {visibleGroups.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Sin series registradas.</p>
+      ) : (
+        <div className="space-y-2">
+          {visibleGroups.map((g) => {
+            const sets = groupSets[g] ?? 0;
+            const pct = (sets / maxSets) * 100;
+            return (
+              <div key={g} className="space-y-1">
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="truncate font-medium">{g}</span>
+                  <span className="shrink-0 text-muted-foreground tabular-nums">{sets}</span>
+                </div>
+                <Progress value={pct} className="h-1.5" />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function WorkoutDetailsContent({
   workout,
   isLoading = false,
   radarChartId,
-  containerClassName = "p-6",
+  containerClassName,
+  variant = "full",
+  hideHeader = false,
+  hideDate = false,
 }: WorkoutDetailsContentProps) {
+  const resolvedContainerClassName =
+    containerClassName ?? (variant === "compact" ? "px-6 py-4" : "p-6");
   const groups = useMemo(() => Object.keys(MUSCLE_GROUPS) as MainMuscleGroup[], []);
 
   const {
@@ -382,27 +463,46 @@ export function WorkoutDetailsContent({
   );
 
   const radarId = radarChartId ?? (workout?.id ? `workout-radar-weight-${workout.id}` : "workout-radar-weight");
+  const isCompact = variant === "compact";
 
   return (
-    <div className={containerClassName}>
+    <div className={resolvedContainerClassName}>
       {isLoading || !workout ? (
-        <div className="space-y-4">
+        isCompact ? (
           <div className="space-y-2">
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-3 w-1/3" />
+            <Skeleton className="h-16 w-full" />
           </div>
-          <Skeleton className="h-40 w-full rounded-xl" />
-          <Skeleton className="h-56 w-full rounded-xl" />
-          <Skeleton className="h-32 w-full rounded-xl" />
-        </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-2/3" />
+              <Skeleton className="h-4 w-1/3" />
+            </div>
+            <Skeleton className="h-40 w-full rounded-xl" />
+            <Skeleton className="h-56 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+          </div>
+        )
+      ) : isCompact ? (
+        <WorkoutCompactSummary
+          workout={workout}
+          visibleGroups={visibleGroups}
+          groupSets={groupSets}
+          maxSets={maxSets}
+          hideDate={hideDate}
+        />
       ) : (
         <>
-          <DrawerHeader className="pb-4">
-            <DrawerTitle className="text-xl">{workout.titulo}</DrawerTitle>
-            <DrawerDescription>
-              {workout.fecha ? format(new Date(workout.fecha), "d MMM yyyy", { locale: es }) : ""}
-            </DrawerDescription>
-          </DrawerHeader>
+          {!hideHeader ? (
+            <DrawerHeader className="pb-4">
+              <DrawerTitle className="text-xl">{workout.titulo}</DrawerTitle>
+              <DrawerDescription>
+                {workout.fecha ? format(new Date(workout.fecha), "d MMM yyyy", { locale: es }) : ""}
+              </DrawerDescription>
+            </DrawerHeader>
+          ) : null}
 
           {workout.comentarios ? (
             <Card className="mb-4">

@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Dumbbell, Pencil, Loader2 } from "lucide-react";
-import { WorkoutDetailsContent } from "@/components/dashboard/WorkoutDetailsSheet";
+import { WorkoutDetailsContent, WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { cn } from "@/lib/utils";
 import { buildAuthAvatarCandidates, useUserAvatar } from "@/hooks/useUserAvatar";
 import { useProfileAvatarUpload } from "@/hooks/useProfileAvatarUpload";
@@ -160,12 +160,17 @@ function ProfileDrawerSheet() {
   const { open, onOpenChange, targetUserId, openUserProfile } = useProfileDrawer();
   const { toast } = useToast();
   const [followListMode, setFollowListMode] = useState<"seguidores" | "seguidos" | null>(null);
+  const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
   const [localAvatarPreview, setLocalAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadAvatar = useProfileAvatarUpload();
 
   const profileUserId = targetUserId ?? user?.id ?? "";
   const isViewingSelf = !targetUserId || targetUserId === user?.id;
+
+  useEffect(() => {
+    if (!open) setWorkoutDetailsId(null);
+  }, [open]);
 
   const statsUserId = profileUserId || undefined;
   const { data: stats } = useProfileStats(statsUserId);
@@ -258,6 +263,7 @@ function ProfileDrawerSheet() {
   if (!user) return null;
 
   return (
+    <>
     <Drawer direction="left" open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         side="left"
@@ -297,9 +303,12 @@ function ProfileDrawerSheet() {
                 <>
                   <input
                     ref={fileInputRef}
+                    id="profile-avatar-upload"
+                    name="avatar"
                     type="file"
                     accept="image/*"
                     className="hidden"
+                    aria-label="Subir foto de perfil"
                     onChange={async (event) => {
                       const file = event.target.files?.[0];
                       event.currentTarget.value = "";
@@ -481,7 +490,7 @@ function ProfileDrawerSheet() {
           </div>
 
           <div className="space-y-3">
-            <p className="flex items-center gap-2 px-6 text-sm font-medium">
+            <p className="flex items-center gap-2 px-6 text-sm font-medium pt-3">
               <Dumbbell className="h-4 w-4 text-muted-foreground" /> Últimos entrenos
             </p>
 
@@ -498,14 +507,19 @@ function ProfileDrawerSheet() {
                   : "Este usuario no tiene entrenos visibles."}
               </p>
             ) : (
-              <div className="space-y-4 bg-background">
+              <div className="space-y-2 bg-background">
                 {lastWorkouts.map((w) => (
-                  <Card
+                  <button
                     key={w.id}
-                    className="w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs md:rounded-3xl md:border-x"
+                    type="button"
+                    className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    onClick={() => setWorkoutDetailsId(w.id)}
+                    aria-label={`Ver detalle de ${w.titulo}`}
                   >
-                    <WorkoutDetailsContent workout={w} containerClassName="p-4" />
-                  </Card>
+                    <Card className="w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs transition-colors hover:bg-muted/30 md:rounded-3xl md:border-x">
+                      <WorkoutDetailsContent workout={w} variant="compact" />
+                    </Card>
+                  </button>
                 ))}
               </div>
             )}
@@ -513,5 +527,14 @@ function ProfileDrawerSheet() {
         </div>
       </DrawerContent>
     </Drawer>
+
+    <WorkoutDetailsSheet
+      open={!!workoutDetailsId}
+      onOpenChange={(next) => {
+        if (!next) setWorkoutDetailsId(null);
+      }}
+      workoutId={workoutDetailsId}
+    />
+    </>
   );
 }

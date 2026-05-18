@@ -171,6 +171,39 @@ export function useWorkoutById(id: string | null) {
   });
 }
 
+export async function hydrateActividadesWithDetails(
+  actividades: Array<Record<string, unknown>>,
+): Promise<ActividadWithDetails[]> {
+  if (!actividades.length) return [];
+
+  const actIds = actividades.map((a) => a.id as string);
+  const { data: ejercicios, error: ejError } = await supabase
+    .from("ejercicio")
+    .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
+    .in("actividad_id", actIds);
+  if (ejError) throw ejError;
+
+  const ejercicioIds = (ejercicios || []).map((e) => e.id);
+  let series: Array<Record<string, unknown>> = [];
+  if (ejercicioIds.length > 0) {
+    const { data, error: sError } = await supabase.from("serie").select("*").in("ejercicio_id", ejercicioIds);
+    if (sError) throw sError;
+    series = data || [];
+  }
+
+  return actividades.map((act) => {
+    const actEjercicios = (ejercicios || [])
+      .filter((ej) => ej.actividad_id === act.id)
+      .map((ej) => ({
+        ...ej,
+        tipo_ejercicio: (ej as { tipo_ejercicio?: unknown; usuario_ejercicio?: unknown }).tipo_ejercicio
+          ?? (ej as { usuario_ejercicio?: unknown }).usuario_ejercicio,
+        series: series.filter((s) => s.ejercicio_id === ej.id),
+      }));
+    return { ...act, ejercicios: actEjercicios } as ActividadWithDetails;
+  });
+}
+
 export function useWorkoutHistory(profileUserId?: string) {
   const { user } = useAuth();
   const id = profileUserId ?? user?.id;
@@ -187,35 +220,7 @@ export function useWorkoutHistory(profileUserId?: string) {
       if (error) throw error;
       if (!actividades?.length) return [];
 
-      const actIds = actividades.map((a) => a.id);
-      const { data: ejercicios, error: ejError } = await supabase
-        .from("ejercicio")
-        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
-        .in("actividad_id", actIds);
-
-      if (ejError) throw ejError;
-
-      const ejercicioIds = (ejercicios || []).map((e) => e.id);
-      let series: any[] = [];
-      if (ejercicioIds.length > 0) {
-        const { data, error: sError } = await supabase
-          .from("serie")
-          .select("*")
-          .in("ejercicio_id", ejercicioIds);
-        if (sError) throw sError;
-        series = data || [];
-      }
-
-      return actividades.map((act) => {
-        const actEjercicios = (ejercicios || [])
-          .filter((ej) => ej.actividad_id === act.id)
-          .map((ej) => ({
-            ...ej,
-            tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
-            series: series.filter((s) => s.ejercicio_id === ej.id),
-          }));
-        return { ...act, ejercicios: actEjercicios };
-      });
+      return hydrateActividadesWithDetails(actividades as Array<Record<string, unknown>>);
     },
   });
 }

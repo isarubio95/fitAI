@@ -304,16 +304,6 @@ const Routines = () => {
       {headerActionsSlot &&
         createPortal(
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="new"
-              onClick={openCreateChoice}
-              title="Crear rutina"
-              aria-label="Nueva rutina"
-            >
-              <span className="whitespace-nowrap">Crear</span>
-              <Plus className="shrink-0" />
-            </Button>
             {!!routines?.length && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -360,6 +350,16 @@ const Routines = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+            <Button
+              type="button"
+              variant="new"
+              onClick={openCreateChoice}
+              title="Crear rutina"
+              aria-label="Nueva rutina"
+            >
+              <span className="whitespace-nowrap">Crear</span>
+              <Plus className="shrink-0" />
+            </Button>
           </div>,
           headerActionsSlot
         )}

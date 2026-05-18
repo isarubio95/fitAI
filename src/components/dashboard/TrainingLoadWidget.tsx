@@ -137,7 +137,7 @@ export function TrainingLoadWidget() {
       <CardHeader className="space-y-3 px-6 pt-8 pb-3">
         <div className="flex items-center gap-1.5 pb-1">
           <CardTitle asChild className="text-base">
-            <h2>Fitness y Fatiga</h2>
+            <h2>Fatiga</h2>
           </CardTitle>
           <Popover>
             <PopoverTrigger asChild>

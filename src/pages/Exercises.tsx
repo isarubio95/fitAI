@@ -496,16 +496,6 @@ const Exercises = () => {
       {headerActionsSlot &&
         createPortal(
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="new"
-              onClick={() => setCreateOpen(true)}
-              title="Crear ejercicio"
-              aria-label="Nuevo ejercicio"
-            >
-              <span className="whitespace-nowrap">Crear</span>
-              <Plus className="shrink-0" />
-            </Button>
             {!!exercises?.length && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -533,6 +523,16 @@ const Exercises = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+            <Button
+              type="button"
+              variant="new"
+              onClick={() => setCreateOpen(true)}
+              title="Crear ejercicio"
+              aria-label="Nuevo ejercicio"
+            >
+              <span className="whitespace-nowrap">Crear</span>
+              <Plus className="shrink-0" />
+            </Button>
           </div>,
           headerActionsSlot
         )}

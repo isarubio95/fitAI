@@ -156,8 +156,8 @@ export function AppLayout() {
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center justify-end gap-1">
-                <div id="header-actions-slot" className="flex items-center gap-2" />
+              <div className="flex shrink-0 items-center justify-end gap-1 max-md:gap-2">
+                <div id="header-actions-slot" className="flex items-center gap-2 max-md:gap-3" />
                 {showNotificationsBell && <InAppNotificationsBell />}
                 <SettingsDrawer />
                 <ProfileDrawerTrigger />
@@ -265,8 +265,9 @@ export function AppLayout() {
 
           <main
             className={cn(
-              "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 transition-[padding-top] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none md:pb-0 md:pt-14",
+              "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 transition-[padding-top] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none md:pb-0",
               showHeaderPills && !areHeaderPillsCollapsed ? "pt-26" : "pt-12",
+              showHeaderPills ? "md:pt-14" : "md:pt-20",
             )}
           >
             {/* Navegación por gestos desactivada: usamos solo el contenido de rutas directamente */}
