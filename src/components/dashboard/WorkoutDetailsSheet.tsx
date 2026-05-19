@@ -37,6 +37,10 @@ type WorkoutDetailsSheetProps = {
   workoutId: string | null;
 };
 
+/** Mismo aspecto que las cards apiladas del dashboard: fondo de página solo entre bloques. */
+const DETAIL_SECTION_CARD_CLASS =
+  "w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:rounded-3xl md:border-x";
+
 function formatWeight(value: number) {
   const n = Number(value);
   return Number.isInteger(n) ? n.toString() : n.toFixed(2);
@@ -262,13 +266,13 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
           )}
         </DrawerHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-background">
           <WorkoutDetailsContent
             workout={workout}
             isLoading={isLoading}
             hideHeader
             radarChartId={workout?.id ? `workout-radar-weight-${workout.id}` : undefined}
-            containerClassName="px-6 py-4 pb-20"
+            containerClassName="pb-20"
           />
         </div>
       </DrawerContent>
@@ -504,17 +508,17 @@ export function WorkoutDetailsContent({
             </DrawerHeader>
           ) : null}
 
-          {workout.comentarios ? (
-            <Card className="mb-4">
-              <CardContent className="p-4 text-sm text-muted-foreground whitespace-pre-wrap">
-                {workout.comentarios}
-              </CardContent>
-            </Card>
-          ) : null}
+          <div className="space-y-2 bg-background">
+            {workout.comentarios ? (
+              <Card className={DETAIL_SECTION_CARD_CLASS}>
+                <CardContent className="px-6 py-4 text-sm text-muted-foreground whitespace-pre-wrap">
+                  {workout.comentarios}
+                </CardContent>
+              </Card>
+            ) : null}
 
-          <div className="space-y-4">
-            <Card>
-              <CardContent className="p-4">
+            <Card className={DETAIL_SECTION_CARD_CLASS}>
+              <CardContent className="px-6 py-4">
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="font-semibold">Series por grupo muscular</div>
                   <div className="text-xs text-muted-foreground tabular-nums">
@@ -543,8 +547,8 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-4">
+            <Card className={DETAIL_SECTION_CARD_CLASS}>
+              <CardContent className="px-6 py-4">
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="font-semibold">Peso levantado por grupo muscular</div>
                   <div className="text-xs text-muted-foreground tabular-nums">Max: {formatWeight(maxWeight)} kg</div>
@@ -589,16 +593,16 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={DETAIL_SECTION_CARD_CLASS}>
               <CardContent className="p-0">
-                <div className="p-4 pb-3">
+                <div className="px-6 pt-4 pb-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="font-semibold">Ejercicios realizados</div>
                     <div className="text-xs text-muted-foreground tabular-nums">{orderedExercises.length} ejercicios</div>
                   </div>
                 </div>
                 {orderedExercises.length === 0 ? (
-                  <div className="p-4 text-sm text-muted-foreground">Aún no hay series completadas para mostrar.</div>
+                  <div className="px-6 pb-4 text-sm text-muted-foreground">Aún no hay series completadas para mostrar.</div>
                 ) : (
                   <div className="divide-y divide-border">
                     {exerciseGroups
