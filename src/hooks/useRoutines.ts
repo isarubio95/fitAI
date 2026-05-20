@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import type { RutinaWithDetails } from "@/types/routine";
+import { migrateRoutineIconsFromLocalStorage } from "@/lib/routineIcons";
+
+let localIconMigrationDone = false;
 
 export function useRoutines() {
   const { user } = useAuth();
@@ -9,6 +12,11 @@ export function useRoutines() {
     queryKey: ["routines", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      if (user && !localIconMigrationDone) {
+        localIconMigrationDone = true;
+        await migrateRoutineIconsFromLocalStorage(user.id, supabase);
+      }
+
       const { data: rutinas, error } = await (supabase
         .from("rutina")
         .select("*") as any)

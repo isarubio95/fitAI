@@ -129,6 +129,7 @@ export function useCloneRoutine() {
           nombre: template.nombre,
           descripcion: template.descripcion,
           usuario_id: user.id,
+          icono: template.icono,
         })
         .select("id")
         .single();

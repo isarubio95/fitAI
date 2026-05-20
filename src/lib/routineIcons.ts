@@ -13,6 +13,7 @@ import {
   CircleDot,
   LayoutGrid,
 } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type RoutineIconKey =
   | "dumbbell"
@@ -27,6 +28,10 @@ export type RoutineIconKey =
   | "leg"
   | "abs"
   | "fullBody";
+
+export const DEFAULT_ROUTINE_ICON_KEY: RoutineIconKey = "dumbbell";
+
+const ROUTINE_ICON_STORAGE_KEY = "gym-log.routine-icons.v1";
 
 function LegIcon(props: SVGProps<SVGSVGElement>) {
   return createElement(
@@ -66,45 +71,54 @@ export const ROUTINE_ICON_OPTIONS: Array<{ key: RoutineIconKey; label: string; I
   { key: "fullBody", label: "Cuerpo entero", Icon: LayoutGrid },
 ];
 
-const ROUTINE_ICON_STORAGE_KEY = "gym-log.routine-icons.v1";
+const VALID_ICON_KEYS = new Set<string>(ROUTINE_ICON_OPTIONS.map((opt) => opt.key));
 
-function readRoutineIconMap(): Record<string, RoutineIconKey> {
+export function resolveRoutineIconKey(iconKey: string | null | undefined): RoutineIconKey {
+  if (!iconKey) return DEFAULT_ROUTINE_ICON_KEY;
+  if (iconKey === "customPose") return "leg";
+  if (VALID_ICON_KEYS.has(iconKey)) return iconKey as RoutineIconKey;
+  return DEFAULT_ROUTINE_ICON_KEY;
+}
+
+export function resolveRoutineIcon(iconKey: string | null | undefined): RoutineIconComponent {
+  const key = resolveRoutineIconKey(iconKey);
+  return ROUTINE_ICON_OPTIONS.find((opt) => opt.key === key)?.Icon ?? Dumbbell;
+}
+
+/** Migra iconos guardados en localStorage (versión anterior) a la columna rutina.icono. */
+export async function migrateRoutineIconsFromLocalStorage(
+  userId: string,
+  client: SupabaseClient,
+): Promise<void> {
   try {
     const raw = localStorage.getItem(ROUTINE_ICON_STORAGE_KEY);
-    if (!raw) return {};
+    if (!raw) return;
+
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== "object") return {};
-    // Compatibilidad: migramos "customPose" -> "leg"
-    const migrated = Object.fromEntries(
-      Object.entries(parsed).map(([k, v]) => [k, v === "customPose" ? "leg" : v]),
-    ) as Record<string, RoutineIconKey>;
-    return migrated;
+    if (!parsed || typeof parsed !== "object") {
+      localStorage.removeItem(ROUTINE_ICON_STORAGE_KEY);
+      return;
+    }
+
+    const updates = Object.entries(parsed)
+      .map(([routineId, value]) => {
+        if (typeof value !== "string") return null;
+        const iconKey = resolveRoutineIconKey(value);
+        if (iconKey === DEFAULT_ROUTINE_ICON_KEY) return null;
+        return { routineId, iconKey };
+      })
+      .filter(Boolean) as { routineId: string; iconKey: RoutineIconKey }[];
+
+    if (updates.length > 0) {
+      await Promise.all(
+        updates.map(({ routineId, iconKey }) =>
+          client.from("rutina").update({ icono: iconKey }).eq("id", routineId).eq("usuario_id", userId),
+        ),
+      );
+    }
+
+    localStorage.removeItem(ROUTINE_ICON_STORAGE_KEY);
   } catch {
-    return {};
+    // ignore localStorage / migration errors
   }
 }
-
-function writeRoutineIconMap(map: Record<string, RoutineIconKey>) {
-  try {
-    localStorage.setItem(ROUTINE_ICON_STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    // ignore localStorage errors (private mode, quota, etc.)
-  }
-}
-
-export function getRoutineIconKey(routineId: string): RoutineIconKey | null {
-  if (!routineId) return null;
-  return readRoutineIconMap()[routineId] ?? null;
-}
-
-export function setRoutineIconKey(routineId: string, iconKey: RoutineIconKey) {
-  if (!routineId || !iconKey) return;
-  const current = readRoutineIconMap();
-  current[routineId] = iconKey;
-  writeRoutineIconMap(current);
-}
-
-export function resolveRoutineIcon(iconKey: RoutineIconKey | null | undefined): RoutineIconComponent {
-  return ROUTINE_ICON_OPTIONS.find((opt) => opt.key === iconKey)?.Icon ?? Dumbbell;
-}
-

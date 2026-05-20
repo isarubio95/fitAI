@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer } from "@/components/ui/chart";
 import { Check, Trophy } from "lucide-react";
@@ -19,6 +21,7 @@ import {
   formatRitmoSegKmLabel,
 } from "@/types/workout";
 import { cn } from "@/lib/utils";
+import { resolveRoutineIcon } from "@/lib/routineIcons";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -280,6 +283,11 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
   );
 }
 
+export type WorkoutLeadingAvatar = {
+  avatarUrl?: string | null;
+  username?: string | null;
+};
+
 type WorkoutDetailsContentProps = {
   workout: ActividadWithDetails | null;
   isLoading?: boolean;
@@ -291,7 +299,31 @@ type WorkoutDetailsContentProps = {
   hideHeader?: boolean;
   /** Oculta la fecha en el resumen (p. ej. si ya va en la fila del autor). */
   hideDate?: boolean;
+  /** Avatar a la izquierda del título en variante compacta. */
+  leadingAvatar?: WorkoutLeadingAvatar;
+  /** Icono de rutina a la izquierda del título en variante compacta. */
+  leadingRoutineIcon?: string | null;
 };
+
+function WorkoutLeadingRoutineIcon({ iconKey }: { iconKey?: string | null }) {
+  const Icon = resolveRoutineIcon(iconKey);
+  return (
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 ring-1 ring-border/60">
+      <Icon className="h-4 w-4 text-primary" />
+    </div>
+  );
+}
+
+function WorkoutLeadingAvatarBadge({ avatar }: { avatar: WorkoutLeadingAvatar }) {
+  const resolved = useUserAvatar([avatar.avatarUrl]);
+  const initials = avatar.username?.trim()?.[0]?.toUpperCase() || "U";
+  return (
+    <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/60">
+      {resolved.src ? <AvatarImage src={resolved.src} alt="" onError={resolved.onError} /> : null}
+      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{initials}</AvatarFallback>
+    </Avatar>
+  );
+}
 
 function WorkoutCompactSummary({
   workout,
@@ -299,12 +331,16 @@ function WorkoutCompactSummary({
   groupSets,
   maxSets,
   hideDate = false,
+  leadingAvatar,
+  leadingRoutineIcon,
 }: {
   workout: ActividadWithDetails;
   visibleGroups: MainMuscleGroup[];
   groupSets: Record<MainMuscleGroup, number>;
   maxSets: number;
   hideDate?: boolean;
+  leadingAvatar?: WorkoutLeadingAvatar;
+  leadingRoutineIcon?: string | null;
 }) {
   const totalSets = visibleGroups.reduce((a, g) => a + (groupSets[g] ?? 0), 0);
   const exerciseCount = workout.ejercicios.filter((ex) => (ex.series ?? []).some(isSerieDone)).length;
@@ -312,8 +348,15 @@ function WorkoutCompactSummary({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="min-w-0 flex-1 text-sm font-semibold leading-snug">{workout.titulo}</h3>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          {leadingRoutineIcon ? (
+            <WorkoutLeadingRoutineIcon iconKey={leadingRoutineIcon} />
+          ) : leadingAvatar ? (
+            <WorkoutLeadingAvatarBadge avatar={leadingAvatar} />
+          ) : null}
+          <h3 className="min-w-0 flex-1 pt-1.5 text-sm font-semibold leading-snug">{workout.titulo}</h3>
+        </div>
         <div className="shrink-0 text-right text-[11px] leading-tight text-muted-foreground tabular-nums">
           {!hideDate && workout.fecha ? (
             <time dateTime={workout.fecha}>{format(new Date(workout.fecha), "d MMM yyyy", { locale: es })}</time>
@@ -352,6 +395,8 @@ export function WorkoutDetailsContent({
   variant = "full",
   hideHeader = false,
   hideDate = false,
+  leadingAvatar,
+  leadingRoutineIcon,
 }: WorkoutDetailsContentProps) {
   const resolvedContainerClassName =
     containerClassName ?? (variant === "compact" ? "px-6 py-4" : "p-6");
@@ -496,6 +541,8 @@ export function WorkoutDetailsContent({
           groupSets={groupSets}
           maxSets={maxSets}
           hideDate={hideDate}
+          leadingAvatar={leadingAvatar}
+          leadingRoutineIcon={leadingRoutineIcon}
         />
       ) : (
         <>

@@ -219,57 +219,20 @@
 
 /*
  * En dispositivos táctiles (móvil/tablet) eliminamos cualquier estado de foco
- * persistente tras un tap sobre botones, selects, radios, checkboxes, tabs,
- * menús, enlaces, etc. En escritorio (hover fino, teclado) el foco se preserva
- * intacto para mantener la accesibilidad.
+ * visible tras un tap. En escritorio (hover fino, teclado) el foco se preserva
+ * para accesibilidad. Los campos de texto (input/textarea/select/contenteditable)
+ * quedan excluidos para que el usuario vea qué campo está activo al escribir.
  *
- * Solo neutralizamos controles clicables. Inputs/textarea quedan fuera a
- * propósito: cuando el usuario escribe en un campo, debe seguir viéndose qué
- * campo está activo.
+ * Complementado por installMobileTapFocusReset.ts, que hace blur del elemento
+ * activo tras cada toque (salvo campos de texto).
  */
 @media (hover: none) and (pointer: coarse) {
   * {
     -webkit-tap-highlight-color: transparent;
   }
 
-  button:focus,
-  button:focus-visible,
-  [role="button"]:focus,
-  [role="button"]:focus-visible,
-  [role="combobox"]:focus,
-  [role="combobox"]:focus-visible,
-  [role="listbox"]:focus,
-  [role="listbox"]:focus-visible,
-  [role="menu"]:focus,
-  [role="menu"]:focus-visible,
-  [role="menuitem"]:focus,
-  [role="menuitem"]:focus-visible,
-  [role="menuitemcheckbox"]:focus,
-  [role="menuitemcheckbox"]:focus-visible,
-  [role="menuitemradio"]:focus,
-  [role="menuitemradio"]:focus-visible,
-  [role="option"]:focus,
-  [role="option"]:focus-visible,
-  [role="tab"]:focus,
-  [role="tab"]:focus-visible,
-  [role="checkbox"]:focus,
-  [role="checkbox"]:focus-visible,
-  [role="switch"]:focus,
-  [role="switch"]:focus-visible,
-  [role="radio"]:focus,
-  [role="radio"]:focus-visible,
-  [role="slider"]:focus,
-  [role="slider"]:focus-visible,
-  [role="link"]:focus,
-  [role="link"]:focus-visible,
-  a:focus,
-  a:focus-visible,
-  select:focus,
-  select:focus-visible,
-  summary:focus,
-  summary:focus-visible,
-  [data-radix-collection-item]:focus,
-  [data-radix-collection-item]:focus-visible {
+  *:not(input, textarea, select, [contenteditable="true"]):focus,
+  *:not(input, textarea, select, [contenteditable="true"]):focus-visible {
     outline: none !important;
     box-shadow: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;

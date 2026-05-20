@@ -637,6 +637,7 @@ export type Database = {
           duracion_minutos: number | null
           es_plantilla: boolean | null
           grupo_muscular: string | null
+          icono: string
           id: string
           nivel: string | null
           nombre: string
@@ -648,6 +649,7 @@ export type Database = {
           duracion_minutos?: number | null
           es_plantilla?: boolean | null
           grupo_muscular?: string | null
+          icono?: string
           id?: string
           nivel?: string | null
           nombre: string
@@ -659,6 +661,7 @@ export type Database = {
           duracion_minutos?: number | null
           es_plantilla?: boolean | null
           grupo_muscular?: string | null
+          icono?: string
           id?: string
           nivel?: string | null
           nombre?: string

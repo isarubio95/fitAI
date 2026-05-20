@@ -20,7 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Dumbbell, Pencil, Loader2 } from "lucide-react";
+import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Pencil, Loader2 } from "lucide-react";
 import { WorkoutDetailsContent, WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { cn } from "@/lib/utils";
 import { buildAuthAvatarCandidates, useUserAvatar } from "@/hooks/useUserAvatar";
@@ -177,6 +177,24 @@ function ProfileDrawerSheet() {
   const { data: logros = [], isLoading: loadingLogros } = useLogros(statsUserId);
   const { data: workoutsHistory = [], isLoading: loadingWorkoutHistory } = useWorkoutHistory(statsUserId);
 
+  const { data: routineIconsByTitle = {} } = useQuery({
+    queryKey: ["profile-routine-icons", profileUserId],
+    enabled: open && !!profileUserId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rutina")
+        .select("nombre, icono")
+        .eq("usuario_id", profileUserId)
+        .not("es_plantilla", "eq", true);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      for (const row of data ?? []) {
+        if (!map[row.nombre]) map[row.nombre] = row.icono;
+      }
+      return map;
+    },
+  });
+
   const { data: perfilRow, isLoading: loadingPerfil } = useQuery({
     queryKey: ["perfil-drawer", profileUserId],
     enabled: open && !!profileUserId,
@@ -269,9 +287,10 @@ function ProfileDrawerSheet() {
         side="left"
         className="flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
       >
-        <DrawerHeader className="bg-card px-6 pb-2 pt-6 text-left dark:bg-transparent">
-          <DrawerTitle className="sr-only">{displayNameLine}</DrawerTitle>
-          <div className="flex gap-4 items-start">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-card dark:bg-transparent">
+          <DrawerHeader className="bg-card px-6 pb-2 pt-8 text-left dark:bg-transparent">
+            <DrawerTitle className="sr-only">{displayNameLine}</DrawerTitle>
+            <div className="flex gap-4 items-start">
             <div className="relative mr-1 shrink-0">
               <Avatar className="h-16 w-16 ring-2 ring-border/60">
                 {displayAvatar.src && (
@@ -368,41 +387,9 @@ function ProfileDrawerSheet() {
               </div>
             </div>
           </div>
-        </DrawerHeader>
+          </DrawerHeader>
 
-        <Dialog open={!!followListMode} onOpenChange={(next) => !next && setFollowListMode(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{followListMode === "seguidores" ? "Seguidores" : "Seguidos"}</DialogTitle>
-            </DialogHeader>
-            <div className="max-h-[50dvh] overflow-y-auto pr-1">
-              {loadingFollowUsers ? (
-                <p className="py-2 text-sm text-muted-foreground">Cargando...</p>
-              ) : followUsers.length === 0 ? (
-                <p className="py-2 text-sm text-muted-foreground">No hay usuarios para mostrar.</p>
-              ) : (
-                <div className="space-y-1">
-                  {followUsers.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="flex w-full items-center gap-3 rounded-md border px-2 py-2 text-left transition-colors hover:bg-muted/50"
-                      onClick={() => {
-                        setFollowListMode(null);
-                        openUserProfile(p.id);
-                      }}
-                    >
-                      <UserAvatar avatarUrl={p.avatar_url} username={p.username} className="h-8 w-8" />
-                      <p className="text-sm font-medium truncate">{p.username ?? "Usuario"}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto bg-card pb-6 pt-3 dark:bg-transparent">
+          <div className="space-y-6 pb-6">
           {xp && stats && (
             <Card className="w-full max-w-none rounded-none border-0 bg-card shadow-none dark:bg-transparent md:rounded-3xl">
               <CardContent className="space-y-3 px-6 py-4">
@@ -491,9 +478,7 @@ function ProfileDrawerSheet() {
           </div>
 
           <div className="space-y-3">
-            <p className="flex items-center gap-2 px-6 text-sm font-medium pt-3">
-              <Dumbbell className="h-4 w-4 text-muted-foreground" /> Últimos entrenos
-            </p>
+            <p className="px-6 text-sm font-medium pt-3">Últimos entrenos</p>
 
             {loadingWorkoutHistory ? (
               <div className="grid grid-cols-1 gap-2 px-6">
@@ -518,14 +503,51 @@ function ProfileDrawerSheet() {
                     aria-label={`Ver detalle de ${w.titulo}`}
                   >
                     <Card className="w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs transition-colors hover:bg-muted/30 md:rounded-3xl md:border-x">
-                      <WorkoutDetailsContent workout={w} variant="compact" />
+                      <WorkoutDetailsContent
+                        workout={w}
+                        variant="compact"
+                        leadingRoutineIcon={routineIconsByTitle[w.titulo]}
+                      />
                     </Card>
                   </button>
                 ))}
               </div>
             )}
           </div>
+          </div>
         </div>
+
+        <Dialog open={!!followListMode} onOpenChange={(next) => !next && setFollowListMode(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{followListMode === "seguidores" ? "Seguidores" : "Seguidos"}</DialogTitle>
+            </DialogHeader>
+            <div className="max-h-[50dvh] overflow-y-auto pr-1">
+              {loadingFollowUsers ? (
+                <p className="py-2 text-sm text-muted-foreground">Cargando...</p>
+              ) : followUsers.length === 0 ? (
+                <p className="py-2 text-sm text-muted-foreground">No hay usuarios para mostrar.</p>
+              ) : (
+                <div className="space-y-1">
+                  {followUsers.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="flex w-full items-center gap-3 rounded-md border px-2 py-2 text-left transition-colors hover:bg-muted/50"
+                      onClick={() => {
+                        setFollowListMode(null);
+                        openUserProfile(p.id);
+                      }}
+                    >
+                      <UserAvatar avatarUrl={p.avatar_url} username={p.username} className="h-8 w-8" />
+                      <p className="text-sm font-medium truncate">{p.username ?? "Usuario"}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </DrawerContent>
     </Drawer>
 

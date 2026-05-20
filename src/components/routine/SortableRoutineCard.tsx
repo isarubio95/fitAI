@@ -9,7 +9,7 @@ import { Play, Pencil, Trash2, Dumbbell, GripVertical, ChevronDown } from "lucid
 import type { RutinaWithDetails } from "@/types/routine";
 import { formatRitmoSegKmLabel } from "@/types/workout";
 import { cn } from "@/lib/utils";
-import { getRoutineIconKey, resolveRoutineIcon } from "@/lib/routineIcons";
+import { resolveRoutineIcon } from "@/lib/routineIcons";
 
 interface SortableRoutineCardProps {
   routine: RutinaWithDetails;
@@ -27,7 +27,7 @@ export function SortableRoutineCard({
   onStart,
 }: SortableRoutineCardProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const RoutineTitleIcon = resolveRoutineIcon(getRoutineIconKey(r.id));
+  const RoutineTitleIcon = resolveRoutineIcon(r.icono);
 
   const {
     attributes,

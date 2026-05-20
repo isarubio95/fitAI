@@ -48,8 +48,8 @@ import type { RoutineExerciseFormData } from "@/types/routine";
 import { type RegistroSeries, normalizeRegistroSeries } from "@/types/workout";
 import {
   ROUTINE_ICON_OPTIONS,
-  getRoutineIconKey,
-  setRoutineIconKey,
+  DEFAULT_ROUTINE_ICON_KEY,
+  resolveRoutineIconKey,
   type RoutineIconKey,
 } from "@/lib/routineIcons";
 import { cn } from "@/lib/utils";
@@ -92,7 +92,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
-  const [icono, setIcono] = useState<RoutineIconKey | null>(null);
+  const [icono, setIcono] = useState<RoutineIconKey>(DEFAULT_ROUTINE_ICON_KEY);
   const [ejercicios, setEjercicios] = useState<RoutineExerciseFormData[]>([]);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -109,7 +109,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
     if (isEdit && existingRoutine && open) {
       setNombre(existingRoutine.nombre);
       setDescripcion(existingRoutine.descripcion || "");
-      setIcono(getRoutineIconKey(existingRoutine.id) ?? null);
+      setIcono(resolveRoutineIconKey(existingRoutine.icono));
       setEjercicios(
         existingRoutine.ejercicios.map((ej) => ({
           tipo_ejercicio_id: (ej as any).tipo_ejercicio_id ?? undefined,
@@ -134,7 +134,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
     if (open && !isEdit) {
       setNombre("");
       setDescripcion("");
-      setIcono(null);
+      setIcono(DEFAULT_ROUTINE_ICON_KEY);
       setEjercicios([]);
       setSupersetLink(null);
     }
@@ -281,15 +281,6 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
       toast({ title: "Completa el formulario", description: "Agrega nombre y al menos un ejercicio.", variant: "destructive" });
       return;
     }
-    if (!icono) {
-      toast({
-        title: "Selecciona un icono",
-        description: "Debes elegir un icono para crear o actualizar la rutina.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setSaving(true);
     try {
       let rutinaId: string;
@@ -297,7 +288,11 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
       if (isEdit && routineId) {
         const { error } = await supabase
           .from("rutina")
-          .update({ nombre: nombre.trim(), descripcion: descripcion.trim() || null })
+          .update({
+            nombre: nombre.trim(),
+            descripcion: descripcion.trim() || null,
+            icono,
+          })
           .eq("id", routineId);
         if (error) throw error;
         rutinaId = routineId;
@@ -305,14 +300,17 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
       } else {
         const { data, error } = await supabase
           .from("rutina")
-          .insert({ nombre: nombre.trim(), descripcion: descripcion.trim() || null, usuario_id: user.id })
+          .insert({
+            nombre: nombre.trim(),
+            descripcion: descripcion.trim() || null,
+            usuario_id: user.id,
+            icono,
+          })
           .select("id")
           .single();
         if (error) throw error;
         rutinaId = data.id;
       }
-
-      setRoutineIconKey(rutinaId, icono);
 
       const inserts = ejercicios.map((ej, i) => ({
         rutina_id: rutinaId,
@@ -408,7 +406,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                       <button
                         key={opt.key}
                         type="button"
-                        onClick={() => setIcono((prev) => (prev === opt.key ? null : opt.key))}
+                        onClick={() => setIcono(opt.key)}
                         aria-pressed={isSelected}
                         title={opt.label}
                         className={cn(
@@ -423,9 +421,6 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                     );
                   })}
                 </div>
-                {!icono && (
-                  <p className="text-xs text-muted-foreground">Selecciona un icono para continuar.</p>
-                )}
               </div>
             </div>
 
