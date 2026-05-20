@@ -103,7 +103,7 @@ export function TrainingLoadWidget() {
 
   if (isLoading && !resolvedData) {
     return (
-      <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
+      <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
         <CardHeader className="px-6 pt-8 pb-2">
           <Skeleton className="h-5 w-40" />
         </CardHeader>
@@ -133,7 +133,7 @@ export function TrainingLoadWidget() {
         : (fatigueDeltaPeriod / chartData[0].fatigueScore) * 100;
 
   return (
-    <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
+    <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
       <CardHeader className="space-y-3 px-6 pt-8 pb-3">
         <div className="flex items-center gap-1.5 pb-1">
           <CardTitle asChild className="text-base">

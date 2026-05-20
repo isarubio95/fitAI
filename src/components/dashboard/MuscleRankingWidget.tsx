@@ -29,7 +29,7 @@ export function MuscleRankingWidget() {
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Top 5 */}
-        <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
+        <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
           <CardHeader className="px-6 pt-8 pb-4">
             <CardTitle className="flex items-center gap-1.5 text-base">
               <Flame className="h-4 w-4 text-primary" /> Más Entrenados
@@ -49,7 +49,7 @@ export function MuscleRankingWidget() {
         </Card>
 
         {/* Bottom 5 */}
-        <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
+        <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
           <CardHeader className="px-6 pt-8 pb-4">
             <CardTitle className="flex items-center gap-1.5 text-base">
               <Snowflake className="h-4 w-4 text-muted-foreground" /> Menos Entrenados

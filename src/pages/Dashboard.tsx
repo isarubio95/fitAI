@@ -367,7 +367,7 @@ const Dashboard = () => {
         return <TrainingLoadWidget />;
       case 'calendar':
         return (
-          <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
+          <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
             <CardHeader className="space-y-3 px-6 pt-8 pb-6">
               <div className="flex w-full flex-row items-center justify-between gap-2">
                 <Button
@@ -547,7 +547,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="w-full min-w-0 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
+    <div className="flex w-full min-w-0 flex-col gap-1 bg-background pb-8 md:max-w-2xl md:mx-auto md:px-8">
       {headerActionsSlot &&
         createPortal(
           <Button
@@ -579,7 +579,7 @@ const Dashboard = () => {
           items={widgetOrder}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-3">
+          <div className="flex w-full flex-col gap-1 bg-background">
             {widgetOrder.map((id) => (
               <SortableWidget key={id} id={id} isDragMode={isDragMode}>
                 {renderWidget(id)}

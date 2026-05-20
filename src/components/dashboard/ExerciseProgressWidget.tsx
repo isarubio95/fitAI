@@ -121,7 +121,7 @@ export function ExerciseProgressWidget() {
 
   if (loadingExercises) {
     return (
-      <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
+      <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
         <CardHeader className="px-6 pt-8 pb-2">
           <Skeleton className="h-5 w-40" />
         </CardHeader>
@@ -138,7 +138,7 @@ export function ExerciseProgressWidget() {
   const canGoNext = selectedIndex < exercises.length - 1;
 
   return (
-    <Card className="w-full rounded-none border-x-0 md:rounded-2xl md:border-x">
+    <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
       <CardHeader className="px-6 pt-8 pb-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
