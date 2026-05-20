@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 function initialsFromUsername(username?: string | null) {
   return username?.trim()?.[0]?.toUpperCase() || "U";
@@ -55,13 +56,13 @@ export default function Community() {
 
   return (
     <>
-      <div className="w-full min-w-0 space-y-0 pb-8 md:mx-auto md:max-w-2xl md:px-8">
-        <section className="space-y-0 md:space-y-3">
-          <Card className="w-full rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border">
-            <CardHeader className="pb-1">
+      <div className="flex w-full min-w-0 flex-col gap-1 bg-background pb-8 md:mx-auto md:max-w-2xl md:px-8">
+        <section className="flex w-full flex-col gap-1 bg-background">
+          <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+            <CardHeader className="px-6 pb-1 pt-8">
               <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
             </CardHeader>
-            <CardContent className="pt-4">
+            <CardContent className="px-6 pt-4 pb-8">
               <div className="relative">
                 <Input
                   placeholder="Ej: juan_gym"
@@ -77,18 +78,18 @@ export default function Community() {
           </Card>
 
           {(searching || usernameQuery.trim().length > 0) && (
-            <Card className="w-full rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border">
-              <CardContent className="space-y-3 pt-4">
+            <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+              <CardContent className="space-y-3 px-6 py-4">
                 {searching ? (
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-1 bg-background">
                     {Array.from({ length: 3 }).map((_, i) => (
-                      <Skeleton key={i} className="h-16 rounded-none md:rounded-xl" />
+                      <Skeleton key={i} className="h-16 w-full rounded-none border-0 bg-card md:rounded-xl" />
                     ))}
                   </div>
                 ) : searchResults.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No encontramos usuarios con ese nombre.</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-1 bg-background">
                     {searchResults.map((p) => {
                       const isOwn = p.id === user?.id;
                       const isFollowing = followingIds.has(p.id);
@@ -101,7 +102,7 @@ export default function Community() {
                       return (
                         <div
                           key={p.id}
-                          className="flex items-center justify-between gap-3 rounded-none border p-3 md:rounded-xl"
+                          className="flex items-center justify-between gap-3 rounded-none border-0 bg-card px-6 py-3 md:rounded-xl"
                         >
                           <button
                             type="button"
@@ -150,23 +151,21 @@ export default function Community() {
           )}
 
           {loadingFeed ? (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-1 bg-background">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-28 rounded-none md:rounded-xl" />
+                <Skeleton key={i} className="h-28 w-full rounded-none border-0 bg-card md:rounded-3xl" />
               ))}
             </div>
           ) : normalizedFeed.length === 0 ? (
             <p className="px-6 py-6 text-center text-sm text-muted-foreground">Todavía no hay entrenos publicados.</p>
           ) : (
-            <div className="space-y-2">
-              {normalizedFeed.map((item, index) => (
+            <div className="flex w-full flex-col gap-1 bg-background">
+              {normalizedFeed.map((item) => (
                 <Card
                   key={item.workout.id}
-                  className={
-                    index === 0
-                      ? "w-full overflow-hidden rounded-none border-0 bg-card shadow-none"
-                      : "w-full overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs md:rounded-3xl md:border-x"
-                  }
+                  className={cn(
+                    "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20",
+                  )}
                 >
                   <CardContent className="space-y-3 px-6 py-4">
                     <button
