@@ -300,7 +300,7 @@ const Routines = () => {
   };
 
   return (
-    <div className="w-full min-w-0 pt-3 pb-8 space-y-6 md:max-w-2xl md:mx-auto md:px-8">
+    <div className="w-full min-w-0 bg-background pt-3 pb-8 md:max-w-2xl md:mx-auto md:px-8">
       {headerActionsSlot &&
         createPortal(
           <div className="flex items-center gap-2">
@@ -365,9 +365,9 @@ const Routines = () => {
         )}
 
       {isLoading ? (
-        <div className="grid gap-3">
+        <div className="flex w-full flex-col gap-1 bg-background">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-none md:rounded-xl" />
+            <Skeleton key={i} className="h-28 w-full rounded-none border-0 bg-card md:rounded-3xl" />
           ))}
         </div>
       ) : !routines?.length ? (
@@ -381,7 +381,7 @@ const Routines = () => {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sortedRoutines.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-            <div className="grid gap-3">
+            <div className="flex w-full flex-col gap-1 bg-background">
               {sortedRoutines.map((r) => (
                 <SortableRoutineCard
                   key={r.id}

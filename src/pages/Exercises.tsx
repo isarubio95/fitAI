@@ -492,7 +492,7 @@ const Exercises = () => {
   };
 
   return (
-    <div className="w-full min-w-0 max-w-2xl mx-auto overflow-x-hidden px-0 pb-6 pt-6 space-y-4 md:px-8 md:pb-8">
+    <div className="flex w-full min-w-0 max-w-2xl flex-col gap-1 overflow-x-hidden bg-background px-0 pb-6 pt-6 mx-auto md:px-8 md:pb-8">
       {headerActionsSlot &&
         createPortal(
           <div className="flex items-center gap-2">
@@ -537,7 +537,7 @@ const Exercises = () => {
           headerActionsSlot
         )}
 
-      <Card className="w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs md:rounded-3xl md:border-x">
+      <Card className="w-full max-w-none overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
         <CardContent className="space-y-4 px-6 py-4 md:px-6 md:py-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -839,7 +839,7 @@ const Exercises = () => {
       </Card>
 
       {isError && (
-        <Card className="w-full max-w-none overflow-hidden rounded-none border-x-0 border-destructive/50 bg-destructive/5 md:rounded-3xl md:border-x">
+        <Card className="w-full max-w-none overflow-hidden rounded-none border-0 border-destructive/50 bg-destructive/5 shadow-none md:rounded-3xl md:border md:border-x">
           <CardContent className="p-4 text-sm space-y-2">
             <p className="font-medium text-destructive">Error al cargar el catálogo</p>
             <p className="text-muted-foreground">
@@ -853,10 +853,10 @@ const Exercises = () => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid w-full grid-cols-1 gap-1 bg-background sm:grid-cols-2">
         {isLoading || difficultyLoading
           ? Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-none md:rounded-xl" />
+              <Skeleton key={i} className="h-24 w-full rounded-none border-0 bg-card md:rounded-3xl" />
             ))
           : filteredExercises.map((ex) => {
               const isOwn = (ex as any).usuario_id === user?.id;
@@ -864,14 +864,15 @@ const Exercises = () => {
               return (
                 <Card
                   key={ex.id}
-                  className={`w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs transition-colors cursor-pointer md:rounded-3xl md:border-x ${
+                  className={cn(
+                    "w-full max-w-none cursor-pointer overflow-hidden rounded-none border-0 shadow-none transition-colors md:rounded-3xl md:border md:border-border/20",
                     isOwn
-                      ? "border-primary/30 bg-primary/5 hover:border-primary/50"
-                      : "hover:border-primary/50"
-                  }`}
+                      ? "bg-primary/5 md:border-primary/30 hover:md:border-primary/50"
+                      : "bg-card hover:md:border-primary/50",
+                  )}
                   onClick={() => setSelectedExercise(ex)}
                 >
-                  <CardContent className="flex items-start gap-3 p-4">
+                  <CardContent className="flex items-start gap-3 px-6 py-4">
                     <div
                       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
                         isOwn ? "bg-primary/20" : "bg-primary/10"

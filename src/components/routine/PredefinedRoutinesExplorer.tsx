@@ -9,9 +9,9 @@ import {
   useCloneRoutine,
   type PredefinedRoutine,
 } from "@/hooks/usePredefinedRoutines";
+import { resolveRoutineIcon } from "@/lib/routineIcons";
 import {
   ArrowLeft,
-  Dumbbell,
   Clock,
   Hourglass,
   Timer,
@@ -229,6 +229,8 @@ function RoutineCard({
   onClone: (id: string) => void;
   isCloning: boolean;
 }) {
+  const RoutineTitleIcon = resolveRoutineIcon(r.icono);
+
   return (
     <motion.div
       layout
@@ -240,14 +242,14 @@ function RoutineCard({
         "rounded-3xl border border-border/80 bg-card p-4 space-y-3"
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="space-y-1 min-w-0">
-          <h3 className="font-semibold text-sm leading-tight truncate">{r.nombre}</h3>
-          {r.descripcion && (
-            <p className="text-xs text-muted-foreground line-clamp-2">{r.descripcion}</p>
-          )}
-        </div>
-        <Dumbbell className="h-5 w-5 text-muted-foreground/40 shrink-0 mt-0.5" />
+      <div className="space-y-1 min-w-0">
+        <h3 className="font-semibold text-sm leading-tight flex items-center gap-2 min-w-0">
+          <RoutineTitleIcon className="h-4 w-4 shrink-0 text-primary" />
+          <span className="truncate">{r.nombre}</span>
+        </h3>
+        {r.descripcion && (
+          <p className="text-xs text-muted-foreground line-clamp-2">{r.descripcion}</p>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 export interface PredefinedRoutine {
   id: string;
   nombre: string;
+  icono: string;
   descripcion: string | null;
   nivel: string | null;
   duracion_minutos: number | null;

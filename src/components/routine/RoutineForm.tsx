@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, type ComponentProps } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type ComponentProps } from "react";
 import { formatMSS, parseMSS } from "@/hooks/useRestTimer";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -25,6 +25,7 @@ import { useRoutineById } from "@/hooks/useRoutines";
 import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,7 +45,7 @@ import { Trash2, Loader2, GripVertical, Link, Unlink, Info } from "lucide-react"
 import { badgeVariants } from "@/components/ui/badge";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
-import type { RoutineExerciseFormData } from "@/types/routine";
+import type { RoutineExerciseFormData, RutinaEjercicioWithDetails } from "@/types/routine";
 import { type RegistroSeries, normalizeRegistroSeries } from "@/types/workout";
 import {
   ROUTINE_ICON_OPTIONS,
@@ -53,6 +54,10 @@ import {
   type RoutineIconKey,
 } from "@/lib/routineIcons";
 import { cn } from "@/lib/utils";
+
+/** Mismo aspecto que WorkoutDetailsSheet: fondo de página solo entre bloques. */
+const DETAIL_SECTION_CARD_CLASS =
+  "w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:rounded-3xl md:border-x";
 
 interface RoutineFormProps {
   open: boolean;
@@ -82,6 +87,56 @@ function groupExercises(ejercicios: RoutineExerciseFormData[]) {
   return groups;
 }
 
+type RoutineFormSnapshot = {
+  nombre: string;
+  descripcion: string;
+  icono: RoutineIconKey;
+  ejercicios: RoutineExerciseFormData[];
+};
+
+function mapRoutineExercisesFromApi(ejercicios: RutinaEjercicioWithDetails[]): RoutineExerciseFormData[] {
+  return ejercicios.map((ej) => ({
+    tipo_ejercicio_id: (ej as { tipo_ejercicio_id?: string }).tipo_ejercicio_id ?? undefined,
+    usuario_ejercicio_id: (ej as { usuario_ejercicio_id?: string }).usuario_ejercicio_id ?? undefined,
+    nombre: ej.tipo_ejercicio.nombre,
+    series_objetivo: ej.series_objetivo,
+    repes_min: ej.repes_min,
+    repes_max: ej.repes_max,
+    rir: (ej as { rir?: number }).rir ?? 1,
+    orden: ej.orden,
+    superset_id: (ej as { superset_id?: string | null }).superset_id ?? null,
+    descanso: (ej as { descanso?: number }).descanso ?? 120,
+    registro_series: normalizeRegistroSeries((ej as { registro_series?: string }).registro_series),
+    duracion_objetivo_seg: (ej as { duracion_objetivo_seg?: number | null }).duracion_objetivo_seg ?? null,
+    ritmo_objetivo_seg_km: (ej as { ritmo_objetivo_seg_km?: number | null }).ritmo_objetivo_seg_km ?? null,
+  }));
+}
+
+function exerciseSnapshotKey(ej: RoutineExerciseFormData) {
+  return JSON.stringify({
+    tipo_ejercicio_id: ej.tipo_ejercicio_id ?? null,
+    usuario_ejercicio_id: ej.usuario_ejercicio_id ?? null,
+    series_objetivo: ej.series_objetivo,
+    repes_min: ej.repes_min,
+    repes_max: ej.repes_max,
+    rir: ej.rir,
+    orden: ej.orden,
+    superset_id: ej.superset_id ?? null,
+    descanso: ej.descanso,
+    registro_series: ej.registro_series,
+    duracion_objetivo_seg: ej.duracion_objetivo_seg,
+    ritmo_objetivo_seg_km: ej.ritmo_objetivo_seg_km,
+  });
+}
+
+function routineFormSnapshotsEqual(a: RoutineFormSnapshot, b: RoutineFormSnapshot) {
+  if (a.nombre.trim() !== b.nombre.trim()) return false;
+  if (a.descripcion.trim() !== b.descripcion.trim()) return false;
+  if (a.icono !== b.icono) return false;
+  if (a.ejercicios.length !== b.ejercicios.length) return false;
+  return a.ejercicios.every((ej, i) => exerciseSnapshotKey(ej) === exerciseSnapshotKey(b.ejercicios[i]));
+}
+
 export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -102,31 +157,24 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
   // When linking a superset, we store the index + generated superset_id
   const [supersetLink, setSupersetLink] = useState<{ afterIndex: number; supersetId: string } | null>(null);
+  const [initialSnapshot, setInitialSnapshot] = useState<RoutineFormSnapshot | null>(null);
 
   const isEdit = !!routineId;
 
   useEffect(() => {
     if (isEdit && existingRoutine && open) {
-      setNombre(existingRoutine.nombre);
-      setDescripcion(existingRoutine.descripcion || "");
-      setIcono(resolveRoutineIconKey(existingRoutine.icono));
-      setEjercicios(
-        existingRoutine.ejercicios.map((ej) => ({
-          tipo_ejercicio_id: (ej as any).tipo_ejercicio_id ?? undefined,
-          usuario_ejercicio_id: (ej as any).usuario_ejercicio_id ?? undefined,
-          nombre: ej.tipo_ejercicio.nombre,
-          series_objetivo: ej.series_objetivo,
-          repes_min: ej.repes_min,
-          repes_max: ej.repes_max,
-          rir: (ej as any).rir ?? 1,
-          orden: ej.orden,
-          superset_id: (ej as any).superset_id ?? null,
-          descanso: (ej as any).descanso ?? 120,
-          registro_series: normalizeRegistroSeries((ej as any).registro_series),
-          duracion_objetivo_seg: (ej as any).duracion_objetivo_seg ?? null,
-          ritmo_objetivo_seg_km: (ej as any).ritmo_objetivo_seg_km ?? null,
-        }))
-      );
+      const loadedEjercicios = mapRoutineExercisesFromApi(existingRoutine.ejercicios);
+      const snapshot: RoutineFormSnapshot = {
+        nombre: existingRoutine.nombre,
+        descripcion: existingRoutine.descripcion || "",
+        icono: resolveRoutineIconKey(existingRoutine.icono),
+        ejercicios: loadedEjercicios,
+      };
+      setNombre(snapshot.nombre);
+      setDescripcion(snapshot.descripcion);
+      setIcono(snapshot.icono);
+      setEjercicios(loadedEjercicios);
+      setInitialSnapshot(snapshot);
     }
   }, [isEdit, existingRoutine, open]);
 
@@ -137,8 +185,19 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
       setIcono(DEFAULT_ROUTINE_ICON_KEY);
       setEjercicios([]);
       setSupersetLink(null);
+      setInitialSnapshot(null);
     }
   }, [open, isEdit]);
+
+  useEffect(() => {
+    if (!open) setInitialSnapshot(null);
+  }, [open]);
+
+  const isDirty = useMemo(() => {
+    if (!isEdit || !initialSnapshot) return false;
+    const current: RoutineFormSnapshot = { nombre, descripcion, icono, ejercicios };
+    return !routineFormSnapshotsEqual(initialSnapshot, current);
+  }, [isEdit, initialSnapshot, nombre, descripcion, icono, ejercicios]);
 
   const addExercise = useCallback(
     (
@@ -362,126 +421,156 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
     <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
       <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0">
         <div className="flex h-full min-h-0 flex-col overflow-hidden">
-          <DrawerHeader className="sticky top-0 z-10 shrink-0 bg-card border-b border-border">
+          <DrawerHeader className="sticky top-0 z-10 shrink-0 border-b border-border bg-card px-6 text-left">
             <div className="flex items-center justify-between">
               <DrawerTitle className="text-lg">
                 {isEdit ? "Editar Rutina" : "Nueva Rutina"}
               </DrawerTitle>
-              <Button variant="default" onClick={handleSave} disabled={saving} size="sm">
+              <Button
+                variant="default"
+                onClick={handleSave}
+                disabled={saving || (isEdit && !isDirty)}
+                size="sm"
+              >
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEdit ? "Actualizar" : "Guardar"}
               </Button>
             </div>
           </DrawerHeader>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-6">
-            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="routine-name">Nombre</Label>
-                <Input
-                  id="routine-name"
-                  placeholder="Ej: Push Day, Pierna A..."
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  className="h-12"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="routine-desc">Descripción</Label>
-                <Textarea
-                  id="routine-desc"
-                  placeholder="Descripción opcional..."
-                  value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
-                  rows={2}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Icono de rutina</Label>
-                <div className="grid grid-cols-4 gap-2">
-                  {ROUTINE_ICON_OPTIONS.map((opt) => {
-                    const isSelected = icono === opt.key;
-                    const Icon = opt.Icon;
-                    return (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => setIcono(opt.key)}
-                        aria-pressed={isSelected}
-                        title={opt.label}
-                        className={cn(
-                          "h-14 rounded-lg border transition-colors flex items-center justify-center",
-                          isSelected
-                            ? "border-primary bg-primary/20 text-primary dark:bg-primary/25"
-                            : "border-border bg-background text-muted-foreground hover:text-foreground [&_svg]:opacity-85 hover:[&_svg]:opacity-100 transition-colors",
-                        )}
-                      >
-                        <Icon className="h-5 w-5" />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleRoutineDragEnd}>
-            <SortableContext items={ejercicios.map((_, i) => i)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-4">
-                {groups.map((group, gIdx) => {
-                  const isSuperset = !!group.supersetId && group.items.length > 1;
-
-                  if (isSuperset) {
-                    return (
-                      <div key={group.supersetId} className="relative rounded-xl border-2 border-primary/40 bg-primary/5">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />
-                         <div className="px-3 pt-2 pb-1">
-                          <span className="text-xs font-medium text-primary">🔗 Superserie</span>
-                        </div>
-                        <div className="divide-y divide-border">
-                          {group.items.map(({ exercise: ej, originalIndex: i }) => (
-                            <SortableExerciseRow
-                              key={i}
-                              sortId={i}
-                              exercise={ej}
-                              index={i}
-                              onUpdateField={updateExerciseField}
-                              onRemove={removeExercise}
-                              onLinkSuperset={startSupersetLink}
-                              onBreakSuperset={breakSuperset}
-                              isInSuperset
-                              onViewExerciseInfo={handleViewExerciseInfo}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  const { exercise: ej, originalIndex: i } = group.items[0];
-                  return (
-                    <SortableExerciseRow
-                      key={i}
-                      sortId={i}
-                      exercise={ej}
-                      index={i}
-                      onUpdateField={updateExerciseField}
-                      onRemove={removeExercise}
-                      onLinkSuperset={startSupersetLink}
-                      onBreakSuperset={breakSuperset}
-                      isInSuperset={false}
-                      onViewExerciseInfo={handleViewExerciseInfo}
+          <div className="min-h-0 flex-1 overflow-y-auto bg-background">
+            <div className="flex flex-col gap-1 bg-background pb-20">
+              <Card className={DETAIL_SECTION_CARD_CLASS}>
+                <CardContent className="space-y-3 px-6 py-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="routine-name">Nombre</Label>
+                    <Input
+                      id="routine-name"
+                      placeholder="Ej: Push Day, Pierna A..."
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      className="h-12"
                     />
-                  );
-                })}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="routine-desc">Descripción</Label>
+                    <Textarea
+                      id="routine-desc"
+                      placeholder="Descripción opcional..."
+                      value={descripcion}
+                      onChange={(e) => setDescripcion(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Icono de rutina</Label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {ROUTINE_ICON_OPTIONS.map((opt) => {
+                        const isSelected = icono === opt.key;
+                        const Icon = opt.Icon;
+                        return (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            onClick={() => setIcono(opt.key)}
+                            aria-pressed={isSelected}
+                            title={opt.label}
+                            className={cn(
+                              "h-14 rounded-lg border transition-colors flex items-center justify-center",
+                              isSelected
+                                ? "border-primary bg-primary/20 text-primary dark:bg-primary/25"
+                                : "border-border bg-background text-muted-foreground hover:text-foreground [&_svg]:opacity-85 hover:[&_svg]:opacity-100 transition-colors",
+                            )}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-                <ExerciseSelector
-                  open={pickerOpen}
-                  onOpenChange={(o) => { setPickerOpen(o); if (!o) setSupersetLink(null); }}
-                  onSelect={addExercise}
-                />
-              </div>
-            </SortableContext>
-          </DndContext>
+              <Card className={DETAIL_SECTION_CARD_CLASS}>
+                <CardContent className="p-0">
+                  <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-3">
+                    <div className="font-semibold">Ejercicios</div>
+                    <div className="text-xs text-muted-foreground tabular-nums">
+                      {ejercicios.length} ejercicio{ejercicios.length === 1 ? "" : "s"}
+                    </div>
+                  </div>
+
+                  <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleRoutineDragEnd}>
+                    <SortableContext items={ejercicios.map((_, i) => i)} strategy={verticalListSortingStrategy}>
+                      {ejercicios.length > 0 ? (
+                        <div className="flex flex-col gap-1 bg-background">
+                          {groups.map((group) => {
+                            const isSuperset = !!group.supersetId && group.items.length > 1;
+
+                            if (isSuperset) {
+                              return (
+                                <div key={group.supersetId} className="flex flex-col gap-1 bg-background">
+                                  <div className="bg-primary/5 px-6 pt-2 pb-1">
+                                    <span className="text-xs font-medium text-primary">🔗 Superserie</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1 bg-background">
+                                    {group.items.map(({ exercise: ej, originalIndex: i }) => (
+                                      <SortableExerciseRow
+                                        key={i}
+                                        sortId={i}
+                                        exercise={ej}
+                                        index={i}
+                                        onUpdateField={updateExerciseField}
+                                        onRemove={removeExercise}
+                                        onLinkSuperset={startSupersetLink}
+                                        onBreakSuperset={breakSuperset}
+                                        isInSuperset
+                                        onViewExerciseInfo={handleViewExerciseInfo}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            const { exercise: ej, originalIndex: i } = group.items[0];
+                            return (
+                              <SortableExerciseRow
+                                key={i}
+                                sortId={i}
+                                exercise={ej}
+                                index={i}
+                                onUpdateField={updateExerciseField}
+                                onRemove={removeExercise}
+                                onLinkSuperset={startSupersetLink}
+                                onBreakSuperset={breakSuperset}
+                                isInSuperset={false}
+                                onViewExerciseInfo={handleViewExerciseInfo}
+                              />
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="px-6 pb-4 text-sm text-muted-foreground">
+                          Añade ejercicios para completar la rutina.
+                        </p>
+                      )}
+                    </SortableContext>
+                  </DndContext>
+
+                  <div className="border-t border-border px-6 py-4">
+                    <ExerciseSelector
+                      open={pickerOpen}
+                      onOpenChange={(o) => {
+                        setPickerOpen(o);
+                        if (!o) setSupersetLink(null);
+                      }}
+                      onSelect={addExercise}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </DrawerContent>
@@ -557,9 +646,10 @@ function ExerciseRow({
   onViewExerciseInfo: (ej: RoutineExerciseFormData) => void;
 }) {
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
-  const wrapperClass = isInSuperset
-    ? "p-4 space-y-3"
-    : "rounded-xl border border-border bg-card p-4 space-y-3";
+  const wrapperClass = cn(
+    "px-6 py-4 space-y-3",
+    isInSuperset ? "bg-primary/5" : "bg-card",
+  );
 
   return (
     <div className={wrapperClass}>
