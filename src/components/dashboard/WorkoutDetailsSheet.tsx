@@ -31,7 +31,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Tooltip,
-  type TooltipProps,
+  type TooltipContentProps,
 } from "recharts";
 
 type WorkoutDetailsSheetProps = {
@@ -103,7 +103,7 @@ function getNiceRadarMax(max: number) {
   return Math.ceil(max / 250) * 250;
 }
 
-function RadarWeightTooltip({ active, payload }: TooltipProps<number, string>) {
+function RadarWeightTooltip({ active, payload }: TooltipContentProps<number, string>) {
   if (!active || !payload?.length) return null;
   const data = payload[0]?.payload as { group?: string; name?: string; weight?: number } | undefined;
   const group = data?.group ?? data?.name;
@@ -618,10 +618,11 @@ export function WorkoutDetailsContent({
                         tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
                         domain={[0, maxWeight]}
                       />
-                      <Tooltip content={<RadarWeightTooltip />} />
+                      <Tooltip content={(props) => <RadarWeightTooltip {...props} />} />
                       <Radar
                         name="Peso"
                         dataKey="weight"
+                        isAnimationActive={false}
                         stroke="hsl(var(--primary))"
                         fill="hsl(var(--primary))"
                         fillOpacity={0.12}

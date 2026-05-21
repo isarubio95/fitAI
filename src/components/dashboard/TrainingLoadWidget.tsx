@@ -5,11 +5,11 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
+  type TooltipContentProps,
 } from "recharts";
 import { Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -162,7 +162,7 @@ export function TrainingLoadWidget() {
                   <strong>Fatiga:</strong> acumula puntos al entrenar y se reduce con los días suaves/descanso.
                 </p>
                 <p>
-                  <strong>Tendencia:</strong> suavizado de la fatiga para ver dirección real.
+                  <strong>Tendencia:</strong> suavizado de la fatiga (visible en las métricas y al tocar un punto del gráfico).
                 </p>
                 <p className="pt-1 text-muted-foreground">
                   Sirve para controlar bloques de carga y evitar pasar muchos días en fatiga alta.
@@ -247,10 +247,11 @@ export function TrainingLoadWidget() {
                   width={36}
                   tickFormatter={(v) => `${Math.round(v as number)}`}
                 />
-                <Tooltip content={<TrainingLoadTooltip />} />
+                <Tooltip content={TrainingLoadTooltip} />
                 <Area
                   type="monotone"
                   dataKey="fatigueScore"
+                  isAnimationActive={false}
                   stroke="hsl(var(--accent))"
                   strokeWidth={2}
                   fill="url(#fatigueGradient)"
@@ -289,14 +290,6 @@ export function TrainingLoadWidget() {
                   }}
                   name="Fatiga"
                 />
-                <Line
-                  type="monotone"
-                  dataKey="fatigueTrend"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Tendencia"
-                />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -322,15 +315,10 @@ export function TrainingLoadWidget() {
   );
 }
 
-function TrainingLoadTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: TrainingLoadPoint }>;
-}) {
+function TrainingLoadTooltip({ active, payload }: TooltipContentProps<number, string>) {
   if (!active || !payload?.length) return null;
-  const row = payload[0].payload;
+  const row = payload[0]?.payload as TrainingLoadPoint | undefined;
+  if (!row) return null;
   return (
     <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md text-popover-foreground">
       <p className="font-medium">{format(new Date(row.date), "d MMM yyyy", { locale: es })}</p>

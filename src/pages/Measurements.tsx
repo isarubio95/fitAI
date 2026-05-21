@@ -246,10 +246,11 @@ const Measurements = () => {
                   fontSize={11}
                   domain={[(min: number) => Math.floor(min - 1), (max: number) => Math.ceil(max + 1)]}
                 />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip content={(props) => <ChartTooltipContent {...props} />} />
                 <Area
                   type="monotone"
                   dataKey="peso"
+                  isAnimationActive={false}
                   stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   fill="url(#pesoGrad)"

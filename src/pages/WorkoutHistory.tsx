@@ -256,16 +256,13 @@ const WorkoutHistory = () => {
                     tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                     interval={0}
                   />
-                  <Tooltip content={<WeeklyConsistencyTooltip />} />
+                  <Tooltip content={(props) => <WeeklyConsistencyTooltip {...props} />} />
                   <Area
                     type="linear"
                     dataKey="workouts"
+                    isAnimationActive={false}
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
-                    isAnimationActive
-                    animationBegin={0}
-                    animationDuration={900}
-                    animationEasing="linear"
                     fill="url(#weeklyConsistencyGradient)"
                     dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
                     activeDot={{ r: 5, fill: "hsl(var(--primary))" }}

@@ -1,5 +1,11 @@
-import { useState, useRef, useCallback, useMemo } from "react";
-import { useExerciseWithHistory, useExerciseHistory } from "@/hooks/useExerciseProgress";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  exerciseHistoryQueryOptions,
+  useExerciseWithHistory,
+  useExerciseHistory,
+} from "@/hooks/useExerciseProgress";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -65,11 +71,20 @@ function getUniformYScale(history: { oneRepMax: number }[], tickCount = 5) {
 }
 
 export function ExerciseProgressWidget() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data: exercises, isLoading: loadingExercises } = useExerciseWithHistory();
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const selectedExercise = exercises?.[selectedIndex];
-  const { data: historyData, isLoading: loadingHistory } = useExerciseHistory(selectedExercise?.id);
+  const { data: historyData } = useExerciseHistory(selectedExercise?.id);
+
+  useEffect(() => {
+    if (!user?.id || !exercises?.length) return;
+    exercises.forEach((ex) => {
+      void queryClient.prefetchQuery(exerciseHistoryQueryOptions(user.id, ex.id));
+    });
+  }, [exercises, queryClient, user?.id]);
   const history = historyData?.history;
   const lastRecord = historyData?.lastRecord;
   const yScale = useMemo(() => getUniformYScale(history ?? []), [history]);
@@ -181,23 +196,27 @@ export function ExerciseProgressWidget() {
               </PopoverContent>
             </Popover>
           </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <button
+              type="button"
               onClick={goPrev}
               disabled={!canGoPrev}
-              className="p-0.5 disabled:opacity-20 transition-opacity"
+              className="rounded-md p-1 text-foreground/75 transition-colors hover:bg-muted/70 hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
               aria-label="Ejercicio anterior"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
             </button>
-            <span>{selectedIndex + 1}/{exercises.length}</span>
+            <span className="min-w-10 text-center tabular-nums">
+              {selectedIndex + 1}/{exercises.length}
+            </span>
             <button
+              type="button"
               onClick={goNext}
               disabled={!canGoNext}
-              className="p-0.5 disabled:opacity-20 transition-opacity"
+              className="rounded-md p-1 text-foreground/75 transition-colors hover:bg-muted/70 hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
               aria-label="Siguiente ejercicio"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
             </button>
           </div>
         </div>
@@ -209,10 +228,8 @@ export function ExerciseProgressWidget() {
           onTouchEnd={onTouchEnd}
           className="touch-pan-y"
         >
-          {loadingHistory ? (
-            <div className="py-2">
-              <Skeleton className="h-44 w-full" />
-            </div>
+          {historyData === undefined ? (
+            <div className="h-44 py-2" aria-hidden />
           ) : !history || history.length === 0 ? (
             <div className="py-2">
               <div className="flex items-center justify-center h-44 text-sm text-muted-foreground text-center px-4">
@@ -253,10 +270,11 @@ export function ExerciseProgressWidget() {
                     interval={0}
                     tickFormatter={(v) => formatWeight(Math.max(0, v as number))}
                   />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={(props) => <CustomTooltip {...props} />} />
                   <Area
                     type="monotone"
                     dataKey="oneRepMax"
+                    isAnimationActive={false}
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
                     fill="url(#progressGradient)"

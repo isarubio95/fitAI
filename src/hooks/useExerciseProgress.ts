@@ -65,78 +65,86 @@ export interface LastRecord {
   date: string;
 }
 
+export interface ExerciseHistoryResult {
+  history: ExerciseHistoryPoint[];
+  lastRecord: LastRecord | null;
+}
+
+export const exerciseHistoryQueryKey = (exerciseId: string) => ["exercise-history", exerciseId] as const;
+
+const EXERCISE_HISTORY_STALE_MS = 10 * 60 * 1000;
+
+export async function fetchExerciseHistory(
+  userId: string,
+  exerciseId: string,
+): Promise<ExerciseHistoryResult> {
+  const { data, error } = await supabase
+    .from("serie")
+    .select(`
+      peso_kg,
+      repeticiones,
+      created_at,
+      ejercicio:ejercicio_id!inner (
+         actividad:actividad_id ( fecha )
+      )
+    `)
+    .eq("usuario_id", userId)
+    .eq("ejercicio.tipo_ejercicio_id", exerciseId)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+
+  const sessionsMap = new Map<string, ExerciseHistoryPoint>();
+
+  data?.forEach((item: { ejercicio?: { actividad?: { fecha?: string } }; created_at: string; peso_kg: number; repeticiones: number }) => {
+    const dateStr = item.ejercicio?.actividad?.fecha || item.created_at;
+    const dateKey = new Date(dateStr).toISOString().split("T")[0];
+
+    const peso = Number(item.peso_kg);
+    const repes = Number(item.repeticiones);
+    const estimated1RM = peso * (1 + 0.0333 * repes);
+
+    if (!sessionsMap.has(dateKey)) {
+      sessionsMap.set(dateKey, {
+        date: dateKey,
+        oneRepMax: estimated1RM,
+        weight: peso,
+        reps: repes,
+      });
+    } else {
+      const current = sessionsMap.get(dateKey)!;
+      if (estimated1RM > current.oneRepMax) {
+        current.oneRepMax = estimated1RM;
+        current.weight = peso;
+        current.reps = repes;
+      }
+    }
+  });
+
+  const history = Array.from(sessionsMap.values()).sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
+
+  return {
+    history,
+    lastRecord: history.length > 0 ? history[history.length - 1] : null,
+  };
+}
+
+export function exerciseHistoryQueryOptions(userId: string, exerciseId: string) {
+  return {
+    queryKey: exerciseHistoryQueryKey(exerciseId),
+    queryFn: () => fetchExerciseHistory(userId, exerciseId),
+    staleTime: EXERCISE_HISTORY_STALE_MS,
+  } as const;
+}
+
 // Returns daily best estimated 1RM for a specific exercise type
-// En src/hooks/useExerciseProgress.ts
-
-// ... imports
-
 export function useExerciseHistory(exerciseId: string | null) {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["exercise-history", exerciseId],
+    ...exerciseHistoryQueryOptions(user!.id, exerciseId!),
     enabled: !!user && !!exerciseId,
-    queryFn: async () => {
-      // 1. Query: Asegúrate de traer la fecha de la ACTIVIDAD, no solo la de la serie
-      const { data, error } = await supabase
-        .from("serie")
-        .select(`
-          peso_kg,
-          repeticiones,
-          created_at,
-          ejercicio:ejercicio_id!inner (
-             actividad:actividad_id ( fecha ) 
-          )
-        `)
-        .eq("usuario_id", user!.id)
-        .eq("ejercicio.tipo_ejercicio_id", exerciseId)
-        .order("created_at", { ascending: true }); // Ordenamos cronológicamente
-
-      if (error) throw error;
-
-      // 2. Agrupación Robusta
-      const sessionsMap = new Map<string, { weight: number; reps: number; oneRepMax: number; date: string }>();
-
-      data?.forEach((item: { ejercicio?: { actividad?: { fecha?: string } }; created_at: string; peso_kg: number; repeticiones: number }) => {
-        // TRUCO: Priorizamos la fecha elegida en la actividad.
-        // Si no existe, usamos created_at.
-        // Cortamos la cadena para quedarnos SOLO con 'YYYY-MM-DD'
-        const dateStr = item.ejercicio?.actividad?.fecha || item.created_at;
-        
-        // Convertimos a objeto Date para manejar zonas horarias si hace falta, 
-        // pero lo más seguro es cortar el string ISO si viene de Supabase
-        const dateKey = new Date(dateStr).toISOString().split('T')[0]; 
-
-        const peso = Number(item.peso_kg);
-        const repes = Number(item.repeticiones);
-        const estimated1RM = peso * (1 + (0.0333 * repes));
-
-        // Lógica: "Me quedo con la MEJOR serie de ese día"
-        if (!sessionsMap.has(dateKey)) {
-          sessionsMap.set(dateKey, { 
-            date: dateKey, // Usamos la fecha limpia
-            oneRepMax: estimated1RM,
-            weight: peso,
-            reps: repes
-          });
-        } else {
-          const current = sessionsMap.get(dateKey);
-          if (estimated1RM > current.oneRepMax) {
-            current.oneRepMax = estimated1RM;
-            current.weight = peso;
-            current.reps = repes;
-          }
-        }
-      });
-
-      // 3. Convertir a Array y Ordenar
-      const history = Array.from(sessionsMap.values())
-        .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-      return {
-        history,
-        lastRecord: history.length > 0 ? history[history.length - 1] : null
-      };
-    }
   });
 }
