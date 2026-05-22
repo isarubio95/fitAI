@@ -251,7 +251,7 @@ export function AppLayout() {
             className={cn(
               "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 transition-[padding-top] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none md:pb-0",
               showSectionPills && !areHeaderPillsCollapsed ? "pt-26 max-md:pt-26" : "pt-12 max-md:pt-12",
-              "md:pt-0",
+              "md:pt-6",
             )}
           >
             {/* Navegación por gestos desactivada: usamos solo el contenido de rutas directamente */}
