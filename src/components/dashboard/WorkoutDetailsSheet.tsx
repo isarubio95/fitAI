@@ -21,6 +21,7 @@ import {
   formatRitmoSegKmLabel,
 } from "@/types/workout";
 import { cn } from "@/lib/utils";
+import { DRAWER_SECTION_CARD_CLASS } from "@/lib/drawerStyles";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -39,10 +40,6 @@ type WorkoutDetailsSheetProps = {
   onOpenChange: (open: boolean) => void;
   workoutId: string | null;
 };
-
-/** Mismo aspecto que las cards apiladas del dashboard: fondo de página solo entre bloques. */
-const DETAIL_SECTION_CARD_CLASS =
-  "w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:rounded-3xl md:border-x";
 
 function formatWeight(value: number) {
   const n = Number(value);
@@ -529,9 +526,9 @@ export function WorkoutDetailsContent({
               <Skeleton className="h-6 w-2/3" />
               <Skeleton className="h-4 w-1/3" />
             </div>
-            <Skeleton className="h-40 w-full rounded-xl" />
-            <Skeleton className="h-56 w-full rounded-xl" />
-            <Skeleton className="h-32 w-full rounded-xl" />
+            <Skeleton className="h-40 w-full rounded-none" />
+            <Skeleton className="h-56 w-full rounded-none" />
+            <Skeleton className="h-32 w-full rounded-none" />
           </div>
         )
       ) : isCompact ? (
@@ -557,14 +554,14 @@ export function WorkoutDetailsContent({
 
           <div className="space-y-2 bg-background">
             {workout.comentarios ? (
-              <Card className={DETAIL_SECTION_CARD_CLASS}>
+              <Card className={DRAWER_SECTION_CARD_CLASS}>
                 <CardContent className="px-6 py-4 text-sm text-muted-foreground whitespace-pre-wrap">
                   {workout.comentarios}
                 </CardContent>
               </Card>
             ) : null}
 
-            <Card className={DETAIL_SECTION_CARD_CLASS}>
+            <Card className={DRAWER_SECTION_CARD_CLASS}>
               <CardContent className="px-6 py-4">
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="font-semibold">Series por grupo muscular</div>
@@ -594,7 +591,7 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card className={DETAIL_SECTION_CARD_CLASS}>
+            <Card className={DRAWER_SECTION_CARD_CLASS}>
               <CardContent className="px-6 py-4">
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="font-semibold">Peso levantado por grupo muscular</div>
@@ -641,7 +638,7 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card className={DETAIL_SECTION_CARD_CLASS}>
+            <Card className={DRAWER_SECTION_CARD_CLASS}>
               <CardContent className="p-0">
                 <div className="px-6 pt-4 pb-3">
                   <div className="flex items-center justify-between gap-3">
@@ -660,7 +657,10 @@ export function WorkoutDetailsContent({
                         if (superset) {
                           return (
                             <div key={`${g.supersetId}-${idx}`} className="relative border-t-0 bg-primary/5 border-border/0">
-                              <div className="mx-4 mb-0 mt-0 rounded-xl border-2 border-primary/40 bg-primary/5 overflow-hidden">
+                              <div
+                                data-drawer-section
+                                className="mx-4 mb-0 mt-0 rounded-none border-2 border-primary/40 bg-primary/5 overflow-hidden"
+                              >
                                 <div className="px-3 pt-2 pb-1">
                                   <span className="text-xs font-medium text-primary">Superserie</span>
                                 </div>
@@ -680,7 +680,11 @@ export function WorkoutDetailsContent({
                         const ex = g.items[0];
                         if (!ex || !(ex.series ?? []).some(isSerieDone)) return null;
                         return (
-                          <div key={ex.id} className="mx-4 my-2 rounded-xl border border-border/40 bg-card">
+                          <div
+                            key={ex.id}
+                            data-drawer-section
+                            className="mx-4 my-2 rounded-none border border-border/40 bg-card"
+                          >
                             <ExerciseBlock ex={ex} topExerciseId={topExerciseId} rmByExerciseId={rmByExerciseId} />
                           </div>
                         );

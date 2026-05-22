@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { DrawerInContentContext } from "@/components/ui/drawer";
 import { useLastPerformance } from "@/hooks/useLastPerformance";
 import { useRestTimerContext } from "@/components/workout/RestTimerProvider";
 import { formatMSS } from "@/hooks/useRestTimer";
@@ -66,12 +67,16 @@ export function ExerciseCard({
   /** Misma base visual que el badge de descanso (outline + borde tema). */
   const headerMetaBadgeClass = "gap-1";
 
+  const inDrawer = useContext(DrawerInContentContext);
   const wrapperClass = isInSuperset
     ? "p-4 space-y-3"
-    : "rounded-xl border border-border bg-card p-4 space-y-3";
+    : cn(
+        "border border-border bg-card p-4 space-y-3",
+        inDrawer ? "rounded-none" : "rounded-xl",
+      );
 
   return (
-    <div className={wrapperClass}>
+    <div className={wrapperClass} data-drawer-section={inDrawer ? true : undefined}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">

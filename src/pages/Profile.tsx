@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LogOut, Mail, SunMoon } from "lucide-react";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { cn } from "@/lib/utils";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="p-4 md:p-8 pt-6 space-y-6 max-w-2xl mx-auto">
+    <div className={cn("flex max-w-2xl flex-col p-4 pt-6 md:p-8 md:mx-auto", PAGE_CARD_STACK_GAP)}>
       <header>
         <h1 className="text-2xl font-bold">Perfil</h1>
       </header>

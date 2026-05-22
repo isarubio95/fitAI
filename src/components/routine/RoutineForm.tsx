@@ -54,10 +54,7 @@ import {
   type RoutineIconKey,
 } from "@/lib/routineIcons";
 import { cn } from "@/lib/utils";
-
-/** Mismo aspecto que WorkoutDetailsSheet: fondo de página solo entre bloques. */
-const DETAIL_SECTION_CARD_CLASS =
-  "w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:rounded-3xl md:border-x";
+import { DRAWER_SECTION_CARD_CLASS } from "@/lib/drawerStyles";
 
 interface RoutineFormProps {
   open: boolean;
@@ -440,7 +437,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-background">
             <div className="flex flex-col gap-1 bg-background pb-20">
-              <Card className={DETAIL_SECTION_CARD_CLASS}>
+              <Card className={DRAWER_SECTION_CARD_CLASS}>
                 <CardContent className="space-y-3 px-6 py-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="routine-name">Nombre</Label>
@@ -491,7 +488,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                 </CardContent>
               </Card>
 
-              <Card className={DETAIL_SECTION_CARD_CLASS}>
+              <Card className={DRAWER_SECTION_CARD_CLASS}>
                 <CardContent className="p-0">
                   <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-3">
                     <div className="font-semibold">Ejercicios</div>

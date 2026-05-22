@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useLayoutActionSlot } from "@/hooks/useLayoutActionSlot";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   DndContext,
@@ -17,6 +18,8 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { useRoutines, useDeleteRoutine, useUpdateRoutineOrder } from "@/hooks/useRoutines";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { cn } from "@/lib/utils";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Button } from "@/components/ui/button";
@@ -122,7 +125,9 @@ const Routines = () => {
   const [sortDir, setSortDir] = useState<SortDir>(() => loadRoutinesSortPreference().sortDir);
 
   const [customOrder, setCustomOrder] = useState<RutinaWithDetails[] | null>(null);
-  const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLElement | null>(null);
+  const mobileActionsSlot = useLayoutActionSlot("section-pills-actions-slot", null);
+  const desktopCreateSlot = useLayoutActionSlot(null, "desktop-floating-create-slot");
+  const desktopToolbarSlot = useLayoutActionSlot(null, "desktop-section-toolbar-slot");
 
   useEffect(() => {
     if (location.state?.action === "new") {
@@ -139,11 +144,6 @@ const Routines = () => {
   useEffect(() => {
     saveRoutinesSortPreference(sortMode, sortDir);
   }, [sortMode, sortDir]);
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    setHeaderActionsSlot(document.getElementById("section-pills-actions-slot"));
-  }, []);
 
   const isDragMode = sortMode === "custom";
 
@@ -301,7 +301,7 @@ const Routines = () => {
 
   return (
     <div className="w-full min-w-0 bg-background pt-3 pb-8 md:max-w-2xl md:mx-auto md:px-8">
-      {headerActionsSlot &&
+      {mobileActionsSlot &&
         createPortal(
           <div className="flex items-center gap-2">
             {!!routines?.length && (
@@ -361,11 +361,75 @@ const Routines = () => {
               <Plus className="shrink-0" />
             </Button>
           </div>,
-          headerActionsSlot
+          mobileActionsSlot,
+        )}
+      {desktopToolbarSlot &&
+        !!routines?.length &&
+        createPortal(
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
+                title={`Orden: ${sortLabel()}`}
+                aria-label={`Ordenar rutinas, actual: ${sortLabel()}`}
+              >
+                <ArrowUpDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-popover">
+              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                <Calendar className="h-3.5 w-3.5" /> Fecha
+              </DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => selectSort("date", "desc")}>
+                Más recientes {sortMode === "date" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => selectSort("date", "asc")}>
+                Más antiguas {sortMode === "date" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                <ArrowDownAZ className="h-3.5 w-3.5" /> Nombre
+              </DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => selectSort("name", "asc")}>
+                A → Z {sortMode === "name" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => selectSort("name", "desc")}>
+                Z → A {sortMode === "name" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                <Hand className="h-3.5 w-3.5" /> Personalizado
+              </DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => selectSort("custom", "asc")}>
+                Orden manual {sortMode === "custom" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>,
+          desktopToolbarSlot,
+        )}
+      {desktopCreateSlot &&
+        createPortal(
+          <Button
+            type="button"
+            variant="new"
+            onClick={openCreateChoice}
+            title="Crear rutina"
+            aria-label="Nueva rutina"
+            className="shadow-lg"
+          >
+            <span className="whitespace-nowrap">Crear</span>
+            <Plus className="shrink-0" />
+          </Button>,
+          desktopCreateSlot,
         )}
 
       {isLoading ? (
-        <div className="flex w-full flex-col gap-1 bg-background">
+        <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-28 w-full rounded-none border-0 bg-card md:rounded-3xl" />
           ))}
@@ -381,7 +445,7 @@ const Routines = () => {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sortedRoutines.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-            <div className="flex w-full flex-col gap-1 bg-background">
+            <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
               {sortedRoutines.map((r) => (
                 <SortableRoutineCard
                   key={r.id}

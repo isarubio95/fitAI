@@ -18,6 +18,8 @@ import {
 import { es } from "date-fns/locale";
 import { type ActividadWithDetails, normalizeRegistroSeries, formatRitmoSegKmLabel } from "@/types/workout";
 import { MuscleRankingWidget } from "@/components/dashboard/MuscleRankingWidget";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { cn } from "@/lib/utils";
 
 const INITIAL_SHOW = 5;
 
@@ -172,11 +174,13 @@ const WorkoutHistory = () => {
     { label: "Series mensuales", value: monthCurr.sets, sub: undefined, pct: pctChange(monthCurr.sets, monthPrev.sets), icon: Activity },
   ];
 
+  const cardClass =
+    "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
+
   return (
-    <div className="w-full min-w-0 pb-28 pt-3 md:mx-auto md:max-w-2xl md:px-8">
-      <div className="space-y-3">
+    <div className={cn("flex w-full min-w-0 flex-col bg-background pb-28 pt-3 md:mx-auto md:max-w-2xl md:px-8", PAGE_CARD_STACK_GAP)}>
       {/* ── KPI Grid (ahora dentro de Card, con líneas divisorias internas) ── */}
-      <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
+      <Card className={cardClass}>
         <CardContent className="p-0">
           <div className="grid grid-cols-2 gap-0">
             {kpiCards.map((kpi, i) => {
@@ -214,7 +218,7 @@ const WorkoutHistory = () => {
       </Card>
 
       {/* ── Weekly Consistency Chart ── */}
-      <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
+      <Card className={cardClass}>
         <CardHeader className="px-6 pt-8 pb-4">
           <CardTitle asChild className="text-base">
             <h2>Constancia semanal</h2>
@@ -279,9 +283,9 @@ const WorkoutHistory = () => {
 
       {/* ── Records & Favorites ── */}
       {!isLoading && (topExercises.length > 0 || topLoads.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className={cn("grid w-full grid-cols-1 bg-background md:grid-cols-2", PAGE_CARD_STACK_GAP)}>
           {topExercises.length > 0 && (
-            <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
+            <Card className={cardClass}>
               <CardHeader className="px-6 pt-8 pb-4">
                 <CardTitle className="flex items-center gap-1.5 text-base">
                   <Star className="h-4 w-4 text-primary" /> Top ejercicios
@@ -302,7 +306,7 @@ const WorkoutHistory = () => {
           )}
 
           {topLoads.length > 0 && (
-            <Card className="w-full rounded-none border-x-0 md:rounded-3xl md:border-x">
+            <Card className={cardClass}>
               <CardHeader className="px-6 pt-8 pb-4">
                 <CardTitle className="flex items-center gap-1.5 text-base">
                   <Trophy className="h-4 w-4 text-primary" /> Cargas máximas
@@ -325,13 +329,13 @@ const WorkoutHistory = () => {
       )}
 
       {/* ── Recent History ── */}
-      <section className="space-y-3">
-        <h2 className="px-6 text-lg font-semibold md:px-0">Historial Reciente</h2>
+      <section className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+        <h2 className="px-6 py-2 text-lg font-semibold md:px-0">Historial Reciente</h2>
 
         {isLoading ? (
-          <div className="space-y-3">
+          <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 rounded-none md:rounded-2xl" />
+              <Skeleton key={i} className="h-16 w-full rounded-none border-0 bg-card md:rounded-3xl" />
             ))}
           </div>
         ) : !workouts?.length ? (
@@ -340,11 +344,15 @@ const WorkoutHistory = () => {
           </p>
         ) : (
           <>
-            <Accordion type="single" collapsible className="space-y-2">
+            <Accordion type="single" collapsible className={cn("flex flex-col", PAGE_CARD_STACK_GAP)}>
               {visibleWorkouts?.map((w) => {
                 const totalSets = w.ejercicios.reduce((a, ej) => a + ej.series.length, 0);
                 return (
-                  <AccordionItem key={w.id} value={w.id} className="rounded-none border border-x-0 px-4 md:rounded-2xl md:border-x">
+                  <AccordionItem
+                    key={w.id}
+                    value={w.id}
+                    className="overflow-hidden rounded-none border-0 bg-card px-4 shadow-none md:rounded-3xl md:border md:border-border/20"
+                  >
                     <AccordionTrigger className="hover:no-underline py-3">
                       <article className="flex flex-col items-start text-left gap-1">
                         <h3 className="font-semibold">{w.titulo}</h3>
@@ -414,7 +422,6 @@ const WorkoutHistory = () => {
           </>
         )}
       </section>
-      </div>
     </div>
   );
 };

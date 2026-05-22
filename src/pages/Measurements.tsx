@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useLayoutActionSlot } from "@/hooks/useLayoutActionSlot";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMeasurements, type Medida } from "@/hooks/useMeasurements";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,7 @@ import {
   ChevronDown, ChevronUp, Trash2, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -52,7 +54,8 @@ const Measurements = () => {
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLElement | null>(null);
+  const mobileActionsSlot = useLayoutActionSlot("section-pills-actions-slot", null);
+  const desktopCreateSlot = useLayoutActionSlot(null, "desktop-floating-create-slot");
 
   useEffect(() => {
     if (location.state?.action === "new") {
@@ -60,11 +63,6 @@ const Measurements = () => {
       navigate(location.pathname, { replace: true, state: { tab: location.state?.tab } });
     }
   }, [location.state]);
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    setHeaderActionsSlot(document.getElementById("section-pills-actions-slot"));
-  }, []);
 
   // ── Form state ──
   const [formDate, setFormDate] = useState<Date>(new Date());
@@ -115,9 +113,12 @@ const Measurements = () => {
     }
   };
 
+  const cardClass =
+    "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
+
   return (
-    <div className="w-full min-w-0 p-4 md:p-8 pt-6 max-w-2xl mx-auto pb-28">
-      {headerActionsSlot &&
+    <div className={cn("flex w-full min-w-0 flex-col bg-background pb-28 pt-3 md:mx-auto md:max-w-2xl md:px-8", PAGE_CARD_STACK_GAP)}>
+      {mobileActionsSlot &&
         createPortal(
           <Button
             type="button"
@@ -129,7 +130,22 @@ const Measurements = () => {
             <span className="whitespace-nowrap">Nueva</span>
             <Plus className="shrink-0" />
           </Button>,
-          headerActionsSlot
+          mobileActionsSlot,
+        )}
+      {desktopCreateSlot &&
+        createPortal(
+          <Button
+            type="button"
+            variant="new"
+            onClick={() => setSheetOpen(true)}
+            title="Registrar medida"
+            aria-label="Nueva medida"
+            className="shadow-lg"
+          >
+            <span className="whitespace-nowrap">Nueva</span>
+            <Plus className="shrink-0" />
+          </Button>,
+          desktopCreateSlot,
         )}
       <header>
         <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -195,9 +211,8 @@ const Measurements = () => {
         </Drawer>
       </header>
 
-      <div className="mt-6 space-y-3">
       {/* ── Current Weight Card ── */}
-      <Card>
+      <Card className={cardClass}>
         <CardContent className="px-6 py-8">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -227,7 +242,7 @@ const Measurements = () => {
 
       {/* ── Weight Chart ── */}
       {chartData.length > 1 && (
-        <Card>
+        <Card className={cardClass}>
           <CardContent className="px-6 py-8">
             <h2 className="text-sm font-semibold mb-3">Evolución del peso</h2>
             <ChartContainer config={chartConfig} className="aspect-2/1 w-full">
@@ -263,20 +278,22 @@ const Measurements = () => {
 
 
       {/* ── History ── */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Historial</h2>
+      <section className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+        <h2 className="px-6 py-2 text-lg font-semibold md:px-0">Historial</h2>
         {isLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
+          <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 w-full rounded-none border-0 bg-card md:rounded-3xl" />
+            ))}
           </div>
         ) : !medidas?.length ? (
-          <p className="text-sm text-muted-foreground text-center py-8">Sin registros aún.</p>
+          <p className="px-6 py-8 text-center text-sm text-muted-foreground md:px-0">Sin registros aún.</p>
         ) : (
-          <div className="space-y-2">
+          <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
             {medidas.map((m) => {
               const isOpen = expandedId === m.id;
               return (
-                <Card key={m.id}>
+                <Card key={m.id} className={cardClass}>
                   <button
                     className="w-full text-left px-4 py-3 flex items-center justify-between"
                     onClick={() => setExpandedId(isOpen ? null : m.id)}
@@ -325,7 +342,6 @@ const Measurements = () => {
           </div>
         )}
       </section>
-      </div>
     </div>
   );
 };

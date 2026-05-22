@@ -16,8 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
-
 function initialsFromUsername(username?: string | null) {
   return username?.trim()?.[0]?.toUpperCase() || "U";
 }
@@ -54,162 +54,217 @@ export default function Community() {
     return (feed ?? []).slice().sort((a, b) => new Date(b.workout.fecha).getTime() - new Date(a.workout.fecha).getTime());
   }, [feed]);
 
+  const showSearchPanel = searching || usernameQuery.trim().length > 0;
+  const communityCardClass =
+    "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
+
+  const hasMergedSecondBlock =
+    showSearchPanel || (!showSearchPanel && (loadingFeed || normalizedFeed.length > 0));
+
+  const searchFields = (
+    <>
+      <div className="relative">
+        <Input
+          placeholder="Ej: juan_gym"
+          value={usernameQuery}
+          onChange={(e) => setUsernameQuery(e.target.value)}
+          className="h-12"
+        />
+      </div>
+      {usernameQuery.trim().length === 0 && (
+        <p className="mt-3 text-sm text-muted-foreground mb-4">Escribe un username para encontrar usuarios.</p>
+      )}
+    </>
+  );
+
+  const searchResultsBody =
+    searching ? (
+      <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full rounded-none border-0 bg-card md:rounded-xl" />
+        ))}
+      </div>
+    ) : searchResults.length === 0 ? (
+      <p className="text-sm text-muted-foreground">No encontramos usuarios con ese nombre.</p>
+    ) : (
+      <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+        {searchResults.map((p) => {
+          const isOwn = p.id === user?.id;
+          const isFollowing = followingIds.has(p.id);
+
+          const openProfile = () => {
+            if (p.id === user?.id) openMyProfile();
+            else openUserProfile(p.id);
+          };
+
+          return (
+            <div
+              key={p.id}
+              className="flex items-center justify-between gap-3 rounded-none border-0 bg-card px-6 py-3 md:rounded-xl"
+            >
+              <button
+                type="button"
+                onClick={openProfile}
+                className="-m-1 flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <CommunityAvatar avatarUrl={p.avatar_url} username={p.username} className="h-10 w-10 shrink-0" />
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{p.username}</p>
+                  <p className="truncate text-xs text-muted-foreground">{p.id === user?.id ? "Tú" : "Usuario"}</p>
+                </div>
+              </button>
+
+              {!isOwn && (
+                <Button onClick={() => toggleFollow(p.id)} disabled={isToggling.has(p.id)} className="mt-0 w-auto">
+                  {isToggling.has(p.id) ? (
+                    "..."
+                  ) : isFollowing ? (
+                    <span className="flex items-center gap-2">
+                      <UserCheck className="h-4 w-4" /> Siguiendo
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <UserPlus className="h-4 w-4" /> Seguir
+                    </span>
+                  )}
+                </Button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+
+  const renderFeedItemBody = (item: (typeof normalizedFeed)[number]) => (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          if (item.author.id === user?.id) openMyProfile();
+          else openUserProfile(item.author.id);
+        }}
+        className="-m-1 flex w-full min-w-0 items-center gap-3 rounded-lg pb-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={`Ver perfil de ${item.author.username ?? "usuario"}`}
+      >
+        <CommunityAvatar
+          avatarUrl={item.author.avatar_url}
+          username={item.author.username}
+          className="h-9 w-9 shrink-0"
+        />
+        <p className="min-w-0 flex-1 truncate text-sm font-semibold">{item.author.username}</p>
+        {item.workout.fecha ? (
+          <time
+            className="shrink-0 text-[11px] text-muted-foreground tabular-nums"
+            dateTime={item.workout.fecha}
+          >
+            {format(new Date(item.workout.fecha), "d MMM yyyy", { locale: es })}
+          </time>
+        ) : null}
+      </button>
+
+      <button
+        type="button"
+        className="-mx-1 w-full rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        onClick={() => setWorkoutDetailsId(item.workout.id)}
+        aria-label={`Ver detalle de ${item.workout.titulo}`}
+      >
+        <WorkoutDetailsContent
+          workout={item.workout}
+          variant="compact"
+          hideDate
+          containerClassName="px-0 py-0"
+        />
+      </button>
+    </>
+  );
+
+  const renderFeedCard = (item: (typeof normalizedFeed)[number]) => (
+    <Card key={item.workout.id} className={communityCardClass}>
+      <CardContent className="space-y-3 px-6 py-4">{renderFeedItemBody(item)}</CardContent>
+    </Card>
+  );
+
   return (
     <>
-      <div className="flex w-full min-w-0 flex-col gap-1 bg-background pb-8 md:mx-auto md:max-w-2xl md:px-8">
-        <section className="flex w-full flex-col gap-1 bg-background">
-          <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+      <div className="flex w-full min-w-0 flex-col bg-background pb-8 md:mx-auto md:max-w-2xl md:px-8">
+        <section className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+          {/* Móvil: una sola card sin línea entre búsqueda y el bloque siguiente */}
+          <Card className={cn(communityCardClass, "md:hidden")}>
             <CardHeader className="px-6 pb-1 pt-8">
-              <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
+              <CardTitle className="text-base pb-0">Buscar por nombre de usuario</CardTitle>
             </CardHeader>
-            <CardContent className="px-6 pt-4 pb-8">
-              <div className="relative">
-                <Input
-                  placeholder="Ej: juan_gym"
-                  value={usernameQuery}
-                  onChange={(e) => setUsernameQuery(e.target.value)}
-                  className="h-12"
-                />
+            <CardContent className={cn("px-6 pt-4", hasMergedSecondBlock ? "pb-4" : "pb-8")}>{searchFields}</CardContent>
+            {showSearchPanel && (
+              <CardContent className="space-y-3 px-6 pb-4 pt-0">{searchResultsBody}</CardContent>
+            )}
+            {!showSearchPanel && loadingFeed && (
+              <div className="px-6 pb-4 pt-0">
+                <Skeleton className="h-28 w-full rounded-none border-0 bg-muted/30" />
               </div>
-              {usernameQuery.trim().length === 0 && (
-                <p className="mt-3 text-sm text-muted-foreground">Escribe un username para encontrar usuarios.</p>
-              )}
-            </CardContent>
+            )}
+            {!showSearchPanel && !loadingFeed && normalizedFeed.length > 0 && (
+              <CardContent className="space-y-3 px-6 pb-4 pt-0">
+                {renderFeedItemBody(normalizedFeed[0])}
+              </CardContent>
+            )}
           </Card>
 
-          {(searching || usernameQuery.trim().length > 0) && (
-            <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-              <CardContent className="space-y-3 px-6 py-4">
-                {searching ? (
-                  <div className="flex flex-col gap-1 bg-background">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <Skeleton key={i} className="h-16 w-full rounded-none border-0 bg-card md:rounded-xl" />
-                    ))}
-                  </div>
-                ) : searchResults.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No encontramos usuarios con ese nombre.</p>
-                ) : (
-                  <div className="flex flex-col gap-1 bg-background">
-                    {searchResults.map((p) => {
-                      const isOwn = p.id === user?.id;
-                      const isFollowing = followingIds.has(p.id);
-
-                      const openProfile = () => {
-                        if (p.id === user?.id) openMyProfile();
-                        else openUserProfile(p.id);
-                      };
-
-                      return (
-                        <div
-                          key={p.id}
-                          className="flex items-center justify-between gap-3 rounded-none border-0 bg-card px-6 py-3 md:rounded-xl"
-                        >
-                          <button
-                            type="button"
-                            onClick={openProfile}
-                            className="-m-1 flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <CommunityAvatar
-                              avatarUrl={p.avatar_url}
-                              username={p.username}
-                              className="h-10 w-10 shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold">{p.username}</p>
-                              <p className="truncate text-xs text-muted-foreground">
-                                {p.id === user?.id ? "Tú" : "Usuario"}
-                              </p>
-                            </div>
-                          </button>
-
-                          {!isOwn && (
-                            <Button
-                              onClick={() => toggleFollow(p.id)}
-                              disabled={isToggling.has(p.id)}
-                              className="mt-0 w-auto"
-                            >
-                              {isToggling.has(p.id) ? (
-                                "..."
-                              ) : isFollowing ? (
-                                <span className="flex items-center gap-2">
-                                  <UserCheck className="h-4 w-4" /> Siguiendo
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-2">
-                                  <UserPlus className="h-4 w-4" /> Seguir
-                                </span>
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
+          {/* Escritorio: cards separadas */}
+          <div className={cn("hidden md:flex md:flex-col", PAGE_CARD_STACK_GAP)}>
+            <Card className={communityCardClass}>
+              <CardHeader className="px-6 pb-1 pt-8">
+                <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
+              </CardHeader>
+              <CardContent className="px-6 pt-4 pb-8">{searchFields}</CardContent>
             </Card>
+
+            {showSearchPanel && (
+              <Card className={communityCardClass}>
+                <CardContent className="space-y-3 px-6 py-4">{searchResultsBody}</CardContent>
+              </Card>
+            )}
+
+            {!showSearchPanel && loadingFeed && (
+              <Skeleton className="h-28 w-full rounded-3xl border-0 bg-card" />
+            )}
+
+            {!showSearchPanel && !loadingFeed && normalizedFeed.length > 0 && renderFeedCard(normalizedFeed[0])}
+          </div>
+
+          {!showSearchPanel && !loadingFeed && normalizedFeed.length === 0 && (
+            <p className="px-6 py-6 text-center text-sm text-muted-foreground">Todavía no hay entrenos publicados.</p>
           )}
 
-          {loadingFeed ? (
-            <div className="flex flex-col gap-1 bg-background">
-              {Array.from({ length: 5 }).map((_, i) => (
+          {!showSearchPanel && loadingFeed && normalizedFeed.length === 0 && (
+            <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+              {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-28 w-full rounded-none border-0 bg-card md:rounded-3xl" />
               ))}
             </div>
-          ) : normalizedFeed.length === 0 ? (
-            <p className="px-6 py-6 text-center text-sm text-muted-foreground">Todavía no hay entrenos publicados.</p>
-          ) : (
-            <div className="flex w-full flex-col gap-1 bg-background">
-              {normalizedFeed.map((item) => (
-                <Card
-                  key={item.workout.id}
-                  className={cn(
-                    "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20",
-                  )}
-                >
-                  <CardContent className="space-y-3 px-6 py-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (item.author.id === user?.id) openMyProfile();
-                        else openUserProfile(item.author.id);
-                      }}
-                      className="-m-1 flex w-full min-w-0 items-center gap-3 pb-2 rounded-lg text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
-                      aria-label={`Ver perfil de ${item.author.username ?? "usuario"}`}
-                    >
-                      <CommunityAvatar
-                        avatarUrl={item.author.avatar_url}
-                        username={item.author.username}
-                        className="h-9 w-9 shrink-0"
-                      />
-                      <p className="min-w-0 flex-1 truncate text-sm font-semibold">{item.author.username}</p>
-                      {item.workout.fecha ? (
-                        <time
-                          className="shrink-0 text-[11px] text-muted-foreground tabular-nums"
-                          dateTime={item.workout.fecha}
-                        >
-                          {format(new Date(item.workout.fecha), "d MMM yyyy", { locale: es })}
-                        </time>
-                      ) : null}
-                    </button>
+          )}
 
-                    <button
-                      type="button"
-                      className="-mx-1 w-full rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      onClick={() => setWorkoutDetailsId(item.workout.id)}
-                      aria-label={`Ver detalle de ${item.workout.titulo}`}
-                    >
-                      <WorkoutDetailsContent
-                        workout={item.workout}
-                        variant="compact"
-                        hideDate
-                        containerClassName="px-0 py-0"
-                      />
-                    </button>
-                  </CardContent>
-                </Card>
-              ))}
+          {!showSearchPanel && !loadingFeed && normalizedFeed.length > 1 && (
+            <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+              {normalizedFeed.slice(1).map((item) => renderFeedCard(item))}
             </div>
+          )}
+
+          {showSearchPanel && (
+            <>
+              {loadingFeed ? (
+                <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-28 w-full rounded-none border-0 bg-card md:rounded-3xl" />
+                  ))}
+                </div>
+              ) : normalizedFeed.length === 0 ? (
+                <p className="px-6 py-6 text-center text-sm text-muted-foreground">Todavía no hay entrenos publicados.</p>
+              ) : (
+                <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+                  {normalizedFeed.map((item) => renderFeedCard(item))}
+                </div>
+              )}
+            </>
           )}
         </section>
       </div>

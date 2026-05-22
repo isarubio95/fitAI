@@ -7,6 +7,8 @@ import { CardioRoutineForm } from "@/components/cardio/CardioRoutineForm";
 import { useCardioRoutines, useDeleteCardioRoutine } from "@/hooks/useCardioRoutines";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useToast } from "@/hooks/use-toast";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { cn } from "@/lib/utils";
 
 export default function CardioRoutines() {
   const { data, isLoading } = useCardioRoutines();
@@ -20,7 +22,7 @@ export default function CardioRoutines() {
   const editing = useMemo(() => data?.find((r) => r.id === editId) ?? null, [data, editId]);
 
   return (
-    <div className="w-full min-w-0 space-y-4 px-4 pb-8 pt-6 md:mx-auto md:max-w-2xl md:px-8">
+    <div className={cn("flex w-full min-w-0 flex-col px-4 pb-8 pt-6 md:mx-auto md:max-w-2xl md:px-8", PAGE_CARD_STACK_GAP)}>
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Rutinas de Cardio</h2>
         <Button onClick={() => { setEditId(null); setFormOpen(true); }}>

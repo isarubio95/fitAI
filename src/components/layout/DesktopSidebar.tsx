@@ -40,12 +40,13 @@ export function DesktopSidebar() {
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-white/50 dark:bg-zinc-950/50 backdrop-blur-2xl h-dvh sticky top-0">
-      <div className="flex h-[calc(4rem+1px)] shrink-0 items-center gap-2 border-b border-border px-6">
-        <img src="/logo.svg" alt="FitAI" className="h-9 w-9 rounded-lg shrink-0" />
-        <span className="text-lg font-bold flex-1 min-w-0 truncate">FitAI</span>
-        <ProfileDrawerTrigger />
+      <div className="shrink-0 border-b border-border px-4 py-4">
+        <div className="flex items-center gap-2">
+          <img src="/logo.svg" alt="FitAI" className="h-8 w-8 shrink-0 rounded-lg" />
+          <span className="min-w-0 flex-1 truncate text-sm font-bold text-muted-foreground">FitAI</span>
+        </div>
       </div>
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className="flex-1 space-y-1 overflow-y-auto p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="w-full justify-start gap-3 mb-3 text-base" size="sm">
@@ -128,9 +129,11 @@ export function DesktopSidebar() {
         ))}
       </nav>
       <div className="mt-auto shrink-0 border-t border-border px-4 pb-4 pt-4">
-        <div className="flex items-center justify-end gap-0.5 pb-3">
+        <div className="flex flex-wrap items-center justify-end gap-0.5 pb-3">
+          <div id="sidebar-header-actions-slot" className="flex items-center gap-0.5" />
           <InAppNotificationsBell />
           <SettingsDrawer />
+          <ProfileDrawerTrigger />
         </div>
         <div className="flex justify-end border-t border-border pt-3">
           <Button

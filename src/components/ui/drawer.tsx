@@ -108,6 +108,9 @@ type DrawerSide = "left" | "right" | "top" | "bottom";
 
 const DrawerSideContext = React.createContext<DrawerSide | undefined>(undefined);
 
+/** true dentro de `DrawerContent` (p. ej. ExerciseCard sin bordes redondeados). */
+export const DrawerInContentContext = React.createContext(false);
+
 interface DrawerContentProps extends React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> {
   side?: DrawerSide;
 }
@@ -122,6 +125,7 @@ const DrawerContent = React.forwardRef<
       ref={ref}
       className={cn(
         "drawer-mobile-scrollbars-hidden fixed z-50 flex border bg-background",
+        "[&_[data-slot=card]]:!rounded-none [&_[data-drawer-section]]:!rounded-none",
         side === "bottom" &&
           "inset-x-0 bottom-0 mt-24 max-h-lvh flex-col rounded-t-[10px] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2",
         side === "top" &&
@@ -132,7 +136,9 @@ const DrawerContent = React.forwardRef<
       )}
       {...props}
     >
-      <DrawerSideContext.Provider value={side}>{children}</DrawerSideContext.Provider>
+      <DrawerInContentContext.Provider value={true}>
+        <DrawerSideContext.Provider value={side}>{children}</DrawerSideContext.Provider>
+      </DrawerInContentContext.Provider>
     </DrawerPrimitive.Content>
   </DrawerPortal>
 ));

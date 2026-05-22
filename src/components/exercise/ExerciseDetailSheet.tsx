@@ -144,7 +144,10 @@ const ExerciseDetailSheet = ({
 
               {/* Metadatos en líneas separadas */}
               {(exercise.body_part || exercise.equipment || exercise.tipo || exercise.grupo_muscular || exercise.dificultad) && (
-                <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2.5">
+                <div
+                  data-drawer-section
+                  className="rounded-none border border-border bg-muted/20 p-4 space-y-2.5"
+                >
                   {difficultyToLevel(exercise.dificultad) && (
                     <MetaRow label="Dificultad">
                       <DifficultyBars level={difficultyToLevel(exercise.dificultad)!} />

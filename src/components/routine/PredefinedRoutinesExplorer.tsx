@@ -24,6 +24,7 @@ import {
   Plus,
   Sparkles,
 } from "lucide-react";
+import { filterChipActive, filterChipInactive } from "@/lib/filter-pill-styles";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -118,9 +119,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
                   onClick={() => toggleFilter(value, setFilterNivel)}
                   className={cn(
                     "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
-                    filterNivel === value
-                      ? "bg-secondary text-secondary-foreground ring-1 ring-ring"
-                      : "text-muted-foreground hover:bg-secondary/50"
+                    filterNivel === value ? filterChipActive : filterChipInactive,
                   )}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -140,9 +139,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
                   onClick={() => toggleFilter(value, setFilterDuracion)}
                   className={cn(
                     "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
-                    filterDuracion === value
-                      ? "bg-secondary text-secondary-foreground ring-1 ring-ring"
-                      : "text-muted-foreground hover:bg-secondary/50"
+                    filterDuracion === value ? filterChipActive : filterChipInactive,
                   )}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -163,9 +160,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
                     onClick={() => toggleFilter(g, setFilterGrupo)}
                     className={cn(
                       "rounded-full px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
-                      filterGrupo === g
-                        ? "bg-secondary text-secondary-foreground ring-1 ring-ring"
-                        : "text-muted-foreground hover:bg-secondary/50"
+                      filterGrupo === g ? filterChipActive : filterChipInactive,
                     )}
                   >
                     {g}

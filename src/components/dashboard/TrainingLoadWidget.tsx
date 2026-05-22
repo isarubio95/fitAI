@@ -206,7 +206,7 @@ export function TrainingLoadWidget() {
               key={option.key}
               type="button"
               size="sm"
-              variant={range === option.key ? "default" : "outline"}
+              variant={range === option.key ? "default" : "filter"}
               className="h-7 rounded-full px-3 text-xs"
               onClick={() => setRange(option.key)}
             >

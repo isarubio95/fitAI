@@ -9,6 +9,8 @@ import {
 import { useMuscleStatistics, type MuscleStatistics } from "@/hooks/useMuscleStatistics";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
 import { Flame, Snowflake } from "lucide-react";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { cn } from "@/lib/utils";
 
 export function MuscleRankingWidget() {
   const { data, isLoading } = useMuscleStatistics();
@@ -16,9 +18,9 @@ export function MuscleRankingWidget() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Skeleton className="h-56 rounded-none md:rounded-xl" />
-        <Skeleton className="h-56 rounded-none md:rounded-xl" />
+      <div className={cn("grid w-full grid-cols-1 bg-background sm:grid-cols-2", PAGE_CARD_STACK_GAP)}>
+        <Skeleton className="h-56 w-full rounded-none border-0 bg-card md:rounded-3xl" />
+        <Skeleton className="h-56 w-full rounded-none border-0 bg-card md:rounded-3xl" />
       </div>
     );
   }
@@ -27,7 +29,7 @@ export function MuscleRankingWidget() {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className={cn("grid w-full grid-cols-1 bg-background sm:grid-cols-2", PAGE_CARD_STACK_GAP)}>
         {/* Top 5 */}
         <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
           <CardHeader className="px-6 pt-8 pb-4">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useLayoutActionSlot } from "@/hooks/useLayoutActionSlot";
 import { useExerciseCatalogInfinite, useCreateExercise, useDeleteExercise } from "@/hooks/useExerciseCatalog";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -7,7 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { filterButtonActive } from "@/lib/filter-pill-styles";
 import { cn } from "@/lib/utils";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
@@ -39,7 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, SignalMedium, Filter, X, Plus } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, BicepsFlexed, SignalMedium, Filter, X, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
@@ -288,7 +291,9 @@ const Exercises = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLElement | null>(null);
+  const mobileActionsSlot = useLayoutActionSlot("section-pills-actions-slot", null);
+  const desktopCreateSlot = useLayoutActionSlot(null, "desktop-floating-create-slot");
+  const desktopToolbarSlot = useLayoutActionSlot(null, "desktop-section-toolbar-slot");
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [difficultyLoading, setDifficultyLoading] = useState(false);
   const difficultyLoadingTimerRef = useRef<number | null>(null);
@@ -386,10 +391,6 @@ const Exercises = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [filters.q, sortOrder]);
-
-  useEffect(() => {
-    setHeaderActionsSlot(document.getElementById("section-pills-actions-slot"));
-  }, []);
 
   // Sincroniza el input solo cuando `q` en la URL cambia (atrás/adelante, enlaces, etc.).
   // No incluir `searchInput` en las dependencias: mientras tecleas, la URL va con debounce
@@ -492,8 +493,13 @@ const Exercises = () => {
   };
 
   return (
-    <div className="flex w-full min-w-0 max-w-2xl flex-col gap-1 overflow-x-hidden bg-background px-0 pb-6 pt-6 mx-auto md:px-8 md:pb-8">
-      {headerActionsSlot &&
+    <div
+      className={cn(
+        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-hidden bg-background px-0 pb-6 pt-6 mx-auto md:px-8 md:pb-8",
+        PAGE_CARD_STACK_GAP,
+      )}
+    >
+      {mobileActionsSlot &&
         createPortal(
           <div className="flex items-center gap-2">
             {!!exercises?.length && (
@@ -534,7 +540,52 @@ const Exercises = () => {
               <Plus className="shrink-0" />
             </Button>
           </div>,
-          headerActionsSlot
+          mobileActionsSlot,
+        )}
+      {desktopToolbarSlot &&
+        !!exercises?.length &&
+        createPortal(
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
+                title={sortOrder === "asc" ? "Orden: A → Z" : "Orden: Z → A"}
+                aria-label={`Ordenar ejercicios por nombre, ${sortOrder === "asc" ? "A a Z" : "Z a A"}`}
+              >
+                <ArrowUpDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44 bg-popover">
+              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                <ArrowDownAZ className="h-3.5 w-3.5" /> Ordenar por nombre
+              </DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => setSortOrder("asc")}>
+                A → Z {sortOrder === "asc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOrder("desc")}>
+                Z → A {sortOrder === "desc" && <Check className="ml-auto h-4 w-4" />}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>,
+          desktopToolbarSlot,
+        )}
+      {desktopCreateSlot &&
+        createPortal(
+          <Button
+            type="button"
+            variant="new"
+            onClick={() => setCreateOpen(true)}
+            title="Crear ejercicio"
+            aria-label="Nuevo ejercicio"
+            className="shadow-lg"
+          >
+            <span className="whitespace-nowrap">Crear</span>
+            <Plus className="shrink-0" />
+          </Button>,
+          desktopCreateSlot,
         )}
 
       <Card className="w-full max-w-none overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
@@ -550,22 +601,22 @@ const Exercises = () => {
           </div>
 
           {/* Filtros */}
-          <div className="flex flex-col gap-2">
-            <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-1 [-webkit-overflow-scrolling:touch]">
-              <div className="flex min-w-max items-center gap-2 whitespace-nowrap">
+          <div className="flex flex-col gap-3 md:gap-2">
+            <div className="w-full min-w-0 md:max-w-full md:overflow-x-auto md:overflow-y-hidden md:pb-1 md:[-webkit-overflow-scrolling:touch]">
+              <div className="grid w-full grid-cols-3 gap-3 md:flex md:min-w-max md:items-center md:gap-2 md:whitespace-nowrap">
                 <Popover>
             <PopoverTrigger asChild>
               <Button
-                variant="outline"
+                variant="filter"
                 size="sm"
                 className={cn(
-                  "w-28 shrink-0 justify-center gap-2",
-                  filters.tipos.length > 0 && "border-primary text-primary hover:bg-primary/5",
+                  "w-full min-w-0 justify-center gap-2 md:w-28 md:shrink-0",
+                  filters.tipos.length > 0 && filterButtonActive,
                 )}
               >
                 <Filter className="h-4 w-4" /> Tipo
                 {filters.tipos.length > 0 && (
-                  <Badge variant="outline" className="border-primary/40 bg-transparent text-primary">
+                  <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
                     {filters.tipos.length}
                   </Badge>
                 )}
@@ -599,16 +650,16 @@ const Exercises = () => {
                 <Popover>
             <PopoverTrigger asChild>
               <Button
-                variant="outline"
+                variant="filter"
                 size="sm"
                 className={cn(
-                  "w-28 shrink-0 justify-center gap-2",
-                  filters.grupos.length > 0 && "border-primary text-primary hover:bg-primary/5",
+                  "w-full min-w-0 justify-center gap-2 md:w-28 md:shrink-0",
+                  filters.grupos.length > 0 && filterButtonActive,
                 )}
               >
-                <Layers className="h-4 w-4" /> Grupo
+                <BicepsFlexed className="h-4 w-4" /> Grupo
                 {filters.grupos.length > 0 && (
-                  <Badge variant="outline" className="border-primary/40 bg-transparent text-primary">
+                  <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
                     {filters.grupos.length}
                   </Badge>
                 )}
@@ -642,16 +693,16 @@ const Exercises = () => {
                 <Popover>
             <PopoverTrigger asChild>
               <Button
-                variant="outline"
+                variant="filter"
                 size="sm"
                 className={cn(
-                  "w-28 shrink-0 justify-center gap-2",
-                  filters.equipments.length > 0 && "border-primary text-primary hover:bg-primary/5",
+                  "w-full min-w-0 justify-center gap-2 md:w-28 md:shrink-0",
+                  filters.equipments.length > 0 && filterButtonActive,
                 )}
               >
                 <Wrench className="h-4 w-4" /> Equipo
                 {filters.equipments.length > 0 && (
-                  <Badge variant="outline" className="border-primary/40 bg-transparent text-primary">
+                  <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
                     {filters.equipments.length}
                   </Badge>
                 )}
@@ -692,15 +743,15 @@ const Exercises = () => {
               </div>
             </div>
 
-            <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-1 [-webkit-overflow-scrolling:touch]">
-              <div className="flex min-w-max items-center gap-1 whitespace-nowrap">
+            <div className="w-full min-w-0 md:max-w-full md:overflow-x-auto md:overflow-y-hidden md:pb-1 md:[-webkit-overflow-scrolling:touch]">
+              <div className="grid w-full grid-cols-3 gap-3 md:flex md:min-w-max md:items-center md:gap-2 md:whitespace-nowrap">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="filter"
                   size="sm"
                   className={cn(
-                    "w-28 shrink-0 justify-center",
-                    filters.difs.includes(1) && "border-primary text-primary hover:bg-primary/5",
+                    "w-full min-w-0 justify-center md:w-28 md:shrink-0",
+                    filters.difs.includes(1) && filterButtonActive,
                   )}
                   onClick={() => {
                     const difs: DifficultyLevel[] = filters.difs.includes(1)
@@ -717,11 +768,11 @@ const Exercises = () => {
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="filter"
                   size="sm"
                   className={cn(
-                    "w-28 shrink-0 justify-center",
-                    filters.difs.includes(2) && "border-primary text-primary hover:bg-primary/5",
+                    "w-full min-w-0 justify-center md:w-28 md:shrink-0",
+                    filters.difs.includes(2) && filterButtonActive,
                   )}
                   onClick={() => {
                     const difs: DifficultyLevel[] = filters.difs.includes(2)
@@ -738,11 +789,11 @@ const Exercises = () => {
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="filter"
                   size="sm"
                   className={cn(
-                    "w-28 shrink-0 justify-center",
-                    filters.difs.includes(3) && "border-primary text-primary hover:bg-primary/5",
+                    "w-full min-w-0 justify-center md:w-28 md:shrink-0",
+                    filters.difs.includes(3) && filterButtonActive,
                   )}
                   onClick={() => {
                     const difs: DifficultyLevel[] = filters.difs.includes(3)
@@ -853,7 +904,7 @@ const Exercises = () => {
         </Card>
       )}
 
-      <div className="grid w-full grid-cols-1 gap-1 bg-background sm:grid-cols-2">
+      <div className={cn("grid w-full grid-cols-1 bg-background sm:grid-cols-2", PAGE_CARD_STACK_GAP)}>
         {isLoading || difficultyLoading
           ? Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-24 w-full rounded-none border-0 bg-card md:rounded-3xl" />

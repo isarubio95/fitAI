@@ -430,7 +430,10 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
             </div>
 
             {generatedPlan && (
-              <div className="mt-5 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+              <div
+                data-drawer-section
+                className="mt-5 rounded-none border border-violet-500/20 bg-violet-500/5 p-4"
+              >
                 <p className="text-sm font-semibold">Resumen generado</p>
                 <p className="mt-1 text-sm text-muted-foreground">{generatedPlan.summary}</p>
                 <p className="mt-2 text-xs text-muted-foreground">

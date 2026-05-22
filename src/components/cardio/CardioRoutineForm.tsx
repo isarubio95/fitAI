@@ -9,6 +9,7 @@ import { useUpsertCardioRoutine } from "@/hooks/useCardioRoutines";
 import { useCardioDisciplinas } from "@/hooks/useCardioSessions";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { DRAWER_SECTION_BOX_CLASS } from "@/lib/drawerStyles";
 import type { CardioRoutineBlockInput } from "@/types/cardio";
 
 type Props = {
@@ -31,7 +32,7 @@ const emptyBlock = (): CardioRoutineBlockInput => ({
   fc_objetivo: null,
 });
 
-const sectionCardClass = "rounded-xl border border-border bg-card p-4 space-y-4";
+const sectionCardClass = cn(DRAWER_SECTION_BOX_CLASS, "p-4 space-y-4");
 
 export function CardioRoutineForm({ open, onOpenChange, initial }: Props) {
   const [nombre, setNombre] = useState("");

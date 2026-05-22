@@ -1,6 +1,8 @@
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
+import { DRAWER_SECTION_CARD_CLASS } from "@/lib/drawerStyles";
 
 interface MuscleDetailSheetProps {
   open: boolean;
@@ -17,26 +19,37 @@ export function MuscleDetailSheet({ open, onOpenChange, group, specificVolume }:
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent side="bottom" className="rounded-t-[20px] h-auto max-h-[60dvh]">
-        <DrawerHeader className="pb-4">
-          <DrawerTitle>{group}</DrawerTitle>
-          <DrawerDescription>Desglose de series por músculo específico</DrawerDescription>
-        </DrawerHeader>
+      <DrawerContent
+        side="bottom"
+        className="h-auto max-h-[min(55dvh,26rem)] overflow-hidden rounded-t-[20px] p-0"
+      >
+        <div className="flex flex-col">
+          <DrawerHeader className="shrink-0 border-b border-border bg-card px-6 text-left">
+            <DrawerTitle className="text-lg">{group}</DrawerTitle>
+            <DrawerDescription>Desglose de series por músculo específico</DrawerDescription>
+          </DrawerHeader>
 
-        <div className="space-y-4 pb-6">
-          {muscles.map((muscle) => {
-            const sets = specificVolume[muscle] || 0;
-            const pct = (sets / maxSets) * 100;
-            return (
-              <div key={muscle} className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{muscle}</span>
-                  <span className="text-muted-foreground">{sets} series</span>
-                </div>
-                <Progress value={pct} className="h-2.5" />
-              </div>
-            );
-          })}
+          <div className="overflow-y-auto bg-background">
+            <div className="flex flex-col gap-1 bg-background pb-6">
+              <Card className={DRAWER_SECTION_CARD_CLASS}>
+                <CardContent className="space-y-4 px-6 py-4">
+                  {muscles.map((muscle) => {
+                    const sets = specificVolume[muscle] || 0;
+                    const pct = (sets / maxSets) * 100;
+                    return (
+                      <div key={muscle} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium">{muscle}</span>
+                          <span className="text-muted-foreground tabular-nums">{sets} series</span>
+                        </div>
+                        <Progress value={pct} className="h-2.5" />
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </DrawerContent>
     </Drawer>

@@ -252,7 +252,7 @@ export function ProgramWizard({
             >
               <Label className="text-sm font-medium text-foreground/75 pb-3 block mb-0">Asigna una rutina a cada día (deja vacío si no entrenas ese día)</Label>
               {loadingRoutines || loadingTemplates ? (
-                <Skeleton className="h-64 w-full rounded-lg" />
+                <Skeleton className="h-64 w-full rounded-none" />
               ) : (
                 <div className="space-y-2">
                   {DAY_LABELS.map((d) => {
@@ -336,7 +336,7 @@ export function ProgramWizard({
                 <ToggleGroupItem value="8" className="h-10 px-4">8 semanas</ToggleGroupItem>
               </ToggleGroup>
 
-              <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
+              <div data-drawer-section className="rounded-none border border-border bg-muted/30 p-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-foreground/70">Días resultantes</span>
                   <span className="font-semibold">{totalDays}</span>

@@ -1,17 +1,9 @@
 import { useSearchParams } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { filterPillTabsTrigger } from "@/lib/filter-pill-styles";
+import { SECTION_PILLS_LIST, SECTION_PILLS_ROW } from "@/lib/pageStyles";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import WorkoutHistory from "@/pages/WorkoutHistory";
 import Measurements from "@/pages/Measurements";
-
-const sectionPillTabsList =
-  "hidden h-auto w-full justify-start gap-2 bg-transparent p-0 shadow-none md:flex md:max-w-2xl md:mx-auto md:px-8 md:pt-6";
-
-const sectionPillTabsTrigger = cn(
-  "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
-  "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
-  "data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:shadow-sm",
-);
 
 export default function EvolutionPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,14 +19,17 @@ export default function EvolutionPage() {
       }}
       className="w-full min-w-0"
     >
-      <TabsList className={sectionPillTabsList}>
-        <TabsTrigger value="history" className={sectionPillTabsTrigger}>
-          Entrenos
-        </TabsTrigger>
-        <TabsTrigger value="measurements" className={sectionPillTabsTrigger}>
-          Medidas
-        </TabsTrigger>
-      </TabsList>
+      <div className={SECTION_PILLS_ROW}>
+        <TabsList className={SECTION_PILLS_LIST}>
+          <TabsTrigger value="history" className={filterPillTabsTrigger}>
+            Entrenos
+          </TabsTrigger>
+          <TabsTrigger value="measurements" className={filterPillTabsTrigger}>
+            Medidas
+          </TabsTrigger>
+        </TabsList>
+        <div id="desktop-section-toolbar-slot" className="flex shrink-0 items-center gap-2" />
+      </div>
 
       <TabsContent value="history" className="mt-0">
         <WorkoutHistory />

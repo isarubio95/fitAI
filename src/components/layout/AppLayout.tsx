@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
+import { usePageLayoutMeta } from "@/hooks/usePageLayoutMeta";
 import { useAuth } from "@/hooks/useAuth";
 import { Outlet } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
@@ -15,6 +16,7 @@ import { CardioLiveRecorder } from "@/components/cardio/CardioLiveRecorder";
 import { ActiveCardioPill } from "@/components/cardio/ActiveCardioPill";
 import { Loader2 } from "lucide-react";
 // import { SwipeableRoutesWrapper } from "./SwipeableRoutesWrapper";
+import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,8 +26,9 @@ import { InAppNotificationsBell } from "@/components/notifications/InAppNotifica
 
 export function AppLayout() {
   const { user, loading } = useAuth();
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { location, pageTitle, showSectionPills, showNotificationsBell, activeSubsectionLabel } =
+    usePageLayoutMeta();
   const [areHeaderPillsCollapsed, setAreHeaderPillsCollapsed] = useState(false);
   const lastScrollYRef = useRef(0);
 
@@ -45,33 +48,6 @@ export function AppLayout() {
   });
 
   const currentTab = searchParams.get("tab") || "";
-  const pageTitle =
-    location.pathname === "/"
-      ? "Inicio"
-      : location.pathname === "/evolution"
-        ? "Evolución"
-        : location.pathname === "/routines"
-          ? "Rutinas"
-          : location.pathname === "/community"
-            ? "Comunidad"
-          : location.pathname === "/cardio-routines"
-            ? "Rutinas de Cardio"
-            : location.pathname === "/profile"
-              ? "Perfil"
-              : "FitAI";
-
-  const showHeaderPills = location.pathname === "/evolution" || location.pathname === "/routines";
-  const showNotificationsBell = location.pathname === "/";
-  const activeSubsectionLabel =
-    location.pathname === "/evolution"
-      ? (currentTab || "history") === "measurements"
-        ? "Medidas"
-        : "Entrenos"
-      : location.pathname === "/routines"
-        ? (currentTab || "rutinas") === "ejercicios"
-          ? "Ejercicios"
-          : "Rutinas"
-        : "";
 
   useEffect(() => {
     if (loading || !user || profileLoading || !profileSetup?.username || !profileSetup.username.trim()) return;
@@ -81,7 +57,7 @@ export function AppLayout() {
 
   useEffect(() => {
     if (loading || !user || profileLoading || !profileSetup?.username || !profileSetup.username.trim()) return;
-    if (!showHeaderPills) return;
+    if (!showSectionPills) return;
 
     const onScroll = () => {
       const currentY = window.scrollY;
@@ -98,7 +74,7 @@ export function AppLayout() {
 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [showHeaderPills, loading, user, profileLoading, profileSetup]);
+  }, [showSectionPills, loading, user, profileLoading, profileSetup]);
 
   if (loading) {
     return (
@@ -129,13 +105,17 @@ export function AppLayout() {
       <ProfileDrawerProvider>
       <div className="flex min-h-screen bg-background">
         <DesktopSidebar />
-        <div className="flex-1 flex flex-col">
-          {/* Mobile header — fijo siempre visible */}
+        <div className="relative flex flex-1 flex-col">
+          <div
+            id="desktop-floating-create-slot"
+            className="pointer-events-none fixed right-4 top-4 z-40 hidden items-center gap-2 md:flex [&>*]:pointer-events-auto"
+          />
+          {/* Header superior solo en móvil */}
           <header
             className={cn(
-              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/40 bg-card px-4 py-2 dark:border-b-0 dark:bg-zinc-950/40 dark:backdrop-blur-xl",
+              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/40 bg-card px-4 py-2 dark:border-b-0 dark:bg-zinc-950/40 dark:backdrop-blur-xl md:hidden",
               "transition-[gap] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
-              showHeaderPills && !areHeaderPillsCollapsed ? "max-md:gap-2" : "gap-0",
+              showSectionPills && !areHeaderPillsCollapsed ? "max-md:gap-2" : "gap-0",
             )}
           >
             <div className="flex items-center justify-between gap-3">
@@ -147,7 +127,7 @@ export function AppLayout() {
                 <p
                   className={cn(
                     "text-xs leading-tight text-muted-foreground transition-all duration-300",
-                    showHeaderPills && areHeaderPillsCollapsed
+                    showSectionPills && areHeaderPillsCollapsed
                       ? "max-h-6 translate-y-0 opacity-100 mt-0.5"
                       : "max-h-0 -translate-y-1 opacity-0"
                   )}
@@ -186,10 +166,11 @@ export function AppLayout() {
                         type="button"
                         onClick={() => setSearchParams({ tab: "history" })}
                         className={cn(
-                          "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                          filterPillBase,
+                          "whitespace-nowrap",
                           (searchParams.get("tab") || "history") === "history"
-                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                            : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                            ? filterPillActive
+                            : filterPillInactive,
                         )}
                       >
                         Entrenos
@@ -198,10 +179,11 @@ export function AppLayout() {
                         type="button"
                         onClick={() => setSearchParams({ tab: "measurements" })}
                         className={cn(
-                          "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                          filterPillBase,
+                          "whitespace-nowrap",
                           searchParams.get("tab") === "measurements"
-                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                            : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                            ? filterPillActive
+                            : filterPillInactive,
                         )}
                       >
                         Medidas
@@ -235,10 +217,11 @@ export function AppLayout() {
                         type="button"
                         onClick={() => setSearchParams({ tab: "rutinas" })}
                         className={cn(
-                          "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                          filterPillBase,
+                          "whitespace-nowrap",
                           (searchParams.get("tab") || "rutinas") === "rutinas"
-                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                            : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                            ? filterPillActive
+                            : filterPillInactive,
                         )}
                       >
                         Rutinas
@@ -247,10 +230,11 @@ export function AppLayout() {
                         type="button"
                         onClick={() => setSearchParams({ tab: "ejercicios" })}
                         className={cn(
-                          "rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                          filterPillBase,
+                          "whitespace-nowrap",
                           searchParams.get("tab") === "ejercicios"
-                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                            : "border-border/60 bg-muted/40 text-foreground hover:border-border hover:bg-muted/55",
+                            ? filterPillActive
+                            : filterPillInactive,
                         )}
                       >
                         Ejercicios
@@ -266,8 +250,8 @@ export function AppLayout() {
           <main
             className={cn(
               "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 transition-[padding-top] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none md:pb-0",
-              showHeaderPills && !areHeaderPillsCollapsed ? "pt-26" : "pt-12",
-              showHeaderPills ? "md:pt-14" : "md:pt-20",
+              showSectionPills && !areHeaderPillsCollapsed ? "pt-26 max-md:pt-26" : "pt-12 max-md:pt-12",
+              "md:pt-0",
             )}
           >
             {/* Navegación por gestos desactivada: usamos solo el contenido de rutas directamente */}

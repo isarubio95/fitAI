@@ -816,8 +816,12 @@ export function WorkoutLogger() {
                     const isSuperset = !!group.supersetId && group.items.length > 1;
                     if (isSuperset) {
                       return (
-                        <div key={group.supersetId!} className="relative rounded-xl border-2 border-primary/40 bg-primary/5">
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />
+                        <div
+                          key={group.supersetId!}
+                          data-drawer-section
+                          className="relative rounded-none border-2 border-primary/40 bg-primary/5"
+                        >
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
                           <div className="px-3 pt-2 pb-1">
                             <span className="text-xs font-medium text-primary">🔗 Superserie</span>
                           </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { useLayoutActionSlot } from "@/hooks/useLayoutActionSlot";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMonthWorkouts, useMonthWorkoutDates } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
@@ -23,6 +24,7 @@ import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashb
 import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { usePlannedRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import {
@@ -190,7 +192,7 @@ const Dashboard = () => {
   }, [pendingOpenPlanWizard, plannedLoading, plannedKnown, hasPlanned]);
 
   const [isDragMode, setIsDragMode] = useState(false); // Estado para controlar el modo edición
-  const [headerActionsSlot, setHeaderActionsSlot] = useState<HTMLElement | null>(null);
+  const headerActionsSlot = useLayoutActionSlot("header-actions-slot", "sidebar-header-actions-slot");
 
   const [workoutDetailsOpen, setWorkoutDetailsOpen] = useState(false);
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
@@ -218,11 +220,6 @@ const Dashboard = () => {
   useEffect(() => {
     localStorage.setItem('dashboard-widget-order', JSON.stringify(widgetOrder));
   }, [widgetOrder]);
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    setHeaderActionsSlot(document.getElementById("header-actions-slot"));
-  }, []);
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
@@ -547,7 +544,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-1 bg-background pb-8 md:max-w-2xl md:mx-auto md:px-8">
+    <div className={cn("flex w-full min-w-0 flex-col bg-background pb-8 md:max-w-2xl md:mx-auto md:px-8", PAGE_CARD_STACK_GAP)}>
       {headerActionsSlot &&
         createPortal(
           <Button
@@ -579,7 +576,7 @@ const Dashboard = () => {
           items={widgetOrder}
           strategy={verticalListSortingStrategy}
         >
-          <div className="flex w-full flex-col gap-1 bg-background">
+          <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
             {widgetOrder.map((id) => (
               <SortableWidget key={id} id={id} isDragMode={isDragMode}>
                 {renderWidget(id)}

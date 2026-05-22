@@ -391,7 +391,7 @@ function ProfileDrawerSheet() {
 
           <div className="space-y-6 pb-6">
           {xp && stats && (
-            <Card className="w-full max-w-none rounded-none border-0 bg-card shadow-none dark:bg-transparent md:rounded-3xl">
+            <Card className="w-full max-w-none rounded-none border-0 bg-card shadow-none dark:bg-transparent">
               <CardContent className="space-y-3 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -483,7 +483,7 @@ function ProfileDrawerSheet() {
             {loadingWorkoutHistory ? (
               <div className="grid grid-cols-1 gap-2 px-6">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="h-16 rounded-none border bg-muted/30 animate-pulse md:rounded-xl" />
+                  <div key={i} className="h-16 rounded-none border bg-muted/30 animate-pulse" />
                 ))}
               </div>
             ) : lastWorkouts.length === 0 ? (
@@ -502,7 +502,7 @@ function ProfileDrawerSheet() {
                     onClick={() => setWorkoutDetailsId(w.id)}
                     aria-label={`Ver detalle de ${w.titulo}`}
                   >
-                    <Card className="w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs transition-colors hover:bg-muted/30 md:rounded-3xl md:border-x">
+                    <Card className="w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs transition-colors hover:bg-muted/30 md:border-x">
                       <WorkoutDetailsContent
                         workout={w}
                         variant="compact"
