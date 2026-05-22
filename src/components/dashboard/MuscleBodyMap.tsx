@@ -1,3 +1,4 @@
+import { memo, useMemo, type MouseEvent } from "react";
 import { cn } from "@/lib/utils";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import {
@@ -20,10 +21,10 @@ const FILL_COLOR: Record<MuscleLoadLevel, string> = {
 
 const BODY_OUTLINE_FILTER = "drop-shadow(0 0 1px hsl(var(--foreground) / 0.55))";
 
-interface MuscleBodyMapProps {
+export interface MuscleBodyMapProps {
   getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
   onZoneClick?: (group: MainMuscleGroup) => void;
-  onZoneHover?: (group: MainMuscleGroup, event: React.MouseEvent) => void;
+  onZoneHover?: (group: MainMuscleGroup, event: React.MouseEvent<SVGPathElement>) => void;
   onZoneLeave?: () => void;
   className?: string;
 }
@@ -33,7 +34,18 @@ function zoneFillColor(zone: BodyMapZone, getLevel: (group: MainMuscleGroup) => 
   return FILL_COLOR[getLevel(zone.group)];
 }
 
-function BodyView({
+interface BodyViewProps {
+  zones: BodyMapZone[];
+  viewBox: string;
+  viewKey: string;
+  ariaLabel: string;
+  getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
+  onZoneClick?: (group: MainMuscleGroup) => void;
+  onZoneHover?: (group: MainMuscleGroup, event: MouseEvent<SVGPathElement>) => void;
+  onZoneLeave?: () => void;
+}
+
+const BodyView = memo(function BodyView({
   zones,
   viewBox,
   viewKey,
@@ -42,18 +54,12 @@ function BodyView({
   onZoneClick,
   onZoneHover,
   onZoneLeave,
-}: {
-  zones: BodyMapZone[];
-  viewBox: string;
-  viewKey: string;
-  ariaLabel: string;
-  getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
-  onZoneClick?: (group: MainMuscleGroup) => void;
-  onZoneHover?: (group: MainMuscleGroup, event: React.MouseEvent) => void;
-  onZoneLeave?: () => void;
-}) {
-  const neutral = zones.filter((z) => !z.group);
-  const muscles = zones.filter((z) => z.group);
+}: BodyViewProps) {
+  const [neutral, muscles] = useMemo(() => {
+    const neutralZones = zones.filter((z) => !z.group);
+    const muscleZones = zones.filter((z) => z.group);
+    return [neutralZones, muscleZones];
+  }, [zones]);
   const interactive = Boolean(onZoneClick || onZoneHover);
 
   return (
@@ -94,7 +100,7 @@ function BodyView({
       </svg>
     </div>
   );
-}
+});
 
 export function MuscleBodyMap({
   getLevel,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useTrainingLoad, type TrainingLoadPoint } from "@/hooks/useTrainingLoad";
+import { useTrainingLoad, type TrainingLoadData, type TrainingLoadPoint } from "@/hooks/useTrainingLoad";
 
 function formatNumber(n: number) {
   return Math.round(n).toLocaleString("es-ES");
@@ -56,6 +56,7 @@ const RANGE_OPTIONS = [
 
 type RangeKey = (typeof RANGE_OPTIONS)[number]["key"];
 const TRAINING_LOAD_RANGE_STORAGE_KEY = "gym-log.training-load.range";
+const TRAINING_LOAD_DATA_STORAGE_KEY = "gym-log.training-load.data.v1";
 
 function isValidRangeKey(value: string): value is RangeKey {
   return RANGE_OPTIONS.some((option) => option.key === value);
@@ -71,6 +72,26 @@ function loadSavedRange(): RangeKey {
   return "6m";
 }
 
+function loadCachedTrainingLoadData(): TrainingLoadData | null {
+  try {
+    const raw = localStorage.getItem(TRAINING_LOAD_DATA_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as TrainingLoadData;
+    if (!parsed?.points?.length) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedTrainingLoadData(payload: TrainingLoadData): void {
+  try {
+    localStorage.setItem(TRAINING_LOAD_DATA_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore
+  }
+}
+
 function formatXAxisTickLabel(dateValue: string, rangeDays: number) {
   const parsedDate = new Date(dateValue);
   if (rangeDays <= 60) {
@@ -81,12 +102,13 @@ function formatXAxisTickLabel(dateValue: string, rangeDays: number) {
 
 export function TrainingLoadWidget() {
   const { data, isLoading, isFetching } = useTrainingLoad();
-  const [cachedData, setCachedData] = useState<typeof data>(undefined);
+  const [cachedData, setCachedData] = useState<TrainingLoadData | null>(loadCachedTrainingLoadData);
   const [range, setRange] = useState<RangeKey>(loadSavedRange);
 
   useEffect(() => {
     if (data?.points?.length) {
       setCachedData(data);
+      saveCachedTrainingLoadData(data);
     }
   }, [data]);
 
@@ -100,6 +122,29 @@ export function TrainingLoadWidget() {
 
   const resolvedData = data?.points?.length ? data : cachedData;
   const showDynamicSkeleton = isFetching && !!resolvedData;
+  const selectedRangeDays = useMemo(
+    () => RANGE_OPTIONS.find((option) => option.key === range)?.days ?? 180,
+    [range],
+  );
+  const resolvedPoints = resolvedData?.points ?? [];
+  const chartData = useMemo(
+    () => resolvedPoints.slice(-selectedRangeDays),
+    [resolvedPoints, selectedRangeDays],
+  );
+  const totals = resolvedData?.totals ?? { fatigueScore: 0, fatigueTrend: 0 };
+  const fatigueLabel = getFatigueLabel(totals.fatigueScore);
+  const fatigueClass = getFatigueClass(totals.fatigueScore);
+  const fatigueDeltaPeriod = useMemo(
+    () => (chartData.length < 2 ? 0 : chartData[chartData.length - 1].fatigueScore - chartData[0].fatigueScore),
+    [chartData],
+  );
+  const fatigueDeltaPeriodPct = useMemo(() => {
+    if (chartData.length < 2) return 0;
+    if (chartData[0].fatigueScore <= 0) {
+      return fatigueDeltaPeriod > 0 ? 100 : 0;
+    }
+    return (fatigueDeltaPeriod / chartData[0].fatigueScore) * 100;
+  }, [chartData, fatigueDeltaPeriod]);
 
   if (isLoading && !resolvedData) {
     return (
@@ -115,22 +160,6 @@ export function TrainingLoadWidget() {
   }
 
   if (!resolvedData?.points?.length) return null;
-
-  const selectedRangeDays = RANGE_OPTIONS.find((option) => option.key === range)?.days ?? 180;
-  const chartData = resolvedData.points.slice(-selectedRangeDays);
-  const { totals } = resolvedData;
-  const fatigueLabel = getFatigueLabel(totals.fatigueScore);
-  const fatigueClass = getFatigueClass(totals.fatigueScore);
-  const fatigueDeltaPeriod =
-    chartData.length < 2 ? 0 : chartData[chartData.length - 1].fatigueScore - chartData[0].fatigueScore;
-  const fatigueDeltaPeriodPct =
-    chartData.length < 2
-      ? 0
-      : chartData[0].fatigueScore <= 0
-        ? fatigueDeltaPeriod > 0
-          ? 100
-          : 0
-        : (fatigueDeltaPeriod / chartData[0].fatigueScore) * 100;
 
   return (
     <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">

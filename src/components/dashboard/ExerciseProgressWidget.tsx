@@ -29,6 +29,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
+  type TooltipContentProps,
   XAxis,
   YAxis,
 } from "recharts";
@@ -70,6 +71,14 @@ function getUniformYScale(history: { oneRepMax: number }[], tickCount = 5) {
   return { domain: [minDomain, maxDomain] as [number, number], ticks };
 }
 
+interface ChartHistoryPoint {
+  date: string;
+  oneRepMax: number;
+  weight: number;
+  reps: number;
+  tooltipDate?: string;
+}
+
 export function ExerciseProgressWidget() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -90,7 +99,7 @@ export function ExerciseProgressWidget() {
   const yScale = useMemo(() => getUniformYScale(history ?? []), [history]);
 
   /** Un solo punto no dibuja trazo en Area; duplicamos en el eje X (misma Y) y guardamos la fecha real para el tooltip. */
-  const chartData = useMemo(() => {
+  const chartData = useMemo<ChartHistoryPoint[]>(() => {
     if (!history?.length) return [];
     if (history.length === 1) {
       const p = history[0];
@@ -310,9 +319,9 @@ export function ExerciseProgressWidget() {
   );
 }
 
-function CustomTooltip({ active, payload }: any) {
+function CustomTooltip({ active, payload }: TooltipContentProps<number, string>) {
   if (!active || !payload?.length) return null;
-  const data = payload[0].payload;
+  const data = payload[0].payload as ChartHistoryPoint;
   const when = data.tooltipDate ?? data.date;
   return (
     <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md text-popover-foreground">

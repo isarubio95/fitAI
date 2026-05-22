@@ -15,6 +15,25 @@ export interface MuscleVolumeData {
   maxGroupVolume: number;
 }
 
+interface ExerciseTypePayload {
+  musculos_involucrados: string[] | null;
+  grupo_muscular: string | null;
+}
+
+function normalizeExerciseTypePayload(value: unknown): ExerciseTypePayload {
+  if (!value || typeof value !== "object") {
+    return { musculos_involucrados: [], grupo_muscular: null };
+  }
+
+  const candidate = value as Partial<ExerciseTypePayload>;
+  return {
+    musculos_involucrados: Array.isArray(candidate.musculos_involucrados)
+      ? candidate.musculos_involucrados.filter((muscle): muscle is string => typeof muscle === "string")
+      : [],
+    grupo_muscular: typeof candidate.grupo_muscular === "string" ? candidate.grupo_muscular : null,
+  };
+}
+
 export function useMuscleVolume(period: TimePeriod = "week") {
   const { user } = useAuth();
 
@@ -92,7 +111,8 @@ export function useMuscleVolume(period: TimePeriod = "week") {
         const sets = setCountMap[ej.id] || 0;
         if (sets === 0) continue;
 
-        const bodyParts: string[] = (ej.tipo_ejercicio as any)?.musculos_involucrados || [];
+        const exerciseType = normalizeExerciseTypePayload(ej.tipo_ejercicio);
+        const bodyParts = exerciseType.musculos_involucrados ?? [];
         let hasMappedGroup = false;
         for (const muscle of bodyParts) {
           specificVolume[muscle] = (specificVolume[muscle] || 0) + sets;
@@ -105,7 +125,7 @@ export function useMuscleVolume(period: TimePeriod = "week") {
 
         // Fallback: algunos catálogos traen músculos con nombres no canónicos.
         if (!hasMappedGroup) {
-          const fallbackGroup = resolveMainMuscleGroup((ej.tipo_ejercicio as any)?.grupo_muscular ?? null);
+          const fallbackGroup = resolveMainMuscleGroup(exerciseType.grupo_muscular);
           if (fallbackGroup) {
             groupVolume[fallbackGroup] = (groupVolume[fallbackGroup] || 0) + sets;
           }

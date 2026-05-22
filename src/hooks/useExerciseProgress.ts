@@ -15,6 +15,29 @@ interface ExerciseHistoryPoint {
   reps: number;
 }
 
+interface ExerciseTypeReference {
+  id: string;
+  nombre: string;
+}
+
+interface ExerciseJoinRow {
+  tipo_ejercicio: ExerciseTypeReference | null;
+}
+
+interface ExerciseWithHistoryQueryRow {
+  created_at: string;
+  ejercicio: ExerciseJoinRow | null;
+}
+
+function parseExerciseTypeReference(row: ExerciseWithHistoryQueryRow): ExerciseTypeReference | null {
+  const tipo = row.ejercicio?.tipo_ejercicio;
+  if (!tipo) return null;
+  if (typeof tipo.id !== "string" || typeof tipo.nombre !== "string") {
+    return null;
+  }
+  return { id: tipo.id, nombre: tipo.nombre };
+}
+
 // Returns exercises the user has performed at least once, ordered by most recent
 export function useExerciseWithHistory() {
   const { user } = useAuth();
@@ -41,9 +64,9 @@ export function useExerciseWithHistory() {
 
       // Group by tipo_ejercicio_id, keep most recent date
       const map = new Map<string, ExerciseWithHistory>();
-      for (const row of data) {
-        const ej = row.ejercicio as any;
-        const tipo = ej.tipo_ejercicio;
+      for (const row of data as ExerciseWithHistoryQueryRow[]) {
+        const tipo = parseExerciseTypeReference(row);
+        if (!tipo) continue;
         if (!map.has(tipo.id)) {
           map.set(tipo.id, {
             id: tipo.id,
