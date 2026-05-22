@@ -18,7 +18,7 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-accent/55 dark:hover:bg-accent/30",
         ghost: "hover:bg-accent/55 hover:text-accent-foreground dark:hover:bg-accent/30",
         link: "text-primary underline-offset-4 hover:underline",
-        new: "min-h-9 !h-9 shrink-0 gap-1.5 rounded-full border border-primary/38 bg-primary/20 px-4 py-0 text-sm font-semibold text-foreground shadow-xs transition-[colors,box-shadow] hover:border-primary/48 hover:bg-primary/30 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&_svg]:size-[1.1rem] dark:border-primary/32 dark:bg-primary/22 dark:text-foreground dark:hover:border-primary/42 dark:hover:bg-primary/32",
+        new: "min-h-9 !h-9 shrink-0 gap-1.5 rounded-full border border-primary/38 bg-primary/20 px-4 py-0 text-sm font-semibold text-foreground shadow-xs transition-[colors,box-shadow] hover:border-primary/48 hover:bg-primary/30 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&_svg]:size-[1.1rem] dark:border-border/50 dark:bg-accent/50 dark:text-accent-foreground dark:shadow-sm dark:hover:border-border/50 dark:hover:bg-accent/90 dark:hover:text-accent-foreground",
       },
       size: {
         default: "h-10 px-4 py-2",
