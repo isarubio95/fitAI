@@ -71,12 +71,12 @@ export function BottomNav() {
       <nav
         ref={navRef}
         data-app-bottom-nav
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/5 dark:border-white/10 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-2xl md:hidden pb-[env(safe-area-inset-bottom)]"
+        className="fixed bottom-3 left-1/2 z-50 w-[min(96vw,29rem)] -translate-x-1/2 overflow-hidden rounded-[1.75rem] border border-black/10 bg-white/70 shadow-[0_10px_35px_rgba(0,0,0,0.16)] backdrop-blur-2xl dark:border-white/15 dark:bg-zinc-950/65 md:hidden"
       >
         {/* MENÚ DESPLEGABLE DE ACCIONES */}
       <div
         className={cn(
-          "absolute bottom-[85px] left-1/2 -translate-x-1/2 flex flex-col rounded-2xl bg-card border border-border shadow-xl transition-all duration-300 ease-in-out origin-bottom w-[min(92vw,360px)] overflow-hidden",
+          "absolute bottom-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 flex w-[min(92vw,22.5rem)] origin-bottom flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl transition-all duration-300 ease-in-out",
           isMenuOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-50 opacity-0 pointer-events-none"
         )}
       >
@@ -143,7 +143,7 @@ export function BottomNav() {
       />
 
       {/* BARRA DE NAVEGACIÓN */}
-      <div className="flex h-[80px] items-center justify-around px-2 relative">
+      <div className="relative flex h-[72px] items-center justify-around px-2 pb-[calc(env(safe-area-inset-bottom)*0.55)] pt-1">
         {navItems.map((item, index) => {
           // Renderizado del botón central +
           if (item.type === "add") {

@@ -10,7 +10,6 @@ import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Calendar as CalendarIcon, Pencil, ArrowUpDown, GripHorizontal, Check } from "lucide-react";
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
 import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
@@ -18,6 +17,7 @@ import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressW
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
+import { MONTH_WEEK_TOGGLE_OPTIONS, SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { DashboardNotificationPills } from "@/components/notifications/DashboardNotificationPills";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashboard/ProgramWizard";
@@ -398,16 +398,12 @@ const Dashboard = () => {
                     </>
                   )}
                 </Button>
-                <Tabs value={calendarView} onValueChange={(v) => handleCalendarViewChange(v as "month" | "week")}>
-                  <TabsList className="h-9 shrink-0 rounded-full p-1">
-                    <TabsTrigger value="month" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
-                      Mes
-                    </TabsTrigger>
-                    <TabsTrigger value="week" className="rounded-full px-5 text-sm data-[state=active]:shadow-xs">
-                      Semana
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <SegmentedToggle
+                  className="shrink-0"
+                  value={calendarView}
+                  onValueChange={(v) => handleCalendarViewChange(v as "month" | "week")}
+                  options={[...MONTH_WEEK_TOGGLE_OPTIONS]}
+                />
               </div>
             </CardHeader>
             <CardContent className="p-0 pb-5 pt-0">
