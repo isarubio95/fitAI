@@ -36,7 +36,7 @@ export function SegmentedToggle({
       role="tablist"
       aria-label="Selector segmentado"
       className={cn(
-        "relative inline-flex h-9 w-fit min-w-[148px] items-center rounded-xl border border-border/60 bg-muted/45 p-0.5 shadow-[inset_0_1px_1px_hsl(var(--foreground)/0.05)] backdrop-blur supports-backdrop-filter:bg-background/55",
+        "relative inline-flex h-10 w-fit min-w-[156px] items-center rounded-xl border border-border/60 bg-muted/45 p-0.5 shadow-[inset_0_1px_1px_hsl(var(--foreground)/0.05)] backdrop-blur supports-backdrop-filter:bg-background/55",
         className,
       )}
     >
@@ -60,7 +60,7 @@ export function SegmentedToggle({
             aria-selected={selected}
             onClick={() => onValueChange(option.value)}
             className={cn(
-              "relative z-10 inline-flex h-7 flex-1 items-center justify-center rounded-lg px-3 text-xs font-semibold tracking-[0.01em] transition-all duration-200",
+              "relative z-10 inline-flex h-8 flex-1 items-center justify-center rounded-lg px-3.5 text-sm font-semibold tracking-[0.01em] transition-all duration-200",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               selected
                 ? "text-foreground"
