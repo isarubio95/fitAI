@@ -39,7 +39,7 @@ export function DesktopSidebar() {
   const [cardioTypeDialogOpen, setCardioTypeDialogOpen] = useState(false);
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-white/50 dark:bg-zinc-950/50 backdrop-blur-2xl h-dvh sticky top-0">
+    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-white/50 dark:bg-card/50 backdrop-blur-2xl h-dvh sticky top-0">
       <div className="shrink-0 border-b border-border px-4 py-4">
         <div className="flex items-center gap-2">
           <img src="/logo.svg" alt="FitAI" className="h-8 w-8 shrink-0 rounded-lg" />

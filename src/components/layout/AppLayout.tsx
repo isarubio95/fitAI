@@ -114,7 +114,7 @@ export function AppLayout() {
           {/* Header superior solo en móvil */}
           <header
             className={cn(
-              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/40 bg-card px-4 py-2 dark:border-b-0 dark:bg-zinc-950/40 dark:backdrop-blur-xl md:hidden",
+              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/40 bg-card px-4 py-2 dark:border-b-0 dark:bg-[hsl(222_47%_12%/0.88)] dark:backdrop-blur-2xl md:hidden",
               "transition-[gap] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
               showSectionPills && !areHeaderPillsCollapsed ? "max-md:gap-2" : "gap-0",
             )}

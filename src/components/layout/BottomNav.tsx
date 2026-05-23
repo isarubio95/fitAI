@@ -71,7 +71,7 @@ export function BottomNav() {
       <nav
         ref={navRef}
         data-app-bottom-nav
-        className="fixed bottom-3 left-1/2 z-50 w-[min(96vw,29rem)] -translate-x-1/2 overflow-hidden rounded-[1.75rem] border border-black/10 bg-white/70 shadow-[0_10px_35px_rgba(0,0,0,0.16)] backdrop-blur-2xl dark:border-white/15 dark:bg-zinc-950/65 md:hidden"
+        className="fixed bottom-3 left-1/2 z-50 w-[min(96vw,29rem)] -translate-x-1/2 overflow-hidden rounded-[1.75rem] border border-black/10 bg-white/70 shadow-[0_10px_35px_rgba(0,0,0,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-[hsl(222_47%_12%/0.88)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.06)] dark:ring-1 dark:ring-white/5 md:hidden"
       >
         {/* MENÚ DESPLEGABLE DE ACCIONES */}
       <div
