@@ -261,6 +261,10 @@ export function AppLayout() {
         </div>
         <ActiveWorkoutPill />
         <ActiveCardioPill />
+        <div
+          aria-hidden
+          className="pointer-events-none fixed bottom-0 left-0 right-0 z-30 h-[110px] bg-linear-to-t from-black/40 via-black/14 to-transparent md:hidden dark:from-black/55 dark:via-black/24"
+        />
         <BottomNav />
         <WorkoutLogger />
         <CardioLogger />
