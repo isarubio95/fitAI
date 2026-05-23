@@ -186,14 +186,14 @@ export default function Community() {
 
   return (
     <>
-      <div className="flex w-full min-w-0 flex-col bg-background pb-8 md:mx-auto md:max-w-2xl md:px-8">
+      <div className="flex w-full min-w-0 flex-col bg-background md:mx-auto md:max-w-2xl md:px-8">
         <section className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
           {/* Móvil: una sola card sin línea entre búsqueda y el bloque siguiente */}
           <Card className={cn(communityCardClass, "md:hidden")}>
-            <CardHeader className="px-6 pb-1 pt-8">
-              <CardTitle className="text-base pb-0">Buscar por nombre de usuario</CardTitle>
+            <CardHeader className="px-6 pb-0 pt-8">
+              <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
             </CardHeader>
-            <CardContent className={cn("px-6 pt-4", hasMergedSecondBlock ? "pb-4" : "pb-8")}>{searchFields}</CardContent>
+            <CardContent className={cn("px-6 pt-4", hasMergedSecondBlock && "pb-4")}>{searchFields}</CardContent>
             {showSearchPanel && (
               <CardContent className="space-y-3 px-6 pb-4 pt-0">{searchResultsBody}</CardContent>
             )}
@@ -212,10 +212,10 @@ export default function Community() {
           {/* Escritorio: cards separadas */}
           <div className={cn("hidden md:flex md:flex-col", PAGE_CARD_STACK_GAP)}>
             <Card className={communityCardClass}>
-              <CardHeader className="px-6 pb-1 pt-8">
+              <CardHeader className="px-6 pt-8">
                 <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
               </CardHeader>
-              <CardContent className="px-6 pt-4 pb-8">{searchFields}</CardContent>
+              <CardContent className="px-6 pt-4">{searchFields}</CardContent>
             </Card>
 
             {showSearchPanel && (

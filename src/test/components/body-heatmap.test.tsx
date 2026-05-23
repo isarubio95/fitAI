@@ -39,25 +39,23 @@ vi.mock("@/components/ui/segmented-toggle", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/skeleton", () => ({
-  Skeleton: () => <div data-testid="skeleton" />,
-}));
-
 vi.mock("@/components/dashboard/MuscleDetailSheet", () => ({
   MuscleDetailSheet: ({ open }: { open: boolean }) => <div data-testid="detail-sheet">{String(open)}</div>,
 }));
 
 vi.mock("@/components/dashboard/MuscleBodyMap", () => ({
   MuscleBodyMap: ({
+    isLoading,
     onZoneHover,
     onZoneLeave,
     onZoneClick,
   }: {
+    isLoading?: boolean;
     onZoneHover?: (group: MainMuscleGroup, event: MouseEvent<SVGPathElement>) => void;
     onZoneLeave?: () => void;
     onZoneClick?: (group: MainMuscleGroup) => void;
   }) => (
-    <div>
+    <div data-loading={isLoading ? "true" : undefined}>
       <svg>
         <path
           role="button"
@@ -84,14 +82,15 @@ describe("BodyHeatmap", () => {
     });
   });
 
-  it("muestra skeleton durante carga", () => {
+  it("muestra el mapa corporal en modo skeleton durante la carga", () => {
     mockUseMuscleVolume.mockReturnValue({
       data: undefined,
       isLoading: true,
     });
 
     render(<BodyHeatmap />);
-    expect(screen.getByTestId("skeleton")).toBeInTheDocument();
+    expect(screen.getByTestId("legend")).toBeInTheDocument();
+    expect(document.querySelector('[data-loading="true"]')).toBeInTheDocument();
   });
 
   it("renderiza tooltip al pasar por una zona y abre detalle al clicar", () => {

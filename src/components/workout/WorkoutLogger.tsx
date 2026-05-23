@@ -54,6 +54,7 @@ import {
   normalizeRegistroSeries,
   defaultSetForMode,
   setHasWork,
+  serieCountsAsRecorded,
   serieFieldsForRegistro,
 } from "@/types/workout";
 
@@ -419,28 +420,41 @@ export function WorkoutLogger() {
     );
   };
 
+  const persistSetToDb = useCallback(async (exerciseIndex: number, setIndex: number) => {
+    const set = exercises[exerciseIndex]?.sets[setIndex];
+    if (!set?.id) return;
+    const exMode = normalizeRegistroSeries(exercises[exerciseIndex]?.registro_series);
+    const dr = serieFieldsForRegistro(exMode, set);
+    await supabase
+      .from("serie")
+      .update({
+        repeticiones: set.repeticiones,
+        peso_kg: set.peso_kg,
+        duracion_seg: dr.duracion_seg,
+        ritmo_seg_km: dr.ritmo_seg_km,
+        completed: !!set.completed,
+      })
+      .eq("id", set.id);
+  }, [exercises]);
+
   const handleAutoSaveSet = useCallback(
     async (exerciseIndex: number, setIndex: number) => {
-      const set = exercises[exerciseIndex]?.sets[setIndex];
-      if (!set?.id) return;
       try {
-        const exMode = normalizeRegistroSeries(exercises[exerciseIndex]?.registro_series);
-        const dr = serieFieldsForRegistro(exMode, set);
-        await supabase
-          .from("serie")
-          .update({
-            repeticiones: set.repeticiones,
-            peso_kg: set.peso_kg,
-            duracion_seg: dr.duracion_seg,
-            ritmo_seg_km: dr.ritmo_seg_km,
-          })
-          .eq("id", set.id);
+        await persistSetToDb(exerciseIndex, setIndex);
       } catch {
         // Silent fail for auto-save
       }
     },
-    [exercises]
+    [persistSetToDb]
   );
+
+  const flushAllSetsToDb = useCallback(async () => {
+    if (!effectiveWorkoutId) return;
+    const pending = exercises.flatMap((ex, exerciseIndex) =>
+      ex.sets.map((set, setIndex) => ({ exerciseIndex, setIndex, set })).filter(({ set }) => set.id),
+    );
+    await Promise.all(pending.map(({ exerciseIndex, setIndex }) => persistSetToDb(exerciseIndex, setIndex)));
+  }, [effectiveWorkoutId, exercises, persistSetToDb]);
 
   const handleSetCompleted = useCallback(
     async (exerciseIndex: number, setIndex: number, completed: boolean) => {
@@ -516,7 +530,8 @@ export function WorkoutLogger() {
       queryClient.invalidateQueries({ queryKey: ["monthWorkoutDates", user?.id, from] });
       queryClient.invalidateQueries({ queryKey: ["monthWorkouts", user?.id, from] });
     }
-    if (isDelete) queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
+    queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
+    queryClient.invalidateQueries({ queryKey: ["communityFeed"] });
   };
 
   const handleDelete = async () => {
@@ -568,7 +583,7 @@ export function WorkoutLogger() {
     // 1. Limpiamos los datos en memoria filtrando los 0
     const ejerciciosLimpios = exercises
       .map((ex) => {
-        const seriesValidas = ex.sets.filter((s) => setHasWork(s));
+        const seriesValidas = ex.sets.filter((s) => serieCountsAsRecorded(s));
         return { ...ex, sets: seriesValidas };
       })
       .filter((ex) => ex.sets.length > 0);
@@ -581,10 +596,12 @@ export function WorkoutLogger() {
     setSaving(true);
     try {
       if (isEdit && effectiveWorkoutId) {
+        await flushAllSetsToDb();
+
         // 2. LIMPIEZA EN BASE DE DATOS (Para entrenamientos activos o en edición)
         for (const ex of exercises) {
-          const emptySets = ex.sets.filter((s) => !setHasWork(s));
-          const validSets = ex.sets.filter((s) => setHasWork(s));
+          const emptySets = ex.sets.filter((s) => !serieCountsAsRecorded(s));
+          const validSets = ex.sets.filter((s) => serieCountsAsRecorded(s));
           
           // Borrar las series a 0 de Supabase
           if (emptySets.length > 0) {

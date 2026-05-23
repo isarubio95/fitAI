@@ -38,6 +38,17 @@ export function setHasWork(s: {
   );
 }
 
+/** Serie con datos o marcada como completada (persistida en sesión activa). */
+export function serieCountsAsRecorded(s: {
+  completed?: boolean;
+  repeticiones?: number;
+  peso_kg?: number;
+  duracion_seg?: number | null;
+  ritmo_seg_km?: number | null;
+}): boolean {
+  return !!s.completed || setHasWork(s);
+}
+
 export function defaultSetForMode(
   mode: RegistroSeries,
   duracionObjetivoSeg?: number | null,

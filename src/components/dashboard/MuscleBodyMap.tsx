@@ -19,17 +19,26 @@ const FILL_COLOR: Record<MuscleLoadLevel, string> = {
   high: "hsl(var(--primary) / 0.9)",
 };
 
+/** Mismo tono que `Skeleton` (`bg-muted`) */
+const SKELETON_FILL = "hsl(var(--muted))";
+
 const BODY_OUTLINE_FILTER = "drop-shadow(0 0 1px hsl(var(--foreground) / 0.55))";
 
 export interface MuscleBodyMapProps {
   getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
+  isLoading?: boolean;
   onZoneClick?: (group: MainMuscleGroup) => void;
   onZoneHover?: (group: MainMuscleGroup, event: React.MouseEvent<SVGPathElement>) => void;
   onZoneLeave?: () => void;
   className?: string;
 }
 
-function zoneFillColor(zone: BodyMapZone, getLevel: (group: MainMuscleGroup) => MuscleLoadLevel): string {
+function zoneFillColor(
+  zone: BodyMapZone,
+  getLevel: (group: MainMuscleGroup) => MuscleLoadLevel,
+  isLoading: boolean,
+): string {
+  if (isLoading && zone.group) return SKELETON_FILL;
   if (!zone.group) return FILL_COLOR.none;
   return FILL_COLOR[getLevel(zone.group)];
 }
@@ -40,6 +49,7 @@ interface BodyViewProps {
   viewKey: string;
   ariaLabel: string;
   getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
+  isLoading: boolean;
   onZoneClick?: (group: MainMuscleGroup) => void;
   onZoneHover?: (group: MainMuscleGroup, event: MouseEvent<SVGPathElement>) => void;
   onZoneLeave?: () => void;
@@ -51,6 +61,7 @@ const BodyView = memo(function BodyView({
   viewKey,
   ariaLabel,
   getLevel,
+  isLoading,
   onZoneClick,
   onZoneHover,
   onZoneLeave,
@@ -60,7 +71,7 @@ const BodyView = memo(function BodyView({
     const muscleZones = zones.filter((z) => z.group);
     return [neutralZones, muscleZones];
   }, [zones]);
-  const interactive = Boolean(onZoneClick || onZoneHover);
+  const interactive = !isLoading && Boolean(onZoneClick || onZoneHover);
 
   return (
     <div className="flex flex-col items-center">
@@ -70,6 +81,7 @@ const BodyView = memo(function BodyView({
         style={{ filter: BODY_OUTLINE_FILTER }}
         role="img"
         aria-label={ariaLabel}
+        aria-busy={isLoading}
       >
         <g>
           {[...neutral, ...muscles].map((zone, i) => {
@@ -84,15 +96,16 @@ const BodyView = memo(function BodyView({
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 className={cn(
-                  "transition-colors duration-300",
+                  isMuscle && isLoading && "animate-pulse",
+                  !isLoading && "transition-colors duration-300",
                   isMuscle && interactive && "cursor-pointer hover:brightness-[0.97] dark:hover:brightness-110",
                 )}
-                style={{ fill: zoneFillColor(zone, getLevel) }}
-                onClick={isMuscle && onZoneClick ? () => onZoneClick(zone.group!) : undefined}
+                style={{ fill: zoneFillColor(zone, getLevel, isLoading) }}
+                onClick={isMuscle && interactive && onZoneClick ? () => onZoneClick(zone.group!) : undefined}
                 onMouseMove={
-                  isMuscle && onZoneHover ? (e) => onZoneHover(zone.group!, e) : undefined
+                  isMuscle && interactive && onZoneHover ? (e) => onZoneHover(zone.group!, e) : undefined
                 }
-                onMouseLeave={onZoneLeave}
+                onMouseLeave={interactive ? onZoneLeave : undefined}
               />
             );
           })}
@@ -104,6 +117,7 @@ const BodyView = memo(function BodyView({
 
 export function MuscleBodyMap({
   getLevel,
+  isLoading = false,
   onZoneClick,
   onZoneHover,
   onZoneLeave,
@@ -113,8 +127,10 @@ export function MuscleBodyMap({
     <div
       className={cn(
         "mx-auto flex w-full items-end",
+        isLoading && "pointer-events-none",
         className,
       )}
+      data-loading={isLoading || undefined}
     >
       <div className="flex w-1/2 justify-center">
         <BodyView
@@ -123,6 +139,7 @@ export function MuscleBodyMap({
           viewKey="front"
           ariaLabel="Vista frontal del cuerpo"
           getLevel={getLevel}
+          isLoading={isLoading}
           onZoneClick={onZoneClick}
           onZoneHover={onZoneHover}
           onZoneLeave={onZoneLeave}
@@ -135,6 +152,7 @@ export function MuscleBodyMap({
           viewKey="back"
           ariaLabel="Vista trasera del cuerpo"
           getLevel={getLevel}
+          isLoading={isLoading}
           onZoneClick={onZoneClick}
           onZoneHover={onZoneHover}
           onZoneLeave={onZoneLeave}

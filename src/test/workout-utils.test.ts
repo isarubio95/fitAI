@@ -5,6 +5,7 @@ import {
   normalizeRegistroSeries,
   serieFieldsForRegistro,
   setHasWork,
+  serieCountsAsRecorded,
 } from "@/types/workout";
 
 describe("workout utils", () => {
@@ -30,6 +31,12 @@ describe("workout utils", () => {
     expect(setHasWork({ duracion_seg: 30 })).toBe(true);
     expect(setHasWork({ ritmo_seg_km: 280 })).toBe(true);
     expect(setHasWork({ repeticiones: 0, peso_kg: 0, duracion_seg: 0, ritmo_seg_km: 0 })).toBe(false);
+  });
+
+  it("cuenta series marcadas como completadas aunque no tengan datos", () => {
+    expect(serieCountsAsRecorded({ completed: true, repeticiones: 0, peso_kg: 0 })).toBe(true);
+    expect(serieCountsAsRecorded({ completed: false, repeticiones: 0, peso_kg: 0 })).toBe(false);
+    expect(serieCountsAsRecorded({ completed: false, repeticiones: 8, peso_kg: 0 })).toBe(true);
   });
 
   it("genera set por defecto por modo", () => {

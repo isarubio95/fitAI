@@ -117,7 +117,7 @@ const Measurements = () => {
     "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
 
   return (
-    <div className={cn("flex w-full min-w-0 flex-col bg-background pb-28 pt-3 md:mx-auto md:max-w-2xl md:px-8", PAGE_CARD_STACK_GAP)}>
+    <div className={cn("flex w-full min-w-0 flex-col bg-background pb-28 md:mx-auto md:max-w-2xl md:px-8 md:pt-3", PAGE_CARD_STACK_GAP)}>
       {mobileActionsSlot &&
         createPortal(
           <Button

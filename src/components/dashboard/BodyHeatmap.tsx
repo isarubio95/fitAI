@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MONTH_WEEK_TOGGLE_OPTIONS, SegmentedToggle } from "@/components/ui/segmented-toggle";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useMuscleVolume, type TimePeriod } from "@/hooks/useMuscleVolume";
 import { MuscleDetailSheet } from "./MuscleDetailSheet";
 import { MuscleBodyMap, MuscleMapLegend } from "./MuscleBodyMap";
@@ -126,6 +125,7 @@ export function BodyHeatmap() {
       },
     [cachedData, data],
   );
+  const isMapLoading = isLoading && !data;
   const isUsingOfflineFallback = !data && !isLoading && Object.keys(resolvedData.groupVolume).length > 0;
   const groupVolume = resolvedData.groupVolume;
   const specificVolume = resolvedData.specificVolume;
@@ -182,38 +182,35 @@ export function BodyHeatmap() {
           </div>
         </CardHeader>
 
-        <CardContent className="relative px-6 pb-8 pt-0" ref={containerRef}>
-          {isLoading ? (
-            <Skeleton className="mx-auto h-[320px] w-full max-w-70 rounded-xl" />
-          ) : (
-            <div className="space-y-5">
-              {isUsingOfflineFallback && !isOnline && (
-                <p className="text-center text-xs text-muted-foreground">
-                  Mostrando datos guardados sin conexión.
-                </p>
-              )}
-              <MuscleBodyMap
-                getLevel={getLevelForGroup}
-                onZoneClick={setSelectedGroup}
-                onZoneHover={handleMouseMove}
-                onZoneLeave={handleMouseLeave}
-              />
+        <CardContent className="relative px-6 pt-0" ref={containerRef}>
+          <div className="space-y-5">
+            {isUsingOfflineFallback && !isOnline && (
+              <p className="text-center text-xs text-muted-foreground">
+                Mostrando datos guardados sin conexión.
+              </p>
+            )}
+            <MuscleBodyMap
+              getLevel={getLevelForGroup}
+              isLoading={isMapLoading}
+              onZoneClick={setSelectedGroup}
+              onZoneHover={handleMouseMove}
+              onZoneLeave={handleMouseLeave}
+            />
 
-              {tooltip.visible && (
-                <div
-                  className="pointer-events-none absolute z-50 flex flex-col justify-center rounded-xl border border-border/20 bg-card px-3 py-2 shadow-md transition-all duration-100 ease-out"
-                  style={{ left: tooltip.x, top: tooltip.y }}
-                >
-                  <span className="block text-[13px] font-semibold leading-tight">{tooltip.group}</span>
-                  <span className="block text-[11px] font-medium leading-tight text-muted-foreground">
-                    {tooltip.sets} series
-                  </span>
-                </div>
-              )}
+            {tooltip.visible && !isMapLoading && (
+              <div
+                className="pointer-events-none absolute z-50 flex flex-col justify-center rounded-xl border border-border/20 bg-card px-3 py-2 shadow-md transition-all duration-100 ease-out"
+                style={{ left: tooltip.x, top: tooltip.y }}
+              >
+                <span className="block text-[13px] font-semibold leading-tight">{tooltip.group}</span>
+                <span className="block text-[11px] font-medium leading-tight text-muted-foreground">
+                  {tooltip.sets} series
+                </span>
+              </div>
+            )}
 
-              <MuscleMapLegend period={period} />
-            </div>
-          )}
+            <MuscleMapLegend period={period} />
+          </div>
         </CardContent>
       </Card>
 

@@ -171,25 +171,45 @@ export function useWorkoutById(id: string | null) {
   });
 }
 
+const ACTIVIDAD_IDS_CHUNK = 80;
+const EJERCICIO_IDS_CHUNK = 200;
+
+async function fetchEjerciciosForActividades(actIds: string[]) {
+  const ejercicios: Array<Record<string, unknown> & { id: string; actividad_id: string }> = [];
+  for (let i = 0; i < actIds.length; i += ACTIVIDAD_IDS_CHUNK) {
+    const chunk = actIds.slice(i, i + ACTIVIDAD_IDS_CHUNK);
+    const { data, error } = await supabase
+      .from("ejercicio")
+      .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
+      .in("actividad_id", chunk);
+    if (error) throw error;
+    if (data?.length) ejercicios.push(...(data as typeof ejercicios));
+  }
+  return ejercicios;
+}
+
+async function fetchSeriesForEjercicios(ejercicioIds: string[]) {
+  const series: Array<Record<string, unknown>> = [];
+  for (let i = 0; i < ejercicioIds.length; i += EJERCICIO_IDS_CHUNK) {
+    const chunk = ejercicioIds.slice(i, i + EJERCICIO_IDS_CHUNK);
+    const { data, error } = await supabase.from("serie").select("*").in("ejercicio_id", chunk);
+    if (error) throw error;
+    if (data?.length) series.push(...data);
+  }
+  return series;
+}
+
 export async function hydrateActividadesWithDetails(
   actividades: Array<Record<string, unknown>>,
 ): Promise<ActividadWithDetails[]> {
   if (!actividades.length) return [];
 
   const actIds = actividades.map((a) => a.id as string);
-  const { data: ejercicios, error: ejError } = await supabase
-    .from("ejercicio")
-    .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
-    .in("actividad_id", actIds);
-  if (ejError) throw ejError;
+  const ejercicios = await fetchEjerciciosForActividades(actIds);
 
-  const ejercicioIds = (ejercicios || []).map((e) => e.id);
-  let series: Array<Record<string, unknown>> = [];
-  if (ejercicioIds.length > 0) {
-    const { data, error: sError } = await supabase.from("serie").select("*").in("ejercicio_id", ejercicioIds);
-    if (sError) throw sError;
-    series = data || [];
-  }
+  const ejercicioIds = ejercicios.map((e) => e.id);
+  const series =
+    ejercicioIds.length > 0 ? await fetchSeriesForEjercicios(ejercicioIds) : [];
 
   return actividades.map((act) => {
     const actEjercicios = (ejercicios || [])

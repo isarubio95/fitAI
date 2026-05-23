@@ -22,7 +22,7 @@ export default function CardioRoutines() {
   const editing = useMemo(() => data?.find((r) => r.id === editId) ?? null, [data, editId]);
 
   return (
-    <div className={cn("flex w-full min-w-0 flex-col px-4 pb-8 pt-6 md:mx-auto md:max-w-2xl md:px-8", PAGE_CARD_STACK_GAP)}>
+    <div className={cn("flex w-full min-w-0 flex-col px-4 md:mx-auto md:max-w-2xl md:px-8 md:pt-6", PAGE_CARD_STACK_GAP)}>
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Rutinas de Cardio</h2>
         <Button onClick={() => { setEditId(null); setFormOpen(true); }}>

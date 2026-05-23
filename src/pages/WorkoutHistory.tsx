@@ -178,7 +178,7 @@ const WorkoutHistory = () => {
     "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
 
   return (
-    <div className={cn("flex w-full min-w-0 flex-col bg-background pb-28 pt-3 md:mx-auto md:max-w-2xl md:px-8", PAGE_CARD_STACK_GAP)}>
+    <div className={cn("flex w-full min-w-0 flex-col bg-background pb-28 md:mx-auto md:max-w-2xl md:px-8 md:pt-3", PAGE_CARD_STACK_GAP)}>
       {/* ── KPI Grid (ahora dentro de Card, con líneas divisorias internas) ── */}
       <Card className={cardClass}>
         <CardContent className="p-0">
@@ -224,7 +224,7 @@ const WorkoutHistory = () => {
             <h2>Constancia semanal</h2>
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-6 pb-8 pt-0">
+        <CardContent className="px-6 pt-0">
           {isLoading ? (
             <div className="py-2">
               <Skeleton className="h-44 w-full rounded-none md:rounded-lg" />
@@ -291,7 +291,7 @@ const WorkoutHistory = () => {
                   <Star className="h-4 w-4 text-primary" /> Top ejercicios
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-1.5 px-6 pb-8 pt-0">
+              <CardContent className="space-y-1.5 px-6 pt-0">
                 {topExercises.map((ex, i) => (
                   <div key={ex.name} className="flex items-center justify-between text-sm">
                     <span className="truncate text-muted-foreground">
@@ -312,7 +312,7 @@ const WorkoutHistory = () => {
                   <Trophy className="h-4 w-4 text-primary" /> Cargas máximas
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-1.5 px-6 pb-8 pt-0">
+              <CardContent className="space-y-1.5 px-6 pt-0">
                 {topLoads.map((ex, i) => (
                   <div key={ex.name} className="flex items-center justify-between text-sm">
                     <span className="truncate text-muted-foreground">

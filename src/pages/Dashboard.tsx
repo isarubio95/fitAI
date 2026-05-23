@@ -540,7 +540,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className={cn("flex w-full min-w-0 flex-col bg-background pb-8 md:max-w-2xl md:mx-auto md:px-8", PAGE_CARD_STACK_GAP)}>
+    <div className={cn("flex w-full min-w-0 flex-col bg-background md:max-w-2xl md:mx-auto md:px-8", PAGE_CARD_STACK_GAP)}>
       {headerActionsSlot &&
         createPortal(
           <Button

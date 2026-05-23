@@ -12,7 +12,7 @@ const Profile = () => {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className={cn("flex max-w-2xl flex-col p-4 pt-6 md:p-8 md:mx-auto", PAGE_CARD_STACK_GAP)}>
+    <div className={cn("flex max-w-2xl flex-col p-4 pt-0 md:mx-auto md:px-8 md:pt-8", PAGE_CARD_STACK_GAP)}>
       <header>
         <h1 className="text-2xl font-bold">Perfil</h1>
       </header>

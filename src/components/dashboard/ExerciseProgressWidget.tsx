@@ -149,7 +149,7 @@ export function ExerciseProgressWidget() {
         <CardHeader className="px-6 pt-8 pb-2">
           <Skeleton className="h-5 w-40" />
         </CardHeader>
-        <CardContent className="px-6 pb-8 pt-0">
+        <CardContent className="px-6 pt-0">
           <Skeleton className="h-44 w-full" />
         </CardContent>
       </Card>
@@ -230,7 +230,7 @@ export function ExerciseProgressWidget() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-6 pb-8 pt-0">
+      <CardContent className="px-6 pt-0">
         <div
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
