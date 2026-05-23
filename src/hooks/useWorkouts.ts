@@ -266,8 +266,10 @@ export function useDeleteWorkout() {
       queryClient.invalidateQueries({ queryKey: ["lastWorkout"] });
       queryClient.invalidateQueries({ queryKey: ["activeWorkout"] });
       queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
-      queryClient.invalidateQueries({ queryKey: ["exercise-with-history"] });
-      queryClient.invalidateQueries({ queryKey: ["exercise-history"] });
+    queryClient.invalidateQueries({ queryKey: ["exercise-with-history"] });
+    queryClient.invalidateQueries({ queryKey: ["exercise-history"] });
+    queryClient.invalidateQueries({ queryKey: ["trainingLoad"] });
+    queryClient.invalidateQueries({ queryKey: ["muscleVolume"] });
       queryClient.invalidateQueries({ queryKey: ["plannedRoutines"] });
       if (deletedFecha) {
         queryClient.invalidateQueries({ queryKey: ["workoutsForDate", user?.id, deletedFecha] });

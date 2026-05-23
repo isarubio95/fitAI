@@ -253,6 +253,7 @@ export function useUpsertCardioSession() {
       qc.invalidateQueries({ queryKey: ["monthCardioSessionDates"] });
       qc.invalidateQueries({ queryKey: ["cardioDisciplinas"] });
       qc.invalidateQueries({ queryKey: ["activeCardioSession"] });
+      qc.invalidateQueries({ queryKey: ["trainingLoad"] });
     },
   });
 }
@@ -335,6 +336,7 @@ export function useDeleteCardioSession() {
       qc.invalidateQueries({ queryKey: ["monthCardioSessionDates"] });
       qc.invalidateQueries({ queryKey: ["activeCardioSession"] });
       qc.invalidateQueries({ queryKey: ["cardioSession"] });
+      qc.invalidateQueries({ queryKey: ["trainingLoad"] });
     },
   });
 }

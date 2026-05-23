@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { fetchAllPages } from "@/lib/supabaseBatch";
 
 interface ExerciseWithHistory {
   id: string;
@@ -47,20 +48,22 @@ export function useExerciseWithHistory() {
     enabled: !!user,
     queryFn: async () => {
       // Get all series with exercise + tipo_ejercicio info
-      const { data, error } = await supabase
-        .from("serie")
-        .select(`
+      const data = await fetchAllPages<ExerciseWithHistoryQueryRow>((from, to) =>
+        supabase
+          .from("serie")
+          .select(`
           created_at,
           ejercicio!inner (
             tipo_ejercicio_id,
             tipo_ejercicio!inner ( id, nombre )
           )
         `)
-        .eq("usuario_id", user!.id)
-        .order("created_at", { ascending: false });
+          .eq("usuario_id", user!.id)
+          .order("created_at", { ascending: false })
+          .range(from, to),
+      );
 
-      if (error) throw error;
-      if (!data?.length) return [];
+      if (!data.length) return [];
 
       // Group by tipo_ejercicio_id, keep most recent date
       const map = new Map<string, ExerciseWithHistory>();
@@ -101,9 +104,15 @@ export async function fetchExerciseHistory(
   userId: string,
   exerciseId: string,
 ): Promise<ExerciseHistoryResult> {
-  const { data, error } = await supabase
-    .from("serie")
-    .select(`
+  const data = await fetchAllPages<{
+    ejercicio?: { actividad?: { fecha?: string } };
+    created_at: string;
+    peso_kg: number;
+    repeticiones: number;
+  }>((from, to) =>
+    supabase
+      .from("serie")
+      .select(`
       peso_kg,
       repeticiones,
       created_at,
@@ -111,15 +120,15 @@ export async function fetchExerciseHistory(
          actividad:actividad_id ( fecha )
       )
     `)
-    .eq("usuario_id", userId)
-    .eq("ejercicio.tipo_ejercicio_id", exerciseId)
-    .order("created_at", { ascending: true });
-
-  if (error) throw error;
+      .eq("usuario_id", userId)
+      .eq("ejercicio.tipo_ejercicio_id", exerciseId)
+      .order("created_at", { ascending: true })
+      .range(from, to),
+  );
 
   const sessionsMap = new Map<string, ExerciseHistoryPoint>();
 
-  data?.forEach((item: { ejercicio?: { actividad?: { fecha?: string } }; created_at: string; peso_kg: number; repeticiones: number }) => {
+  data.forEach((item) => {
     const dateStr = item.ejercicio?.actividad?.fecha || item.created_at;
     const dateKey = new Date(dateStr).toISOString().split("T")[0];
 
