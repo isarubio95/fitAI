@@ -17,6 +17,7 @@ import { ActiveCardioPill } from "@/components/cardio/ActiveCardioPill";
 import { Loader2 } from "lucide-react";
 // import { SwipeableRoutesWrapper } from "./SwipeableRoutesWrapper";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
+import { FLOATING_CREATE_SLOT } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,7 +109,7 @@ export function AppLayout() {
         <div className="relative flex flex-1 flex-col">
           <div
             id="desktop-floating-create-slot"
-            className="pointer-events-none fixed right-4 top-4 z-40 hidden items-center gap-2 md:flex [&>*]:pointer-events-auto"
+            className={FLOATING_CREATE_SLOT}
           />
           {/* Header superior solo en móvil */}
           <header
@@ -251,7 +252,7 @@ export function AppLayout() {
             className={cn(
               "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 transition-[padding-top] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none md:pb-0",
               showSectionPills && !areHeaderPillsCollapsed ? "pt-26 max-md:pt-26" : "pt-12 max-md:pt-12",
-              "md:pt-6",
+              "md:pt-12",
             )}
           >
             {/* Navegación por gestos desactivada: usamos solo el contenido de rutas directamente */}

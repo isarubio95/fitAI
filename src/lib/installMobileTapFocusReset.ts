@@ -6,8 +6,15 @@
 
 let installed = false;
 
-function isTouchDevice(): boolean {
+function isCoarsePointerDevice(): boolean {
   return window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+}
+
+function isTouchLikeEvent(event: Event): boolean {
+  if (event instanceof PointerEvent) {
+    return event.pointerType === "touch" || event.pointerType === "pen";
+  }
+  return isCoarsePointerDevice() || "ontouchstart" in window;
 }
 
 /** Campos donde el foco debe conservarse (teclado, edición). */
@@ -47,27 +54,23 @@ function blurNonTextFocus(): void {
   }
 }
 
+function scheduleBlur(): void {
+  blurNonTextFocus();
+  requestAnimationFrame(blurNonTextFocus);
+  window.setTimeout(blurNonTextFocus, 0);
+  window.setTimeout(blurNonTextFocus, 50);
+}
+
 export function installMobileTapFocusReset(): void {
   if (installed || typeof window === "undefined") return;
-  if (!isTouchDevice()) return;
   installed = true;
 
-  const scheduleBlur = () => {
-    requestAnimationFrame(() => {
-      blurNonTextFocus();
-    });
+  const onTouchInteractionEnd = (event: Event) => {
+    if (!isTouchLikeEvent(event)) return;
+    scheduleBlur();
   };
 
-  document.addEventListener("pointerup", (event) => {
-    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
-    scheduleBlur();
-  }, true);
-
-  document.addEventListener(
-    "touchend",
-    () => {
-      scheduleBlur();
-    },
-    { capture: true, passive: true },
-  );
+  document.addEventListener("pointerup", onTouchInteractionEnd, true);
+  document.addEventListener("touchend", onTouchInteractionEnd, { capture: true, passive: true });
+  document.addEventListener("click", onTouchInteractionEnd, true);
 }

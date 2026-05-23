@@ -231,13 +231,26 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  button,
+  a,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  [role="link"],
+  summary {
+    touch-action: manipulation;
+  }
+
   *:not(input, textarea, select, [contenteditable="true"]):focus,
   *:not(input, textarea, select, [contenteditable="true"]):focus-visible {
     outline: none !important;
     box-shadow: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;
     --tw-ring-offset-shadow: 0 0 #0000 !important;
+    --tw-shadow: 0 0 #0000 !important;
     --tw-ring-color: transparent !important;
     --tw-ring-offset-width: 0px !important;
+    --tw-ring-offset-color: transparent !important;
   }
 }
