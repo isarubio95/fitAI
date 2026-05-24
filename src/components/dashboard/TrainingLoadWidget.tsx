@@ -9,7 +9,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  type TooltipContentProps,
+  type TooltipProps,
 } from "recharts";
 import { Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -247,7 +247,7 @@ export function TrainingLoadWidget() {
           <Skeleton className="h-[180px] w-full" />
         ) : (
           <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={chartData} margin={{ top: 8, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 8, right: 10, left: -10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="fatigueGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.3} />
@@ -344,7 +344,7 @@ export function TrainingLoadWidget() {
   );
 }
 
-function TrainingLoadTooltip({ active, payload }: TooltipContentProps<number, string>) {
+function TrainingLoadTooltip({ active, payload }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload as TrainingLoadPoint | undefined;
   if (!row) return null;
