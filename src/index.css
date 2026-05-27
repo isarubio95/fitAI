@@ -218,13 +218,8 @@
 }
 
 /*
- * En dispositivos táctiles (móvil/tablet) eliminamos cualquier estado de foco
- * visible tras un tap. En escritorio (hover fino, teclado) el foco se preserva
- * para accesibilidad. Los campos de texto (input/textarea/contenteditable)
- * quedan excluidos para que el usuario vea qué campo está activo al escribir.
- *
- * Complementado por installMobileTapFocusReset.ts, que hace blur del elemento
- * activo tras cada toque (salvo campos de texto).
+ * En móvil/tablet mantenemos el foco funcional, pero sin feedback visual.
+ * Esto elimina por completo anillos/sombras/bordes de foco.
  */
 @media (hover: none), (pointer: coarse) {
   * {
@@ -242,36 +237,15 @@
     touch-action: manipulation;
   }
 
-  *:not(input, textarea, [contenteditable="true"]):focus,
-  *:not(input, textarea, [contenteditable="true"]):focus-visible {
+  *:focus,
+  *:focus-visible,
+  *:focus-within {
     outline: none !important;
     box-shadow: none !important;
-    --tw-ring-shadow: 0 0 #0000 !important;
-    --tw-ring-offset-shadow: 0 0 #0000 !important;
-    --tw-shadow: 0 0 #0000 !important;
-    --tw-ring-color: transparent !important;
-    --tw-ring-offset-width: 0px !important;
-    --tw-ring-offset-color: transparent !important;
-  }
-
-  /* Apagado explícito y total para controles interactivos en móvil */
-  button:focus,
-  button:focus-visible,
-  select:focus,
-  select:focus-visible,
-  [role="button"]:focus,
-  [role="button"]:focus-visible,
-  [role="tab"]:focus,
-  [role="tab"]:focus-visible,
-  [role="menuitem"]:focus,
-  [role="menuitem"]:focus-visible,
-  [role="option"]:focus,
-  [role="option"]:focus-visible,
-  [data-slot="button"]:focus,
-  [data-slot="button"]:focus-visible {
-    outline: none !important;
-    box-shadow: none !important;
+    text-decoration: none !important;
     border-color: inherit !important;
+    background-color: inherit !important;
+    background-image: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;
     --tw-ring-offset-shadow: 0 0 #0000 !important;
     --tw-shadow: 0 0 #0000 !important;
