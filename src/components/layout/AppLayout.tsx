@@ -65,6 +65,22 @@ export function AppLayout() {
   }, [areHeaderPillsCollapsed]);
 
   useEffect(() => {
+    const clearTouchFocus = (event: PointerEvent) => {
+      if (event.pointerType !== "touch") return;
+      const target = event.target as HTMLElement | null;
+      const interactive = target?.closest(
+        'button, [role="button"], [role="tab"], [role="menuitem"], [role="option"], [role="link"], a[href], summary',
+      ) as HTMLElement | null;
+      interactive?.blur?.();
+    };
+
+    window.addEventListener("pointerup", clearTouchFocus, { passive: true, capture: true });
+    return () => {
+      window.removeEventListener("pointerup", clearTouchFocus, { capture: true });
+    };
+  }, []);
+
+  useEffect(() => {
     if (loading || !user || profileLoading || !profileSetup?.username || !profileSetup.username.trim()) return;
     if (!showSectionPills) return;
 

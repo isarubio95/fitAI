@@ -106,7 +106,7 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
         variant="ghost"
         size="icon"
         className={cn(
-          "relative h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5",
+          "relative h-11 w-11 shrink-0 rounded-full bg-transparent text-muted-foreground transition-colors hover:bg-transparent active:bg-transparent focus-visible:bg-transparent hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5",
           className,
         )}
         aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount})` : "Notificaciones"}
