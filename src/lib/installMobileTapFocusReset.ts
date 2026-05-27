@@ -5,6 +5,9 @@
  */
 
 let installed = false;
+let lastTouchLikeAt = 0;
+
+const TOUCH_FOCUS_GRACE_MS = 900;
 
 function isCoarsePointerDevice(): boolean {
   return window.matchMedia("(hover: none) and (pointer: coarse)").matches;
@@ -17,12 +20,16 @@ function isTouchLikeEvent(event: Event): boolean {
   return isCoarsePointerDevice() || "ontouchstart" in window;
 }
 
+function markTouchLikeInteraction(): void {
+  lastTouchLikeAt = Date.now();
+}
+
 /** Campos donde el foco debe conservarse (teclado, edición). */
 function isTextEntryField(el: Element | null): boolean {
   if (!(el instanceof HTMLElement)) return false;
   if (el.isContentEditable) return true;
   const tag = el.tagName;
-  if (tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (tag === "TEXTAREA") return true;
   if (tag === "INPUT") {
     const type = (el as HTMLInputElement).type.toLowerCase();
     const textLike = new Set([
@@ -59,18 +66,34 @@ function scheduleBlur(): void {
   requestAnimationFrame(blurNonTextFocus);
   window.setTimeout(blurNonTextFocus, 0);
   window.setTimeout(blurNonTextFocus, 50);
+  window.setTimeout(blurNonTextFocus, 150);
+  window.setTimeout(blurNonTextFocus, 300);
 }
 
 export function installMobileTapFocusReset(): void {
   if (installed || typeof window === "undefined") return;
   installed = true;
 
+  const onTouchLikeStart = (event: Event) => {
+    if (!isTouchLikeEvent(event)) return;
+    markTouchLikeInteraction();
+  };
+
   const onTouchInteractionEnd = (event: Event) => {
     if (!isTouchLikeEvent(event)) return;
+    markTouchLikeInteraction();
     scheduleBlur();
   };
 
+  const onFocusIn = () => {
+    if (Date.now() - lastTouchLikeAt > TOUCH_FOCUS_GRACE_MS) return;
+    scheduleBlur();
+  };
+
+  document.addEventListener("pointerdown", onTouchLikeStart, true);
+  document.addEventListener("touchstart", onTouchLikeStart, { capture: true, passive: true });
   document.addEventListener("pointerup", onTouchInteractionEnd, true);
   document.addEventListener("touchend", onTouchInteractionEnd, { capture: true, passive: true });
   document.addEventListener("click", onTouchInteractionEnd, true);
+  document.addEventListener("focusin", onFocusIn, true);
 }

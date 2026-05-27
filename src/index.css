@@ -220,7 +220,7 @@
 /*
  * En dispositivos táctiles (móvil/tablet) eliminamos cualquier estado de foco
  * visible tras un tap. En escritorio (hover fino, teclado) el foco se preserva
- * para accesibilidad. Los campos de texto (input/textarea/select/contenteditable)
+ * para accesibilidad. Los campos de texto (input/textarea/contenteditable)
  * quedan excluidos para que el usuario vea qué campo está activo al escribir.
  *
  * Complementado por installMobileTapFocusReset.ts, que hace blur del elemento
@@ -242,8 +242,8 @@
     touch-action: manipulation;
   }
 
-  *:not(input, textarea, select, [contenteditable="true"]):focus,
-  *:not(input, textarea, select, [contenteditable="true"]):focus-visible {
+  *:not(input, textarea, [contenteditable="true"]):focus,
+  *:not(input, textarea, [contenteditable="true"]):focus-visible {
     outline: none !important;
     box-shadow: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;
