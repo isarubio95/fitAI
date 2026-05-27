@@ -65,18 +65,36 @@ export function AppLayout() {
   }, [areHeaderPillsCollapsed]);
 
   useEffect(() => {
-    const clearTouchFocus = (event: PointerEvent) => {
-      if (event.pointerType !== "touch") return;
-      const target = event.target as HTMLElement | null;
-      const interactive = target?.closest(
+    const getInteractive = (target: EventTarget | null) => {
+      const element = target as HTMLElement | null;
+      return element?.closest(
         'button, [role="button"], [role="tab"], [role="menuitem"], [role="option"], [role="link"], a[href], summary',
       ) as HTMLElement | null;
-      interactive?.blur?.();
     };
 
-    window.addEventListener("pointerup", clearTouchFocus, { passive: true, capture: true });
+    const clearTouchFocus = (target: EventTarget | null) => {
+      const interactive = getInteractive(target);
+      interactive?.blur?.();
+
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (activeElement && getInteractive(activeElement)) {
+        activeElement.blur();
+      }
+    };
+
+    const onPointerUp = (event: PointerEvent) => {
+      if (event.pointerType !== "touch") return;
+      clearTouchFocus(event.target);
+    };
+    const onTouchEnd = (event: TouchEvent) => {
+      clearTouchFocus(event.target);
+    };
+
+    window.addEventListener("pointerup", onPointerUp, { passive: true, capture: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true, capture: true });
     return () => {
-      window.removeEventListener("pointerup", clearTouchFocus, { capture: true });
+      window.removeEventListener("pointerup", onPointerUp, { capture: true });
+      window.removeEventListener("touchend", onTouchEnd, { capture: true });
     };
   }, []);
 
@@ -153,7 +171,7 @@ export function AppLayout() {
           {/* Header superior solo en móvil */}
           <header
             className={cn(
-              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/40 bg-card px-4 py-2 dark:border-b-0 dark:bg-[hsl(222_47%_12%/0.88)] dark:backdrop-blur-2xl md:hidden",
+              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/40 bg-card px-4 py-2 dark:bg-[hsl(222_47%_12%/0.88)] dark:backdrop-blur-2xl md:hidden",
               showSectionPills ? "max-md:gap-2" : "gap-0",
             )}
           >

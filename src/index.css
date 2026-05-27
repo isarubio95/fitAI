@@ -233,7 +233,14 @@
   [role="menuitem"]:hover,
   [role="option"]:hover,
   [role="link"]:hover,
-  summary:hover {
+  summary:hover,
+  button:active,
+  [role="button"]:active,
+  [role="tab"]:active,
+  [role="menuitem"]:active,
+  [role="option"]:active,
+  [role="link"]:active,
+  summary:active {
     background-image: none !important;
     box-shadow: none !important;
     transform: none !important;
