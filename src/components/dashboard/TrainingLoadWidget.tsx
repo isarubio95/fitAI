@@ -9,7 +9,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  type TooltipProps,
+  type TooltipContentProps,
 } from "recharts";
 import { Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -166,7 +166,7 @@ export function TrainingLoadWidget() {
       <CardHeader className="space-y-3 px-6 pt-8 pb-3">
         <div className="flex items-center gap-1.5 pb-1">
           <CardTitle asChild className="text-base">
-            <h2>Fatiga</h2>
+            <h2>Forma y fatiga</h2>
           </CardTitle>
           <Popover>
             <PopoverTrigger asChild>
@@ -344,7 +344,7 @@ export function TrainingLoadWidget() {
   );
 }
 
-function TrainingLoadTooltip({ active, payload }: TooltipProps<number, string>) {
+function TrainingLoadTooltip({ active, payload }: TooltipContentProps<number, string>) {
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload as TrainingLoadPoint | undefined;
   if (!row) return null;
