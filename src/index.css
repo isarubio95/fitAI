@@ -242,10 +242,6 @@
   *:focus-within {
     outline: none !important;
     box-shadow: none !important;
-    text-decoration: none !important;
-    border-color: inherit !important;
-    background-color: inherit !important;
-    background-image: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;
     --tw-ring-offset-shadow: 0 0 #0000 !important;
     --tw-shadow: 0 0 #0000 !important;
