@@ -226,7 +226,7 @@
  * Complementado por installMobileTapFocusReset.ts, que hace blur del elemento
  * activo tras cada toque (salvo campos de texto).
  */
-@media (hover: none) and (pointer: coarse) {
+@media (hover: none), (pointer: coarse) {
   * {
     -webkit-tap-highlight-color: transparent;
   }
@@ -246,6 +246,32 @@
   *:not(input, textarea, [contenteditable="true"]):focus-visible {
     outline: none !important;
     box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+    --tw-shadow: 0 0 #0000 !important;
+    --tw-ring-color: transparent !important;
+    --tw-ring-offset-width: 0px !important;
+    --tw-ring-offset-color: transparent !important;
+  }
+
+  /* Apagado explícito y total para controles interactivos en móvil */
+  button:focus,
+  button:focus-visible,
+  select:focus,
+  select:focus-visible,
+  [role="button"]:focus,
+  [role="button"]:focus-visible,
+  [role="tab"]:focus,
+  [role="tab"]:focus-visible,
+  [role="menuitem"]:focus,
+  [role="menuitem"]:focus-visible,
+  [role="option"]:focus,
+  [role="option"]:focus-visible,
+  [data-slot="button"]:focus,
+  [data-slot="button"]:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: inherit !important;
     --tw-ring-shadow: 0 0 #0000 !important;
     --tw-ring-offset-shadow: 0 0 #0000 !important;
     --tw-shadow: 0 0 #0000 !important;

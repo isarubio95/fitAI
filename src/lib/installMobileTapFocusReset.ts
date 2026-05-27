@@ -10,7 +10,7 @@ let lastTouchLikeAt = 0;
 const TOUCH_FOCUS_GRACE_MS = 900;
 
 function isCoarsePointerDevice(): boolean {
-  return window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  return window.matchMedia("(hover: none), (pointer: coarse)").matches;
 }
 
 function isTouchLikeEvent(event: Event): boolean {
@@ -61,6 +61,15 @@ function blurNonTextFocus(): void {
   }
 }
 
+function isMobileFocusableControl(el: Element | null): boolean {
+  if (!(el instanceof Element)) return false;
+  return Boolean(
+    el.closest(
+      "button, select, [role='button'], [role='tab'], [role='menuitem'], [role='option'], [data-slot='button']",
+    ),
+  );
+}
+
 function scheduleBlur(): void {
   blurNonTextFocus();
   requestAnimationFrame(blurNonTextFocus);
@@ -90,10 +99,18 @@ export function installMobileTapFocusReset(): void {
     scheduleBlur();
   };
 
+  const onMobileControlTap = (event: Event) => {
+    if (!isCoarsePointerDevice()) return;
+    if (!isMobileFocusableControl(event.target as Element | null)) return;
+    markTouchLikeInteraction();
+    scheduleBlur();
+  };
+
   document.addEventListener("pointerdown", onTouchLikeStart, true);
   document.addEventListener("touchstart", onTouchLikeStart, { capture: true, passive: true });
   document.addEventListener("pointerup", onTouchInteractionEnd, true);
   document.addEventListener("touchend", onTouchInteractionEnd, { capture: true, passive: true });
   document.addEventListener("click", onTouchInteractionEnd, true);
+  document.addEventListener("click", onMobileControlTap, true);
   document.addEventListener("focusin", onFocusIn, true);
 }
