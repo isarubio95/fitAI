@@ -20,22 +20,27 @@ vi.mock("@/components/ui/card", () => ({
   CardTitle: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock("@/components/ui/segmented-toggle", () => ({
-  MONTH_WEEK_TOGGLE_OPTIONS: [
-    { value: "month", label: "Mes" },
-    { value: "week", label: "Semana" },
-  ],
-  SegmentedToggle: ({
+vi.mock("@/components/ui/tabs", () => ({
+  pillTabsListClass: "",
+  pillTabsTriggerClass: "",
+  Tabs: ({
     value,
     onValueChange,
+    children,
   }: {
     value: string;
     onValueChange: (next: string) => void;
+    children: ReactNode;
   }) => (
-    <div data-testid="segmented-toggle" data-value={value}>
+    <div data-testid="month-week-tabs" data-value={value}>
+      {children}
       <button onClick={() => onValueChange("month")}>Mes</button>
       <button onClick={() => onValueChange("week")}>Semana</button>
     </div>
+  ),
+  AnimatedTabsList: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  TabsTrigger: ({ value, children }: { value: string; children: ReactNode }) => (
+    <button data-value={value}>{children}</button>
   ),
 }));
 

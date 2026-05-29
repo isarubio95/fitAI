@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MONTH_WEEK_TOGGLE_OPTIONS, SegmentedToggle } from "@/components/ui/segmented-toggle";
+import { AnimatedTabsList, pillTabsListClass, pillTabsTriggerClass, Tabs, TabsTrigger } from "@/components/ui/tabs";
 import { useMuscleVolume, type TimePeriod } from "@/hooks/useMuscleVolume";
 import { MuscleDetailSheet } from "./MuscleDetailSheet";
 import { MuscleBodyMap, MuscleMapLegend } from "./MuscleBodyMap";
@@ -173,12 +173,16 @@ export function BodyHeatmap() {
             <CardTitle asChild className="text-base font-bold">
               <h2>Carga Muscular</h2>
             </CardTitle>
-            <SegmentedToggle
-              className="shrink-0"
-              value={period}
-              onValueChange={handlePeriodChange}
-              options={[...MONTH_WEEK_TOGGLE_OPTIONS]}
-            />
+            <Tabs value={period} onValueChange={handlePeriodChange}>
+              <AnimatedTabsList value={period} className={pillTabsListClass}>
+                <TabsTrigger value="month" className={pillTabsTriggerClass}>
+                  Mes
+                </TabsTrigger>
+                <TabsTrigger value="week" className={pillTabsTriggerClass}>
+                  Semana
+                </TabsTrigger>
+              </AnimatedTabsList>
+            </Tabs>
           </div>
         </CardHeader>
 

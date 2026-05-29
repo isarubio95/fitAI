@@ -17,7 +17,7 @@ import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressW
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
-import { MONTH_WEEK_TOGGLE_OPTIONS, SegmentedToggle } from "@/components/ui/segmented-toggle";
+import { AnimatedTabsList, pillTabsListClass, pillTabsTriggerClass, Tabs, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardNotificationPills } from "@/components/notifications/DashboardNotificationPills";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashboard/ProgramWizard";
@@ -368,7 +368,7 @@ const Dashboard = () => {
             <CardHeader className="space-y-3 px-6 pt-8 pb-6">
               <div className="flex w-full flex-row items-center justify-between gap-2">
                 <Button
-                  variant="new"
+                  variant="secondary"
                   size="sm"
                   disabled={!plannedKnown}
                   onClick={() => {
@@ -398,12 +398,16 @@ const Dashboard = () => {
                     </>
                   )}
                 </Button>
-                <SegmentedToggle
-                  className="shrink-0"
-                  value={calendarView}
-                  onValueChange={(v) => handleCalendarViewChange(v as "month" | "week")}
-                  options={[...MONTH_WEEK_TOGGLE_OPTIONS]}
-                />
+                <Tabs value={calendarView} onValueChange={(v) => handleCalendarViewChange(v as "month" | "week")}>
+                  <AnimatedTabsList value={calendarView} className={pillTabsListClass}>
+                    <TabsTrigger value="month" className={pillTabsTriggerClass}>
+                      Mes
+                    </TabsTrigger>
+                    <TabsTrigger value="week" className={pillTabsTriggerClass}>
+                      Semana
+                    </TabsTrigger>
+                  </AnimatedTabsList>
+                </Tabs>
               </div>
             </CardHeader>
             <CardContent className="p-0 pb-5 pt-0">
