@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -22,6 +22,7 @@ import { useWorkoutById } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -129,10 +130,17 @@ export function WorkoutLogger() {
 
   const isEdit = !!effectiveWorkoutId;
   const isActiveWorkout = !!activeWorkoutId || (!!existingWorkout && !existingWorkout.fecha_fin);
+  const hydratedWorkoutIdRef = useRef<string | null>(null);
 
   // Pre-fill form when editing existing workout (no hacerlo si abrimos desde plantilla: createActiveWorkout ya puso exercises con superset_id)
   useEffect(() => {
-    if (isEdit && existingWorkout && open && !templateExercises) {
+    if (!open) {
+      hydratedWorkoutIdRef.current = null;
+      return;
+    }
+    if (isEdit && existingWorkout && !templateExercises) {
+      if (hydratedWorkoutIdRef.current === existingWorkout.id) return;
+      hydratedWorkoutIdRef.current = existingWorkout.id;
       setTitulo(existingWorkout.titulo);
       setFecha(new Date(existingWorkout.fecha).toISOString().slice(0, 10));
       setExercises(
@@ -763,7 +771,7 @@ export function WorkoutLogger() {
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
             <DrawerHeader
               data-active-workout-sheet-header
-              className="sticky top-0 z-10 shrink-0 bg-card border-b border-border p-4"
+              className="sticky top-0 z-10 shrink-0 border-b border-border bg-card px-6 text-left"
             >
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
@@ -795,102 +803,122 @@ export function WorkoutLogger() {
               </div>
             </DrawerHeader>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-6">
-            {/* Title & Date */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 sm:col-span-1 space-y-1.5">
-                <Label htmlFor="titulo">Título</Label>
-                <Input
-                  id="titulo"
-                  placeholder="Ej: Día de Pierna"
-                  value={titulo}
-                  onChange={(e) => setTitulo(e.target.value)}
-                  className="h-12"
-                />
-              </div>
-              <div className="col-span-2 sm:col-span-1 space-y-1.5">
-                <Label htmlFor="fecha">Fecha</Label>
-                <Input
-                  id="fecha"
-                  type="date"
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
-                  className="h-12"
-                />
-              </div>
-            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto bg-background">
+              <div className="flex flex-col gap-1 bg-background pb-20">
+                <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
+                  <CardContent className="space-y-3 px-6 py-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                        <Label htmlFor="titulo">Título</Label>
+                        <Input
+                          id="titulo"
+                          placeholder="Ej: Día de Pierna"
+                          value={titulo}
+                          onChange={(e) => setTitulo(e.target.value)}
+                          className="h-12"
+                        />
+                      </div>
+                      <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                        <Label htmlFor="fecha">Fecha</Label>
+                        <Input
+                          id="fecha"
+                          type="date"
+                          value={fecha}
+                          onChange={(e) => setFecha(e.target.value)}
+                          className="h-12"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {creatingActive && (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="ml-2 text-sm text-muted-foreground">Preparando entrenamiento…</span>
-              </div>
-            )}
+                {creatingActive && (
+                  <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
+                    <CardContent className="flex items-center justify-center px-6 py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      <span className="ml-2 text-sm text-muted-foreground">Preparando entrenamiento…</span>
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Exercises (agrupados por superserie como en la edición de rutinas) */}
-            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={exercises.map((ex, i) => getExerciseSortId(ex, i))} strategy={verticalListSortingStrategy}>
-                <div className="space-y-4">
-                  {groupExercisesBySuperset(exercises).map((group) => {
-                    const isSuperset = !!group.supersetId && group.items.length > 1;
-                    if (isSuperset) {
-                      return (
-                        <div
-                          key={group.supersetId!}
-                          data-drawer-section
-                          className="relative rounded-none border-2 border-primary/40 bg-primary/5"
-                        >
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
-                          <div className="px-3 pt-2 pb-1">
-                            <span className="text-xs font-medium text-primary">🔗 Superserie</span>
+                <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
+                  <CardContent className="p-0">
+                    <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-3">
+                      <div className="font-semibold">Ejercicios</div>
+                      <div className="text-xs text-muted-foreground tabular-nums">
+                        {exercises.length} ejercicio{exercises.length === 1 ? "" : "s"}
+                      </div>
+                    </div>
+
+                    <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                      <SortableContext items={exercises.map((ex, i) => getExerciseSortId(ex, i))} strategy={verticalListSortingStrategy}>
+                        {exercises.length > 0 ? (
+                          <div className="flex flex-col gap-1 bg-background">
+                            {groupExercisesBySuperset(exercises).map((group) => {
+                              const isSuperset = !!group.supersetId && group.items.length > 1;
+                              if (isSuperset) {
+                                return (
+                                  <div key={group.supersetId} className="flex flex-col gap-1 bg-background">
+                                    <div className="bg-primary/5 px-6 pt-2 pb-1">
+                                      <span className="text-xs font-medium text-primary">🔗 Superserie</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1 bg-background">
+                                      {group.items.map(({ exercise: ex, originalIndex: ei }) => (
+                                        <SortableExerciseCard
+                                          key={getExerciseSortId(ex, ei)}
+                                          id={getExerciseSortId(ex, ei)}
+                                          exercise={ex}
+                                          exerciseIndex={ei}
+                                          isInSuperset
+                                          onRemoveExercise={() => removeExercise(ei)}
+                                          onAddSet={() => addSet(ei)}
+                                          onRemoveSet={(si) => removeSet(ei, si)}
+                                          onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
+                                          onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
+                                          onSetCompleted={isActiveWorkout ? (si, completed) => handleSetCompleted(ei, si, completed) : undefined}
+                                          onViewExerciseDetails={handleViewExerciseDetails}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              const { exercise: ex, originalIndex: ei } = group.items[0];
+                              return (
+                                <SortableExerciseCard
+                                  key={getExerciseSortId(ex, ei)}
+                                  id={getExerciseSortId(ex, ei)}
+                                  exercise={ex}
+                                  exerciseIndex={ei}
+                                  onRemoveExercise={() => removeExercise(ei)}
+                                  onAddSet={() => addSet(ei)}
+                                  onRemoveSet={(si) => removeSet(ei, si)}
+                                  onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
+                                  onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
+                                  onSetCompleted={isActiveWorkout ? (si, completed) => handleSetCompleted(ei, si, completed) : undefined}
+                                  onViewExerciseDetails={handleViewExerciseDetails}
+                                />
+                              );
+                            })}
                           </div>
-                          <div className="divide-y divide-border">
-                            {group.items.map(({ exercise: ex, originalIndex: ei }) => (
-                              <SortableExerciseCard
-                                key={getExerciseSortId(ex, ei)}
-                                id={getExerciseSortId(ex, ei)}
-                                exercise={ex}
-                                exerciseIndex={ei}
-                                isInSuperset
-                                onRemoveExercise={() => removeExercise(ei)}
-                                onAddSet={() => addSet(ei)}
-                                onRemoveSet={(si) => removeSet(ei, si)}
-                                onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
-                                onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
-                                onSetCompleted={isActiveWorkout ? (si, completed) => handleSetCompleted(ei, si, completed) : undefined}
-                                onViewExerciseDetails={handleViewExerciseDetails}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    }
-                    const { exercise: ex, originalIndex: ei } = group.items[0];
-                    return (
-                      <SortableExerciseCard
-                        key={getExerciseSortId(ex, ei)}
-                        id={getExerciseSortId(ex, ei)}
-                        exercise={ex}
-                        exerciseIndex={ei}
-                        onRemoveExercise={() => removeExercise(ei)}
-                        onAddSet={() => addSet(ei)}
-                        onRemoveSet={(si) => removeSet(ei, si)}
-                        onUpdateSet={(si, field, value) => updateSet(ei, si, field, value)}
-                        onAutoSaveSet={(si) => handleAutoSaveSet(ei, si)}
-                        onSetCompleted={isActiveWorkout ? (si, completed) => handleSetCompleted(ei, si, completed) : undefined}
-                        onViewExerciseDetails={handleViewExerciseDetails}
+                        ) : (
+                          <p className="px-6 pb-4 text-sm text-muted-foreground">
+                            Añade ejercicios para registrar tu entrenamiento.
+                          </p>
+                        )}
+                      </SortableContext>
+                    </DndContext>
+
+                    <div className="border-t border-border px-6 py-4">
+                      <ExerciseSelector
+                        open={exercisePickerOpen}
+                        onOpenChange={setExercisePickerOpen}
+                        onSelect={addExercise}
                       />
-                    );
-                  })}
-                </div>
-              </SortableContext>
-            </DndContext>
-
-                <ExerciseSelector
-                  open={exercisePickerOpen}
-                  onOpenChange={setExercisePickerOpen}
-                  onSelect={addExercise}
-                />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Contador de descanso dentro de Entrenamiento Activo */}

@@ -42,11 +42,11 @@ export function SortableExerciseCard({ id, ...props }: SortableExerciseCardProps
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
+    <div ref={setNodeRef} style={style}>
       <ExerciseCard
         {...props}
         isInSuperset={props.isInSuperset}
-        dragHandleProps={listeners}
+        dragHandleProps={{ ...listeners, ...attributes }}
         onViewExerciseDetails={props.onViewExerciseDetails}
       />
     </div>

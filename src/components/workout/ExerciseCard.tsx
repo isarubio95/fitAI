@@ -1,7 +1,6 @@
 import { useContext, useState } from "react";
 import { DrawerInContentContext } from "@/components/ui/drawer";
 import { useLastPerformance } from "@/hooks/useLastPerformance";
-import { useRestTimerContext } from "@/components/workout/RestTimerProvider";
 import { formatMSS } from "@/hooks/useRestTimer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,7 +57,6 @@ export function ExerciseCard({
     usuario_ejercicio_id: exercise.usuario_ejercicio_id,
   });
   const mode = normalizeRegistroSeries(exercise.registro_series);
-  const timer = useRestTimerContext();
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
   const [confirmDeleteSet, setConfirmDeleteSet] = useState<number | null>(null);
 
@@ -68,22 +66,22 @@ export function ExerciseCard({
   const headerMetaBadgeClass = "gap-1";
 
   const inDrawer = useContext(DrawerInContentContext);
-  const wrapperClass = isInSuperset
-    ? "p-4 space-y-3"
-    : cn(
-        "border border-border bg-card p-4 space-y-3",
-        inDrawer ? "rounded-none" : "rounded-xl",
-      );
+  const wrapperClass = cn(
+    "space-y-3",
+    inDrawer
+      ? cn("px-6 py-4", isInSuperset ? "bg-primary/5" : "bg-card")
+      : cn("rounded-xl border border-border bg-card p-4"),
+  );
 
   return (
-    <div className={wrapperClass} data-drawer-section={inDrawer ? true : undefined}>
+    <div className={wrapperClass}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing">
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
-          <h3 className="font-semibold">{exercise.nombre}</h3>
+          <h3 className="truncate text-sm font-semibold">{exercise.nombre}</h3>
           {onViewExerciseDetails && (
             <button
               type="button"

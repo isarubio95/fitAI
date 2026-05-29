@@ -10,7 +10,6 @@ import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useCardioDisciplinas, useCardioSessionById, useUpsertCardioSession } from "@/hooks/useCardioSessions";
 import { cn } from "@/lib/utils";
-import { DRAWER_SECTION_BOX_CLASS } from "@/lib/drawerStyles";
 import type { CardioBlockInput, CardioDisciplineCode, CardioSportDetailInput, CardioTrackInput, CardioTrackPointInput } from "@/types/cardio";
 
 type NestedOneOrMany<T> = T | T[] | null | undefined;
@@ -42,7 +41,7 @@ type CardioTrackRow = {
   cardio_track_point?: CardioTrackPointRow[] | null;
 };
 
-const sectionCardClass = cn(DRAWER_SECTION_BOX_CLASS, "p-4 space-y-4");
+const sectionCardClass = cn("rounded-none border border-border bg-card p-4 space-y-4");
 
 function FormField({ id, label, className, children }: { id?: string; label: string; className?: string; children: ReactNode }) {
   return (

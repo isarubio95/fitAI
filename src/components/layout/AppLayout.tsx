@@ -65,18 +65,30 @@ export function AppLayout() {
   }, [areHeaderPillsCollapsed]);
 
   useEffect(() => {
+    const isEditableField = (el: Element | null) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      return el.isContentEditable;
+    };
+
     const getInteractive = (target: EventTarget | null) => {
       const element = target as HTMLElement | null;
-      return element?.closest(
+      if (!element || isEditableField(element) || element.closest("input, textarea, select, [contenteditable='true']")) {
+        return null;
+      }
+      return element.closest(
         'button, [role="button"], [role="tab"], [role="menuitem"], [role="option"], [role="link"], a[href], summary',
       ) as HTMLElement | null;
     };
 
     const clearTouchFocus = (target: EventTarget | null) => {
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (isEditableField(activeElement)) return;
+
       const interactive = getInteractive(target);
       interactive?.blur?.();
 
-      const activeElement = document.activeElement as HTMLElement | null;
       if (activeElement && getInteractive(activeElement)) {
         activeElement.blur();
       }

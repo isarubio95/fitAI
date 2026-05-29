@@ -21,7 +21,6 @@ import {
   formatRitmoSegKmLabel,
 } from "@/types/workout";
 import { cn } from "@/lib/utils";
-import { DRAWER_SECTION_CARD_CLASS } from "@/lib/drawerStyles";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -554,14 +553,14 @@ export function WorkoutDetailsContent({
 
           <div className="space-y-2 bg-background">
             {workout.comentarios ? (
-              <Card className={DRAWER_SECTION_CARD_CLASS}>
+              <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
                 <CardContent className="px-6 py-4 text-sm text-muted-foreground whitespace-pre-wrap">
                   {workout.comentarios}
                 </CardContent>
               </Card>
             ) : null}
 
-            <Card className={DRAWER_SECTION_CARD_CLASS}>
+            <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
               <CardContent className="px-6 py-4">
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="font-semibold">Series por grupo muscular</div>
@@ -591,7 +590,7 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card className={DRAWER_SECTION_CARD_CLASS}>
+            <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
               <CardContent className="px-6 py-4">
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="font-semibold">Peso levantado por grupo muscular</div>
@@ -638,7 +637,7 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card className={DRAWER_SECTION_CARD_CLASS}>
+            <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
               <CardContent className="p-0">
                 <div className="px-6 pt-4 pb-3">
                   <div className="flex items-center justify-between gap-3">

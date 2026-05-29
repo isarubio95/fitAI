@@ -2,7 +2,6 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } f
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
-import { DRAWER_SECTION_CARD_CLASS } from "@/lib/drawerStyles";
 
 interface MuscleDetailSheetProps {
   open: boolean;
@@ -31,7 +30,7 @@ export function MuscleDetailSheet({ open, onOpenChange, group, specificVolume }:
 
           <div className="overflow-y-auto bg-background">
             <div className="flex flex-col gap-1 bg-background pb-6">
-              <Card className={DRAWER_SECTION_CARD_CLASS}>
+              <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
                 <CardContent className="space-y-4 px-6 py-4">
                   {muscles.map((muscle) => {
                     const sets = specificVolume[muscle] || 0;
