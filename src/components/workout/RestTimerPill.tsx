@@ -24,12 +24,16 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
   // En sheet: la pill va como último hijo de una columna flex con zona central `min-h-0 flex-1 overflow-y-auto`.
   // No usar `sticky` aquí: en WebKit/Android suele provocar recortes y “huecos” negros (overlay) al montar la pill.
   const sheetOuterClass =
-    "shrink-0 z-[60] flex w-full justify-center bg-background px-2 pt-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pointer-events-auto border-t border-border";
+    "pointer-events-none absolute inset-x-0 bottom-0 z-[60] flex w-full justify-center px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]";
+
+  const stopBubble = (e: React.SyntheticEvent) => {
+    e.stopPropagation();
+  };
 
   const pillInner = (
     <div
       className={cn(
-        "group relative flex items-center gap-3 pl-2 pr-2 py-2 rounded-full",
+        "group relative flex items-center gap-3 pl-2 pr-2 py-2 rounded-full touch-none",
         "bg-neutral-900/80 backdrop-blur-md",
         "border border-white/10 shadow-2xl shadow-black/40",
         "transition-all duration-300 ease-out",
@@ -82,8 +86,13 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
       <div className={sheetOuterClass}>
         <div
           ref={d.elRef}
-          className="inline-flex touch-none select-none"
+          data-vaul-no-drag
+          className="inline-flex max-w-[calc(100vw-1rem)] touch-none select-none pointer-events-auto cursor-grab active:cursor-grabbing"
           style={d.style}
+          onPointerDownCapture={stopBubble}
+          onPointerMoveCapture={stopBubble}
+          onPointerUpCapture={stopBubble}
+          onPointerCancelCapture={stopBubble}
           onPointerDown={d.onPointerDown}
           onPointerMove={d.onPointerMove}
           onPointerUp={d.onPointerUp}

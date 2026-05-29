@@ -768,7 +768,7 @@ export function WorkoutLogger() {
         <DrawerContent
           className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0"
         >
-          <div className="flex h-full min-h-0 flex-col overflow-hidden">
+          <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
             <DrawerHeader
               data-active-workout-sheet-header
               className="sticky top-0 z-10 shrink-0 border-b border-border bg-card px-6 text-left"
