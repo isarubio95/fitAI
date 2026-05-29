@@ -89,12 +89,17 @@ export function AppLayout() {
     const onTouchEnd = (event: TouchEvent) => {
       clearTouchFocus(event.target);
     };
+    const onClick = (event: MouseEvent) => {
+      clearTouchFocus(event.target);
+    };
 
     window.addEventListener("pointerup", onPointerUp, { passive: true, capture: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true, capture: true });
+    window.addEventListener("click", onClick, { passive: true, capture: true });
     return () => {
       window.removeEventListener("pointerup", onPointerUp, { capture: true });
       window.removeEventListener("touchend", onTouchEnd, { capture: true });
+      window.removeEventListener("click", onClick, { capture: true });
     };
   }, []);
 
