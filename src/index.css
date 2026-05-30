@@ -226,23 +226,26 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* En dispositivos táctiles desactivamos feedback de hover persistente. */
-  button:hover,
-  [role="button"]:hover,
-  [role="tab"]:hover,
-  [role="menuitem"]:hover,
-  [role="option"]:hover,
-  [role="link"]:hover,
-  a[href]:hover,
-  summary:hover,
-  button:active,
-  [role="button"]:active,
-  [role="tab"]:active,
-  [role="menuitem"]:active,
-  [role="option"]:active,
-  [role="link"]:active,
-  a[href]:active,
-  summary:active {
+  /*
+   * En dispositivos táctiles desactivamos hover/active persistente en controles genéricos.
+   * Las pills (.touch-pill) quedan excluidas: el reset !important rompía bg/border activos al pulsar.
+   */
+  button:not(.touch-pill):hover,
+  [role="button"]:not(.touch-pill):hover,
+  [role="tab"]:not(.touch-pill):hover,
+  [role="menuitem"]:not(.touch-pill):hover,
+  [role="option"]:not(.touch-pill):hover,
+  [role="link"]:not(.touch-pill):hover,
+  a[href]:not(.touch-pill):hover,
+  summary:not(.touch-pill):hover,
+  button:not(.touch-pill):active,
+  [role="button"]:not(.touch-pill):active,
+  [role="tab"]:not(.touch-pill):active,
+  [role="menuitem"]:not(.touch-pill):active,
+  [role="option"]:not(.touch-pill):active,
+  [role="link"]:not(.touch-pill):active,
+  a[href]:not(.touch-pill):active,
+  summary:not(.touch-pill):active {
     background-color: transparent !important;
     background-image: none !important;
     color: inherit !important;
