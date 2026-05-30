@@ -17,12 +17,18 @@ npm run android:sync
 
 ## 3) Generar App Bundle (.aab)
 
+**Importante:** usa `Build > Generate Signed Bundle / APK` con variante **release**.
+No uses solo `Build > Build Bundle(s)` (genera un bundle **debug** y no sirve para Play).
+
+Si falla `signDebugBundle` / `FinalizeBundleTask` con poca memoria, el proyecto ya aumenta heap en `android/gradle.properties` (`-Xmx6144m`). Tras cambiarlo: `File > Sync Project with Gradle Files` y reintenta.
+
 Opcion A (Android Studio, recomendada):
 
 1. `npm run android:open`
 2. En Android Studio: `Build > Generate Signed Bundle / APK`
 3. Seleccionar `Android App Bundle`.
-4. Usar (o crear) un keystore de firma.
+4. Variante **release** y crear o seleccionar un keystore de firma.
+5. El `.aab` queda en `android/app/build/outputs/bundle/release/app-release.aab`
 
 Opcion B (CLI):
 
