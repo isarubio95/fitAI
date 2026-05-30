@@ -1,10 +1,6 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import type { User, Session } from "@supabase/supabase-js";
-import { Capacitor } from "@capacitor/core";
-import { App } from "@capacitor/app";
-import { Browser } from "@capacitor/browser";
 import { supabase } from "@/integrations/supabase/client";
-import { handleAuthCallbackFromUrl, isAuthCallbackUrl } from "@/lib/authRedirect";
 
 interface AuthContextType {
   user: User | null;
@@ -41,36 +37,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-
-    const handleDeepLink = async (url: string) => {
-      if (!isAuthCallbackUrl(url)) return;
-      try {
-        await handleAuthCallbackFromUrl(url);
-        await Browser.close();
-      } catch (error) {
-        console.error("OAuth callback failed:", error);
-      }
-    };
-
-    void App.getLaunchUrl().then((result) => {
-      if (result?.url) void handleDeepLink(result.url);
-    });
-
-    let listenerHandle: { remove: () => Promise<void> } | undefined;
-
-    void App.addListener("appUrlOpen", (event) => {
-      void handleDeepLink(event.url);
-    }).then((handle) => {
-      listenerHandle = handle;
-    });
-
-    return () => {
-      void listenerHandle?.remove();
-    };
   }, []);
 
   const signOut = async () => {

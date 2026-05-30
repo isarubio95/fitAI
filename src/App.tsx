@@ -9,7 +9,6 @@ import { RestTimerProvider } from "@/components/workout/RestTimerProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import Auth from "./pages/Auth";
-import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Library from "./pages/Library";
 import Community from "./pages/Community";
@@ -34,7 +33,6 @@ const App = () => {
                 <ScrollToTop />
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route element={<AppLayout />}>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/routines" element={<Library />} />

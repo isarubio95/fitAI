@@ -1,7 +1,4 @@
 import { useState } from "react";
-import { Capacitor } from "@capacitor/core";
-import { Browser } from "@capacitor/browser";
-import { getAuthRedirectUrl } from "@/lib/authRedirect";
 
 function translateAuthError(msg: string, isLogin: boolean): { title: string; description: string } {
   const lower = msg.toLowerCase();
@@ -59,7 +56,7 @@ const Auth = () => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: getAuthRedirectUrl() },
+          options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
         toast({
@@ -134,20 +131,12 @@ const Auth = () => {
             variant="outline"
             className="h-12 w-full text-base gap-3"
             onClick={async () => {
-              const redirectTo = getAuthRedirectUrl();
-              const { data, error } = await supabase.auth.signInWithOAuth({
+              const { error } = await supabase.auth.signInWithOAuth({
                 provider: "google",
-                options: {
-                  redirectTo,
-                  skipBrowserRedirect: Capacitor.isNativePlatform(),
-                },
+                options: { redirectTo: window.location.origin },
               });
               if (error) {
                 toast({ title: "Error con Google", description: error.message, variant: "destructive" });
-                return;
-              }
-              if (Capacitor.isNativePlatform() && data?.url) {
-                await Browser.open({ url: data.url });
               }
             }}
           >
