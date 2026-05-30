@@ -15,6 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
+import { cn } from "@/lib/utils";
 import { useTrainingLoad, type TrainingLoadData, type TrainingLoadPoint } from "@/hooks/useTrainingLoad";
 
 function formatNumber(n: number) {
@@ -206,16 +208,18 @@ export function TrainingLoadWidget() {
         </div>
         <div className="flex flex-wrap gap-2">
           {RANGE_OPTIONS.map((option) => (
-            <Button
+            <button
               key={option.key}
               type="button"
-              size="sm"
-              variant={range === option.key ? "default" : "filter"}
-              className="h-7 rounded-full px-3 text-xs"
+              className={cn(
+                filterPillBase,
+                "h-7 px-3 py-0 text-xs",
+                range === option.key ? filterPillActive : filterPillInactive,
+              )}
               onClick={() => setRange(option.key)}
             >
               {option.label}
-            </Button>
+            </button>
           ))}
         </div>
         <div className="grid grid-cols-3 gap-3 text-center">
