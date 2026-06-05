@@ -226,23 +226,23 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* En dispositivos táctiles desactivamos feedback de hover persistente (excepto pills de filtro/sección). */
-  button:hover:not(.touch-pill):not([data-draggable-pill]),
-  [role="button"]:hover:not(.touch-pill):not([data-draggable-pill]),
-  [role="tab"]:hover:not(.touch-pill):not([data-draggable-pill]),
-  [role="menuitem"]:hover:not(.touch-pill):not([data-draggable-pill]),
-  [role="option"]:hover:not(.touch-pill):not([data-draggable-pill]),
-  [role="link"]:hover:not(.touch-pill):not([data-draggable-pill]),
-  a[href]:hover:not(.touch-pill):not([data-draggable-pill]),
-  summary:hover:not(.touch-pill):not([data-draggable-pill]),
-  button:active:not(.touch-pill):not([data-draggable-pill]),
-  [role="button"]:active:not(.touch-pill):not([data-draggable-pill]),
-  [role="tab"]:active:not(.touch-pill):not([data-draggable-pill]),
-  [role="menuitem"]:active:not(.touch-pill):not([data-draggable-pill]),
-  [role="option"]:active:not(.touch-pill):not([data-draggable-pill]),
-  [role="link"]:active:not(.touch-pill):not([data-draggable-pill]),
-  a[href]:active:not(.touch-pill):not([data-draggable-pill]),
-  summary:active:not(.touch-pill):not([data-draggable-pill]) {
+  /* En dispositivos táctiles desactivamos feedback de hover persistente (excepto UI con estilo propio). */
+  button:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="button"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="tab"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="menuitem"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="option"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="link"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  a[href]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  summary:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  button:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="button"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="tab"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="menuitem"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="option"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="link"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  a[href]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  summary:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]) {
     background-color: transparent !important;
     background-image: none !important;
     color: inherit !important;
