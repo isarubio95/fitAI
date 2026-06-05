@@ -2,10 +2,10 @@ import { cn } from "@/lib/utils";
 
 /** Pills redondeadas de navegación / sección (Evolution, Library, header móvil). */
 export const filterPillBase =
-  "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors";
+  "touch-pill rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors outline-none focus:outline-none focus-visible:outline-none";
 
 export const filterPillInactive =
-  "border-border/20 bg-muted/40 text-foreground hover:border-border/35 hover:bg-muted/55";
+  "border-border/20 bg-muted/40 text-foreground [@media(hover:hover)]:hover:border-border/35 [@media(hover:hover)]:hover:bg-muted/55";
 
 export const filterPillActive =
   "border-primary/45 bg-primary text-primary-foreground shadow-sm";
