@@ -137,8 +137,8 @@ const DrawerContent = React.forwardRef<
       }}
       className={cn(
         "drawer-mobile-scrollbars-hidden fixed z-50 flex border bg-background",
-        "[&_[data-slot=card]]:!rounded-none [&_[data-drawer-section]]:!rounded-none",
-        "[&_[data-slot=card]:first-child]:!border-t-0",
+        "**:data-[slot=card]:rounded-none! **:data-drawer-section:rounded-none!",
+        "[&_[data-slot=card]:first-child]:border-t-0!",
         side === "bottom" &&
           "inset-x-0 bottom-0 mt-24 max-h-lvh flex-col rounded-t-[10px] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2",
         side === "top" &&
