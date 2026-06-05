@@ -545,6 +545,7 @@ export function WorkoutLogger() {
   const handleDelete = async () => {
     const targetId = effectiveWorkoutId;
     if (!targetId) return;
+    if (isActiveWorkout) restTimer.stop();
     setDeleting(true);
     try {
       const { data: oldEjercicios } = await supabase
@@ -600,6 +601,8 @@ export function WorkoutLogger() {
       toast({ title: "Entrenamiento vacío", description: "No hay ninguna serie con datos válidos.", variant: "destructive" });
       return;
     }
+
+    if (isActiveWorkout) restTimer.stop();
 
     setSaving(true);
     try {

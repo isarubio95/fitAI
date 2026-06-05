@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { Timer, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRestTimerContext } from "@/components/workout/RestTimerProvider";
@@ -14,20 +15,17 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
   const timer = useRestTimerContext();
   /** bottom-36 = 9rem → 144px */
   const dragGlobal = useDraggablePillPosition("gym-log-pill-rest-global", 144, "restGlobal");
-  const dragSheet = useDraggablePillPosition("gym-log-pill-rest-sheet", null, "restSheet");
+  /** bottom real vía clase; el número activa el centrado horizontal del hook */
+  const dragSheet = useDraggablePillPosition("gym-log-pill-rest-sheet", 1, "restSheet");
 
   if (!timer.activeKey) return null;
 
   const percent = pctRemaining(timer.remaining, timer.duration);
   const label = timer.finished ? "¡Listo!" : formatMSS(timer.remaining);
 
-  // En sheet: la pill va como último hijo de una columna flex con zona central `min-h-0 flex-1 overflow-y-auto`.
-  // No usar `sticky` aquí: en WebKit/Android suele provocar recortes y “huecos” negros (overlay) al montar la pill.
-  const sheetOuterClass =
-    "pointer-events-none absolute inset-x-0 bottom-0 z-[60] flex w-full justify-center px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]";
-
-  const stopBubble = (e: React.SyntheticEvent) => {
+  const blockPointerBubble = (e: React.PointerEvent) => {
     e.stopPropagation();
+    if (e.pointerType === "touch") e.preventDefault();
   };
 
   const pillInner = (
@@ -36,8 +34,8 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
         "group relative flex items-center gap-3 pl-2 pr-2 py-2 rounded-full touch-none",
         "bg-neutral-900/80 backdrop-blur-md",
         "border border-white/10 shadow-2xl shadow-black/40",
-        "transition-all duration-300 ease-out",
-        !timer.finished && "hover:bg-neutral-800/80 hover:border-white/20 hover:scale-[1.02]",
+        "transition-[background-color,border-color,box-shadow,opacity] duration-300 ease-out",
+        !timer.finished && "hover:bg-neutral-800/80 hover:border-white/20",
       )}
     >
       <div
@@ -80,43 +78,48 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
     </div>
   );
 
-  if (mode === "sheet") {
-    const d = dragSheet;
-    return (
-      <div className={sheetOuterClass}>
-        <div
-          ref={d.elRef}
-          data-vaul-no-drag
-          className="inline-flex max-w-[calc(100vw-1rem)] touch-none select-none pointer-events-auto cursor-grab active:cursor-grabbing"
-          style={d.style}
-          onPointerDownCapture={stopBubble}
-          onPointerMoveCapture={stopBubble}
-          onPointerUpCapture={stopBubble}
-          onPointerCancelCapture={stopBubble}
-          onPointerDown={d.onPointerDown}
-          onPointerMove={d.onPointerMove}
-          onPointerUp={d.onPointerUp}
-          onPointerCancel={d.onPointerCancel}
-        >
-          {pillInner}
-        </div>
+  const renderDraggableShell = (
+    d: ReturnType<typeof useDraggablePillPosition>,
+    className: string,
+    options?: { portal?: boolean; blockDrawerDrag?: boolean },
+  ) => {
+    const shell = (
+      <div
+        ref={d.elRef}
+        data-draggable-pill
+        {...(options?.blockDrawerDrag ? { "data-vaul-no-drag": true } : {})}
+        className={className}
+        style={d.style}
+        onPointerDownCapture={blockPointerBubble}
+        onPointerMoveCapture={blockPointerBubble}
+        onPointerUpCapture={blockPointerBubble}
+        onPointerCancelCapture={blockPointerBubble}
+        onPointerDown={d.onPointerDown}
+        onPointerMove={d.onPointerMove}
+        onPointerUp={d.onPointerUp}
+        onPointerCancel={d.onPointerCancel}
+      >
+        {pillInner}
       </div>
+    );
+
+    if (options?.portal && typeof document !== "undefined") {
+      return createPortal(shell, document.body);
+    }
+    return shell;
+  };
+
+  if (mode === "sheet") {
+    return renderDraggableShell(
+      dragSheet,
+      "fixed left-1/2 z-[100] w-auto max-w-[calc(100vw-1rem)] touch-none select-none cursor-grab active:cursor-grabbing bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] px-2",
+      { portal: true, blockDrawerDrag: true },
     );
   }
 
-  const d = dragGlobal;
-  return (
-    <div
-      ref={d.elRef}
-      className="fixed bottom-36 left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none"
-      style={d.style}
-      onPointerDown={d.onPointerDown}
-      onPointerMove={d.onPointerMove}
-      onPointerUp={d.onPointerUp}
-      onPointerCancel={d.onPointerCancel}
-    >
-      {pillInner}
-    </div>
+  return renderDraggableShell(
+    dragGlobal,
+    "fixed bottom-36 left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none cursor-grab active:cursor-grabbing",
   );
 }
 

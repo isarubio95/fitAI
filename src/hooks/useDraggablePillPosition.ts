@@ -196,10 +196,46 @@ export function useDraggablePillPosition(
     [storageKey],
   );
 
+  const detachWindowListenersRef = useRef<(() => void) | null>(null);
+  const finishDragRef = useRef<(pointerId: number) => void>(() => {});
+
+  const detachWindowListeners = useCallback(() => {
+    detachWindowListenersRef.current?.();
+    detachWindowListenersRef.current = null;
+  }, []);
+
+  const applyPointerMove = useCallback(
+    (clientX: number, clientY: number, pointerId: number) => {
+      if (!drag.current.active || pointerId !== drag.current.pointerId) return;
+      const now = performance.now();
+      const dx = clientX - drag.current.startClient.x;
+      const dy = clientY - drag.current.startClient.y;
+      if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) drag.current.moved = true;
+
+      const dtMs = Math.max(1, now - drag.current.lastTs);
+      const vx = (clientX - drag.current.lastClient.x) / dtMs;
+      const vy = (clientY - drag.current.lastClient.y) / dtMs;
+      drag.current.velocity = { x: vx, y: vy };
+      drag.current.lastClient = { x: clientX, y: clientY };
+      drag.current.lastTs = now;
+
+      const next = {
+        x: drag.current.startOffset.x + dx,
+        y: drag.current.startOffset.y + dy,
+      };
+      const clamped = clampOffset(next, elRef.current, offsetRef.current, modeRef.current);
+      scheduleOffset(clamped);
+    },
+    [scheduleOffset],
+  );
+
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return;
+    if (e.pointerType === "touch") e.preventDefault();
     stopMomentum();
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    detachWindowListeners();
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
     const now = performance.now();
     drag.current = {
       active: true,
@@ -212,39 +248,44 @@ export function useDraggablePillPosition(
       moved: false,
     };
     setIsDragging(true);
-  }, [stopMomentum]);
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!drag.current.active || e.pointerId !== drag.current.pointerId) return;
-    const now = performance.now();
-    const dx = e.clientX - drag.current.startClient.x;
-    const dy = e.clientY - drag.current.startClient.y;
-    if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) drag.current.moved = true;
-
-    const dtMs = Math.max(1, now - drag.current.lastTs);
-    const vx = (e.clientX - drag.current.lastClient.x) / dtMs; // px/ms
-    const vy = (e.clientY - drag.current.lastClient.y) / dtMs; // px/ms
-    drag.current.velocity = { x: vx, y: vy };
-    drag.current.lastClient = { x: e.clientX, y: e.clientY };
-    drag.current.lastTs = now;
-
-    const next = {
-      x: drag.current.startOffset.x + dx,
-      y: drag.current.startOffset.y + dy,
+    const onWindowMove = (ev: PointerEvent) => {
+      if (ev.pointerType === "touch") ev.preventDefault();
+      applyPointerMove(ev.clientX, ev.clientY, ev.pointerId);
     };
-    const clamped = clampOffset(next, elRef.current, offsetRef.current, modeRef.current);
-    scheduleOffset(clamped);
-  }, [scheduleOffset]);
-
-  const endDrag = useCallback(
-    (e: React.PointerEvent) => {
-      if (!drag.current.active || e.pointerId !== drag.current.pointerId) return;
-      drag.current.active = false;
+    const onWindowEnd = (ev: PointerEvent) => {
+      if (!drag.current.active || ev.pointerId !== drag.current.pointerId) return;
       try {
-        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+        target.releasePointerCapture(ev.pointerId);
       } catch {
         /* already released */
       }
+      finishDragRef.current(ev.pointerId);
+    };
+
+    window.addEventListener("pointermove", onWindowMove, { passive: false });
+    window.addEventListener("pointerup", onWindowEnd);
+    window.addEventListener("pointercancel", onWindowEnd);
+    detachWindowListenersRef.current = () => {
+      window.removeEventListener("pointermove", onWindowMove);
+      window.removeEventListener("pointerup", onWindowEnd);
+      window.removeEventListener("pointercancel", onWindowEnd);
+    };
+  }, [applyPointerMove, detachWindowListeners, stopMomentum]);
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.pointerType === "touch") e.preventDefault();
+      applyPointerMove(e.clientX, e.clientY, e.pointerId);
+    },
+    [applyPointerMove],
+  );
+
+  const finishDrag = useCallback(
+    (pointerId: number) => {
+      if (!drag.current.active || pointerId !== drag.current.pointerId) return;
+      drag.current.active = false;
+      detachWindowListeners();
 
       const start = offsetRef.current;
       const startV = drag.current.velocity;
@@ -289,7 +330,20 @@ export function useDraggablePillPosition(
       stopMomentum();
       momentumRafRef.current = requestAnimationFrame(tick);
     },
-    [persist, scheduleOffset, stopMomentum],
+    [detachWindowListeners, persist, scheduleOffset, stopMomentum],
+  );
+  finishDragRef.current = finishDrag;
+
+  const endDrag = useCallback(
+    (e: React.PointerEvent) => {
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {
+        /* already released */
+      }
+      finishDrag(e.pointerId);
+    },
+    [finishDrag],
   );
 
   const onPointerUp = useCallback(
@@ -305,6 +359,12 @@ export function useDraggablePillPosition(
     },
     [endDrag],
   );
+
+  useEffect(() => {
+    return () => {
+      detachWindowListeners();
+    };
+  }, [detachWindowListeners]);
 
   const style =
     bottomPxFromViewport == null

@@ -46,9 +46,10 @@ export function ActiveCardioPill() {
   return (
     <div
       ref={drag.elRef}
+      data-draggable-pill
       role="button"
       tabIndex={0}
-      className={`fixed left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full ${
+      className={`fixed left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none cursor-grab active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full ${
         stackAboveWorkout ? "bottom-40" : "bottom-24"
       }`}
       style={drag.style}

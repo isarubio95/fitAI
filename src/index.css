@@ -235,14 +235,14 @@
   [role="link"]:hover,
   a[href]:hover,
   summary:hover,
-  button:active,
-  [role="button"]:active,
-  [role="tab"]:active,
-  [role="menuitem"]:active,
-  [role="option"]:active,
-  [role="link"]:active,
-  a[href]:active,
-  summary:active {
+  button:active:not([data-draggable-pill]),
+  [role="button"]:active:not([data-draggable-pill]),
+  [role="tab"]:active:not([data-draggable-pill]),
+  [role="menuitem"]:active:not([data-draggable-pill]),
+  [role="option"]:active:not([data-draggable-pill]),
+  [role="link"]:active:not([data-draggable-pill]),
+  a[href]:active:not([data-draggable-pill]),
+  summary:active:not([data-draggable-pill]) {
     background-color: transparent !important;
     background-image: none !important;
     color: inherit !important;
@@ -254,15 +254,19 @@
     text-decoration: none !important;
   }
 
-  button,
-  a,
-  [role="button"],
-  [role="tab"],
-  [role="menuitem"],
-  [role="option"],
-  [role="link"],
-  summary {
+  button:not([data-draggable-pill]),
+  a:not([data-draggable-pill]),
+  [role="button"]:not([data-draggable-pill]),
+  [role="tab"]:not([data-draggable-pill]),
+  [role="menuitem"]:not([data-draggable-pill]),
+  [role="option"]:not([data-draggable-pill]),
+  [role="link"]:not([data-draggable-pill]),
+  summary:not([data-draggable-pill]) {
     touch-action: manipulation;
+  }
+
+  [data-draggable-pill] {
+    touch-action: none;
   }
 
   *:focus,
