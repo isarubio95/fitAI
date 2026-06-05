@@ -60,7 +60,7 @@ export function CalendarDayCircleContent({
 }) {
   if (display.type !== "number") {
     const Icon = display.Icon;
-    return <Icon className="relative z-10 h-4.5 w-4.5" strokeWidth={1.75} />;
+    return <Icon className="relative z-10 h-5 w-5" strokeWidth={1.75} />;
   }
 
   return (
