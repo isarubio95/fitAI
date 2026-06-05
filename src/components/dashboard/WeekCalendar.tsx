@@ -291,7 +291,7 @@ export function WeekCalendar({
                       ease: [0.32, 0.72, 0, 1],
                       opacity: { duration: 0.2 },
                     }}
-                    className="overflow-hidden"
+                    className="overflow-hidden bg-background"
                   >
                     <div className="px-6 pb-3 pt-0 text-xs">
                       {hasPlanned && dayPlanned.map((p) => {
