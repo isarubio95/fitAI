@@ -49,7 +49,7 @@ import { useRoutines } from "@/hooks/useRoutines";
 import { useDeleteWorkout } from "@/hooks/useWorkouts";
 import { useDeleteCardioSession } from "@/hooks/useCardioSessions";
 import { useToast } from "@/hooks/use-toast";
-import { Dumbbell } from "lucide-react";
+import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
 
 type CardioSessionLabelData = {
@@ -548,7 +548,7 @@ export function MonthlyPlanner({
                           className="w-full mt-2 gap-2"
                           onClick={() => onDayClick(expandedDate)}
                         >
-                          <Dumbbell className="h-4 w-4" />
+                          <GymWorkoutIcon className="h-4 w-4" />
                           Nuevo entrenamiento
                         </Button>
                       </div>
