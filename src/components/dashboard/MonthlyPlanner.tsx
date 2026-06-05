@@ -50,6 +50,7 @@ import { useDeleteWorkout } from "@/hooks/useWorkouts";
 import { useDeleteCardioSession } from "@/hooks/useCardioSessions";
 import { useToast } from "@/hooks/use-toast";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
+import { CalendarDayCircleContent, resolveCalendarDayDisplay } from "@/lib/calendarDayDisplay";
 import { cn } from "@/lib/utils";
 
 type CardioSessionLabelData = {
@@ -231,7 +232,6 @@ export function MonthlyPlanner({
                 const dayWorkouts = workoutsByDay.get(key) || [];
                 const dayPlanned = plannedByDay.get(key) || [];
                 const dayCardio = cardioByDay.get(key) || [];
-                const hasContent = dayWorkouts.length > 0 || dayPlanned.length > 0 || dayCardio.length > 0;
                 const isTrained = dayWorkouts.length > 0;
                 const isCardioTrained = !isTrained && dayCardio.length > 0;
                 const isScheduled = !isTrained && dayPlanned.length > 0;
@@ -247,13 +247,6 @@ export function MonthlyPlanner({
                 const isSelected = expandedDayKey === key && expandedWeekIndex === weekIndex;
 
                 const handleClick = () => {
-                  if (!hasContent) {
-                    setExpandedDayKey(null);
-                    setExpandedWeekIndex(null);
-                    onDayClick(day);
-                    return;
-                  }
-
                   if (isSelected) {
                     setExpandedDayKey(null);
                     setExpandedWeekIndex(null);
@@ -292,6 +285,8 @@ export function MonthlyPlanner({
                     ? "border-border/70"
                     : "border-border/12";
 
+                const dayDisplay = resolveCalendarDayDisplay(dayWorkouts, dayPlanned, dayCardio, routines);
+
                 return (
                   <button
                     key={i}
@@ -326,9 +321,7 @@ export function MonthlyPlanner({
                             : "group-hover:scale-[1.03] group-hover:border-primary/50 group-hover:ring-1 group-hover:ring-primary/25 group-hover:ring-offset-0",
                         )}
                       >
-                        <span className={cn("relative z-10", today && "text-primary font-bold")}>
-                          {format(day, "d")}
-                        </span>
+                        <CalendarDayCircleContent day={day} display={dayDisplay} today={today} />
                       </span>
                     </span>
                   </button>

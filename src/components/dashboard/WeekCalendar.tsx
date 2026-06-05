@@ -14,6 +14,7 @@ import {
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Pencil, Trash2, Eye } from "lucide-react";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
+import { CalendarDayCircleContent, resolveCalendarDayDisplay } from "@/lib/calendarDayDisplay";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -207,7 +208,6 @@ export function WeekCalendar({
             const dayWorkouts = workoutsByDay.get(key) ?? [];
             const dayPlanned = plannedByDay.get(key) ?? [];
             const dayCardio = cardioByDay.get(key) ?? [];
-            const hasContent = dayWorkouts.length > 0 || dayPlanned.length > 0 || dayCardio.length > 0;
             const isTrained = dayWorkouts.length > 0;
             const isCardioTrained = !isTrained && dayCardio.length > 0;
             const isScheduled = !isTrained && dayPlanned.length > 0;
@@ -221,16 +221,6 @@ export function WeekCalendar({
             const isBottomRight = colIndex === 6;
 
             const handleClick = () => {
-              if (!hasContent) {
-                setExpandedDayKey(null);
-                if (onDayClick) {
-                  onDayClick(day);
-                } else {
-                  onDateSelect(day);
-                }
-                return;
-              }
-
               if (isSelected) {
                 setExpandedDayKey(null);
                 return;
@@ -268,6 +258,8 @@ export function WeekCalendar({
                   ? "border-border/70"
                   : "border-border/12";
 
+            const dayDisplay = resolveCalendarDayDisplay(dayWorkouts, dayPlanned, dayCardio, routines);
+
             return (
               <button
                 key={key}
@@ -296,9 +288,7 @@ export function WeekCalendar({
                         : "group-hover:scale-[1.03] group-hover:border-primary/50 group-hover:ring-1 group-hover:ring-primary/25 group-hover:ring-offset-0",
                     )}
                   >
-                    <span className={cn("relative z-10", today && "text-primary font-bold")}>
-                      {format(day, "d")}
-                    </span>
+                    <CalendarDayCircleContent day={day} display={dayDisplay} today={today} />
                   </span>
                 </span>
               </button>

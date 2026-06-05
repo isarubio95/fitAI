@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Home, BarChart3, ClipboardList, Scale, Plus, Activity, Users } from "lucide-react";
+import { Home, BarChart3, ClipboardList, Scale, Plus, Users } from "lucide-react";
+import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
+import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
@@ -84,7 +86,7 @@ export function BottomNav() {
           className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
           onClick={() => { openNew(); setIsMenuOpen(false); }}
         >
-          <Activity className="h-6 w-6 shrink-0 text-primary" />
+          <GymWorkoutIcon className="h-6 w-6 text-primary" />
           <div className="min-w-0">
             <p className="font-medium">Entreno de Gimnasio</p>
             <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
@@ -94,7 +96,7 @@ export function BottomNav() {
           className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
           onClick={() => { setCardioTypeDialogOpen(true); setIsMenuOpen(false); }}
         >
-          <Activity className="h-6 w-6 shrink-0 text-blue-500" />
+          <CardioWorkoutIcon className="h-6 w-6 text-blue-500" />
           <div className="min-w-0">
             <p className="font-medium">Entreno de Cardio</p>
             <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>

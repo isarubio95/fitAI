@@ -1,5 +1,6 @@
-import { createElement, type ComponentType, type SVGProps } from "react";
+import type { ComponentType, SVGProps } from "react";
 import type { LucideIcon } from "lucide-react";
+import { LegRoutineIcon } from "@/components/icons/LegRoutineIcon";
 import {
   Dumbbell,
   Flame,
@@ -33,27 +34,6 @@ export const DEFAULT_ROUTINE_ICON_KEY: RoutineIconKey = "dumbbell";
 
 const ROUTINE_ICON_STORAGE_KEY = "gym-log.routine-icons.v1";
 
-function LegIcon(props: SVGProps<SVGSVGElement>) {
-  return createElement(
-    "svg",
-    {
-      xmlns: "http://www.w3.org/2000/svg",
-      width: "24",
-      height: "24",
-      viewBox: "0 0 24 24",
-      fill: "none",
-      stroke: "currentColor",
-      strokeWidth: "2",
-      strokeLinecap: "round",
-      strokeLinejoin: "round",
-      ...props,
-    },
-    createElement("path", { d: "M15 3l2 4l-3 4l1 4l3 6" }),
-    createElement("path", { d: "M11 11l-4 2" }),
-    createElement("path", { d: "M16 21h4" }),
-  );
-}
-
 type RoutineIconComponent = LucideIcon | ComponentType<SVGProps<SVGSVGElement>>;
 
 export const ROUTINE_ICON_OPTIONS: Array<{ key: RoutineIconKey; label: string; Icon: RoutineIconComponent }> = [
@@ -66,7 +46,7 @@ export const ROUTINE_ICON_OPTIONS: Array<{ key: RoutineIconKey; label: string; I
   { key: "activity", label: "Actividad", Icon: Activity },
   { key: "heartPulse", label: "Pulso", Icon: HeartPulse },
   { key: "arm", label: "Brazo", Icon: BicepsFlexed },
-  { key: "leg", label: "Pierna", Icon: LegIcon },
+  { key: "leg", label: "Pierna", Icon: LegRoutineIcon },
   { key: "abs", label: "Abdomen", Icon: CircleDot },
   { key: "fullBody", label: "Cuerpo entero", Icon: LayoutGrid },
 ];
