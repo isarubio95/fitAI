@@ -203,17 +203,28 @@
   background-color: hsl(var(--primary));
 }
 
-/* En móvil ocultamos barras de scroll dentro de drawers sin afectar desktop */
+/* En móvil ocultamos barras de scroll para una experiencia más nativa (desktop sin cambios) */
 @media (max-width: 767px) {
-  .drawer-mobile-scrollbars-hidden,
-  .drawer-mobile-scrollbars-hidden * {
+  html,
+  body {
+    scrollbar-gutter: auto;
+  }
+
+  html,
+  body,
+  * {
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
 
-  .drawer-mobile-scrollbars-hidden::-webkit-scrollbar,
-  .drawer-mobile-scrollbars-hidden *::-webkit-scrollbar {
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
     display: none;
+  }
+
+  [data-radix-scroll-area-scrollbar] {
+    display: none !important;
   }
 }
 

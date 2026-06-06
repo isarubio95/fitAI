@@ -56,7 +56,8 @@ import {
   DndContext, 
   closestCenter, 
   KeyboardSensor, 
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor, 
   useSensors, 
   DragEndEvent 
@@ -99,6 +100,7 @@ function SortableWidget({ id, isDragMode, children }: { id: string, isDragMode: 
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
     isDragging,
@@ -118,15 +120,22 @@ function SortableWidget({ id, isDragMode, children }: { id: string, isDragMode: 
       className={cn(
         "relative flex flex-col transition-colors duration-200",
         isDragMode &&
-          "cursor-grab touch-none gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-3 active:cursor-grabbing",
-        isDragging && "z-50 cursor-grabbing",
+          "gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-3",
+        isDragging && "z-50",
       )}
-      {...(isDragMode ? { ...attributes, ...listeners, "data-dnd-handle": true } : {})}
     >
       {isDragMode && (
-        <div className="pointer-events-none flex w-full select-none justify-center" aria-hidden>
-          <GripHorizontal className="h-6 w-6 text-muted-foreground" />
-        </div>
+        // Única zona de arrastre: el resto del widget queda libre para hacer scroll.
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          aria-label="Arrastrar para reordenar"
+          className="flex w-full cursor-grab touch-none select-none justify-center rounded-md py-2 text-muted-foreground active:cursor-grabbing"
+          {...attributes}
+          {...listeners}
+        >
+          <GripHorizontal className="h-6 w-6" />
+        </button>
       )}
       <div className={cn((isDragMode || isDragging) && "pointer-events-none select-none")}>
         {children}
@@ -339,11 +348,12 @@ const Dashboard = () => {
     openFromPlannedRoutine(planned.id, routine.nombre ?? "Rutina", ejercicios);
   };
 
-  // Mismos sensores exactos que en src/pages/Routines.tsx.
-  // No combinar PointerSensor con TouchSensor: en móvil el tacto dispara pointer events
-  // y ambos sensores compiten por el mismo gesto, rompiendo el drag.
+  // MouseSensor (escritorio) + TouchSensor (móvil) en lugar de PointerSensor:
+  // ratón y tacto son sensores distintos y no compiten por el mismo gesto.
+  // Como el arrastre solo se activa desde el asa, el resto del widget permite scroll.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
