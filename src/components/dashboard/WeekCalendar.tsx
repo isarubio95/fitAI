@@ -5,7 +5,6 @@ import {
   addDays,
   addWeeks,
   subWeeks,
-  isSameDay,
   isToday,
   isBefore,
   startOfDay,
@@ -13,7 +12,9 @@ import {
   startOfMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, ChevronDown, Pencil, Check, Clock, CalendarX2, Trash2, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Trash2, Eye } from "lucide-react";
+import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
+import { CalendarDayCircleContent, resolveCalendarDayDisplay } from "@/lib/calendarDayDisplay";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,12 +44,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ActividadWithDetails } from "@/types/workout";
-import { useMonthWorkouts } from "@/hooks/useWorkouts";
+import type { CardioSesion } from "@/types/cardio";
+import { useMonthWorkouts, useDeleteWorkout } from "@/hooks/useWorkouts";
 import { useMonthCardioSessions, useDeleteCardioSession } from "@/hooks/useCardioSessions";
 import { usePlannedRoutines, useDeletePlannedRoutine, useUpdatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useToast } from "@/hooks/use-toast";
-import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 
 type CardioSessionLabelData = {
   deporte?: string | null;
@@ -61,54 +62,100 @@ function getCardioSessionLabel(session: CardioSessionLabelData): string {
   return disciplinaNombre ?? session.deporte ?? "Cardio";
 }
 
+const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
 interface WeekCalendarProps {
   selectedDate: Date | null;
-  /** Inicio de la semana a mostrar cuando no hay día seleccionado (evita volver a hoy al cerrar dropdown) */
   displayWeekStart?: Date | null;
   onDateSelect: (date: Date) => void;
+  onDayClick?: (date: Date) => void;
   workoutDates: Date[];
   cardioSessionDates?: Date[];
   onWorkoutClick?: (id: string) => void;
   onWorkoutDetailsClick?: (id: string) => void;
   onPlannedClick?: (planned: PlannedRoutine) => void;
+  onCardioClick?: (id: string) => void;
 }
 
 export function WeekCalendar({
   selectedDate,
   displayWeekStart,
   onDateSelect,
-  workoutDates,
-  cardioSessionDates = [],
+  onDayClick,
   onWorkoutClick,
   onWorkoutDetailsClick,
   onPlannedClick,
+  onCardioClick,
 }: WeekCalendarProps) {
   const weekStart = useMemo(
     () => startOfWeek(selectedDate ?? displayWeekStart ?? new Date(), { weekStartsOn: 1 }),
-    [selectedDate, displayWeekStart]
+    [selectedDate, displayWeekStart],
   );
 
-  const monthForWeek = useMemo(
-    () => startOfMonth(weekStart),
-    [weekStart]
-  );
+  const monthForWeek = useMemo(() => startOfMonth(weekStart), [weekStart]);
 
   const { data: monthWorkouts } = useMonthWorkouts(monthForWeek);
   const { data: monthCardioSessions } = useMonthCardioSessions(monthForWeek);
-  const { openEdit: openCardioEdit } = useGlobalCardioDrawer();
   const { data: planned } = usePlannedRoutines(weekStart, addDays(weekStart, 6));
   const deletePlan = useDeletePlannedRoutine();
+  const deleteWorkout = useDeleteWorkout();
   const deleteCardioSession = useDeleteCardioSession();
   const updatePlan = useUpdatePlannedRoutine();
   const { data: routines } = useRoutines();
   const { toast } = useToast();
   const [confirmDeletePlanned, setConfirmDeletePlanned] = useState<PlannedRoutine | null>(null);
-  const [confirmDeleteCardio, setConfirmDeleteCardio] = useState<{ id: string; titulo: string } | null>(null);
+  const [confirmDeleteWorkout, setConfirmDeleteWorkout] = useState<ActividadWithDetails | null>(null);
+  const [confirmDeleteCardio, setConfirmDeleteCardio] = useState<CardioSesion | null>(null);
   const [editPlanned, setEditPlanned] = useState<PlannedRoutine | null>(null);
   const [editDate, setEditDate] = useState("");
   const [editRutinaId, setEditRutinaId] = useState("");
+  const [expandedDayKey, setExpandedDayKey] = useState<string | null>(null);
 
-  // Evita que quede algún elemento con foco/outline visible al abrir el diálogo de edición.
+  const days = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart],
+  );
+
+  const workoutsByDay = useMemo(() => {
+    const map = new Map<string, ActividadWithDetails[]>();
+    const weekDateKeys = new Set(days.map((d) => format(d, "yyyy-MM-dd")));
+
+    (monthWorkouts ?? []).forEach((w) => {
+      const key = typeof w.fecha === "string"
+        ? w.fecha.slice(0, 10)
+        : format(new Date(w.fecha), "yyyy-MM-dd");
+      if (!weekDateKeys.has(key)) return;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(w);
+    });
+
+    return map;
+  }, [monthWorkouts, days]);
+
+  const plannedByDay = useMemo(() => {
+    const map = new Map<string, PlannedRoutine[]>();
+    (planned ?? []).forEach((p) => {
+      const key = p.fecha_programada.slice(0, 10);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(p);
+    });
+    return map;
+  }, [planned]);
+
+  const cardioByDay = useMemo(() => {
+    const map = new Map<string, CardioSesion[]>();
+    (monthCardioSessions ?? []).forEach((s) => {
+      const key = format(new Date(s.fecha_inicio), "yyyy-MM-dd");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(s);
+    });
+    return map;
+  }, [monthCardioSessions]);
+
+  useEffect(() => {
+    setExpandedDayKey(null);
+  }, [weekStart]);
+
   useEffect(() => {
     if (!editPlanned) return;
     if (typeof window === "undefined") return;
@@ -119,53 +166,18 @@ export function WeekCalendar({
     return () => window.clearTimeout(t);
   }, [editPlanned]);
 
-  const plannedByDate = useMemo(() => {
-    const map: Record<string, PlannedRoutine[]> = {};
-    (planned ?? []).forEach((p) => {
-      const key = p.fecha_programada.slice(0, 10);
-      if (!map[key]) map[key] = [];
-      map[key].push(p);
-    });
-    return map;
-  }, [planned]);
+  const goBack = () => onDateSelect(subWeeks(selectedDate ?? weekStart, 1));
+  const goForward = () => onDateSelect(addWeeks(selectedDate ?? weekStart, 1));
 
-  const weekWorkoutsByDate = useMemo(() => {
-    if (!monthWorkouts) return {} as Record<string, ActividadWithDetails[]>;
-
-    const weekDateKeys = Array.from({ length: 7 }, (_, i) => format(addDays(weekStart, i), "yyyy-MM-dd"));
-    const keySet = new Set(weekDateKeys);
-
-    const map: Record<string, ActividadWithDetails[]> = {};
-
-    monthWorkouts.forEach((w) => {
-      const dateStr = typeof w.fecha === "string" ? w.fecha.slice(0, 10) : format(new Date(w.fecha), "yyyy-MM-dd");
-      if (keySet.has(dateStr)) {
-        if (!map[dateStr]) map[dateStr] = [];
-        map[dateStr].push(w);
-      }
-    });
-
-    return map;
-  }, [monthWorkouts, weekStart]);
-
-  const days = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart]
-  );
-
-  const hasWorkout = (day: Date) =>
-    workoutDates.some((d) => isSameDay(d, day));
-
-  const hasCardioSession = (day: Date) =>
-    cardioSessionDates.some((d) => isSameDay(d, day));
-
-  const goBack = () => onDateSelect(subWeeks(selectedDate ?? weekStart ?? new Date(), 1));
-  const goForward = () => onDateSelect(addWeeks(selectedDate ?? weekStart ?? new Date(), 1));
+  const expandedDate = expandedDayKey ? new Date(`${expandedDayKey}T00:00:00`) : null;
+  const expandedWorkouts = expandedDayKey ? workoutsByDay.get(expandedDayKey) ?? [] : [];
+  const expandedPlanned = expandedDayKey ? plannedByDay.get(expandedDayKey) ?? [] : [];
+  const expandedCardio = expandedDayKey ? cardioByDay.get(expandedDayKey) ?? [] : [];
 
   return (
-    <div className="w-full space-y-3">
-      {/* Header (padding para que las flechas no queden pegadas a los bordes de la card) */}
-      <div className="flex items-center justify-between px-6">
+    <div className="w-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3 px-4">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goBack}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -178,212 +190,153 @@ export function WeekCalendar({
         </Button>
       </div>
 
-      {/* Lista de días lunes - domingo, dentro de la card */}
-      <div className="overflow-hidden rounded-t-xl border-x border-t border-border/60 bg-transparent divide-y divide-border/40">
-        {days.map((day) => {
-          const selected = selectedDate !== null && isSameDay(day, selectedDate);
-          const today = isToday(day);
-          const dateKey = format(day, "yyyy-MM-dd");
-          const dayWorkouts = weekWorkoutsByDate?.[dateKey] ?? [];
-          const dayPlanned = plannedByDate?.[dateKey] ?? [];
+      {/* Day labels */}
+      <div className="grid grid-cols-7 text-center text-xs font-medium text-muted-foreground mb-1 px-2">
+        {DAY_LABELS.map((d) => (
+          <div key={d} className="py-1">
+            {d}
+          </div>
+        ))}
+      </div>
 
-          let summary: string;
-          if (dayWorkouts.length === 0) {
-            summary = dayPlanned.length === 1 ? dayPlanned[0].rutina?.nombre ?? "" : "";
-          } else if (dayWorkouts.length === 1) {
-            summary = dayWorkouts[0].titulo;
-          } else if (dayWorkouts.length === 2) {
-            summary = `${dayWorkouts[0].titulo}, ${dayWorkouts[1].titulo}`;
-          } else {
-            summary = `${dayWorkouts[0].titulo}, ${dayWorkouts[1].titulo} +${dayWorkouts.length - 2} más`;
-          }
+      {/* Week row */}
+      <div className="bg-transparent rounded-b-xl overflow-hidden px-2">
+        <div className="grid grid-cols-7">
+          {days.map((day, colIndex) => {
+            const today = isToday(day);
+            const key = format(day, "yyyy-MM-dd");
+            const dayWorkouts = workoutsByDay.get(key) ?? [];
+            const dayPlanned = plannedByDay.get(key) ?? [];
+            const dayCardio = cardioByDay.get(key) ?? [];
+            const isTrained = dayWorkouts.length > 0;
+            const isCardioTrained = !isTrained && dayCardio.length > 0;
+            const isScheduled = !isTrained && dayPlanned.length > 0;
 
-          const hasWorkouts = dayWorkouts.length > 0;
-          const dayCardio = (monthCardioSessions ?? []).filter((s) => isSameDay(new Date(s.fecha_inicio), day));
-          const hasCardio = dayCardio.length > 0;
-          const hasPlanned = dayPlanned.length > 0;
-          const isOpen = selected && (hasWorkouts || hasPlanned || hasCardio);
+            const now = startOfDay(new Date());
+            const dayStart = startOfDay(day);
+            const isPast = isBefore(dayStart, now) && !today;
+            const isSelected = expandedDayKey === key;
 
-          const now = startOfDay(new Date());
-          const dayStart = startOfDay(day);
-          const plannedCompleted = hasPlanned && dayPlanned.some((p) => !!p.actividad_id);
-          const plannedMissed = hasPlanned && dayPlanned.some((p) => !p.actividad_id && isBefore(dayStart, now));
-          const plannedPending = hasPlanned && dayPlanned.some((p) => !p.actividad_id && !isBefore(dayStart, now));
+            const isBottomLeft = colIndex === 0;
+            const isBottomRight = colIndex === 6;
 
-          const planDotClass = plannedCompleted
-            ? "bg-green-500"
-            : plannedPending
-              ? "bg-orange-500"
-              : plannedMissed
-                ? "bg-zinc-600"
-                : null;
+            const handleClick = () => {
+              if (isSelected) {
+                setExpandedDayKey(null);
+                return;
+              }
 
-          return (
-            <motion.div
-              key={day.toISOString()}
-              className="bg-card/0"
-              layout
-              transition={{ layout: { duration: 0.22, ease: "easeInOut" } }}
-            >
-              <div className="w-full rounded-none">
+              setExpandedDayKey(key);
+              onDateSelect(day);
+            };
+
+            const circleFill = isTrained
+              ? "bg-gradient-to-br from-primary/88 via-primary/72 to-accent/82 dark:from-primary/65 dark:via-primary/45 dark:to-accent/70"
+              : isCardioTrained
+                ? "bg-gradient-to-br from-blue-500/70 via-blue-500/45 to-cyan-500/60"
+                : isScheduled
+                  ? "bg-gradient-to-br from-orange-500/55 via-orange-500/35 to-orange-400/50"
+                  : isPast
+                    ? "bg-secondary/60"
+                    : "bg-secondary/70";
+
+            const circleText = isTrained || isCardioTrained
+              ? "text-primary-foreground"
+              : isScheduled
+                ? "text-foreground"
+                : isPast
+                  ? "text-muted-foreground"
+                  : "text-foreground";
+
+            const circleBorder = isTrained
+              ? isPast
+                ? "border-primary/22"
+                : "border-primary/40"
+              : isCardioTrained
+                ? "border-blue-400/50"
+                : isPast
+                  ? "border-border/70"
+                  : "border-border/12";
+
+            const dayDisplay = resolveCalendarDayDisplay(dayWorkouts, dayPlanned, dayCardio, routines);
+
+            return (
               <button
-                onClick={() => onDateSelect(day)}
-                className="w-full px-6 py-3 text-left"
+                key={key}
+                type="button"
+                onClick={handleClick}
+                className={cn(
+                  "group relative min-h-[80px] md:min-h-[100px] p-1 cursor-pointer",
+                  isBottomLeft && "rounded-bl-xl",
+                  isBottomRight && "rounded-br-xl",
+                  "flex items-center justify-center",
+                )}
+                aria-label={`Día ${format(day, "d")}`}
+                aria-expanded={isSelected}
               >
-                <div className="flex items-center gap-3 w-full min-w-0">
-                  <div className="flex items-baseline gap-3 shrink-0">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {format(day, "EEE", { locale: es })}
-                    </span>
-                    <span
-                      className={`
-                        text-lg font-semibold text-foreground
-                        ${today && !selected ? "underline underline-offset-4 decoration-primary decoration-2" : ""}
-                      `}
-                    >
-                      {format(day, "d")}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0 flex justify-end">
-                    {!isOpen && summary ? (
-                      <span className="text-xs text-muted-foreground truncate text-right block max-w-full">
-                        {summary}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {today && !selected && (
-                      <span className="text-[11px] font-medium text-primary">
-                        Hoy
-                      </span>
+                <span className="relative flex items-center justify-center select-none w-8 h-8 rounded-full p-0 bg-transparent">
+                  <span
+                    className={cn(
+                      "relative flex items-center justify-center select-none w-full h-full rounded-full border text-xs font-semibold",
+                      circleFill,
+                      circleText,
+                      today ? "border-primary" : circleBorder,
+                      "transition-all duration-200",
+                      isSelected && !today && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background",
+                      today
+                        ? "group-hover:scale-[1.03]"
+                        : "group-hover:scale-[1.03] group-hover:border-primary/50 group-hover:ring-1 group-hover:ring-primary/25 group-hover:ring-offset-0",
                     )}
-                    {(hasWorkouts || hasWorkout(day)) && (
-                      <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
-                    )}
-                    {(hasCardio || hasCardioSession(day)) && (
-                      <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
-                    )}
-                    {planDotClass && (
-                      <span className={cn("h-2 w-2 rounded-full shrink-0", planDotClass)} />
-                    )}
-                    {(hasWorkouts || hasPlanned) && (
-                      <ChevronDown
-                        className={cn(
-                          "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                          isOpen && "rotate-180"
-                        )}
-                      />
-                    )}
-                  </div>
-                </div>
-              </button>
-
-              {/* Mismo contenedor: contenido expandido hacia abajo (AnimatePresence para cerrar suave) */}
-              <AnimatePresence initial={false}>
-                {isOpen && (
-                  <motion.div
-                    key={dateKey}
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{
-                      duration: 0.25,
-                      ease: [0.32, 0.72, 0, 1],
-                      opacity: { duration: 0.2 },
-                    }}
-                    className="overflow-hidden"
                   >
-                    <div className="px-6 pb-3 pt-0 text-xs">
-                      {hasPlanned && dayPlanned.map((p) => {
-                        const isCompleted = !!p.actividad_id;
-                        const isMissed = !p.actividad_id && isBefore(dayStart, now);
-                        const isPending = !p.actividad_id && !isBefore(dayStart, now);
+                    <CalendarDayCircleContent day={day} display={dayDisplay} today={today} />
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <AnimatePresence initial={false}>
+          {expandedDayKey && expandedDate && (
+            <motion.div
+              key={expandedDayKey}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+              className="bg-background"
+            >
+              <div className="px-4 py-3">
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  {format(expandedDate, "d MMM yyyy", { locale: es })}
+                </p>
+
+                {expandedWorkouts.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+                      Entrenamientos realizados
+                    </p>
+                    <div className="space-y-1.5">
+                      {expandedWorkouts.map((w) => {
+                        const totalSets = w.ejercicios.reduce((acc, ej) => acc + (ej.series?.length ?? 0), 0);
                         return (
                           <div
-                            key={p.id}
-                            className="pt-2 pb-3 border-b border-border/20 last:border-b-0"
+                            key={w.id}
+                            className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-primary/85 bg-card py-2 pr-2 pl-3"
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-medium text-[13px] text-foreground truncate">
-                                    {p.rutina?.nombre ?? "Rutina programada"}
-                                  </span>
-                                  {isCompleted && (
-                                    <span className="inline-flex items-center gap-1 text-[11px] text-green-600">
-                                      <Check className="h-3.5 w-3.5" /> Completado
-                                    </span>
-                                  )}
-                                  {isPending && (
-                                    <span className="inline-flex items-center gap-1 text-[11px] text-orange-600">
-                                      <Clock className="h-3.5 w-3.5" /> Pendiente
-                                    </span>
-                                  )}
-                                  {isMissed && (
-                                    <span className="inline-flex items-center gap-1 text-[11px] text-zinc-600">
-                                      <CalendarX2 className="h-3.5 w-3.5" /> Perdido
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-[11px] text-muted-foreground">
-                                  Planificado
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                {onPlannedClick && isPending && (
-                                  <Button
-                                    size="sm"
-                                    className="h-8"
-                                    onClick={() => onPlannedClick(p)}
-                                  >
-                                    Iniciar
-                                  </Button>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => {
-                                    setEditPlanned(p);
-                                    setEditDate(p.fecha_programada.slice(0, 10));
-                                    setEditRutinaId(p.rutina_id);
-                                  }}
-                                  title="Editar"
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-destructive hover:text-destructive"
-                                  onClick={() => setConfirmDeletePlanned(p)}
-                                  title="Eliminar"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate">{w.titulo}</p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {w.ejercicios.length} ejercicios · {totalSets} series
+                              </p>
                             </div>
-                          </div>
-                        );
-                      })}
-
-                      {dayWorkouts.map((w) => (
-                        <div
-                          key={w.id}
-                          className="py-2 first:pt-1 last:pb-0 border-b border-border/20 last:border-b-0"
-                        >
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <span className="font-medium text-[13px] text-foreground">{w.titulo}</span>
-                            <div className="flex items-center gap-1 shrink-0">
+                            <div className="flex items-center gap-2 shrink-0">
                               {onWorkoutDetailsClick && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 shrink-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onWorkoutDetailsClick(w.id);
-                                  }}
+                                  className="h-7 w-7"
+                                  onClick={() => onWorkoutDetailsClick(w.id)}
                                   title="Ver detalles"
                                 >
                                   <Eye className="h-3.5 w-3.5" />
@@ -393,73 +346,196 @@ export function WeekCalendar({
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 shrink-0"
+                                  className="h-7 w-7"
                                   onClick={() => onWorkoutClick(w.id)}
+                                  title="Editar"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
                               )}
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {w.ejercicios.map((ej) => (
-                              <span
-                                key={ej.id}
-                                className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-                              >
-                                {ej.tipo_ejercicio.nombre}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-
-                      {dayCardio.map((s) => (
-                        <div
-                          key={s.id}
-                          className="pt-2 pb-3 border-b border-border/20 last:border-b-0"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              <span className="font-medium text-[13px] text-blue-500 truncate block">
-                                {s.titulo}
-                              </span>
-                              <div className="text-[11px] text-muted-foreground mt-0.5">
-                                {getCardioSessionLabel(s)}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 shrink-0"
-                                onClick={() => openCardioEdit(s.id)}
-                                title="Editar cardio"
+                                className="h-7 w-7 text-destructive hover:text-destructive"
+                                onClick={() => setConfirmDeleteWorkout(w)}
+                                title="Eliminar"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {expandedPlanned.length > 0 && (
+                  <div className={expandedWorkouts.length > 0 ? "mb-3" : ""}>
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+                      Programado
+                    </p>
+                    <div className="space-y-1.5">
+                      {expandedPlanned.map((p) => {
+                        const dayStart = startOfDay(expandedDate);
+                        const now = startOfDay(new Date());
+                        const isCompleted = !!p.actividad_id;
+                        const isMissed = !p.actividad_id && isBefore(dayStart, now);
+                        const isPending = !p.actividad_id && !isBefore(dayStart, now);
+                        const programStripe = isCompleted
+                          ? "border-l-emerald-500/75"
+                          : isMissed
+                            ? "border-l-zinc-500/55"
+                            : "border-l-orange-500/70";
+                        return (
+                          <div
+                            key={p.id}
+                            className={cn(
+                              "flex items-center justify-between gap-2 rounded-md border border-border border-l-4 bg-card py-2 pr-2 pl-3",
+                              programStripe,
+                            )}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate">
+                                {p.rutina?.nombre ?? "Rutina"}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {isCompleted && "Completado"}
+                                {isPending && "Pendiente"}
+                                {isMissed && "Perdido"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {onPlannedClick && isPending && (
+                                <Button
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => onPlannedClick(p)}
+                                >
+                                  Iniciar
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => {
+                                  setEditPlanned(p);
+                                  setEditDate(p.fecha_programada.slice(0, 10));
+                                  setEditRutinaId(p.rutina_id);
+                                }}
+                                title="Editar"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
-                                onClick={() => setConfirmDeleteCardio({ id: s.id, titulo: s.titulo })}
-                                title="Eliminar cardio"
+                                className="h-7 w-7 text-destructive hover:text-destructive"
+                                onClick={() => setConfirmDeletePlanned(p)}
+                                title="Eliminar"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {expandedCardio.length > 0 && (
+                  <div className={(expandedWorkouts.length > 0 || expandedPlanned.length > 0) ? "mb-3" : ""}>
+                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
+                      Cardio realizado
+                    </p>
+                    <div className="space-y-1.5">
+                      {expandedCardio.map((s) => (
+                        <div
+                          key={s.id}
+                          className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-blue-500/65 bg-card py-2 pr-2 pl-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{s.titulo}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {getCardioSessionLabel(s)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {onCardioClick && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => onCardioClick(s.id)}
+                                title="Editar cardio"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={() => setConfirmDeleteCardio(s)}
+                              title="Eliminar cardio"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
+
+                {onDayClick && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2 gap-2"
+                    onClick={() => onDayClick(expandedDate)}
+                  >
+                    <GymWorkoutIcon className="h-4 w-4" />
+                    Nuevo entrenamiento
+                  </Button>
+                )}
               </div>
             </motion.div>
-          );
-        })}
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* Confirmar eliminar entrenamiento */}
+      <AlertDialog open={!!confirmDeleteWorkout} onOpenChange={(open) => !open && setConfirmDeleteWorkout(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este entrenamiento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se borrará &quot;{confirmDeleteWorkout?.titulo}&quot; y todas sus series. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteWorkout.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!confirmDeleteWorkout) return;
+                try {
+                  await deleteWorkout.mutateAsync(confirmDeleteWorkout.id);
+                  setConfirmDeleteWorkout(null);
+                } catch {
+                  // toast from mutation
+                }
+              }}
+              disabled={deleteWorkout.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Confirmar eliminar programación */}
       <AlertDialog open={!!confirmDeletePlanned} onOpenChange={(open) => !open && setConfirmDeletePlanned(null)}>
@@ -467,7 +543,7 @@ export function WeekCalendar({
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar esta programación?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se quitará la rutina &quot;{confirmDeletePlanned?.rutina?.nombre}&quot; del día planificado. El historial de entrenamientos no se verá afectado.
+              Se quitará la rutina &quot;{confirmDeletePlanned?.rutina?.nombre}&quot; del día planificado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -523,7 +599,7 @@ export function WeekCalendar({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Editar programación: fecha y/o rutina */}
+      {/* Editar programación */}
       <Dialog
         open={!!editPlanned}
         onOpenChange={(open) => {
@@ -544,9 +620,9 @@ export function WeekCalendar({
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="edit-date">Fecha</Label>
+              <Label htmlFor="edit-date-week">Fecha</Label>
               <Input
-                id="edit-date"
+                id="edit-date-week"
                 type="date"
                 value={editDate}
                 onChange={(e) => setEditDate(e.target.value)}
@@ -607,4 +683,3 @@ export function WeekCalendar({
     </div>
   );
 }
-

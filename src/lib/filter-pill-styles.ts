@@ -12,8 +12,10 @@ export const filterPillActive =
 
 export const filterPillTabsTrigger = cn(
   filterPillBase,
-  filterPillInactive,
+  "border-border/20 bg-muted/40 text-foreground",
+  "data-[state=inactive]:[@media(hover:hover)]:hover:border-border/35 data-[state=inactive]:[@media(hover:hover)]:hover:bg-muted/55",
   "data-[state=active]:border-primary/45 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:shadow-sm",
+  "data-[state=active]:[@media(hover:hover)]:hover:border-primary/45 data-[state=active]:[@media(hover:hover)]:hover:bg-primary",
 );
 
 /** Botones de filtro (outline / toggle). */

@@ -49,7 +49,8 @@ import { useRoutines } from "@/hooks/useRoutines";
 import { useDeleteWorkout } from "@/hooks/useWorkouts";
 import { useDeleteCardioSession } from "@/hooks/useCardioSessions";
 import { useToast } from "@/hooks/use-toast";
-import { Dumbbell } from "lucide-react";
+import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
+import { CalendarDayCircleContent, resolveCalendarDayDisplay } from "@/lib/calendarDayDisplay";
 import { cn } from "@/lib/utils";
 
 type CardioSessionLabelData = {
@@ -231,7 +232,6 @@ export function MonthlyPlanner({
                 const dayWorkouts = workoutsByDay.get(key) || [];
                 const dayPlanned = plannedByDay.get(key) || [];
                 const dayCardio = cardioByDay.get(key) || [];
-                const hasContent = dayWorkouts.length > 0 || dayPlanned.length > 0 || dayCardio.length > 0;
                 const isTrained = dayWorkouts.length > 0;
                 const isCardioTrained = !isTrained && dayCardio.length > 0;
                 const isScheduled = !isTrained && dayPlanned.length > 0;
@@ -247,13 +247,6 @@ export function MonthlyPlanner({
                 const isSelected = expandedDayKey === key && expandedWeekIndex === weekIndex;
 
                 const handleClick = () => {
-                  if (!hasContent) {
-                    setExpandedDayKey(null);
-                    setExpandedWeekIndex(null);
-                    onDayClick(day);
-                    return;
-                  }
-
                   if (isSelected) {
                     setExpandedDayKey(null);
                     setExpandedWeekIndex(null);
@@ -292,6 +285,8 @@ export function MonthlyPlanner({
                     ? "border-border/70"
                     : "border-border/12";
 
+                const dayDisplay = resolveCalendarDayDisplay(dayWorkouts, dayPlanned, dayCardio, routines);
+
                 return (
                   <button
                     key={i}
@@ -326,9 +321,7 @@ export function MonthlyPlanner({
                             : "group-hover:scale-[1.03] group-hover:border-primary/50 group-hover:ring-1 group-hover:ring-primary/25 group-hover:ring-offset-0",
                         )}
                       >
-                        <span className={cn("relative z-10", today && "text-primary font-bold")}>
-                          {format(day, "d")}
-                        </span>
+                        <CalendarDayCircleContent day={day} display={dayDisplay} today={today} />
                       </span>
                     </span>
                   </button>
@@ -353,7 +346,7 @@ export function MonthlyPlanner({
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-                      className="bg-card"
+                      className="bg-background"
                     >
                       <div className="px-4 py-3">
                         <p className="text-xs font-medium text-muted-foreground mb-2">
@@ -372,7 +365,7 @@ export function MonthlyPlanner({
                                 return (
                                   <div
                                     key={w.id}
-                                    className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-primary/85 bg-card p-2"
+                                    className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-primary/85 bg-card py-2 pr-2 pl-3"
                                   >
                                     <div className="min-w-0 flex-1">
                                       <p className="text-sm font-medium truncate">{w.titulo}</p>
@@ -438,7 +431,7 @@ export function MonthlyPlanner({
                                   <div
                                     key={p.id}
                                     className={cn(
-                                      "flex items-center justify-between gap-2 rounded-md border border-border border-l-4 bg-card p-2",
+                                      "flex items-center justify-between gap-2 rounded-md border border-border border-l-4 bg-card py-2 pr-2 pl-3",
                                       programStripe,
                                     )}
                                   >
@@ -506,7 +499,7 @@ export function MonthlyPlanner({
                               {expandedCardio.map((s) => (
                                 <div
                                   key={s.id}
-                                  className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-blue-500/65 bg-card p-2"
+                                  className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-blue-500/65 bg-card py-2 pr-2 pl-3"
                                 >
                                   <div className="min-w-0 flex-1">
                                     <p className="text-sm font-medium truncate">{s.titulo}</p>
@@ -548,7 +541,7 @@ export function MonthlyPlanner({
                           className="w-full mt-2 gap-2"
                           onClick={() => onDayClick(expandedDate)}
                         >
-                          <Dumbbell className="h-4 w-4" />
+                          <GymWorkoutIcon className="h-4 w-4" />
                           Nuevo entrenamiento
                         </Button>
                       </div>

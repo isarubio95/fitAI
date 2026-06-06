@@ -440,9 +440,14 @@ const Dashboard = () => {
                         selectedDate={selectedDate}
                         displayWeekStart={weekViewStart}
                         onDateSelect={handleWeekDaySelect}
+                        onDayClick={(date) => {
+                          handleDateSelect(date);
+                          if (!isDragMode) openNew(format(date, "yyyy-MM-dd"));
+                        }}
                         workoutDates={workoutDates ?? []}
                         cardioSessionDates={cardioSessionDates ?? []}
                         onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
+                        onCardioClick={(id) => { if (!isDragMode) openCardioEdit(id); }}
                         onWorkoutDetailsClick={(id) => openWorkoutDetails(id)}
                         onPlannedClick={(p) => { if (!isDragMode) startPlanned(p); }}
                       />

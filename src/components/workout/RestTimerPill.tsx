@@ -14,109 +14,103 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
   const timer = useRestTimerContext();
   /** bottom-36 = 9rem → 144px */
   const dragGlobal = useDraggablePillPosition("gym-log-pill-rest-global", 144, "restGlobal");
-  const dragSheet = useDraggablePillPosition("gym-log-pill-rest-sheet", null, "restSheet");
+  /** bottom real vía clase; el número activa el centrado horizontal del hook */
+  const dragSheet = useDraggablePillPosition("gym-log-pill-rest-sheet", 1, "restSheet");
 
   if (!timer.activeKey) return null;
 
   const percent = pctRemaining(timer.remaining, timer.duration);
   const label = timer.finished ? "¡Listo!" : formatMSS(timer.remaining);
 
-  // En sheet: la pill va como último hijo de una columna flex con zona central `min-h-0 flex-1 overflow-y-auto`.
-  // No usar `sticky` aquí: en WebKit/Android suele provocar recortes y “huecos” negros (overlay) al montar la pill.
-  const sheetOuterClass =
-    "pointer-events-none absolute inset-x-0 bottom-0 z-[60] flex w-full justify-center px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]";
-
-  const stopBubble = (e: React.SyntheticEvent) => {
-    e.stopPropagation();
-  };
-
-  const pillInner = (
-    <div
-      className={cn(
-        "group relative flex items-center gap-3 pl-2 pr-2 py-2 rounded-full touch-none",
-        "bg-neutral-900/80 backdrop-blur-md",
-        "border border-white/10 shadow-2xl shadow-black/40",
-        "transition-all duration-300 ease-out",
-        !timer.finished && "hover:bg-neutral-800/80 hover:border-white/20 hover:scale-[1.02]",
-      )}
-    >
-      <div
-        className={cn(
-          "relative flex h-8 w-8 items-center justify-center rounded-full border",
-            timer.finished ? "bg-emerald-500/10 border-emerald-500/20" : "bg-blue-500/25 border-blue-300/60",
-        )}
-      >
-        <Timer className={cn("h-4 w-4", timer.finished ? "text-emerald-400" : "text-blue-200")} />
-      </div>
-
-      <div className="flex flex-col items-start gap-1 min-w-[160px]">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 leading-none">
-            Descanso
-          </span>
-          <span className={cn("text-sm font-mono tabular-nums leading-none", timer.finished ? "text-emerald-400" : "text-blue-200")}>
-            {label}
-          </span>
-        </div>
-
-        <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
-          <div
-            className={cn("h-full rounded-full transition-[width] duration-200 ease-linear", timer.finished ? "bg-emerald-400/70" : "bg-blue-400")}
-            style={{ width: `${timer.finished ? 0 : percent}%` }}
-          />
-        </div>
-      </div>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 rounded-full text-neutral-400 hover:text-white"
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={() => timer.stop()}
-        aria-label="Cerrar descanso"
-      >
-        <X className="h-4 w-4" />
-      </Button>
-    </div>
-  );
-
-  if (mode === "sheet") {
-    const d = dragSheet;
-    return (
-      <div className={sheetOuterClass}>
-        <div
-          ref={d.elRef}
-          data-vaul-no-drag
-          className="inline-flex max-w-[calc(100vw-1rem)] touch-none select-none pointer-events-auto cursor-grab active:cursor-grabbing"
-          style={d.style}
-          onPointerDownCapture={stopBubble}
-          onPointerMoveCapture={stopBubble}
-          onPointerUpCapture={stopBubble}
-          onPointerCancelCapture={stopBubble}
-          onPointerDown={d.onPointerDown}
-          onPointerMove={d.onPointerMove}
-          onPointerUp={d.onPointerUp}
-          onPointerCancel={d.onPointerCancel}
-        >
-          {pillInner}
-        </div>
-      </div>
-    );
-  }
-
-  const d = dragGlobal;
-  return (
+  const renderDraggableShell = (
+    d: ReturnType<typeof useDraggablePillPosition>,
+    className: string,
+    options?: { blockDrawerDrag?: boolean },
+  ) => (
     <div
       ref={d.elRef}
-      className="fixed bottom-36 left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none"
+      data-draggable-pill
+      {...(options?.blockDrawerDrag ? { "data-vaul-no-drag": true } : {})}
+      className={className}
       style={d.style}
-      onPointerDown={d.onPointerDown}
+      onPointerDownCapture={(e) => {
+        if (e.button !== 0) return;
+        if ((e.target as HTMLElement).closest("button")) return;
+        e.stopPropagation();
+        d.onPointerDown(e);
+      }}
       onPointerMove={d.onPointerMove}
       onPointerUp={d.onPointerUp}
       onPointerCancel={d.onPointerCancel}
     >
-      {pillInner}
+      <div
+        className={cn(
+          "pointer-events-none group relative flex items-center gap-3 pl-2 pr-2 py-2 rounded-full touch-none",
+          "bg-neutral-900/80 backdrop-blur-md",
+          "border border-white/10 shadow-2xl shadow-black/40",
+          "transition-[background-color,border-color,box-shadow,opacity] duration-300 ease-out",
+          !timer.finished && "hover:bg-neutral-800/80 hover:border-white/20",
+        )}
+      >
+        <div
+          className={cn(
+            "relative flex h-8 w-8 items-center justify-center rounded-full border",
+            timer.finished ? "bg-emerald-500/10 border-emerald-500/20" : "bg-blue-500/25 border-blue-300/60",
+          )}
+        >
+          <Timer className={cn("h-4 w-4", timer.finished ? "text-emerald-400" : "text-blue-200")} />
+        </div>
+
+        <div className="flex flex-col items-start gap-1 min-w-[160px]">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 leading-none">
+              Descanso
+            </span>
+            <span
+              className={cn(
+                "text-sm font-mono tabular-nums leading-none",
+                timer.finished ? "text-emerald-400" : "text-blue-200",
+              )}
+            >
+              {label}
+            </span>
+          </div>
+
+          <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-[width] duration-200 ease-linear",
+                timer.finished ? "bg-emerald-400/70" : "bg-blue-400",
+              )}
+              style={{ width: `${timer.finished ? 0 : percent}%` }}
+            />
+          </div>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="pointer-events-auto h-8 w-8 rounded-full text-neutral-400 hover:text-white"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => timer.stop()}
+          aria-label="Cerrar descanso"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
-}
 
+  if (mode === "sheet") {
+    return renderDraggableShell(
+      dragSheet,
+      "pointer-events-auto absolute inset-x-0 bottom-0 z-[60] mx-auto w-auto max-w-[calc(100vw-1rem)] touch-none select-none cursor-grab active:cursor-grabbing left-1/2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] px-2",
+      { blockDrawerDrag: true },
+    );
+  }
+
+  return renderDraggableShell(
+    dragGlobal,
+    "fixed bottom-36 left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none cursor-grab active:cursor-grabbing",
+  );
+}

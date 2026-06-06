@@ -4,6 +4,10 @@ type Point = { x: number; y: number };
 
 const DRAG_THRESHOLD_PX = 8;
 const EDGE_PX = 8;
+const VELOCITY_WINDOW_MS = 120;
+const MOMENTUM_MIN_SPEED = 0.02; // ~20 px/s
+const MOMENTUM_DECAY_PER_MS = 0.994;
+const MOMENTUM_STOP_SPEED = 0.004;
 
 export type DraggablePillBoundsMode = "activeWorkout" | "restSheet" | "restGlobal";
 
@@ -67,6 +71,16 @@ function clampOffset(
   return { x: nx, y: ny };
 }
 
+function getVelocityFromSamples(samples: Array<{ x: number; y: number; t: number }>): Point {
+  const first = samples[0];
+  const last = samples[samples.length - 1];
+  const dt = Math.max(8, last.t - first.t);
+  return {
+    x: (last.x - first.x) / dt,
+    y: (last.y - first.y) / dt,
+  };
+}
+
 /**
  * Arrastre con dedo / puntero. Persiste offset en localStorage.
  */
@@ -97,6 +111,25 @@ export function useDraggablePillPosition(
     velocity: { x: 0, y: 0 },
     moved: false,
   });
+  const velocitySamplesRef = useRef<Array<{ x: number; y: number; t: number }>>([]);
+
+  const resetVelocitySamples = useCallback((x: number, y: number, t: number) => {
+    velocitySamplesRef.current = [{ x, y, t }];
+  }, []);
+
+  const pushVelocitySample = useCallback((x: number, y: number, t: number) => {
+    const samples = velocitySamplesRef.current;
+    samples.push({ x, y, t });
+    const cutoff = t - VELOCITY_WINDOW_MS;
+    while (samples.length > 1 && samples[0].t < cutoff) samples.shift();
+    drag.current.velocity = getVelocityFromSamples(samples);
+  }, []);
+
+  const getReleaseVelocity = useCallback(() => {
+    const samples = velocitySamplesRef.current;
+    if (samples.length < 2) return { x: 0, y: 0 };
+    return getVelocityFromSamples(samples);
+  }, []);
 
   const flushOffset = useCallback(() => {
     rafRef.current = null;
@@ -196,90 +229,130 @@ export function useDraggablePillPosition(
     [storageKey],
   );
 
+  const detachWindowListenersRef = useRef<(() => void) | null>(null);
+  const finishDragRef = useRef<(pointerId: number) => void>(() => {});
+
+  const detachWindowListeners = useCallback(() => {
+    detachWindowListenersRef.current?.();
+    detachWindowListenersRef.current = null;
+  }, []);
+
+  const applyPointerMove = useCallback(
+    (clientX: number, clientY: number, pointerId: number) => {
+      if (!drag.current.active || pointerId !== drag.current.pointerId) return;
+      const now = performance.now();
+      const dx = clientX - drag.current.startClient.x;
+      const dy = clientY - drag.current.startClient.y;
+      if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) drag.current.moved = true;
+
+      pushVelocitySample(clientX, clientY, now);
+      drag.current.lastClient = { x: clientX, y: clientY };
+      drag.current.lastTs = now;
+
+      const next = {
+        x: drag.current.startOffset.x + dx,
+        y: drag.current.startOffset.y + dy,
+      };
+      const clamped = clampOffset(next, elRef.current, offsetRef.current, modeRef.current);
+      scheduleOffset(clamped);
+    },
+    [pushVelocitySample, scheduleOffset],
+  );
+
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return;
+    if (e.pointerType === "touch") e.preventDefault();
     stopMomentum();
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    detachWindowListeners();
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
     const now = performance.now();
+    resetVelocitySamples(e.clientX, e.clientY, now);
     drag.current = {
       active: true,
       pointerId: e.pointerId,
       startClient: { x: e.clientX, y: e.clientY },
-      startOffset: { ...offsetRef.current },
+      startOffset: { ...pendingOffsetRef.current },
       lastClient: { x: e.clientX, y: e.clientY },
       lastTs: now,
       velocity: { x: 0, y: 0 },
       moved: false,
     };
     setIsDragging(true);
-  }, [stopMomentum]);
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!drag.current.active || e.pointerId !== drag.current.pointerId) return;
-    const now = performance.now();
-    const dx = e.clientX - drag.current.startClient.x;
-    const dy = e.clientY - drag.current.startClient.y;
-    if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) drag.current.moved = true;
-
-    const dtMs = Math.max(1, now - drag.current.lastTs);
-    const vx = (e.clientX - drag.current.lastClient.x) / dtMs; // px/ms
-    const vy = (e.clientY - drag.current.lastClient.y) / dtMs; // px/ms
-    drag.current.velocity = { x: vx, y: vy };
-    drag.current.lastClient = { x: e.clientX, y: e.clientY };
-    drag.current.lastTs = now;
-
-    const next = {
-      x: drag.current.startOffset.x + dx,
-      y: drag.current.startOffset.y + dy,
+    const onWindowMove = (ev: PointerEvent) => {
+      if (ev.pointerType === "touch") ev.preventDefault();
+      applyPointerMove(ev.clientX, ev.clientY, ev.pointerId);
     };
-    const clamped = clampOffset(next, elRef.current, offsetRef.current, modeRef.current);
-    scheduleOffset(clamped);
-  }, [scheduleOffset]);
-
-  const endDrag = useCallback(
-    (e: React.PointerEvent) => {
-      if (!drag.current.active || e.pointerId !== drag.current.pointerId) return;
-      drag.current.active = false;
+    const onWindowEnd = (ev: PointerEvent) => {
+      if (!drag.current.active || ev.pointerId !== drag.current.pointerId) return;
       try {
-        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+        target.releasePointerCapture(ev.pointerId);
       } catch {
         /* already released */
       }
+      finishDragRef.current(ev.pointerId);
+    };
 
-      const start = offsetRef.current;
-      const startV = drag.current.velocity;
+    window.addEventListener("pointermove", onWindowMove, { passive: false });
+    window.addEventListener("pointerup", onWindowEnd);
+    window.addEventListener("pointercancel", onWindowEnd);
+    detachWindowListenersRef.current = () => {
+      window.removeEventListener("pointermove", onWindowMove);
+      window.removeEventListener("pointerup", onWindowEnd);
+      window.removeEventListener("pointercancel", onWindowEnd);
+    };
+  }, [applyPointerMove, detachWindowListeners, resetVelocitySamples, stopMomentum]);
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.pointerType === "touch") e.preventDefault();
+      applyPointerMove(e.clientX, e.clientY, e.pointerId);
+    },
+    [applyPointerMove],
+  );
+
+  const finishDrag = useCallback(
+    (pointerId: number) => {
+      if (!drag.current.active || pointerId !== drag.current.pointerId) return;
+      drag.current.active = false;
+      detachWindowListeners();
+
+      const start = { ...pendingOffsetRef.current };
+      const startV = getReleaseVelocity();
       const speed = Math.hypot(startV.x, startV.y);
-      const shouldMomentum = drag.current.moved && speed > 0.05; // ~50 px/s
+      const shouldMomentum = drag.current.moved && speed > MOMENTUM_MIN_SPEED;
 
       if (!shouldMomentum) {
         const c = clampOffset(start, elRef.current, start, modeRef.current);
         scheduleOffset(c);
         persist(c);
+        velocitySamplesRef.current = [];
         setIsDragging(false);
         return;
       }
 
-      // Inercia simple con desaceleración exponencial para sensación "native"
+      // Inercia con desaceleración exponencial para sensación "native"
       let v = { ...startV };
       let p = { ...start };
       let last = performance.now();
-      const decayPerMs = 0.992;
-      const minSpeed = 0.01;
 
       const tick = () => {
         const now = performance.now();
         const dt = Math.max(1, now - last);
         last = now;
 
-        const decay = Math.pow(decayPerMs, dt);
+        const decay = Math.pow(MOMENTUM_DECAY_PER_MS, dt);
         v = { x: v.x * decay, y: v.y * decay };
         p = { x: p.x + v.x * dt, y: p.y + v.y * dt };
-        p = clampOffset(p, elRef.current, offsetRef.current, modeRef.current);
-        scheduleOffset(p);
+        p = clampOffset(p, elRef.current, pendingOffsetRef.current, modeRef.current);
+        pendingOffsetRef.current = p;
+        setOffset(p);
 
-        if (Math.hypot(v.x, v.y) < minSpeed) {
+        if (Math.hypot(v.x, v.y) < MOMENTUM_STOP_SPEED) {
           momentumRafRef.current = null;
           persist(p);
+          velocitySamplesRef.current = [];
           setIsDragging(false);
           return;
         }
@@ -287,9 +360,23 @@ export function useDraggablePillPosition(
       };
 
       stopMomentum();
+      velocitySamplesRef.current = [];
       momentumRafRef.current = requestAnimationFrame(tick);
     },
-    [persist, scheduleOffset, stopMomentum],
+    [detachWindowListeners, getReleaseVelocity, persist, scheduleOffset, stopMomentum],
+  );
+  finishDragRef.current = finishDrag;
+
+  const endDrag = useCallback(
+    (e: React.PointerEvent) => {
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {
+        /* already released */
+      }
+      finishDrag(e.pointerId);
+    },
+    [finishDrag],
   );
 
   const onPointerUp = useCallback(
@@ -305,6 +392,12 @@ export function useDraggablePillPosition(
     },
     [endDrag],
   );
+
+  useEffect(() => {
+    return () => {
+      detachWindowListeners();
+    };
+  }, [detachWindowListeners]);
 
   const style =
     bottomPxFromViewport == null

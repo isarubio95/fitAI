@@ -102,9 +102,9 @@ export function useRestTimer() {
     rafRef.current = requestAnimationFrame(tick);
   }, []);
 
-  // Handle completion side-effects
+  // Handle completion side-effects (solo si el descanso sigue activo al terminar)
   useEffect(() => {
-    if (state.finished) {
+    if (state.finished && state.activeKey) {
       // Vibrate
       if ("vibrate" in navigator) {
         navigator.vibrate([500, 200, 500]);
@@ -159,6 +159,17 @@ export function useRestTimer() {
   }, []);
 
   const stop = useCallback(() => {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if ("vibrate" in navigator) {
+      navigator.vibrate(0);
+    }
+    if (notifRef.current) {
+      notifRef.current.close();
+      notifRef.current = null;
+    }
     setState({ activeKey: null, endTime: null, remaining: 0, duration: 0, finished: false });
   }, []);
 

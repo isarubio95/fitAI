@@ -226,26 +226,23 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /*
-   * En dispositivos táctiles desactivamos hover/active persistente en controles genéricos.
-   * Las pills (.touch-pill) quedan excluidas: el reset !important rompía bg/border activos al pulsar.
-   */
-  button:not(.touch-pill):hover,
-  [role="button"]:not(.touch-pill):hover,
-  [role="tab"]:not(.touch-pill):hover,
-  [role="menuitem"]:not(.touch-pill):hover,
-  [role="option"]:not(.touch-pill):hover,
-  [role="link"]:not(.touch-pill):hover,
-  a[href]:not(.touch-pill):hover,
-  summary:not(.touch-pill):hover,
-  button:not(.touch-pill):active,
-  [role="button"]:not(.touch-pill):active,
-  [role="tab"]:not(.touch-pill):active,
-  [role="menuitem"]:not(.touch-pill):active,
-  [role="option"]:not(.touch-pill):active,
-  [role="link"]:not(.touch-pill):active,
-  a[href]:not(.touch-pill):active,
-  summary:not(.touch-pill):active {
+  /* En dispositivos táctiles desactivamos feedback de hover persistente (excepto UI con estilo propio). */
+  button:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="button"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="tab"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="menuitem"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="option"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="link"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  a[href]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  summary:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  button:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="button"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="tab"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="menuitem"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="option"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="link"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  a[href]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  summary:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]) {
     background-color: transparent !important;
     background-image: none !important;
     color: inherit !important;
@@ -257,15 +254,19 @@
     text-decoration: none !important;
   }
 
-  button,
-  a,
-  [role="button"],
-  [role="tab"],
-  [role="menuitem"],
-  [role="option"],
-  [role="link"],
-  summary {
+  button:not([data-draggable-pill]),
+  a:not([data-draggable-pill]),
+  [role="button"]:not([data-draggable-pill]),
+  [role="tab"]:not([data-draggable-pill]),
+  [role="menuitem"]:not([data-draggable-pill]),
+  [role="option"]:not([data-draggable-pill]),
+  [role="link"]:not([data-draggable-pill]),
+  summary:not([data-draggable-pill]) {
     touch-action: manipulation;
+  }
+
+  [data-draggable-pill] {
+    touch-action: none;
   }
 
   *:focus,

@@ -34,9 +34,10 @@ export function ActiveWorkoutPill() {
   return (
     <div
       ref={drag.elRef}
+      data-draggable-pill
       role="button"
       tabIndex={0}
-      className="fixed bottom-24 left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full"
+      className="fixed bottom-24 left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none cursor-grab active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full"
       style={drag.style}
       onPointerDown={drag.onPointerDown}
       onPointerMove={drag.onPointerMove}

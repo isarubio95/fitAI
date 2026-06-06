@@ -2,7 +2,9 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Home, BarChart3, LogOut, ClipboardList, Plus, Activity, Scale, Users } from "lucide-react";
+import { Home, BarChart3, LogOut, ClipboardList, Plus, Scale, Users } from "lucide-react";
+import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
+import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -56,14 +58,14 @@ export function DesktopSidebar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-80 text-base">
             <DropdownMenuItem className="text-base" onClick={() => openNew()}>
-              <Activity className="h-5 w-5 mr-2 shrink-0 text-primary" />
+              <GymWorkoutIcon className="h-5 w-5 mr-2 text-primary" />
               <div className="min-w-0">
                 <p className="font-medium">Entreno de Gimnasio</p>
                 <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
               </div>
             </DropdownMenuItem>
             <DropdownMenuItem className="text-base" onClick={() => setCardioTypeDialogOpen(true)}>
-              <Activity className="h-5 w-5 mr-2 shrink-0 text-blue-500" />
+              <CardioWorkoutIcon className="h-5 w-5 mr-2 text-blue-500" />
               <div className="min-w-0">
                 <p className="font-medium">Entreno de Cardio</p>
                 <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>
