@@ -95,7 +95,7 @@ interface ProgramWizardProps {
   startDate?: Date;
   /** Si es true, al confirmar se borra toda la planificación actual y se reemplaza por la nueva */
   replaceExisting?: boolean;
-  /** Rutina por día (key = 0-6) para precargar los selects al modificar la hoja de ruta */
+  /** Rutina por día (key = 0-6) para precargar los selects al modificar el plan */
   initialRoutineByDay?: Record<string, string>;
 }
 
@@ -201,7 +201,7 @@ export function ProgramWizard({
       }
       await schedule.mutateAsync(schedules);
       toast({
-        title: replaceExisting ? "Hoja de ruta actualizada" : "Hoja de ruta creada",
+        title: replaceExisting ? "Plan actualizado" : "Plan creado",
         description: `${totalDays} días planificados.`,
       });
       onOpenChange(false);
@@ -223,7 +223,7 @@ export function ProgramWizard({
         <DrawerHeader className="border-b border-border bg-card">
           <DrawerTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Hoja de Ruta
+            Plan
           </DrawerTitle>
           <p className="text-sm text-left text-foreground/75">
             Planifica tus rutinas por días de la semana.

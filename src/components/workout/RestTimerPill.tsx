@@ -45,7 +45,7 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
     >
       <div
         className={cn(
-          "pointer-events-none group relative flex items-center gap-3 pl-2 pr-2 py-2 rounded-full touch-none",
+          "pointer-events-none group relative flex w-max max-w-full items-center gap-3 pl-2 pr-1 py-2 rounded-full touch-none",
           "bg-neutral-900/80 backdrop-blur-md",
           "border border-white/10 shadow-2xl shadow-black/40",
           "transition-[background-color,border-color,box-shadow,opacity] duration-300 ease-out",
@@ -54,14 +54,14 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
       >
         <div
           className={cn(
-            "relative flex h-8 w-8 items-center justify-center rounded-full border",
+            "relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
             timer.finished ? "bg-emerald-500/10 border-emerald-500/20" : "bg-blue-500/25 border-blue-300/60",
           )}
         >
           <Timer className={cn("h-4 w-4", timer.finished ? "text-emerald-400" : "text-blue-200")} />
         </div>
 
-        <div className="flex flex-col items-start gap-1 min-w-[160px]">
+        <div className="flex min-w-[140px] max-w-[200px] flex-1 flex-col items-start gap-1">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 leading-none">
               Descanso
@@ -90,7 +90,7 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
         <Button
           variant="ghost"
           size="icon"
-          className="pointer-events-auto h-8 w-8 rounded-full text-neutral-400 hover:text-white"
+          className="pointer-events-auto h-8 w-8 shrink-0 rounded-full text-neutral-400 hover:text-white"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => timer.stop()}
           aria-label="Cerrar descanso"
@@ -104,7 +104,7 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
   if (mode === "sheet") {
     return renderDraggableShell(
       dragSheet,
-      "pointer-events-auto absolute inset-x-0 bottom-0 z-[60] mx-auto w-auto max-w-[calc(100vw-1rem)] touch-none select-none cursor-grab active:cursor-grabbing left-1/2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] px-2",
+      "pointer-events-auto absolute bottom-0 left-1/2 z-[60] w-max max-w-[calc(100%-1rem)] touch-none select-none cursor-grab active:cursor-grabbing overflow-visible pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]",
       { blockDrawerDrag: true },
     );
   }

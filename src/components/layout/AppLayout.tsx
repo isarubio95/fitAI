@@ -188,7 +188,7 @@ export function AppLayout() {
           {/* Header superior solo en móvil */}
           <header
             className={cn(
-              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/50 bg-card px-4 py-2 dark:bg-[hsl(222_47%_12%/0.88)] dark:backdrop-blur-2xl md:hidden",
+              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/50 bg-card px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] dark:bg-[hsl(222_47%_12%/0.88)] dark:backdrop-blur-2xl md:hidden",
               showSectionPills ? "max-md:gap-2" : "gap-0",
             )}
           >
@@ -308,7 +308,11 @@ export function AppLayout() {
           <main
             className={cn(
               "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 transition-[padding-top] duration-220 ease-out motion-reduce:transition-none md:pb-0",
-              showSectionPills && !areHeaderPillsCollapsed ? "pt-26 max-md:pt-26" : "pt-12 max-md:pt-12",
+              showSectionPills
+                ? !areHeaderPillsCollapsed
+                  ? "pt-26 max-md:pt-26"
+                  : "pt-12 max-md:pt-12"
+                : "max-md:pt-[calc(3.75rem+env(safe-area-inset-top,0px))]",
               "md:pt-12",
             )}
           >

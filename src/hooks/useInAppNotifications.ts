@@ -80,10 +80,10 @@ function buildDesignPreviewInAppNotifications(
       id: "design-preview-plan",
       kind: "action",
       title: "Planifica tu semana",
-      body: "Crea una hoja de ruta para asignar rutinas a cada día.",
+      body: "Crea un plan para asignar rutinas a cada día.",
       dismissable: true,
       accion: {
-        etiqueta: "Crear hoja de ruta",
+        etiqueta: "Crear plan",
         onClick: () => navigate("/", { state: { openPlanWizard: true } }),
       },
     },
@@ -182,10 +182,10 @@ export function useInAppNotifications() {
         id: "plan-suggestion",
         kind: "action",
         title: "Planifica tu semana",
-        body: "Crea una hoja de ruta para asignar rutinas a cada día.",
+        body: "Crea un plan para asignar rutinas a cada día.",
         dismissable: true,
         accion: {
-          etiqueta: "Crear hoja de ruta",
+          etiqueta: "Crear plan",
           onClick: () => navigate("/", { state: { openPlanWizard: true } }),
         },
       });

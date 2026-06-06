@@ -254,9 +254,9 @@
     text-decoration: none !important;
   }
 
-  button:not([data-draggable-pill]),
-  a:not([data-draggable-pill]),
-  [role="button"]:not([data-draggable-pill]),
+  button:not([data-draggable-pill]):not([data-dnd-handle]),
+  a:not([data-draggable-pill]):not([data-dnd-handle]),
+  [role="button"]:not([data-draggable-pill]):not([data-dnd-handle]),
   [role="tab"]:not([data-draggable-pill]),
   [role="menuitem"]:not([data-draggable-pill]),
   [role="option"]:not([data-draggable-pill]),
@@ -265,7 +265,8 @@
     touch-action: manipulation;
   }
 
-  [data-draggable-pill] {
+  [data-draggable-pill],
+  [data-dnd-handle] {
     touch-action: none;
   }
 

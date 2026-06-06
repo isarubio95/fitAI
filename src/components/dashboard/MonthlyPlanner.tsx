@@ -188,7 +188,7 @@ export function MonthlyPlanner({
   return (
     <div className="w-full">
       {/* Header (padding para que las flechas no queden pegadas a los bordes de la card) */}
-      <div className="flex items-center justify-between mb-3 px-4">
+      <div className="flex items-center justify-between mb-4 px-4">
         <Button
           variant="ghost"
           size="icon"
@@ -293,7 +293,7 @@ export function MonthlyPlanner({
                     type="button"
                     onClick={handleClick}
                     className={cn(
-                      "group relative min-h-[80px] md:min-h-[100px] p-1 cursor-pointer",
+                      "group relative aspect-square w-full p-1 cursor-pointer",
                       isBottomLeft && "rounded-bl-xl",
                       isBottomRight && "rounded-br-xl",
                       !inMonth && "opacity-40",
@@ -658,12 +658,11 @@ export function MonthlyPlanner({
         }}
       >
         <DialogContent
-          className="sm:max-w-md"
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>Editar hoja de ruta</DialogTitle>
+            <DialogTitle>Editar plan</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">

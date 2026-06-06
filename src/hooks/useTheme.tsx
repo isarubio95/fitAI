@@ -13,7 +13,7 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "system",
+  theme: "dark",
   setTheme: () => {},
   accentColor: "green",
   setAccentColor: () => {},
@@ -38,7 +38,7 @@ function applyAccentColor(color: AccentColor) {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    return stored ?? "system";
+    return stored ?? "dark";
   });
 
   const [accentColor, setAccentColorState] = useState<AccentColor>(() => {

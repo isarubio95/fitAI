@@ -177,7 +177,7 @@ export function WeekCalendar({
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3 px-4">
+      <div className="flex items-center justify-between mb-4 px-4">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goBack}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -266,7 +266,7 @@ export function WeekCalendar({
                 type="button"
                 onClick={handleClick}
                 className={cn(
-                  "group relative min-h-[80px] md:min-h-[100px] p-1 cursor-pointer",
+                  "group relative aspect-square w-full p-1 cursor-pointer",
                   isBottomLeft && "rounded-bl-xl",
                   isBottomRight && "rounded-br-xl",
                   "flex items-center justify-center",
@@ -611,12 +611,11 @@ export function WeekCalendar({
         }}
       >
         <DialogContent
-          className="sm:max-w-md"
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>Editar hoja de ruta</DialogTitle>
+            <DialogTitle>Editar plan</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">

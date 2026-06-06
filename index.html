@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="theme-color" content="#09090b">
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)">
     <title>FitAI</title>
@@ -29,6 +30,19 @@
         var accent = localStorage.getItem("vite-ui-accent");
         if (accent && ["green","orange","yellow","pink","blue"].indexOf(accent) !== -1) {
           document.documentElement.setAttribute("data-accent", accent);
+        }
+
+        var theme = localStorage.getItem("vite-ui-theme");
+        var resolved;
+        if (theme === "light") {
+          resolved = "light";
+        } else if (theme === "system") {
+          resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        } else {
+          resolved = "dark";
+        }
+        if (resolved === "dark") {
+          document.documentElement.classList.add("dark");
         }
       })();
     </script>

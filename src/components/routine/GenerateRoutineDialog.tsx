@@ -143,7 +143,7 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
       setGeneratedPlan(plan);
       toast({
         title: "Plan generado con IA",
-        description: "Ya puedes revisarlo y aplicarlo a tu hoja de ruta.",
+        description: "Ya puedes revisarlo y aplicarlo a tu plan.",
       });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Error inesperado";
@@ -247,7 +247,7 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
       onOpenChange(false);
       setGeneratedPlan(null);
       toast({
-        title: "Hoja de ruta creada",
+        title: "Plan creado",
         description: "Se han generado rutinas y planificacion personalizada.",
       });
     } catch (e: unknown) {
@@ -278,7 +278,7 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
               Generar plan de entrenamiento
             </DrawerTitle>
             <DrawerDescription>
-              Completa tu perfil de entrenamiento para crear una hoja de ruta personalizada con IA.
+              Completa tu perfil de entrenamiento para crear un plan personalizado con IA.
             </DrawerDescription>
           </DrawerHeader>
 
@@ -458,7 +458,7 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
               className="gap-2"
             >
               <Sparkles className="h-4 w-4" />
-              Aplicar a hoja de ruta
+              Aplicar al plan
             </Button>
           </DrawerFooter>
         </div>

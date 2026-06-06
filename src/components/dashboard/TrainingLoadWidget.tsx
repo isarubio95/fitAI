@@ -70,7 +70,7 @@ function loadSavedRange(): RangeKey {
   } catch {
     // ignore
   }
-  return "6m";
+  return "1m";
 }
 
 function loadCachedTrainingLoadData(): TrainingLoadData | null {
@@ -129,7 +129,7 @@ export function TrainingLoadWidget() {
   const resolvedData = data?.points?.length ? data : cachedData;
   const showDynamicSkeleton = isFetching && !!resolvedData;
   const selectedRangeDays = useMemo(
-    () => RANGE_OPTIONS.find((option) => option.key === range)?.days ?? 180,
+    () => RANGE_OPTIONS.find((option) => option.key === range)?.days ?? 30,
     [range],
   );
   const resolvedPoints = resolvedData?.points ?? [];

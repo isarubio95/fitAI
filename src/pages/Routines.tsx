@@ -462,7 +462,7 @@ const Routines = () => {
       )}
 
       <Dialog open={createChoiceOpen} onOpenChange={setCreateChoiceOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Nueva rutina</DialogTitle>
             <DialogDescription>Elige cómo quieres crearla.</DialogDescription>

@@ -263,7 +263,7 @@ export function CardioTypePickerDialog({ open, onOpenChange, onConfirm, onConfir
           </button>
         ) : null}
 
-        <DialogFooter className="gap-2 sm:justify-end">
+        <DialogFooter className="sm:justify-end">
           <Button type="button" variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>

@@ -131,7 +131,7 @@ export function useDeletePlannedRoutine() {
   });
 }
 
-/** Elimina toda la planificación (hoja de ruta) del usuario actual. */
+/** Elimina todo el plan del usuario actual. */
 export function useDeleteAllPlannedRoutines() {
   const { user } = useAuth();
   const queryClient = useQueryClient();

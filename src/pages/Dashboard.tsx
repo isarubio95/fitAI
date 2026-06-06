@@ -26,7 +26,13 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { usePlannedRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +55,8 @@ import {
   DndContext, 
   closestCenter, 
   KeyboardSensor, 
-  PointerSensor, 
+  PointerSensor,
+  TouchSensor,
   useSensor, 
   useSensors, 
   DragEndEvent 
@@ -64,7 +71,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { AnimatePresence, motion } from "framer-motion";
 
-const DEFAULT_WIDGET_ORDER = ['gamification', 'heatmap', 'progress', 'training-load', 'calendar'];
+const DEFAULT_WIDGET_ORDER = ['calendar', 'gamification', 'heatmap', 'progress', 'training-load'];
 
 const CALENDAR_VIEW_STORAGE_KEY = "gym-log.dashboard.calendar-view";
 
@@ -86,7 +93,7 @@ function saveCalendarView(view: "month" | "week") {
   }
 }
 
-// Wrapper que imita el comportamiento de SortableRoutineCard
+// Wrapper sortable: en modo ordenar todo el bloque es zona de arrastre.
 function SortableWidget({ id, isDragMode, children }: { id: string, isDragMode: boolean, children: React.ReactNode }) {
   const {
     attributes,
@@ -101,29 +108,27 @@ function SortableWidget({ id, isDragMode, children }: { id: string, isDragMode: 
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : "auto",
+    zIndex: isDragging ? 50 : undefined,
   };
 
   return (
-    <div 
-      ref={setNodeRef} 
-      style={style} 
-      className={`relative flex flex-col transition-colors duration-200 ${
-        isDragMode ? "p-3 border-2 border-dashed border-primary/30 rounded-xl bg-primary/5 gap-2" : ""
-      }`}
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "relative flex flex-col transition-colors duration-200",
+        isDragMode &&
+          "cursor-grab touch-none gap-2 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-3 active:cursor-grabbing",
+        isDragging && "z-50 cursor-grabbing",
+      )}
+      {...(isDragMode ? { ...attributes, ...listeners, "data-dnd-handle": true } : {})}
     >
       {isDragMode && (
-        <div className="flex justify-center w-full">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground p-1"
-          >
-            <GripHorizontal className="h-6 w-6" />
-          </button>
+        <div className="pointer-events-none flex w-full select-none justify-center" aria-hidden>
+          <GripHorizontal className="h-6 w-6 text-muted-foreground" />
         </div>
       )}
-      <div className={isDragging ? "pointer-events-none" : ""}>
+      <div className={cn((isDragMode || isDragging) && "pointer-events-none select-none")}>
         {children}
       </div>
     </div>
@@ -145,7 +150,7 @@ const Dashboard = () => {
   /** Semana mostrada en vista semanal; al cerrar el dropdown se mantiene en lugar de volver a hoy */
   const [weekViewStart, setWeekViewStart] = useState<Date | null>(null);
   const [planWizardOpen, setPlanWizardOpen] = useState(false);
-  const [editPlanSheetOpen, setEditPlanSheetOpen] = useState(false);
+  const [editPlanDialogOpen, setEditPlanDialogOpen] = useState(false);
   const [planWizardReplaceExisting, setPlanWizardReplaceExisting] = useState(false);
   const [confirmDeletePlan, setConfirmDeletePlan] = useState(false);
   const [pendingOpenPlanWizard, setPendingOpenPlanWizard] = useState(false);
@@ -172,7 +177,7 @@ const Dashboard = () => {
     setCalendarView(nextView);
   };
 
-  // Abrir hoja de ruta cuando se llega desde el BottomNav (Añadir → Hoja de ruta)
+  // Abrir plan cuando se llega desde notificaciones u otras acciones
   useEffect(() => {
     if ((location.state as { openPlanWizard?: boolean })?.openPlanWizard) {
       setPendingOpenPlanWizard(true);
@@ -181,10 +186,10 @@ const Dashboard = () => {
   }, [location.state, navigate]);
 
   useEffect(() => {
-    // Esperar a tener certeza de si existe hoja de ruta o no para evitar "Crear" -> "Editar".
+    // Esperar a tener certeza de si existe plan o no para evitar "Crear" -> "Editar".
     if (!pendingOpenPlanWizard || plannedLoading || !plannedKnown) return;
     if (hasPlanned) {
-      setEditPlanSheetOpen(true);
+      setEditPlanDialogOpen(true);
     } else {
       setPlanWizardOpen(true);
     }
@@ -336,7 +341,8 @@ const Dashboard = () => {
 
   // Mismos sensores exactos que en src/pages/Routines.tsx
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -365,7 +371,7 @@ const Dashboard = () => {
       case 'calendar':
         return (
           <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-            <CardHeader className="space-y-3 px-6 pt-8 pb-6">
+            <CardHeader className="space-y-3 px-6 pt-8 pb-4">
               <div className="flex w-full flex-row items-center justify-between gap-2">
                 <Button
                   variant="secondary"
@@ -374,7 +380,7 @@ const Dashboard = () => {
                   onClick={() => {
                     if (!plannedKnown) return;
                     if (hasPlanned) {
-                      setEditPlanSheetOpen(true);
+                      setEditPlanDialogOpen(true);
                     } else {
                       setPlanWizardReplaceExisting(false);
                       setPlanWizardOpen(true);
@@ -389,12 +395,12 @@ const Dashboard = () => {
                   ) : hasPlanned ? (
                     <>
                       <Pencil className="h-4 w-4" />
-                      Editar hoja de ruta
+                      Editar plan
                     </>
                   ) : (
                     <>
                       <CalendarIcon className="h-4 w-4" />
-                      Crear Hoja de Ruta
+                      Crear plan
                     </>
                   )}
                 </Button>
@@ -468,46 +474,45 @@ const Dashboard = () => {
               initialRoutineByDay={planWizardReplaceExisting ? initialRoutineByDay : undefined}
             />
 
-            <Drawer open={editPlanSheetOpen} onOpenChange={setEditPlanSheetOpen}>
-              <DrawerContent side="bottom" className="rounded-t-2xl">
-                <DrawerHeader>
-                  <DrawerTitle>Editar hoja de ruta</DrawerTitle>
-                </DrawerHeader>
-                <div className="mt-4 space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Tienes <strong>{plannedCount}</strong> {plannedCount === 1 ? "día programado" : "días programados"}.
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      className="w-full gap-2"
-                      onClick={() => {
-                        setEditPlanSheetOpen(false);
-                        setPlanWizardReplaceExisting(true);
-                        setPlanWizardOpen(true);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Modificar plan
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      className="w-full gap-2"
-                      onClick={() => setConfirmDeletePlan(true)}
-                    >
-                      Borrar hoja de ruta
-                    </Button>
-                  </div>
+            <Dialog open={editPlanDialogOpen} onOpenChange={setEditPlanDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Editar plan</DialogTitle>
+                  <DialogDescription>
+                    Tienes <strong>{plannedCount}</strong>{" "}
+                    {plannedCount === 1 ? "día programado" : "días programados"}.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col gap-3">
+                  <Button
+                    variant="secondary"
+                    className="w-full gap-2"
+                    onClick={() => {
+                      setEditPlanDialogOpen(false);
+                      setPlanWizardReplaceExisting(true);
+                      setPlanWizardOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Modificar plan
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full gap-2"
+                    onClick={() => setConfirmDeletePlan(true)}
+                  >
+                    Borrar plan
+                  </Button>
                 </div>
-              </DrawerContent>
-            </Drawer>
+              </DialogContent>
+            </Dialog>
 
             <AlertDialog open={confirmDeletePlan} onOpenChange={setConfirmDeletePlan}>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>¿Eliminar toda la planificación?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Vas a eliminar toda tu hoja de ruta. Se borrarán los{" "}
+                    Vas a eliminar todo tu plan. Se borrarán los{" "}
                     <strong>{plannedCount} {plannedCount === 1 ? "día programado" : "días programados"}</strong> y no
                     podrás recuperarlos. Perderás toda la planificación de rutinas. Esta acción no se puede deshacer.
                     ¿Continuar?
@@ -521,11 +526,11 @@ const Dashboard = () => {
                       try {
                         await deleteAllPlan.mutateAsync();
                         toast({
-                          title: "Hoja de ruta eliminada",
+                          title: "Plan eliminado",
                           description: "Se ha borrado toda tu planificación.",
                         });
                         setConfirmDeletePlan(false);
-                        setEditPlanSheetOpen(false);
+                        setEditPlanDialogOpen(false);
                   } catch (e: unknown) {
                     const message = e instanceof Error ? e.message : "Error desconocido";
                         toast({
