@@ -57,7 +57,6 @@ import {
   closestCenter, 
   KeyboardSensor, 
   PointerSensor,
-  TouchSensor,
   useSensor, 
   useSensors, 
   DragEndEvent 
@@ -340,10 +339,11 @@ const Dashboard = () => {
     openFromPlannedRoutine(planned.id, routine.nombre ?? "Rutina", ejercicios);
   };
 
-  // Mismos sensores exactos que en src/pages/Routines.tsx
+  // Mismos sensores exactos que en src/pages/Routines.tsx.
+  // No combinar PointerSensor con TouchSensor: en móvil el tacto dispara pointer events
+  // y ambos sensores compiten por el mismo gesto, rompiendo el drag.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
