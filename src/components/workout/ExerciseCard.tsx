@@ -76,9 +76,9 @@ export function ExerciseCard({
   return (
     <div className={wrapperClass}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing shrink-0">
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
           <h3 className="truncate text-sm font-semibold">{exercise.nombre}</h3>
@@ -109,7 +109,7 @@ export function ExerciseCard({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-destructive"
+          className="h-8 w-8 shrink-0 text-destructive"
           onClick={() => setConfirmDeleteExercise(true)}
         >
           <Trash2 className="h-4 w-4" />

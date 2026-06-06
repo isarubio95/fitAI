@@ -6,13 +6,24 @@ import { buttonVariants } from "@/components/ui/button";
 import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
 import { DIALOG_CONTENT_BASE_CLASS, DIALOG_SURFACE_CLASS } from "@/lib/dialogStyles";
 
+const AlertDialogDismissContext = React.createContext<(() => void) | undefined>(undefined);
+
 const AlertDialog = ({
   open,
   onOpenChange,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Root>) => {
   useBackCloseLayer({ open: !!open, onOpenChange, kind: "alert-dialog" });
-  return <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange} {...props} />;
+
+  const requestDismiss = React.useCallback(() => {
+    onOpenChange?.(false);
+  }, [onOpenChange]);
+
+  return (
+    <AlertDialogDismissContext.Provider value={requestDismiss}>
+      <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange} {...props} />
+    </AlertDialogDismissContext.Provider>
+  );
 };
 
 const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
@@ -22,22 +33,31 @@ const AlertDialogPortal = AlertDialogPrimitive.Portal;
 const AlertDialogOverlay = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Overlay
-    className={cn(
-      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-      className,
-    )}
-    {...props}
-    ref={ref}
-  />
-));
+>(({ className, onPointerDown, ...props }, ref) => {
+  const requestDismiss = React.useContext(AlertDialogDismissContext);
+
+  return (
+    <AlertDialogPrimitive.Overlay
+      className={cn(
+        "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+        className,
+      )}
+      {...props}
+      ref={ref}
+      onPointerDown={(e) => {
+        onPointerDown?.(e);
+        if (e.defaultPrevented) return;
+        if (e.target === e.currentTarget) requestDismiss?.();
+      }}
+    />
+  );
+});
 AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
 
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(({ className, ...props }, ref) => (
+>(({ className, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => (
   <AlertDialogPortal>
     <AlertDialogOverlay />
     <AlertDialogPrimitive.Content
@@ -47,6 +67,14 @@ const AlertDialogContent = React.forwardRef<
         DIALOG_SURFACE_CLASS,
         className,
       )}
+      onOpenAutoFocus={(e) => {
+        e.preventDefault();
+        onOpenAutoFocus?.(e);
+      }}
+      onCloseAutoFocus={(e) => {
+        e.preventDefault();
+        onCloseAutoFocus?.(e);
+      }}
       {...props}
     />
   </AlertDialogPortal>

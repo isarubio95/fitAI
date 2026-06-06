@@ -50,6 +50,7 @@ import { ImportRoutineFromCsvDialog } from "@/components/routine/ImportRoutineFr
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
 import {
   Dialog,
+  DialogActions,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -467,10 +468,10 @@ const Routines = () => {
             <DialogTitle>Nueva rutina</DialogTitle>
             <DialogDescription>Elige cómo quieres crearla.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-2 pt-1">
+          <DialogActions className="pt-1">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               className="h-auto justify-start gap-3 py-3 px-4 text-left"
               onClick={chooseDesdeCero}
             >
@@ -479,7 +480,7 @@ const Routines = () => {
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               className="h-auto justify-start gap-3 py-3 px-4 text-left"
               onClick={choosePredefined}
             >
@@ -488,14 +489,14 @@ const Routines = () => {
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               className="h-auto justify-start gap-3 py-3 px-4 text-left"
               onClick={chooseImportCsv}
             >
               <FileSpreadsheet className="h-5 w-5 shrink-0 text-primary" />
               <span className="font-medium leading-snug">Importar desde CSV</span>
             </Button>
-          </div>
+          </DialogActions>
         </DialogContent>
       </Dialog>
 

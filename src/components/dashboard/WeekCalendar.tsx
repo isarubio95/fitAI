@@ -610,10 +610,7 @@ export function WeekCalendar({
           }
         }}
       >
-        <DialogContent
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          onCloseAutoFocus={(e) => e.preventDefault()}
-        >
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar plan</DialogTitle>
           </DialogHeader>

@@ -83,7 +83,7 @@ export function BottomNav() {
         )}
       >
         <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
+          className="flex w-full items-center gap-3.5 rounded-none px-4 py-3 text-left text-base transition-colors hover:bg-accent/30"
           onClick={() => { openNew(); setIsMenuOpen(false); }}
         >
           <GymWorkoutIcon className="h-6 w-6 text-primary" />
@@ -93,7 +93,7 @@ export function BottomNav() {
           </div>
         </button>
         <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
+          className="flex w-full items-center gap-3.5 rounded-none px-4 py-3 text-left text-base transition-colors hover:bg-accent/30"
           onClick={() => { setCardioTypeDialogOpen(true); setIsMenuOpen(false); }}
         >
           <CardioWorkoutIcon className="h-6 w-6 text-blue-500" />
@@ -103,7 +103,7 @@ export function BottomNav() {
           </div>
         </button>
         <button
-          className="flex items-center gap-3 rounded-none p-3 hover:bg-accent/30 transition-colors text-base text-left w-full"
+          className="flex w-full items-center gap-3.5 rounded-none px-4 py-3 text-left text-base transition-colors hover:bg-accent/30"
           onClick={() => { navigate("/evolution", { state: { tab: "measurements", action: "new" } }); setIsMenuOpen(false); }}
         >
           <Scale className="h-6 w-6 shrink-0 text-emerald-500" />

@@ -657,10 +657,7 @@ export function MonthlyPlanner({
           }
         }}
       >
-        <DialogContent
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          onCloseAutoFocus={(e) => e.preventDefault()}
-        >
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar plan</DialogTitle>
           </DialogHeader>

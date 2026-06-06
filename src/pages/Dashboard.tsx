@@ -28,6 +28,7 @@ import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { usePlannedRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import {
   Dialog,
+  DialogActions,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -483,7 +484,7 @@ const Dashboard = () => {
                     {plannedCount === 1 ? "día programado" : "días programados"}.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="flex flex-col gap-3">
+                <DialogActions>
                   <Button
                     variant="secondary"
                     className="w-full gap-2"
@@ -503,7 +504,7 @@ const Dashboard = () => {
                   >
                     Borrar plan
                   </Button>
-                </div>
+                </DialogActions>
               </DialogContent>
             </Dialog>
 
