@@ -121,8 +121,12 @@ export default function PrivacyPolicy() {
               <h2 className="text-base font-semibold text-foreground">6. Conservación</h2>
               <p>
                 Conservamos tus datos mientras mantengas una cuenta activa y durante el tiempo necesario para
-                cumplir obligaciones legales o resolver reclamaciones. Puedes solicitar la eliminación de tu
-                cuenta y datos asociados contactando con nosotros.
+                cumplir obligaciones legales o resolver reclamaciones. Puedes eliminar tu cuenta en cualquier
+                momento desde la{" "}
+                <Link to="/eliminar-cuenta" className="font-medium text-primary underline underline-offset-2">
+                  página de eliminación de cuenta
+                </Link>{" "}
+                o desde Ajustes dentro de la app.
               </p>
             </section>
 

@@ -19,7 +19,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { LogOut, Settings, Shield } from "lucide-react";
+import { LogOut, Settings, Shield, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -108,6 +108,12 @@ export function SettingsDrawer() {
               <Link to="/privacidad" onClick={() => setOpen(false)}>
                 <Shield className="h-4 w-4" />
                 Política de Privacidad
+              </Link>
+            </Button>
+            <Button variant="outline" className="w-full h-12 justify-start gap-2 text-destructive hover:text-destructive" asChild>
+              <Link to="/eliminar-cuenta" onClick={() => setOpen(false)}>
+                <Trash2 className="h-4 w-4" />
+                Eliminar cuenta
               </Link>
             </Button>
             <Button

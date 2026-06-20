@@ -20,6 +20,7 @@ import CardioRoutines from "./pages/CardioRoutines";
 import NotFound from "./pages/NotFound";
 import AdminImport from "./pages/AdminImport";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import DeleteAccount from "./pages/DeleteAccount";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => {
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/privacidad" element={<PrivacyPolicy />} />
+                  <Route path="/eliminar-cuenta" element={<DeleteAccount />} />
                   <Route element={<AppLayout />}>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/routines" element={<Library />} />
