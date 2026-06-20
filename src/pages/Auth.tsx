@@ -18,6 +18,7 @@ function translateAuthError(msg: string, isLogin: boolean): { title: string; des
 }
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getAuthRedirectUrl, signInWithOAuthNative } from "@/lib/nativeAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +57,7 @@ const Auth = () => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: getAuthRedirectUrl() },
         });
         if (error) throw error;
         toast({
@@ -131,10 +132,7 @@ const Auth = () => {
             variant="outline"
             className="h-12 w-full text-base gap-3"
             onClick={async () => {
-              const { error } = await supabase.auth.signInWithOAuth({
-                provider: "google",
-                options: { redirectTo: window.location.origin },
-              });
+              const { error } = await signInWithOAuthNative("google");
               if (error) {
                 toast({ title: "Error con Google", description: error.message, variant: "destructive" });
               }

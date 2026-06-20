@@ -153,10 +153,10 @@ export function BottomNav() {
               <div key="add-button" className="flex flex-1 flex-col items-center justify-center gap-1.5">
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="group flex flex-col items-center justify-center gap-1.5 focus:outline-none"
+                  className="touch-styled group flex flex-col items-center justify-center gap-1.5 focus:outline-none"
                 >
                   <div className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 ease-out active:scale-90 shadow-md",
+                    "flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.82] active:duration-100 active:ease-out",
                     isMenuOpen && "rotate-45 drop-shadow-[0_0_12px_rgba(var(--primary),0.6)]" // Rotación y neón
                   )}>
                     <Plus className="h-5 w-5 stroke-[2px]" />
@@ -186,7 +186,8 @@ export function BottomNav() {
               }}
               className={({ isActive }) =>
                 cn(
-                  "group flex flex-1 flex-col items-center justify-center gap-1.5 transition-transform duration-100 ease-out active:scale-90",
+                  "touch-styled group flex flex-1 flex-col items-center justify-center gap-1.5",
+                  "transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.86] active:duration-100 active:ease-out",
                   "focus:outline-none"
                 )
               }
@@ -195,10 +196,11 @@ export function BottomNav() {
                 <>
                   <div className="relative">
                     <Icon
+                      key={isActive ? "active" : "inactive"}
                       className={cn(
                         "h-6 w-6 transition-all duration-300 ease-out",
                         isActive
-                          ? "text-primary stroke-[2px] drop-shadow-[0_0_12px_rgba(var(--primary),0.6)]"
+                          ? "nav-icon-pop text-primary stroke-[2px] drop-shadow-[0_0_12px_rgba(var(--primary),0.6)]"
                           : "text-muted-foreground stroke-[2px] group-hover:text-foreground"
                       )}
                     />

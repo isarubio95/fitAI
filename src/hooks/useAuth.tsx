@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import type { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { registerNativeAuthListener } from "@/lib/nativeAuth";
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +23,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    registerNativeAuthListener();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);

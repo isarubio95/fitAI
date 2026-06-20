@@ -35,6 +35,7 @@ export function AppLayout() {
   const tickingScrollRef = useRef(false);
   const pendingScrollYRef = useRef(0);
   const areHeaderPillsCollapsedRef = useRef(false);
+  const headerRef = useRef<HTMLElement>(null);
 
   const { data: profileSetup, isLoading: profileLoading } = useQuery({
     queryKey: ["profileSetup", user?.id],
@@ -63,6 +64,23 @@ export function AppLayout() {
   useEffect(() => {
     areHeaderPillsCollapsedRef.current = areHeaderPillsCollapsed;
   }, [areHeaderPillsCollapsed]);
+
+  // Mide la altura real de la cabecera fija y la expone como variable CSS, de modo
+  // que el padding-top del contenido se adapte a cualquier escala de fuente del
+  // sistema (evita que el contenido quede recortado bajo la cabecera).
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const updateHeaderHeight = () => {
+      document.documentElement.style.setProperty("--app-header-height", `${el.offsetHeight}px`);
+    };
+
+    updateHeaderHeight();
+    const observer = new ResizeObserver(updateHeaderHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loading, user, profileLoading, profileSetup, showSectionPills, location.pathname]);
 
   useEffect(() => {
     const isEditableField = (el: Element | null) => {
@@ -187,6 +205,7 @@ export function AppLayout() {
           />
           {/* Header superior solo en móvil */}
           <header
+            ref={headerRef}
             className={cn(
               "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/50 bg-card px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] dark:bg-[hsl(222_47%_12%/0.88)] dark:backdrop-blur-2xl md:hidden",
               showSectionPills ? "max-md:gap-2" : "gap-0",
@@ -307,12 +326,8 @@ export function AppLayout() {
 
           <main
             className={cn(
-              "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 transition-[padding-top] duration-220 ease-out motion-reduce:transition-none md:pb-0",
-              showSectionPills
-                ? !areHeaderPillsCollapsed
-                  ? "pt-26 max-md:pt-26"
-                  : "pt-12 max-md:pt-12"
-                : "max-md:pt-[calc(3.75rem+env(safe-area-inset-top,0px))]",
+              "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 md:pb-0",
+              "max-md:pt-[var(--app-header-height,5rem)]",
               "md:pt-12",
             )}
           >
