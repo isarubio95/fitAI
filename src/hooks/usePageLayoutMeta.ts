@@ -18,7 +18,7 @@ export function usePageLayoutMeta() {
               ? "Rutinas de Cardio"
               : location.pathname === "/profile"
                 ? "Perfil"
-                : "FitAI";
+                : "Track Gym";
 
   const showSectionPills =
     location.pathname === "/evolution" || location.pathname === "/routines";

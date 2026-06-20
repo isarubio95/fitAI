@@ -37,9 +37,9 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: 'FitAI',
-        short_name: 'FitAI',
-        description: 'FitAI - Tu compañero de entrenamiento',
+        name: 'Track Gym',
+        short_name: 'Track Gym',
+        description: 'Track Gym - Tu compañero de entrenamiento',
         theme_color: '#09090b',
         background_color: '#22c55e',
         display: 'standalone',

@@ -44,8 +44,8 @@ export function DesktopSidebar() {
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-white/50 dark:bg-card/50 backdrop-blur-2xl h-dvh sticky top-0">
       <div className="shrink-0 border-b border-border px-4 py-4">
         <div className="flex items-center gap-2">
-          <img src="/logo.svg" alt="FitAI" className="h-8 w-8 shrink-0 rounded-lg" />
-          <span className="min-w-0 flex-1 truncate text-sm font-bold text-muted-foreground">FitAI</span>
+          <img src="/logo.svg" alt="Track Gym" className="h-8 w-8 shrink-0 rounded-lg" />
+          <span className="min-w-0 flex-1 truncate text-sm font-bold text-muted-foreground">Track Gym</span>
         </div>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-4">
