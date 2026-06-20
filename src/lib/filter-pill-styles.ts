@@ -25,7 +25,7 @@ export const filterButtonActive =
   "border-primary/40 text-primary hover:bg-primary/5 hover:border-primary/45";
 
 export const filterChipActive =
-  "border border-primary/35 bg-secondary text-secondary-foreground";
+  "touch-pill border border-primary/35 bg-secondary text-secondary-foreground outline-none focus:outline-none focus-visible:outline-none";
 
 export const filterChipInactive =
-  "border border-transparent text-muted-foreground hover:bg-secondary/50";
+  "touch-pill border border-transparent text-muted-foreground outline-none focus:outline-none focus-visible:outline-none [@media(hover:hover)]:hover:bg-secondary/50";

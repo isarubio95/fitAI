@@ -174,9 +174,9 @@ export function ExerciseProgressWidget() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="group h-6 w-6 rounded-full hover:bg-transparent focus-visible:bg-transparent"
+                  className="touch-styled h-6 w-6 rounded-full transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100"
                 >
-                  <Info className="h-3.5 w-3.5 text-muted-foreground transition-colors duration-150 group-hover:text-foreground group-focus-visible:text-foreground" />
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-72 text-sm" side="bottom" align="start">

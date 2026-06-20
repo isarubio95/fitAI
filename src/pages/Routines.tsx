@@ -301,7 +301,7 @@ const Routines = () => {
   };
 
   return (
-    <div className="w-full min-w-0 bg-background pt-2 md:max-w-2xl md:mx-auto md:px-8 md:pt-3">
+    <div className="w-full min-w-0 bg-background md:max-w-2xl md:mx-auto md:px-8 md:pt-3">
       {mobileActionsSlot &&
         createPortal(
           <div className="flex items-center gap-2">

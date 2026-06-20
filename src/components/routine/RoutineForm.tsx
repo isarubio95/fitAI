@@ -460,7 +460,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                   </div>
                   <div className="space-y-1.5">
                     <Label>Icono de rutina</Label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid w-full grid-cols-6 gap-x-1 gap-y-2.5">
                       {ROUTINE_ICON_OPTIONS.map((opt) => {
                         const isSelected = icono === opt.key;
                         const Icon = opt.Icon;
@@ -471,14 +471,19 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                             onClick={() => setIcono(opt.key)}
                             aria-pressed={isSelected}
                             title={opt.label}
-                            className={cn(
-                              "h-14 rounded-lg border transition-colors flex items-center justify-center",
-                              isSelected
-                                ? "border-primary bg-primary/20 text-primary dark:bg-primary/25"
-                                : "border-border bg-background text-muted-foreground hover:text-foreground [&_svg]:opacity-85 hover:[&_svg]:opacity-100 transition-colors",
-                            )}
+                            aria-label={opt.label}
+                            className="touch-pill flex justify-center rounded-full p-0.5 outline-none focus:outline-none focus-visible:outline-none [@media(hover:hover)]:hover:scale-[1.03] transition-transform"
                           >
-                            <Icon className="h-5 w-5" />
+                            <span
+                              className={cn(
+                                "flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200",
+                                isSelected
+                                  ? "border-primary/20 bg-primary/8 text-primary dark:bg-primary/12"
+                                  : "border-border/12 bg-secondary/70 text-foreground",
+                              )}
+                            >
+                              <Icon className="h-5 w-5" strokeWidth={1.75} />
+                            </span>
                           </button>
                         );
                       })}
@@ -662,8 +667,9 @@ function ExerciseRow({
               onClick={() => onViewExerciseInfo(ej)}
               className={cn(
                 badgeVariants({ variant: "outline" }),
-                "h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "touch-styled h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
+                "transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent",
+                "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100",
               )}
             >
               <Info className="h-3.5 w-3.5" />

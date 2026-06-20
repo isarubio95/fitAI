@@ -211,10 +211,11 @@ const Dashboard = () => {
   const [workoutDetailsOpen, setWorkoutDetailsOpen] = useState(false);
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
 
-  const { data: monthWorkouts } = useMonthWorkouts(calendarMonth);
+  const { data: monthWorkouts, isPending: monthWorkoutsPending } = useMonthWorkouts(calendarMonth);
   const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
-  const { data: monthCardioSessions } = useMonthCardioSessions(calendarMonth);
+  const { data: monthCardioSessions, isPending: monthCardioPending } = useMonthCardioSessions(calendarMonth);
   const { data: cardioSessionDates } = useMonthCardioSessionDates(calendarMonth);
+  const monthCalendarActivityReady = !monthWorkoutsPending && !monthCardioPending;
 
   const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
     const saved = localStorage.getItem('dashboard-widget-order');
@@ -443,6 +444,7 @@ const Dashboard = () => {
                         onMonthChange={handleMonthChange}
                         workouts={monthWorkouts ?? []}
                         cardioSessions={monthCardioSessions ?? []}
+                        activityDataReady={monthCalendarActivityReady}
                         onDayClick={(date) => {
                           handleDateSelect(date);
                           if (!isDragMode) openNew(format(date, "yyyy-MM-dd"));

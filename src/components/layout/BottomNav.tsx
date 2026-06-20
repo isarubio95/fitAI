@@ -41,6 +41,29 @@ export function BottomNav() {
     kind: "popover",
   });
 
+  // Expone el espacio inferior real (nav + safe area) para posicionar toasts de forma
+  // estable aunque el usuario tenga el tamaño de fuente del sistema aumentado.
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const updateBottomNavInset = () => {
+      const rect = nav.getBoundingClientRect();
+      const gapPx = 8;
+      const inset = window.innerHeight - rect.top + gapPx;
+      document.documentElement.style.setProperty("--app-bottom-nav-inset", `${Math.round(inset)}px`);
+    };
+
+    updateBottomNavInset();
+    const observer = new ResizeObserver(updateBottomNavInset);
+    observer.observe(nav);
+    window.addEventListener("resize", updateBottomNavInset);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateBottomNavInset);
+    };
+  }, []);
+
   // Cerrar el menú si se hace click fuera de la barra de navegación
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

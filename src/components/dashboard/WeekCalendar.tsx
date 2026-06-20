@@ -14,7 +14,12 @@ import {
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Pencil, Trash2, Eye } from "lucide-react";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
-import { CalendarDayCircleContent, resolveCalendarDayDisplay } from "@/lib/calendarDayDisplay";
+import { CalendarLoadingIndicator } from "@/components/dashboard/CalendarLoadingIndicator";
+import {
+  CalendarDayCircleContent,
+  getCalendarDayCircleClasses,
+  resolveCalendarDayDisplay,
+} from "@/lib/calendarDayDisplay";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,9 +99,13 @@ export function WeekCalendar({
 
   const monthForWeek = useMemo(() => startOfMonth(weekStart), [weekStart]);
 
-  const { data: monthWorkouts } = useMonthWorkouts(monthForWeek);
-  const { data: monthCardioSessions } = useMonthCardioSessions(monthForWeek);
-  const { data: planned } = usePlannedRoutines(weekStart, addDays(weekStart, 6));
+  const { data: monthWorkouts, isPending: workoutsPending } = useMonthWorkouts(monthForWeek);
+  const { data: monthCardioSessions, isPending: cardioPending } = useMonthCardioSessions(monthForWeek);
+  const { data: planned, isPending: plannedPending } = usePlannedRoutines(
+    weekStart,
+    addDays(weekStart, 6),
+  );
+  const calendarDataReady = !workoutsPending && !cardioPending && !plannedPending;
   const deletePlan = useDeletePlannedRoutine();
   const deleteWorkout = useDeleteWorkout();
   const deleteCardioSession = useDeleteCardioSession();
@@ -199,6 +208,8 @@ export function WeekCalendar({
         ))}
       </div>
 
+      <CalendarLoadingIndicator show={!calendarDataReady} />
+
       {/* Week row */}
       <div className="bg-transparent rounded-b-xl overflow-hidden px-2">
         <div className="grid grid-cols-7">
@@ -230,35 +241,22 @@ export function WeekCalendar({
               onDateSelect(day);
             };
 
-            const circleFill = isTrained
-              ? "bg-gradient-to-br from-primary/88 via-primary/72 to-accent/82 dark:from-primary/65 dark:via-primary/45 dark:to-accent/70"
-              : isCardioTrained
-                ? "bg-gradient-to-br from-blue-500/70 via-blue-500/45 to-cyan-500/60"
-                : isScheduled
-                  ? "bg-gradient-to-br from-orange-500/55 via-orange-500/35 to-orange-400/50"
-                  : isPast
-                    ? "bg-secondary/60"
-                    : "bg-secondary/70";
+            const circleStyles = getCalendarDayCircleClasses({
+              isTrained,
+              isCardioTrained,
+              isScheduled,
+              isPast,
+              today,
+              dataReady: calendarDataReady,
+            });
 
-            const circleText = isTrained || isCardioTrained
-              ? "text-primary-foreground"
-              : isScheduled
-                ? "text-foreground"
-                : isPast
-                  ? "text-muted-foreground"
-                  : "text-foreground";
-
-            const circleBorder = isTrained
-              ? isPast
-                ? "border-primary/22"
-                : "border-primary/40"
-              : isCardioTrained
-                ? "border-blue-400/50"
-                : isPast
-                  ? "border-border/70"
-                  : "border-border/12";
-
-            const dayDisplay = resolveCalendarDayDisplay(dayWorkouts, dayPlanned, dayCardio, routines);
+            const dayDisplay = resolveCalendarDayDisplay(
+              dayWorkouts,
+              dayPlanned,
+              dayCardio,
+              routines,
+              calendarDataReady,
+            );
 
             return (
               <button
@@ -278,10 +276,11 @@ export function WeekCalendar({
                   <span
                     className={cn(
                       "relative flex items-center justify-center select-none w-full h-full rounded-full border text-xs font-semibold",
-                      circleFill,
-                      circleText,
-                      today ? "border-primary" : circleBorder,
-                      "transition-all duration-200",
+                      circleStyles.circleFill,
+                      circleStyles.circleText,
+                      circleStyles.circleBorder,
+                      circleStyles.transitionClass,
+                      circleStyles.loadingClass,
                       isSelected && !today && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background",
                       today
                         ? "group-hover:scale-[1.03]"

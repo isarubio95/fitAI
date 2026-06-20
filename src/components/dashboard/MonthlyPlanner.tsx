@@ -50,7 +50,12 @@ import { useDeleteWorkout } from "@/hooks/useWorkouts";
 import { useDeleteCardioSession } from "@/hooks/useCardioSessions";
 import { useToast } from "@/hooks/use-toast";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
-import { CalendarDayCircleContent, resolveCalendarDayDisplay } from "@/lib/calendarDayDisplay";
+import { CalendarLoadingIndicator } from "@/components/dashboard/CalendarLoadingIndicator";
+import {
+  CalendarDayCircleContent,
+  getCalendarDayCircleClasses,
+  resolveCalendarDayDisplay,
+} from "@/lib/calendarDayDisplay";
 import { cn } from "@/lib/utils";
 
 type CardioSessionLabelData = {
@@ -69,6 +74,8 @@ interface MonthlyPlannerProps {
   onMonthChange: (d: Date) => void;
   workouts: ActividadWithDetails[];
   cardioSessions: CardioSesion[];
+  /** false mientras cargan entrenamientos o cardio desde el padre */
+  activityDataReady?: boolean;
   onDayClick: (date: Date) => void;
   onWorkoutClick: (workoutId: string) => void;
   onCardioClick?: (sessionId: string) => void;
@@ -83,13 +90,18 @@ export function MonthlyPlanner({
   onMonthChange,
   workouts,
   cardioSessions,
+  activityDataReady = true,
   onDayClick,
   onWorkoutClick,
   onCardioClick,
   onWorkoutDetailsClick,
   onPlannedStart,
 }: MonthlyPlannerProps) {
-  const { data: planned } = usePlannedRoutines(startOfMonth(month), endOfMonth(month));
+  const { data: planned, isPending: plannedPending } = usePlannedRoutines(
+    startOfMonth(month),
+    endOfMonth(month),
+  );
+  const calendarDataReady = activityDataReady && !plannedPending;
 
   const days = useMemo(() => {
     const start = startOfMonth(month);
@@ -219,6 +231,8 @@ export function MonthlyPlanner({
         ))}
       </div>
 
+      <CalendarLoadingIndicator show={!calendarDataReady} />
+
       {/* Grid */}
       <div className="bg-transparent rounded-b-xl overflow-hidden px-2">
         {weeks.map((weekDays, weekIndex) => (
@@ -257,35 +271,22 @@ export function MonthlyPlanner({
                   setExpandedWeekIndex(weekIndex);
                 };
 
-                const circleFill = isTrained
-                  ? "bg-gradient-to-br from-primary/88 via-primary/72 to-accent/82 dark:from-primary/65 dark:via-primary/45 dark:to-accent/70"
-                  : isCardioTrained
-                    ? "bg-gradient-to-br from-blue-500/70 via-blue-500/45 to-cyan-500/60"
-                  : isScheduled
-                    ? "bg-gradient-to-br from-orange-500/55 via-orange-500/35 to-orange-400/50"
-                    : isPast
-                      ? "bg-secondary/60"
-                      : "bg-secondary/70";
+                const circleStyles = getCalendarDayCircleClasses({
+                  isTrained,
+                  isCardioTrained,
+                  isScheduled,
+                  isPast,
+                  today,
+                  dataReady: calendarDataReady,
+                });
 
-                const circleText = isTrained || isCardioTrained
-                  ? "text-primary-foreground"
-                  : isScheduled
-                    ? "text-foreground"
-                    : isPast
-                      ? "text-muted-foreground"
-                      : "text-foreground";
-
-                const circleBorder = isTrained
-                  ? isPast
-                    ? "border-primary/22"
-                    : "border-primary/40"
-                  : isCardioTrained
-                    ? "border-blue-400/50"
-                  : isPast
-                    ? "border-border/70"
-                    : "border-border/12";
-
-                const dayDisplay = resolveCalendarDayDisplay(dayWorkouts, dayPlanned, dayCardio, routines);
+                const dayDisplay = resolveCalendarDayDisplay(
+                  dayWorkouts,
+                  dayPlanned,
+                  dayCardio,
+                  routines,
+                  calendarDataReady,
+                );
 
                 return (
                   <button
@@ -311,10 +312,11 @@ export function MonthlyPlanner({
                       <span
                         className={cn(
                           "relative flex items-center justify-center select-none w-full h-full rounded-full border text-xs font-semibold",
-                          circleFill,
-                          circleText,
-                          today ? "border-primary" : circleBorder,
-                          "transition-all duration-200",
+                          circleStyles.circleFill,
+                          circleStyles.circleText,
+                          circleStyles.circleBorder,
+                          circleStyles.transitionClass,
+                          circleStyles.loadingClass,
                           isSelected && !today && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background",
                           today
                             ? "group-hover:scale-[1.03]"

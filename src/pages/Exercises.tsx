@@ -495,7 +495,7 @@ const Exercises = () => {
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-hidden bg-background px-0 pb-6 pt-2 mx-auto md:px-8 md:pt-6",
+        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-hidden bg-background px-0 pb-6 mx-auto md:px-8 md:pt-6",
         PAGE_CARD_STACK_GAP,
       )}
     >

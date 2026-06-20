@@ -40,27 +40,31 @@ function saveDismissed(userId: string, ids: string[]) {
   }
 }
 
+/** Fusiona estado en memoria + localStorage para no perder descartes tras re-login. */
+function mergeAndSaveDismissed(userId: string, prev: Set<string>, ids: string[]): Set<string> {
+  const stored = loadDismissed(userId);
+  const next = new Set([...stored, ...prev, ...ids]);
+  saveDismissed(userId, [...next]);
+  return next;
+}
+
+function readDismissedForUser(userId: string | undefined): Set<string> {
+  if (!userId) return new Set();
+  return new Set(loadDismissed(userId));
+}
+
 export function InAppNotificationsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [dismissed, setDismissed] = useState<Set<string>>(() => readDismissedForUser(user?.id));
 
   useEffect(() => {
-    if (!user?.id) {
-      setDismissed(new Set());
-      return;
-    }
-    setDismissed(new Set(loadDismissed(user.id)));
+    setDismissed(readDismissedForUser(user?.id));
   }, [user?.id]);
 
   const dismiss = useCallback(
     (id: string) => {
       if (!user?.id) return;
-      setDismissed((prev) => {
-        const next = new Set(prev);
-        next.add(id);
-        saveDismissed(user.id, [...next]);
-        return next;
-      });
+      setDismissed((prev) => mergeAndSaveDismissed(user.id, prev, [id]));
     },
     [user?.id],
   );
@@ -68,12 +72,7 @@ export function InAppNotificationsProvider({ children }: { children: ReactNode }
   const dismissMany = useCallback(
     (ids: string[]) => {
       if (!user?.id || ids.length === 0) return;
-      setDismissed((prev) => {
-        const next = new Set(prev);
-        ids.forEach((id) => next.add(id));
-        saveDismissed(user.id, [...next]);
-        return next;
-      });
+      setDismissed((prev) => mergeAndSaveDismissed(user.id, prev, ids));
     },
     [user?.id],
   );

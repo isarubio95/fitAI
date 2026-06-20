@@ -19,12 +19,76 @@ export type CalendarDayDisplay =
   | { type: "routine"; Icon: IconComponent }
   | { type: "cardio"; Icon: typeof CardioWorkoutIcon };
 
+export type CalendarDayActivityFlags = {
+  isTrained: boolean;
+  isCardioTrained: boolean;
+  isScheduled: boolean;
+  isPast: boolean;
+  today: boolean;
+  /** false mientras cargan entrenamientos, cardio o planificación (evita parpadeo de colores). */
+  dataReady: boolean;
+};
+
+export function getCalendarDayCircleClasses({
+  isTrained,
+  isCardioTrained,
+  isScheduled,
+  isPast,
+  today,
+  dataReady,
+}: CalendarDayActivityFlags) {
+  const showTrained = dataReady && isTrained;
+  const showCardio = dataReady && isCardioTrained;
+  const showScheduled = dataReady && isScheduled;
+
+  const circleFill = showTrained
+    ? "bg-gradient-to-br from-primary/88 via-primary/72 to-accent/82 dark:from-primary/65 dark:via-primary/45 dark:to-accent/70"
+    : showCardio
+      ? "bg-gradient-to-br from-blue-500/70 via-blue-500/45 to-cyan-500/60"
+      : showScheduled
+        ? "bg-gradient-to-br from-orange-500/55 via-orange-500/35 to-orange-400/50"
+        : isPast
+          ? "bg-secondary/60"
+          : "bg-secondary/70";
+
+  const circleText = showTrained || showCardio
+    ? "text-primary-foreground"
+    : showScheduled
+      ? "text-foreground"
+      : isPast
+        ? "text-muted-foreground"
+        : "text-foreground";
+
+  const circleBorder = showTrained
+    ? isPast
+      ? "border-primary/22"
+      : "border-primary/40"
+    : showCardio
+      ? "border-blue-400/50"
+      : isPast
+        ? "border-border/70"
+        : "border-border/12";
+
+  return {
+    circleFill,
+    circleText,
+    circleBorder: today ? "border-primary" : circleBorder,
+    transitionClass: dataReady ? "transition-all duration-200" : "transition-none",
+    loadingClass: dataReady ? "" : "animate-pulse opacity-85",
+  };
+}
+
 export function resolveCalendarDayDisplay(
   dayWorkouts: ActividadWithDetails[],
   dayPlanned: PlannedRoutine[],
   dayCardio: CardioSesion[],
   routines?: RutinaWithDetails[],
+  dataReady = true,
 ): CalendarDayDisplay {
+  if (!dataReady) {
+    return { type: "number" };
+  }
+
   if (dayWorkouts.length > 0) {
     const workout = dayWorkouts[0];
     const fromPlanned = dayPlanned.find((p) => p.actividad_id === workout.id);

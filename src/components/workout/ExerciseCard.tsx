@@ -89,8 +89,9 @@ export function ExerciseCard({
               onClick={() => onViewExerciseDetails(exercise)}
               className={cn(
                 badgeVariants({ variant: "outline" }),
-                "h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "touch-styled h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
+                "transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent",
+                "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100",
               )}
             >
               <Info className="h-3.5 w-3.5" />
