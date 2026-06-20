@@ -16,13 +16,14 @@ function translateAuthError(msg: string, isLogin: boolean): { title: string; des
     return { title: "Registro deshabilitado", description: "El registro de nuevos usuarios está deshabilitado temporalmente." };
   return { title: "Error", description: msg };
 }
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getAuthRedirectUrl, signInWithOAuthNative } from "@/lib/nativeAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +37,7 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) {
@@ -57,6 +59,14 @@ const Auth = () => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
+        if (!acceptedPrivacy) {
+          toast({
+            title: "Debes aceptar la política de privacidad",
+            description: "Lee y acepta la política de privacidad para crear tu cuenta.",
+            variant: "destructive",
+          });
+          return;
+        }
         if (password !== confirmPassword) {
           toast({
             title: "Las contraseñas no coinciden",
@@ -158,7 +168,32 @@ const Auth = () => {
                 </div>
               </div>
             )}
-            <Button type="submit" className="h-12 w-full text-base" disabled={submitting}>
+            {!isLogin && (
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="privacy"
+                  checked={acceptedPrivacy}
+                  onCheckedChange={(checked) => setAcceptedPrivacy(checked === true)}
+                  className="mt-0.5"
+                />
+                <label htmlFor="privacy" className="text-sm leading-snug text-muted-foreground">
+                  He leído y acepto la{" "}
+                  <Link
+                    to="/privacidad"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary underline underline-offset-2 hover:text-primary/90"
+                  >
+                    Política de Privacidad
+                  </Link>
+                </label>
+              </div>
+            )}
+            <Button
+              type="submit"
+              className="h-12 w-full text-base"
+              disabled={submitting || (!isLogin && !acceptedPrivacy)}
+            >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLogin ? "Iniciar Sesión" : "Crear Cuenta"}
             </Button>
@@ -177,7 +212,16 @@ const Auth = () => {
             type="button"
             variant="outline"
             className="h-12 w-full text-base gap-3"
+            disabled={!isLogin && !acceptedPrivacy}
             onClick={async () => {
+              if (!isLogin && !acceptedPrivacy) {
+                toast({
+                  title: "Debes aceptar la política de privacidad",
+                  description: "Lee y acepta la política de privacidad para continuar con Google.",
+                  variant: "destructive",
+                });
+                return;
+              }
               const { error } = await signInWithOAuthNative("google");
               if (error) {
                 toast({ title: "Error con Google", description: error.message, variant: "destructive" });
@@ -198,6 +242,7 @@ const Auth = () => {
             onClick={() => {
               setIsLogin(!isLogin);
               setConfirmPassword("");
+              setAcceptedPrivacy(false);
               setShowPassword(false);
               setShowConfirmPassword(false);
             }}

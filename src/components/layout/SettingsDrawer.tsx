@@ -19,7 +19,8 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 /** Panel de preferencia de comunidad: se distingue del bloque plano de color de acento. */
@@ -102,7 +103,13 @@ export function SettingsDrawer() {
           </div>
 
           {/* Cerrar sesión (al final, dentro del scroll) */}
-          <div className="pt-2 pb-4">
+          <div className="pt-2 pb-4 space-y-3">
+            <Button variant="outline" className="w-full h-12 justify-start gap-2" asChild>
+              <Link to="/privacidad" onClick={() => setOpen(false)}>
+                <Shield className="h-4 w-4" />
+                Política de Privacidad
+              </Link>
+            </Button>
             <Button
               variant="destructive"
               className="w-full h-12"

@@ -19,6 +19,7 @@ import Evolution from "./pages/Evolution";
 import CardioRoutines from "./pages/CardioRoutines";
 import NotFound from "./pages/NotFound";
 import AdminImport from "./pages/AdminImport";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => {
                 <ScrollToTop />
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/privacidad" element={<PrivacyPolicy />} />
                   <Route element={<AppLayout />}>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/routines" element={<Library />} />
