@@ -4,9 +4,9 @@ const config: CapacitorConfig = {
   appId: 'com.fitai.app',
   appName: 'Track Gym',
   webDir: 'dist',
-  server: {
-    url: 'https://trackgymnet.vercel.app',
-    androidScheme: 'https',
+  android: {
+    // Carga empaquetada en https://localhost — experiencia nativa, sin barra de Chrome.
+    allowMixedContent: false,
   },
 };
 

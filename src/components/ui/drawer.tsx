@@ -136,15 +136,17 @@ const DrawerContent = React.forwardRef<
         onInteractOutside?.(e);
       }}
       className={cn(
-        "drawer-mobile-scrollbars-hidden fixed z-50 flex border bg-background",
+        "drawer-mobile-scrollbars-hidden fixed z-50 flex bg-background",
         "**:data-[slot=card]:rounded-none! **:data-drawer-section:rounded-none!",
         "[&_[data-slot=card]:first-child]:border-t-0!",
         side === "bottom" &&
-          "inset-x-0 bottom-0 mt-24 max-h-lvh flex-col rounded-t-[10px] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2",
+          "inset-x-0 bottom-0 mt-24 max-h-lvh flex-col rounded-t-[10px] border-x-0 border-t border-b-0 md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
         side === "top" &&
-          "inset-x-0 top-0 mb-24 max-h-lvh flex-col rounded-b-[10px] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2",
-        side === "left" && "inset-y-0 left-0 h-lvh w-[92vw] max-w-md flex-col border-r border-l-0 border-t-0 border-b-0",
-        side === "right" && "inset-y-0 right-0 h-lvh w-[92vw] max-w-md flex-col border-l border-r-0 border-t-0 border-b-0",
+          "inset-x-0 top-0 mb-24 max-h-lvh flex-col rounded-b-[10px] border-x-0 border-b border-t-0 md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
+        side === "left" &&
+          "inset-y-0 left-0 h-lvh w-[92vw] max-w-md flex-col border-x-0 border-t-0 border-b-0 md:border-r",
+        side === "right" &&
+          "inset-y-0 right-0 h-lvh w-[92vw] max-w-md flex-col border-x-0 border-t-0 border-b-0 md:border-l",
         className,
       )}
       {...props}
