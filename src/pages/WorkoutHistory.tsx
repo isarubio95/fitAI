@@ -19,6 +19,7 @@ import { es } from "date-fns/locale";
 import { type ActividadWithDetails, normalizeRegistroSeries, formatRitmoSegKmLabel } from "@/types/workout";
 import { MuscleRankingWidget } from "@/components/dashboard/MuscleRankingWidget";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
 import { cn } from "@/lib/utils";
 
 const INITIAL_SHOW = 5;
@@ -359,7 +360,7 @@ const WorkoutHistory = () => {
                         <div className="flex gap-3 text-xs text-muted-foreground">
                           <time className="flex items-center gap-1" dateTime={w.fecha}>
                             <Calendar className="h-3 w-3" />
-                            {format(new Date(w.fecha), "d MMM yyyy", { locale: es })}
+                            {formatActivityRelativeDate(w.fecha)}
                           </time>
                           <span className="flex items-center gap-1">
                             <Dumbbell className="h-3 w-3" />

@@ -22,6 +22,8 @@ import {
 } from "@/types/workout";
 import { cn } from "@/lib/utils";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
+import { WorkoutMuscleMiniMap } from "@/components/dashboard/WorkoutMuscleMiniMap";
+import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -31,8 +33,9 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Tooltip,
-  type TooltipContentProps,
+  type TooltipProps,
 } from "recharts";
+import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 
 type WorkoutDetailsSheetProps = {
   open: boolean;
@@ -99,7 +102,7 @@ function getNiceRadarMax(max: number) {
   return Math.ceil(max / 250) * 250;
 }
 
-function RadarWeightTooltip({ active, payload }: TooltipContentProps<number, string>) {
+function RadarWeightTooltip({ active, payload }: TooltipProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
   const data = payload[0]?.payload as { group?: string; name?: string; weight?: number } | undefined;
   const group = data?.group ?? data?.name;
@@ -289,7 +292,7 @@ type WorkoutDetailsContentProps = {
   isLoading?: boolean;
   radarChartId?: string;
   containerClassName?: string;
-  /** Resumen compacto (perfil): solo barras horizontales por grupo muscular. */
+  /** Resumen compacto (perfil/comunidad): mapa muscular en lugar de barras. */
   variant?: "full" | "compact";
   /** Oculta título/fecha cuando el drawer ya los muestra en su header. */
   hideHeader?: boolean;
@@ -355,7 +358,7 @@ function WorkoutCompactSummary({
         </div>
         <div className="shrink-0 text-right text-[11px] leading-tight text-muted-foreground tabular-nums">
           {!hideDate && workout.fecha ? (
-            <time dateTime={workout.fecha}>{format(new Date(workout.fecha), "d MMM yyyy", { locale: es })}</time>
+            <time dateTime={workout.fecha}>{formatActivityRelativeDate(workout.fecha)}</time>
           ) : null}
           <p className={!hideDate && workout.fecha ? "mt-0.5" : undefined}>{statsLabel}</p>
         </div>
@@ -363,21 +366,7 @@ function WorkoutCompactSummary({
       {visibleGroups.length === 0 ? (
         <p className="text-xs text-muted-foreground">Sin series registradas.</p>
       ) : (
-        <div className="space-y-2">
-          {visibleGroups.map((g) => {
-            const sets = groupSets[g] ?? 0;
-            const pct = (sets / maxSets) * 100;
-            return (
-              <div key={g} className="space-y-1">
-                <div className="flex items-center justify-between gap-2 text-xs">
-                  <span className="truncate font-medium">{g}</span>
-                  <span className="shrink-0 text-muted-foreground tabular-nums">{sets}</span>
-                </div>
-                <Progress value={pct} className="h-1.5" />
-              </div>
-            );
-          })}
-        </div>
+        <WorkoutMuscleMiniMap groupSets={groupSets} maxSets={maxSets} />
       )}
     </div>
   );
@@ -511,13 +500,13 @@ export function WorkoutDetailsContent({
   const isCompact = variant === "compact";
 
   return (
-    <div className={resolvedContainerClassName}>
+    <div className={cn(resolvedContainerClassName)}>
       {isLoading || !workout ? (
         isCompact ? (
           <div className="space-y-2">
             <Skeleton className="h-4 w-2/3" />
             <Skeleton className="h-3 w-1/3" />
-            <Skeleton className="h-16 w-full" />
+            <Skeleton className="mx-auto h-32 w-full max-w-[280px] rounded-xl" />
           </div>
         ) : (
           <div className="space-y-4">
@@ -614,7 +603,7 @@ export function WorkoutDetailsContent({
                         tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
                         domain={[0, maxWeight]}
                       />
-                      <Tooltip content={(props) => <RadarWeightTooltip {...props} />} />
+                      <Tooltip content={<RadarWeightTooltip />} />
                       <Radar
                         name="Peso"
                         dataKey="weight"

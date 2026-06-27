@@ -72,7 +72,7 @@ export function PostWorkoutModal({ open, onClose, breakdown }: PostWorkoutModalP
             <div className="flex items-center justify-between text-sm px-2">
               <span className="flex items-center gap-2 text-muted-foreground">
                 <Flame className="h-4 w-4 text-orange-500" />
-                Racha (+{breakdown.newStreak} días)
+                Racha (+{breakdown.newStreak} {breakdown.newStreak === 1 ? "semana" : "semanas"})
               </span>
               <span className="font-semibold text-orange-500">+{breakdown.streakBonus} XP</span>
             </div>

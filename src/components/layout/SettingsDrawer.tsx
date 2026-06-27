@@ -19,7 +19,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { LogOut, Settings, Shield, Trash2 } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -54,7 +54,7 @@ export function SettingsDrawer() {
           <DrawerTitle className="text-lg">Ajustes</DrawerTitle>
         </DrawerHeader>
 
-        <div className="mt-3 flex-1 space-y-6 overflow-y-auto px-6 pb-8">
+        <div className="mt-3 flex-1 space-y-6 overflow-y-auto px-6 pb-4">
           {/* Privacidad en comunidad */}
           <div className="space-y-3">
             <p className="text-sm font-medium flex items-center gap-2">Comunidad</p>
@@ -101,33 +101,38 @@ export function SettingsDrawer() {
               </SelectContent>
             </Select>
           </div>
+        </div>
 
-          {/* Cerrar sesión (al final, dentro del scroll) */}
-          <div className="pt-2 pb-4 space-y-3">
-            <Button variant="outline" className="w-full h-12 justify-start gap-2" asChild>
-              <Link to="/privacidad" onClick={() => setOpen(false)}>
-                <Shield className="h-4 w-4" />
-                Política de Privacidad
-              </Link>
-            </Button>
-            <Button variant="outline" className="w-full h-12 justify-start gap-2 text-destructive hover:text-destructive" asChild>
-              <Link to="/eliminar-cuenta" onClick={() => setOpen(false)}>
-                <Trash2 className="h-4 w-4" />
-                Eliminar cuenta
-              </Link>
-            </Button>
-            <Button
-              variant="destructive"
-              className="w-full h-12"
+        <div className="mt-auto shrink-0 border-t border-border/40 px-6 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+          <nav
+            className="flex flex-col items-center gap-2.5 text-center text-xs text-muted-foreground/70"
+            aria-label="Cuenta y legal"
+          >
+            <Link
+              to="/privacidad"
+              onClick={() => setOpen(false)}
+              className="transition-colors hover:text-muted-foreground"
+            >
+              Política de privacidad
+            </Link>
+            <Link
+              to="/eliminar-cuenta"
+              onClick={() => setOpen(false)}
+              className="transition-colors hover:text-destructive/80"
+            >
+              Eliminar cuenta
+            </Link>
+            <button
+              type="button"
               onClick={() => {
                 setOpen(false);
                 signOut();
               }}
+              className="mt-0.5 transition-colors hover:text-muted-foreground"
             >
-              <LogOut className="h-4 w-4 mr-2" />
-              Cerrar Sesión
-            </Button>
-          </div>
+              Cerrar sesión
+            </button>
+          </nav>
         </div>
       </DrawerContent>
     </Drawer>

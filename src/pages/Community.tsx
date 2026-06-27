@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { UserPlus, UserCheck } from "lucide-react";
+import { Shield, UserPlus, UserCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useUserSearch } from "@/hooks/useUserSearch";
@@ -9,7 +8,9 @@ import { useFollows } from "@/hooks/useFollows";
 import { useCommunityFeed } from "@/hooks/useCommunityFeed";
 import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
+import { fetchProfileLevelsForUsers } from "@/hooks/useGamification";
 import { WorkoutDetailsContent, WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,15 @@ function CommunityAvatar({
   );
 }
 
+function CommunityAuthorLevel({ nivel }: { nivel: number }) {
+  return (
+    <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold leading-tight tabular-nums text-foreground">
+      <Shield className="h-3.5 w-3.5 text-primary" />
+      Nivel {nivel}
+    </span>
+  );
+}
+
 export default function Community() {
   const { user } = useAuth();
   const [usernameQuery, setUsernameQuery] = useState("");
@@ -57,6 +67,40 @@ export default function Community() {
   const showSearchPanel = searching || usernameQuery.trim().length > 0;
   const communityCardClass =
     "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
+
+  const workoutCompactCardClass =
+    "w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs transition-colors hover:bg-muted/30 md:border-x";
+
+  const authorIds = useMemo(
+    () => Array.from(new Set(normalizedFeed.map((item) => item.author.id))),
+    [normalizedFeed],
+  );
+
+  const { data: routineIconsByAuthor = {} } = useQuery({
+    queryKey: ["community-routine-icons", authorIds],
+    enabled: authorIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rutina")
+        .select("usuario_id, nombre, icono")
+        .in("usuario_id", authorIds)
+        .not("es_plantilla", "eq", true);
+      if (error) throw error;
+
+      const map: Record<string, Record<string, string>> = {};
+      for (const row of data ?? []) {
+        if (!map[row.usuario_id]) map[row.usuario_id] = {};
+        if (!map[row.usuario_id][row.nombre]) map[row.usuario_id][row.nombre] = row.icono;
+      }
+      return map;
+    },
+  });
+
+  const { data: profileLevelsByAuthor = {} } = useQuery({
+    queryKey: ["community-profile-levels", authorIds],
+    enabled: authorIds.length > 0,
+    queryFn: () => fetchProfileLevelsForUsers(authorIds),
+  });
 
   const hasMergedSecondBlock =
     showSearchPanel || (!showSearchPanel && (loadingFeed || normalizedFeed.length > 0));
@@ -135,48 +179,50 @@ export default function Community() {
       </div>
     );
 
-  const renderFeedItemBody = (item: (typeof normalizedFeed)[number]) => (
-    <>
-      <button
-        type="button"
-        onClick={() => {
-          if (item.author.id === user?.id) openMyProfile();
-          else openUserProfile(item.author.id);
-        }}
-        className="-m-1 flex w-full min-w-0 items-center gap-3 rounded-lg pb-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label={`Ver perfil de ${item.author.username ?? "usuario"}`}
-      >
-        <CommunityAvatar
-          avatarUrl={item.author.avatar_url}
-          username={item.author.username}
-          className="h-9 w-9 shrink-0"
-        />
-        <p className="min-w-0 flex-1 truncate text-sm font-semibold">{item.author.username}</p>
-        {item.workout.fecha ? (
-          <time
-            className="shrink-0 text-[11px] text-muted-foreground tabular-nums"
-            dateTime={item.workout.fecha}
-          >
-            {format(new Date(item.workout.fecha), "d MMM yyyy", { locale: es })}
-          </time>
-        ) : null}
-      </button>
+  const renderFeedItemBody = (item: (typeof normalizedFeed)[number]) => {
+    const authorLevel = profileLevelsByAuthor[item.author.id];
 
-      <button
-        type="button"
-        className="-mx-1 w-full rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        onClick={() => setWorkoutDetailsId(item.workout.id)}
-        aria-label={`Ver detalle de ${item.workout.titulo}`}
-      >
-        <WorkoutDetailsContent
-          workout={item.workout}
-          variant="compact"
-          hideDate
-          containerClassName="px-0 py-0"
-        />
-      </button>
-    </>
-  );
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => {
+            if (item.author.id === user?.id) openMyProfile();
+            else openUserProfile(item.author.id);
+          }}
+          className="-m-1 mb-2 flex w-full min-w-0 items-center gap-3 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={`Ver perfil de ${item.author.username ?? "usuario"}`}
+        >
+          <CommunityAvatar
+            avatarUrl={item.author.avatar_url}
+            username={item.author.username}
+            className="h-9 w-9 shrink-0"
+          />
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold">{item.author.username}</p>
+          {authorLevel != null ? (
+            <CommunityAuthorLevel nivel={authorLevel} />
+          ) : (
+            <Skeleton className="h-3.5 w-14 shrink-0" />
+          )}
+        </button>
+
+        <button
+          type="button"
+          className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          onClick={() => setWorkoutDetailsId(item.workout.id)}
+          aria-label={`Ver detalle de ${item.workout.titulo}`}
+        >
+          <Card className={workoutCompactCardClass}>
+            <WorkoutDetailsContent
+              workout={item.workout}
+              variant="compact"
+              leadingRoutineIcon={routineIconsByAuthor[item.author.id]?.[item.workout.titulo]}
+            />
+          </Card>
+        </button>
+      </>
+    );
+  };
 
   const renderFeedCard = (item: (typeof normalizedFeed)[number]) => (
     <Card key={item.workout.id} className={communityCardClass}>

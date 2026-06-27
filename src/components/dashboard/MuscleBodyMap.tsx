@@ -24,9 +24,17 @@ const SKELETON_FILL = "hsl(var(--muted))";
 
 const BODY_OUTLINE_FILTER = "drop-shadow(0 0 1px hsl(var(--foreground) / 0.55))";
 
+export type MuscleBodyMapSize = "default" | "compact";
+
+const BODY_MAP_SVG_SIZE: Record<MuscleBodyMapSize, string> = {
+  default: "max-w-[126px] sm:max-w-[140px]",
+  compact: "max-w-[108px] sm:max-w-[122px]",
+};
+
 export interface MuscleBodyMapProps {
   getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
   isLoading?: boolean;
+  size?: MuscleBodyMapSize;
   onZoneClick?: (group: MainMuscleGroup) => void;
   onZoneHover?: (group: MainMuscleGroup, event: React.MouseEvent<SVGPathElement>) => void;
   onZoneLeave?: () => void;
@@ -48,6 +56,7 @@ interface BodyViewProps {
   viewBox: string;
   viewKey: string;
   ariaLabel: string;
+  svgSizeClass: string;
   getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
   isLoading: boolean;
   onZoneClick?: (group: MainMuscleGroup) => void;
@@ -60,6 +69,7 @@ const BodyView = memo(function BodyView({
   viewBox,
   viewKey,
   ariaLabel,
+  svgSizeClass,
   getLevel,
   isLoading,
   onZoneClick,
@@ -77,7 +87,7 @@ const BodyView = memo(function BodyView({
     <div className="flex flex-col items-center">
       <svg
         viewBox={viewBox}
-        className="h-auto w-full max-w-[126px] sm:max-w-[140px]"
+        className={cn("h-auto w-full", svgSizeClass)}
         style={{ filter: BODY_OUTLINE_FILTER }}
         role="img"
         aria-label={ariaLabel}
@@ -118,11 +128,14 @@ const BodyView = memo(function BodyView({
 export function MuscleBodyMap({
   getLevel,
   isLoading = false,
+  size = "default",
   onZoneClick,
   onZoneHover,
   onZoneLeave,
   className,
 }: MuscleBodyMapProps) {
+  const svgSizeClass = BODY_MAP_SVG_SIZE[size];
+
   return (
     <div
       className={cn(
@@ -138,6 +151,7 @@ export function MuscleBodyMap({
           viewBox={FRONT_BODY_MAP_VIEWBOX}
           viewKey="front"
           ariaLabel="Vista frontal del cuerpo"
+          svgSizeClass={svgSizeClass}
           getLevel={getLevel}
           isLoading={isLoading}
           onZoneClick={onZoneClick}
@@ -151,6 +165,7 @@ export function MuscleBodyMap({
           viewBox={BACK_BODY_MAP_VIEWBOX}
           viewKey="back"
           ariaLabel="Vista trasera del cuerpo"
+          svgSizeClass={svgSizeClass}
           getLevel={getLevel}
           isLoading={isLoading}
           onZoneClick={onZoneClick}
@@ -192,9 +207,6 @@ export function MuscleMapLegend({
           </span>
         ))}
       </div>
-      <p className="text-center text-[10px] text-muted-foreground/80">
-        {period === "week" ? "Semana actual" : "Mes actual"}
-      </p>
     </div>
   );
 }

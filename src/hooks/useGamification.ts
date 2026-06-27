@@ -2,6 +2,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCallback } from "react";
+import {
+  computeStreakStats,
+  streakOnWeek,
+  weekStartKeyFromDayStr,
+  workoutDaysToWeeks,
+} from "@/lib/streakWeeks";
 
 export interface ProfileStats {
   nivel: number;
@@ -51,27 +57,62 @@ export function useProfileStats(profileUserId?: string) {
     queryKey: ["profileStats", id],
     enabled: !!id,
     queryFn: async (): Promise<ProfileStats> => {
-      const { data, error } = await supabase
-        .from("perfil" as any)
-        .select("nivel, xp_total, racha_actual, racha_maxima, ultima_actividad_fecha")
-        .eq("id", id!)
-        .maybeSingle();
+      const [perfilRes, actividadesRes] = await Promise.all([
+        supabase
+          .from("perfil" as any)
+          .select("nivel, xp_total, racha_actual, racha_maxima, ultima_actividad_fecha")
+          .eq("id", id!)
+          .maybeSingle(),
+        supabase
+          .from("actividad")
+          .select("fecha, fecha_fin")
+          .eq("usuario_id", id!)
+          .not("fecha_fin", "is", null),
+      ]);
 
-      if (error) throw error;
+      if (perfilRes.error) throw perfilRes.error;
+      if (actividadesRes.error) throw actividadesRes.error;
+
+      const data = perfilRes.data;
+      const workoutDays = (actividadesRes.data ?? []).map((a) =>
+        ((a.fecha as string) || (a.fecha_fin as string)).slice(0, 10)
+      );
+      const { actual, maxima } = computeStreakStats(workoutDays);
 
       if (!data) {
         return {
           nivel: 1,
           xp_total: 0,
-          racha_actual: 0,
-          racha_maxima: 0,
+          racha_actual: actual,
+          racha_maxima: maxima,
           ultima_actividad_fecha: null,
         };
       }
 
-      return data as unknown as ProfileStats;
+      return {
+        ...(data as unknown as ProfileStats),
+        racha_actual: actual,
+        racha_maxima: maxima,
+      };
     },
   });
+}
+
+/** Nivel de varios usuarios (p. ej. feed de comunidad). */
+export async function fetchProfileLevelsForUsers(
+  userIds: string[],
+): Promise<Record<string, number>> {
+  if (userIds.length === 0) return {};
+
+  const { data, error } = await supabase.from("perfil" as any).select("id, xp_total").in("id", userIds);
+  if (error) throw error;
+
+  const result: Record<string, number> = {};
+  for (const row of (data ?? []) as unknown as Array<{ id: string; xp_total?: number }>) {
+    result[row.id] = calculateLevel(row.xp_total ?? 0);
+  }
+
+  return result;
 }
 
 // Función que calcula la XP y ACTUALIZA la base de datos desde el frontend
@@ -99,26 +140,20 @@ export function useCalculateAndAwardXP() {
       const baseXP = 100;
       const volumeXP = seriesCompletadas * 5;
 
-      // 3. Lógica de Rachas (Streaks) — usamos la fecha del entrenamiento, no "hoy"
-      const workoutDay = fechaEntrenamiento ? new Date(fechaEntrenamiento + "T12:00:00.000Z") : new Date();
-      workoutDay.setUTCHours(0, 0, 0, 0);
-      const lastDate = p.ultima_actividad_fecha ? new Date(p.ultima_actividad_fecha) : null;
-      let newStreak = p.racha_actual ?? 0;
+      // 3. Rachas por semana (lunes–domingo): al menos un entreno por semana
+      const { data: actividades, error: actErr } = await supabase
+        .from("actividad")
+        .select("fecha, fecha_fin")
+        .eq("usuario_id", user.id)
+        .not("fecha_fin", "is", null);
+      if (actErr) throw actErr;
 
-      if (lastDate) {
-        lastDate.setUTCHours(0, 0, 0, 0);
-        const diffDays = Math.floor((workoutDay.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays === 1) {
-          newStreak += 1; // Entrenó días consecutivos
-        } else if (diffDays > 1) {
-          newStreak = 1; // Perdió la racha, empieza en 1
-        }
-        // Si diffDays === 0, es el mismo día, mantiene la racha
-      } else {
-        newStreak = 1; // Primer entreno
-      }
+      const workoutDays = (actividades ?? []).map((a) =>
+        ((a.fecha as string) || (a.fecha_fin as string)).slice(0, 10)
+      );
+      const { actual: newStreak, maxima: newMaxStreakFromHistory } = computeStreakStats(workoutDays);
 
-      // Bonus por racha: 20 XP por cada día de racha a partir del 2º (2 días → 20, 3 → 40, 4 → 60…)
+      // Bonus por racha: 20 XP por cada semana de racha a partir de la 2ª (2 sem → 20, 3 → 40…)
       const streakBonusXP = Math.max(0, (newStreak - 1) * 20);
       const totalXP = baseXP + volumeXP + streakBonusXP;
 
@@ -128,7 +163,7 @@ export function useCalculateAndAwardXP() {
       const newLevel = calculateLevel(newXP);
       const leveledUp = newLevel > previousLevel;
 
-      const newMaxStreak = Math.max(newStreak, p.racha_maxima ?? 0);
+      const newMaxStreak = newMaxStreakFromHistory;
 
       // ultima_actividad_fecha = fecha del entrenamiento (no "ahora") para que la racha use el día registrado
       const ultimaFechaISO = fechaEntrenamiento
@@ -169,20 +204,6 @@ export function useCalculateAndAwardXP() {
   return calculateAndAwardXP;
 }
 
-/** Dado un día (YYYY-MM-DD) y un set de días con entrenamiento, devuelve la racha ese día (días consecutivos hacia atrás). */
-function streakOnDay(dayStr: string, workoutDays: Set<string>): number {
-  if (!workoutDays.has(dayStr)) return 0;
-  let count = 1;
-  const d = new Date(dayStr + "T12:00:00Z");
-  for (;;) {
-    d.setUTCDate(d.getUTCDate() - 1);
-    const prev = d.toISOString().slice(0, 10);
-    if (!workoutDays.has(prev)) break;
-    count++;
-  }
-  return count;
-}
-
 // Función para restar XP cuando se borra un entrenamiento (incluye bonus por racha)
 export function useRemoveWorkoutXP() {
   const { user } = useAuth();
@@ -215,24 +236,19 @@ export function useRemoveWorkoutXP() {
       if (listErr) throw listErr;
 
       const allActs = actividades ?? [];
-      const workoutDays = new Set<string>(allActs.map((a) => ((a.fecha as string) || (a.fecha_fin as string)).slice(0, 10)));
-      const streak = completedDay ? streakOnDay(completedDay, workoutDays) : 0;
+      const workoutDays = allActs.map((a) => ((a.fecha as string) || (a.fecha_fin as string)).slice(0, 10));
+      const workoutWeeks = workoutDaysToWeeks(workoutDays);
+      const streak = completedDay
+        ? streakOnWeek(weekStartKeyFromDayStr(completedDay), workoutWeeks)
+        : 0;
       const streakBonusToRemove = Math.max(0, (streak - 1) * 20);
 
-      // 3. Días que quedarán después de borrar (para recalcular racha_actual y racha_maxima)
+      // 3. Recalcular racha semanal tras borrar
       const allRemaining = allActs.filter((a) => a.id !== actividadId);
-      const remainingDaysSet = new Set<string>(
-        allRemaining.map((a) => ((a.fecha as string) || (a.fecha_fin as string)).slice(0, 10))
+      const remainingDays = allRemaining.map((a) =>
+        ((a.fecha as string) || (a.fecha_fin as string)).slice(0, 10)
       );
-
-      let nuevaRachaActual = 0;
-      let nuevaRachaMaxima = 0;
-      if (remainingDaysSet.size > 0) {
-        const sortedDays = Array.from(remainingDaysSet).sort().reverse();
-        const ultimoDia = sortedDays[0];
-        nuevaRachaActual = streakOnDay(ultimoDia, remainingDaysSet);
-        nuevaRachaMaxima = Math.max(0, ...sortedDays.map((d) => streakOnDay(d, remainingDaysSet)));
-      }
+      const { actual: nuevaRachaActual, maxima: nuevaRachaMaxima } = computeStreakStats(remainingDays);
 
       // 4. Obtener perfil actual
       const { data: profile, error: pErr } = await supabase

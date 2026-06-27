@@ -88,7 +88,7 @@ function isLogroUnlocked(logro: LogroRow, stats: LogroStats): boolean {
   const { tipo, meta } = logro;
   const m = Number(meta);
   if (tipo === "entrenamientos_completados") return stats.entrenamientosCompletados >= m;
-  if (tipo === "racha_dias") return stats.rachaMaxima >= m;
+  if (tipo === "racha_semanas" || tipo === "racha_dias") return stats.rachaMaxima >= m;
   if (tipo === "series_en_un_dia") return stats.maxSeriesEnUnDia >= m;
   return false;
 }

@@ -406,7 +406,7 @@ function ProfileDrawerSheet() {
                     <span
                       className={`text-sm font-semibold ${stats.racha_actual > 0 ? "text-orange-500" : "text-muted-foreground"}`}
                     >
-                      {stats.racha_actual} días
+                      {stats.racha_actual} {stats.racha_actual === 1 ? "semana" : "semanas"}
                     </span>
                   </div>
                 </div>
@@ -420,7 +420,9 @@ function ProfileDrawerSheet() {
                   </div>
                   <div>
                     Racha máx:{" "}
-                    <span className="font-semibold text-foreground">{stats.racha_maxima} días</span>
+                    <span className="font-semibold text-foreground">
+                      {stats.racha_maxima} {stats.racha_maxima === 1 ? "semana" : "semanas"}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -478,7 +480,7 @@ function ProfileDrawerSheet() {
           </div>
 
           <div className="space-y-3">
-            <p className="px-6 text-sm font-medium pt-3">Últimos entrenos</p>
+            <p className="px-6 text-sm font-medium pt-3">Últimos entrenamientos</p>
 
             {loadingWorkoutHistory ? (
               <div className="grid grid-cols-1 gap-2 px-6">

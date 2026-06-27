@@ -4,7 +4,7 @@ import { AnimatedTabsList, pillTabsListClass, pillTabsTriggerClass, Tabs, TabsTr
 import { useMuscleVolume, type TimePeriod } from "@/hooks/useMuscleVolume";
 import { MuscleDetailSheet } from "./MuscleDetailSheet";
 import { MuscleBodyMap, MuscleMapLegend } from "./MuscleBodyMap";
-import { heatLevelToLoad } from "./bodyMapPaths";
+import { getHeatLevel, heatLevelToLoad } from "./bodyMapPaths";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 
 const HEATMAP_PERIOD_STORAGE_KEY = "gym-log.dashboard.heatmap-period";
@@ -26,16 +26,6 @@ function saveHeatmapPeriod(period: TimePeriod) {
   } catch {
     // ignore
   }
-}
-
-function getHeatLevel(sets: number, max: number): number {
-  if (sets === 0 || max === 0) return 0;
-  if (sets >= max) return 4;
-  const ratio = sets / max;
-  if (ratio <= 0.25) return 1;
-  if (ratio <= 0.5) return 2;
-  if (ratio <= 0.75) return 3;
-  return 4;
 }
 
 interface TooltipState {

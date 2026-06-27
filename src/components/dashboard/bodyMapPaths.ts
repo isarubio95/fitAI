@@ -18,3 +18,14 @@ export function heatLevelToLoad(level: number): MuscleLoadLevel {
   if (level === 2) return "moderate";
   return "high";
 }
+
+/** Nivel relativo 0–4 según series vs. máximo del entrenamiento o periodo. */
+export function getHeatLevel(sets: number, max: number): number {
+  if (sets === 0 || max === 0) return 0;
+  if (sets >= max) return 4;
+  const ratio = sets / max;
+  if (ratio <= 0.25) return 1;
+  if (ratio <= 0.5) return 2;
+  if (ratio <= 0.75) return 3;
+  return 4;
+}

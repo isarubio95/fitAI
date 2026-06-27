@@ -29,10 +29,11 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
-  type TooltipContentProps,
+  type TooltipProps,
   XAxis,
   YAxis,
 } from "recharts";
+import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 import { addDays, format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
@@ -279,7 +280,7 @@ export function ExerciseProgressWidget() {
                     interval={0}
                     tickFormatter={(v) => formatWeight(Math.max(0, v as number))}
                   />
-                  <Tooltip content={(props) => <CustomTooltip {...props} />} />
+                  <Tooltip content={<CustomTooltip />} />
                   <Area
                     type="monotone"
                     dataKey="oneRepMax"
@@ -319,7 +320,7 @@ export function ExerciseProgressWidget() {
   );
 }
 
-function CustomTooltip({ active, payload }: TooltipContentProps<number, string>) {
+function CustomTooltip({ active, payload }: TooltipProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
   const data = payload[0].payload as ChartHistoryPoint;
   const when = data.tooltipDate ?? data.date;

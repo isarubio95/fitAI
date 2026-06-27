@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { RutinaWithDetails } from "@/types/routine";
+import { isWorkoutPlanExpired, maxScheduledDate } from "@/lib/workoutPlanExpiry";
 
 export interface PlannedRoutine {
   id: string;
@@ -21,8 +22,27 @@ function toYMD(input: string | Date) {
   return format(input, "yyyy-MM-dd");
 }
 
+/** Elimina el plan completo si ya pasó su último día programado. */
+export async function cleanupExpiredWorkoutPlan(userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("rutina_programada")
+    .select("fecha_programada")
+    .eq("usuario_id", userId);
+
+  if (error) throw error;
+  if (!data?.length) return false;
+
+  const lastDay = maxScheduledDate(data.map((row) => row.fecha_programada.slice(0, 10)));
+  if (!lastDay || !isWorkoutPlanExpired(lastDay, toYMD(new Date()))) return false;
+
+  const { error: deleteError } = await supabase.from("rutina_programada").delete().eq("usuario_id", userId);
+  if (deleteError) throw deleteError;
+  return true;
+}
+
 export function usePlannedRoutines(startDate: string | Date, endDate: string | Date) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const start = useMemo(() => toYMD(startDate), [startDate]);
   const end = useMemo(() => toYMD(endDate), [endDate]);
   const userId = user?.id;
@@ -32,6 +52,13 @@ export function usePlannedRoutines(startDate: string | Date, endDate: string | D
     enabled: !!userId,
     queryFn: async () => {
       if (!userId) return [];
+
+      const deleted = await cleanupExpiredWorkoutPlan(userId);
+      if (deleted) {
+        await queryClient.invalidateQueries({ queryKey: ["plannedRoutines", userId] });
+        return [];
+      }
+
       const { data, error } = await supabase
         .from("rutina_programada")
         .select(
