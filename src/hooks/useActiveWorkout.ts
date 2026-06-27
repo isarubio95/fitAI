@@ -19,9 +19,6 @@ export function useActiveWorkout() {
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
-      // Only show if within last 4 hours
-      const fourHoursAgo = Date.now() - 4 * 60 * 60 * 1000;
-      if (new Date(data.fecha).getTime() < fourHoursAgo) return null;
       return data;
     },
   });

@@ -18,6 +18,7 @@ export function useMonthWorkoutDates(month: Date) {
         .from("actividad")
         .select("fecha")
         .eq("usuario_id", user!.id)
+        .not("fecha_fin", "is", null)
         .gte("fecha", from)
         .lte("fecha", to);
       if (error) throw error;
@@ -38,40 +39,14 @@ export function useMonthWorkouts(month: Date) {
         .from("actividad")
         .select("*")
         .eq("usuario_id", user!.id)
+        .not("fecha_fin", "is", null)
         .gte("fecha", from)
         .lte("fecha", to)
         .order("fecha", { ascending: false });
       if (error) throw error;
       if (!actividades?.length) return [];
 
-      const actIds = actividades.map((a) => a.id);
-      const { data: ejercicios, error: ejError } = await supabase
-        .from("ejercicio")
-        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
-        .in("actividad_id", actIds);
-      if (ejError) throw ejError;
-
-      const ejercicioIds = (ejercicios || []).map((e) => e.id);
-      let series: any[] = [];
-      if (ejercicioIds.length > 0) {
-        const { data, error: sError } = await supabase
-          .from("serie")
-          .select("*")
-          .in("ejercicio_id", ejercicioIds);
-        if (sError) throw sError;
-        series = data || [];
-      }
-
-      return actividades.map((act) => {
-        const actEjercicios = (ejercicios || [])
-          .filter((ej) => ej.actividad_id === act.id)
-          .map((ej) => ({
-            ...ej,
-            tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
-            series: series.filter((s) => s.ejercicio_id === ej.id),
-          }));
-        return { ...act, ejercicios: actEjercicios };
-      });
+      return hydrateActividadesWithDetails(actividades as Array<Record<string, unknown>>);
     },
   });
 }
@@ -90,6 +65,7 @@ export function useWorkoutsForDate(date: Date | undefined) {
         .from("actividad")
         .select("*")
         .eq("usuario_id", user!.id)
+        .not("fecha_fin", "is", null)
         .gte("fecha", dayStart)
         .lte("fecha", dayEnd)
         .order("fecha", { ascending: false });
@@ -235,6 +211,7 @@ export function useWorkoutHistory(profileUserId?: string) {
         .from("actividad")
         .select("*")
         .eq("usuario_id", id!)
+        .not("fecha_fin", "is", null)
         .order("fecha", { ascending: false });
 
       if (error) throw error;
@@ -290,6 +267,7 @@ export function useDeleteWorkout() {
     queryClient.invalidateQueries({ queryKey: ["exercise-history"] });
     queryClient.invalidateQueries({ queryKey: ["trainingLoad"] });
     queryClient.invalidateQueries({ queryKey: ["muscleVolume"] });
+    queryClient.invalidateQueries({ queryKey: ["muscleStatistics"] });
       queryClient.invalidateQueries({ queryKey: ["plannedRoutines"] });
       if (deletedFecha) {
         queryClient.invalidateQueries({ queryKey: ["workoutsForDate", user?.id, deletedFecha] });

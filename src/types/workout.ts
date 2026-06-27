@@ -23,7 +23,7 @@ export function formatRitmoSegKmLabel(sec: number | null | undefined): string {
   return `${m}:${String(s).padStart(2, "0")}/km`;
 }
 
-/** Serie con algún dato de trabajo (reps, peso, segundos o ritmo). */
+/** Serie con algún dato de trabajo: reps (también peso corporal a 0 kg), carga externa, duración o ritmo. */
 export function setHasWork(s: {
   repeticiones?: number;
   peso_kg?: number;
@@ -47,6 +47,12 @@ export function serieCountsAsRecorded(s: {
   ritmo_seg_km?: number | null;
 }): boolean {
   return !!s.completed || setHasWork(s);
+}
+
+export function countRecordedSets(
+  exercises: Array<{ sets: Array<Parameters<typeof setHasWork>[0]> }>,
+): number {
+  return exercises.reduce((acc, ex) => acc + ex.sets.filter(setHasWork).length, 0);
 }
 
 export function defaultSetForMode(

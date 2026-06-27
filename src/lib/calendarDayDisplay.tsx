@@ -5,6 +5,7 @@ import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import {
   DEFAULT_ROUTINE_ICON_KEY,
   resolveRoutineIcon,
+  resolveWorkoutIconKey,
 } from "@/lib/routineIcons";
 import type { ActividadWithDetails } from "@/types/workout";
 import type { CardioSesion } from "@/types/cardio";
@@ -96,10 +97,8 @@ export function resolveCalendarDayDisplay(
       return { type: "routine", Icon: resolveRoutineIcon(fromPlanned.rutina.icono) };
     }
     const byName = routines?.find((r) => r.nombre === workout.titulo);
-    if (byName) {
-      return { type: "routine", Icon: resolveRoutineIcon(byName.icono) };
-    }
-    return { type: "routine", Icon: resolveRoutineIcon(DEFAULT_ROUTINE_ICON_KEY) };
+    const iconKey = resolveWorkoutIconKey(workout, byName?.icono);
+    return { type: "routine", Icon: resolveRoutineIcon(iconKey) };
   }
 
   if (dayCardio.length > 0) {

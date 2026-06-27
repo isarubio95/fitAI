@@ -54,11 +54,13 @@ export function useExerciseWithHistory() {
           .select(`
           created_at,
           ejercicio!inner (
+            actividad!inner ( fecha_fin ),
             tipo_ejercicio_id,
             tipo_ejercicio!inner ( id, nombre )
           )
         `)
           .eq("usuario_id", user!.id)
+          .not("ejercicio.actividad.fecha_fin", "is", null)
           .order("created_at", { ascending: false })
           .range(from, to),
       );
@@ -117,11 +119,12 @@ export async function fetchExerciseHistory(
       repeticiones,
       created_at,
       ejercicio:ejercicio_id!inner (
-         actividad:actividad_id ( fecha )
+         actividad:actividad_id!inner ( fecha, fecha_fin )
       )
     `)
       .eq("usuario_id", userId)
       .eq("ejercicio.tipo_ejercicio_id", exerciseId)
+      .not("ejercicio.actividad.fecha_fin", "is", null)
       .order("created_at", { ascending: true })
       .range(from, to),
   );

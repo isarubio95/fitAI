@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { buildAuthAvatarCandidates, useUserAvatar } from "@/hooks/useUserAvatar";
 import { useProfileAvatarUpload } from "@/hooks/useProfileAvatarUpload";
 import { useToast } from "@/hooks/use-toast";
+import { resolveWorkoutIconKey } from "@/lib/routineIcons";
 
 const iconMap: Record<string, React.ElementType> = {
   Swords,
@@ -508,7 +509,7 @@ function ProfileDrawerSheet() {
                       <WorkoutDetailsContent
                         workout={w}
                         variant="compact"
-                        leadingRoutineIcon={routineIconsByTitle[w.titulo]}
+                        leadingRoutineIcon={resolveWorkoutIconKey(w, routineIconsByTitle)}
                       />
                     </Card>
                   </button>

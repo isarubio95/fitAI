@@ -44,11 +44,11 @@ import {
 import { Trash2, Loader2, GripVertical, Link, Unlink, Info } from "lucide-react";
 import { badgeVariants } from "@/components/ui/badge";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
+import { RoutineIconPicker } from "@/components/routine/RoutineIconPicker";
 import { useToast } from "@/hooks/use-toast";
 import type { RoutineExerciseFormData, RutinaEjercicioWithDetails } from "@/types/routine";
 import { type RegistroSeries, normalizeRegistroSeries } from "@/types/workout";
 import {
-  ROUTINE_ICON_OPTIONS,
   DEFAULT_ROUTINE_ICON_KEY,
   resolveRoutineIconKey,
   type RoutineIconKey,
@@ -458,37 +458,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                       rows={2}
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>Icono de rutina</Label>
-                    <div className="grid w-full grid-cols-6 gap-x-1 gap-y-2.5">
-                      {ROUTINE_ICON_OPTIONS.map((opt) => {
-                        const isSelected = icono === opt.key;
-                        const Icon = opt.Icon;
-                        return (
-                          <button
-                            key={opt.key}
-                            type="button"
-                            onClick={() => setIcono(opt.key)}
-                            aria-pressed={isSelected}
-                            title={opt.label}
-                            aria-label={opt.label}
-                            className="touch-pill flex justify-center rounded-full p-0.5 outline-none focus:outline-none focus-visible:outline-none [@media(hover:hover)]:hover:scale-[1.03] transition-transform"
-                          >
-                            <span
-                              className={cn(
-                                "flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200",
-                                isSelected
-                                  ? "border-primary/20 bg-primary/8 text-primary dark:bg-primary/12"
-                                  : "border-border/12 bg-secondary/70 text-foreground",
-                              )}
-                            >
-                              <Icon className="h-5 w-5" strokeWidth={1.75} />
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <RoutineIconPicker value={icono} onChange={setIcono} label="Icono de rutina" />
                 </CardContent>
               </Card>
 
@@ -559,7 +529,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
                     </SortableContext>
                   </DndContext>
 
-                  <div className="border-t border-border px-6 py-4">
+                  <div className="px-6 py-4">
                     <ExerciseSelector
                       open={pickerOpen}
                       onOpenChange={(o) => {

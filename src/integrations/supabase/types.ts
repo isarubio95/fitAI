@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           fecha: string
           fecha_fin: string | null
+          icono: string | null
           id: string
           titulo: string
           usuario_id: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string
           fecha?: string
           fecha_fin?: string | null
+          icono?: string | null
           id?: string
           titulo: string
           usuario_id: string
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string
           fecha?: string
           fecha_fin?: string | null
+          icono?: string | null
           id?: string
           titulo?: string
           usuario_id?: string

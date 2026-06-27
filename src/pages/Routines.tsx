@@ -20,7 +20,6 @@ import {
 import { useRoutines, useDeleteRoutine, useUpdateRoutineOrder } from "@/hooks/useRoutines";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
-import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -112,8 +111,7 @@ const Routines = () => {
   const location = useLocation();
   const updateOrder = useUpdateRoutineOrder();
   const { toast } = useToast();
-  const { data: activeWorkout } = useActiveWorkout();
-  const { openFromTemplate, openActiveWorkout } = useGlobalWorkoutDrawer();
+  const { openFromTemplate } = useGlobalWorkoutDrawer();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -243,26 +241,6 @@ const Routines = () => {
   };
 
   const startRoutine = (routine: RutinaWithDetails) => {
-    // Block if there's already an active workout
-    if (activeWorkout) {
-      toast({
-        title: "Ya tienes un entrenamiento en curso",
-        description: "Termínalo o cancélalo antes de empezar otro.",
-        variant: "destructive",
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            className="shrink-0"
-            onClick={() => openActiveWorkout(activeWorkout.id)}
-          >
-            Ir al entreno
-          </Button>
-        ),
-      });
-      return;
-    }
-
     const exercises: ExerciseFormData[] = routine.ejercicios
       .sort((a, b) => a.orden - b.orden)
       .map((ej) => {
@@ -291,7 +269,7 @@ const Routines = () => {
         };
       });
 
-    openFromTemplate(routine.nombre, exercises);
+    openFromTemplate(routine.nombre, exercises, routine.icono);
   };
 
   const sortLabel = () => {

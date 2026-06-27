@@ -60,6 +60,7 @@ export function useMuscleVolume(period: TimePeriod = "week") {
         .from("actividad")
         .select("id")
         .eq("usuario_id", user!.id)
+        .not("fecha_fin", "is", null)
         .gte("fecha", from)
         .lte("fecha", to);
 

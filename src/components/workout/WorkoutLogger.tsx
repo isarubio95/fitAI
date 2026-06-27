@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
   closestCenter,
@@ -19,7 +19,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkoutById } from "@/hooks/useWorkouts";
+import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
+import { fetchUnfinishedWorkoutId } from "@/lib/activeWorkoutGuard";
 import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,17 +38,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Trash2, Timer } from "lucide-react";
+import { Loader2, Trash2, Timer, Pause, Play, Plus, X, Flag, Check, LogOut } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { useToast } from "@/hooks/use-toast";
 import { SortableExerciseCard } from "./SortableExerciseCard";
 import { PostWorkoutModal } from "./PostWorkoutModal";
 import { useRestTimerContext } from "./RestTimerProvider";
-import { RestTimerPill } from "@/components/workout/RestTimerPill";
+import { formatMSS } from "@/hooks/useRestTimer";
+import { cn } from "@/lib/utils";
 import { useCalculateAndAwardXP, useRemoveWorkoutXP, type XPBreakdown } from "@/hooks/useGamification";
 import { checkAndAwardLogros } from "@/hooks/useLogros";
 import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
+import { WorkoutLeadingRoutineIcon } from "@/components/dashboard/WorkoutDetailsSheet";
+import { RoutineIconPicker } from "@/components/routine/RoutineIconPicker";
+import {
+  DEFAULT_ROUTINE_ICON_KEY,
+  resolveRoutineIconKey,
+  type RoutineIconKey,
+} from "@/lib/routineIcons";
 import { startOfMonth } from "date-fns";
 import {
   type ExerciseFormData,
@@ -56,6 +66,7 @@ import {
   defaultSetForMode,
   setHasWork,
   serieCountsAsRecorded,
+  countRecordedSets,
   serieFieldsForRegistro,
 } from "@/types/workout";
 
@@ -74,32 +85,83 @@ function groupExercisesBySuperset(exercises: ExerciseFormData[]): { supersetId: 
   return groups;
 }
 
-// Elapsed time display component
-function ElapsedTime({ since }: { since: string }) {
+function serializeWorkoutFormSnapshot(
+  titulo: string,
+  fecha: string,
+  exercises: ExerciseFormData[],
+  icono: RoutineIconKey,
+): string {
+  return JSON.stringify({
+    titulo: titulo.trim(),
+    fecha,
+    icono,
+    exercises: exercises.map((ex) => ({
+      id: ex.id ?? null,
+      tipo_ejercicio_id: ex.tipo_ejercicio_id ?? null,
+      usuario_ejercicio_id: ex.usuario_ejercicio_id ?? null,
+      superset_id: ex.superset_id ?? null,
+      sets: ex.sets.map((s) => ({
+        id: s.id ?? null,
+        repeticiones: Number(s.repeticiones),
+        peso_kg: Number(s.peso_kg),
+        duracion_seg: s.duracion_seg ?? null,
+        ritmo_seg_km: s.ritmo_seg_km ?? null,
+        completed: !!s.completed,
+      })),
+    })),
+  });
+}
+
+/** Mismo acabado glass que header móvil y BottomNav */
+const ACTIVE_WORKOUT_FLOATING_SHELL =
+  "rounded-[28px] border border-black/10 bg-white/70 p-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-[hsl(222_47%_12%/0.88)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.06)] dark:ring-1 dark:ring-white/5";
+
+// Elapsed time display component (admite pausa: pausedAt congela el contador y pausedAccumMs descuenta lo ya pausado)
+function ElapsedTime({
+  since,
+  pausedAccumMs = 0,
+  pausedAt = null,
+  paused = false,
+}: {
+  since: string;
+  pausedAccumMs?: number;
+  pausedAt?: number | null;
+  paused?: boolean;
+}) {
   const [text, setText] = useState("");
   useEffect(() => {
     const update = () => {
-      const diff = Math.max(0, Math.floor((Date.now() - new Date(since).getTime()) / 1000));
+      const now = pausedAt ?? Date.now();
+      const diff = Math.max(0, Math.floor((now - new Date(since).getTime() - pausedAccumMs) / 1000));
       const h = Math.floor(diff / 3600);
       const m = Math.floor((diff % 3600) / 60);
       const s = diff % 60;
       setText(h > 0 ? `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}` : `${m}:${s.toString().padStart(2, "0")}`);
     };
     update();
+    if (pausedAt !== null) return;
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [since]);
+  }, [since, pausedAccumMs, pausedAt]);
   return (
-    <span className="flex items-center gap-1 text-xs text-muted-foreground font-mono tabular-nums">
-      <Timer className="h-3 w-3" />
+    <span
+      className={cn(
+        "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-mono tabular-nums transition-colors",
+        paused
+          ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+          : "border-border/60 bg-muted/60 text-foreground",
+      )}
+    >
+      <Timer className="h-3.5 w-3.5" />
       {text}
+      {paused && <span className="text-[10px] font-semibold uppercase tracking-wide">Pausa</span>}
     </span>
   );
 }
 
 export function WorkoutLogger() {
-  const { state, setOpen, close } = useGlobalWorkoutDrawer();
-  const { open, workoutId, defaultDate, templateExercises, templateTitle, plannedId } = state;
+  const { state, setOpen, close, openActiveWorkout } = useGlobalWorkoutDrawer();
+  const { open, workoutId, defaultDate, templateExercises, templateTitle, templateRoutineIcon, plannedId } = state;
 
   const { user } = useAuth();
   const { comunidadPublicaActividad } = useCommunitySettings();
@@ -111,6 +173,7 @@ export function WorkoutLogger() {
   const effectiveWorkoutId = workoutId || activeWorkoutId;
 
   const { data: existingWorkout } = useWorkoutById(effectiveWorkoutId ?? null);
+  const { data: serverActiveWorkout, isLoading: loadingServerActiveWorkout } = useActiveWorkout();
 
   const [titulo, setTitulo] = useState("");
   const [fecha, setFecha] = useState(defaultDate || new Date().toISOString().slice(0, 10));
@@ -120,6 +183,9 @@ export function WorkoutLogger() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [creatingActive, setCreatingActive] = useState(false);
+  const [pausedAt, setPausedAt] = useState<number | null>(null);
+  const [pausedAccumMs, setPausedAccumMs] = useState(0);
+  const isPaused = pausedAt !== null;
   const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
   const [showPostWorkout, setShowPostWorkout] = useState(false);
   const calculateAndAwardXP = useCalculateAndAwardXP();
@@ -127,9 +193,44 @@ export function WorkoutLogger() {
   const restTimer = useRestTimerContext();
   const { data: exerciseCatalog } = useExerciseCatalog();
   const [selectedExerciseDetail, setSelectedExerciseDetail] = useState<any | null>(null);
+  const [editBaseline, setEditBaseline] = useState<string | null>(null);
+  const [workoutIcon, setWorkoutIcon] = useState<RoutineIconKey>(DEFAULT_ROUTINE_ICON_KEY);
+
+  const { data: routineIconsByTitle = {} } = useQuery({
+    queryKey: ["workout-logger-routine-icons", user?.id],
+    enabled: open && !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rutina")
+        .select("nombre, icono")
+        .eq("usuario_id", user!.id)
+        .not("es_plantilla", "eq", true);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      for (const row of data ?? []) {
+        if (!map[row.nombre]) map[row.nombre] = row.icono;
+      }
+      return map;
+    },
+  });
+
+  const routineIcon =
+    templateRoutineIcon != null
+      ? resolveRoutineIconKey(templateRoutineIcon)
+      : workoutIcon;
 
   const isEdit = !!effectiveWorkoutId;
   const isActiveWorkout = !!activeWorkoutId || (!!existingWorkout && !existingWorkout.fecha_fin);
+  const isEditingCompletedWorkout = isEdit && !isActiveWorkout;
+  const showFloatingActionBar = isActiveWorkout || isEditingCompletedWorkout;
+  const hasRecordedWork = countRecordedSets(exercises) > 0;
+  const hasUnsavedChanges = useMemo(() => {
+    if (!isEditingCompletedWorkout || editBaseline === null) return false;
+    return serializeWorkoutFormSnapshot(titulo, fecha, exercises, workoutIcon) !== editBaseline;
+  }, [isEditingCompletedWorkout, editBaseline, titulo, fecha, exercises, workoutIcon]);
+  const canSubmitPrimaryAction = isEditingCompletedWorkout
+    ? hasRecordedWork && hasUnsavedChanges
+    : hasRecordedWork;
   const hydratedWorkoutIdRef = useRef<string | null>(null);
 
   // Pre-fill form when editing existing workout (no hacerlo si abrimos desde plantilla: createActiveWorkout ya puso exercises con superset_id)
@@ -141,60 +242,113 @@ export function WorkoutLogger() {
     if (isEdit && existingWorkout && !templateExercises) {
       if (hydratedWorkoutIdRef.current === existingWorkout.id) return;
       hydratedWorkoutIdRef.current = existingWorkout.id;
-      setTitulo(existingWorkout.titulo);
-      setFecha(new Date(existingWorkout.fecha).toISOString().slice(0, 10));
-      setExercises(
-        existingWorkout.ejercicios.map((ej) => ({
-          tipo_ejercicio_id: (ej as any).tipo_ejercicio_id ?? undefined,
-          usuario_ejercicio_id: (ej as any).usuario_ejercicio_id ?? undefined,
-          nombre: ej.tipo_ejercicio.nombre,
-          id: ej.id,
-          descanso: ej.descanso ?? undefined,
-          repRange: ej.rep_range ?? undefined,
-          targetRir: ej.rir_objetivo ?? undefined,
-          registro_series: normalizeRegistroSeries((ej as any).registro_series),
-          sets: ej.series
-            .sort((a, b) => a.numero_serie - b.numero_serie)
-            .map((s) => ({
-              repeticiones: s.repeticiones,
-              peso_kg: Number(s.peso_kg),
-              duracion_seg: s.duracion_seg ?? null,
-              ritmo_seg_km: s.ritmo_seg_km ?? null,
-              id: s.id,
-              completed: s.completed,
-            })),
-        }))
+      const hydratedTitulo = existingWorkout.titulo;
+      const hydratedFecha = new Date(existingWorkout.fecha).toISOString().slice(0, 10);
+      const hydratedExercises: ExerciseFormData[] = existingWorkout.ejercicios.map((ej) => ({
+        tipo_ejercicio_id: (ej as any).tipo_ejercicio_id ?? undefined,
+        usuario_ejercicio_id: (ej as any).usuario_ejercicio_id ?? undefined,
+        nombre: ej.tipo_ejercicio.nombre,
+        id: ej.id,
+        descanso: ej.descanso ?? undefined,
+        repRange: ej.rep_range ?? undefined,
+        targetRir: ej.rir_objetivo ?? undefined,
+        registro_series: normalizeRegistroSeries((ej as any).registro_series),
+        sets: ej.series
+          .sort((a, b) => a.numero_serie - b.numero_serie)
+          .map((s) => ({
+            repeticiones: s.repeticiones,
+            peso_kg: Number(s.peso_kg),
+            duracion_seg: s.duracion_seg ?? null,
+            ritmo_seg_km: s.ritmo_seg_km ?? null,
+            id: s.id,
+            completed: s.completed,
+          })),
+      }));
+      setTitulo(hydratedTitulo);
+      setFecha(hydratedFecha);
+      setExercises(hydratedExercises);
+      const hydratedIcon = resolveRoutineIconKey(
+        existingWorkout.icono ?? routineIconsByTitle[hydratedTitulo] ?? DEFAULT_ROUTINE_ICON_KEY,
+      );
+      setWorkoutIcon(hydratedIcon);
+      setEditBaseline(
+        existingWorkout.fecha_fin
+          ? serializeWorkoutFormSnapshot(hydratedTitulo, hydratedFecha, hydratedExercises, hydratedIcon)
+          : null,
       );
     }
-  }, [isEdit, existingWorkout, open, templateExercises]);
+  }, [isEdit, existingWorkout, open, templateExercises, routineIconsByTitle]);
 
-  // Create active workout immediately when starting from template
+  // Crear sesión activa al abrir (desde rutina/plan o entreno en blanco)
   useEffect(() => {
-    if (open && !workoutId && templateExercises && templateTitle && !activeWorkoutId && !creatingActive) {
-      createActiveWorkout();
+    if (!open || workoutId || activeWorkoutId || creatingActive || !user || loadingServerActiveWorkout) return;
+
+    if (serverActiveWorkout) {
+      openActiveWorkout(serverActiveWorkout.id);
+      return;
     }
-  }, [open, workoutId, templateExercises, templateTitle]);
 
-  // Reset form when opening for new workout (no template, no edit)
+    if (templateExercises && templateTitle) {
+      createActiveWorkout();
+      return;
+    }
+
+    if (!templateExercises) {
+      createBlankActiveWorkout();
+    }
+  }, [
+    open,
+    workoutId,
+    templateExercises,
+    templateTitle,
+    activeWorkoutId,
+    creatingActive,
+    user,
+    defaultDate,
+    loadingServerActiveWorkout,
+    serverActiveWorkout,
+    openActiveWorkout,
+  ]);
+
+  // Reset form when opening for new workout (no template, no edit) — antes de crear la sesión activa
   useEffect(() => {
-    if (open && !isEdit && !templateExercises) {
+    if (open && !workoutId && !activeWorkoutId && !templateExercises) {
       setTitulo("");
       setExercises([]);
       setFecha(defaultDate || new Date().toISOString().slice(0, 10));
     }
-  }, [open, isEdit, defaultDate, templateExercises]);
+  }, [open, workoutId, activeWorkoutId, defaultDate, templateExercises]);
 
   // Reset activeWorkoutId when drawer closes
   useEffect(() => {
     if (!open) {
       setActiveWorkoutId(null);
+      setPausedAt(null);
+      setPausedAccumMs(0);
+      setEditBaseline(null);
+      setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
     }
   }, [open]);
+
+  const togglePause = useCallback(() => {
+    setPausedAt((prev) => {
+      if (prev === null) return Date.now();
+      setPausedAccumMs((acc) => acc + (Date.now() - prev));
+      return null;
+    });
+  }, []);
 
   const createActiveWorkout = async () => {
     if (!user || !templateExercises || !templateTitle) return;
     setCreatingActive(true);
     try {
+      const unfinishedId = await fetchUnfinishedWorkoutId(user.id);
+      if (unfinishedId) {
+        openActiveWorkout(unfinishedId);
+        return;
+      }
+
+      const templateIcon = resolveRoutineIconKey(templateRoutineIcon ?? DEFAULT_ROUTINE_ICON_KEY);
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
         .insert({
@@ -202,6 +356,7 @@ export function WorkoutLogger() {
           fecha: new Date().toISOString(),
           usuario_id: user.id,
           es_publica: comunidadPublicaActividad,
+          icono: templateIcon,
         })
         .select("id")
         .single();
@@ -259,8 +414,46 @@ export function WorkoutLogger() {
 
       setActiveWorkoutId(actividad.id);
       setTitulo(templateTitle);
+      setWorkoutIcon(templateIcon);
       setExercises(updatedExercises);
-      invalidateWorkoutQueries({ fecha: new Date().toISOString().slice(0, 10) });
+      invalidateActiveWorkoutQueries();
+    } catch (error: any) {
+      toast({ title: "Error al crear entrenamiento", description: error.message, variant: "destructive" });
+    } finally {
+      setCreatingActive(false);
+    }
+  };
+
+  const createBlankActiveWorkout = async () => {
+    if (!user) return;
+    setCreatingActive(true);
+    try {
+      const unfinishedId = await fetchUnfinishedWorkoutId(user.id);
+      if (unfinishedId) {
+        openActiveWorkout(unfinishedId);
+        return;
+      }
+
+      const now = new Date();
+      const { data: actividad, error: actError } = await supabase
+        .from("actividad")
+        .insert({
+          titulo: "",
+          fecha: now.toISOString(),
+          usuario_id: user.id,
+          es_publica: comunidadPublicaActividad,
+          icono: DEFAULT_ROUTINE_ICON_KEY,
+        })
+        .select("id")
+        .single();
+      if (actError) throw actError;
+
+      setActiveWorkoutId(actividad.id);
+      setTitulo("");
+      setExercises([]);
+      setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
+      setFecha(defaultDate || now.toISOString().slice(0, 10));
+      invalidateActiveWorkoutQueries();
     } catch (error: any) {
       toast({ title: "Error al crear entrenamiento", description: error.message, variant: "destructive" });
     } finally {
@@ -521,16 +714,21 @@ export function WorkoutLogger() {
   };
 
   const getExerciseSortId = (ex: ExerciseFormData, index: number) => ex.id || String(index);
-  /** Invalida solo las queries afectadas por guardar/editar o borrar un entrenamiento. */
-  const invalidateWorkoutQueries = (opts: { workoutId?: string; fecha?: string; isDelete?: boolean }) => {
-    const { workoutId, fecha, isDelete } = opts;
+  /** Solo sesión activa: no tocar estadísticas hasta finalizar. */
+  const invalidateActiveWorkoutQueries = () => {
     queryClient.invalidateQueries({ queryKey: ["lastWorkout"] });
     queryClient.invalidateQueries({ queryKey: ["activeWorkout"] });
-    // Actualizar widgets de progreso 1RM
+  };
+
+  /** Invalida queries afectadas al guardar, finalizar o borrar un entrenamiento. */
+  const invalidateWorkoutQueries = (opts: { workoutId?: string; fecha?: string; isDelete?: boolean }) => {
+    const { workoutId, fecha } = opts;
+    invalidateActiveWorkoutQueries();
     queryClient.invalidateQueries({ queryKey: ["exercise-with-history"] });
     queryClient.invalidateQueries({ queryKey: ["exercise-history"] });
     queryClient.invalidateQueries({ queryKey: ["trainingLoad"] });
     queryClient.invalidateQueries({ queryKey: ["muscleVolume"] });
+    queryClient.invalidateQueries({ queryKey: ["muscleStatistics"] });
     if (workoutId) queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
     if (fecha) {
       queryClient.invalidateQueries({ queryKey: ["workoutsForDate", user?.id, fecha] });
@@ -589,7 +787,7 @@ export function WorkoutLogger() {
       return;
     }
 
-    // 1. Limpiamos los datos en memoria filtrando los 0
+    // 1. Limpiamos los datos en memoria filtrando series vacías
     const ejerciciosLimpios = exercises
       .map((ex) => {
         const seriesValidas = ex.sets.filter((s) => serieCountsAsRecorded(s));
@@ -597,8 +795,14 @@ export function WorkoutLogger() {
       })
       .filter((ex) => ex.sets.length > 0);
 
-    if (!isEdit && ejerciciosLimpios.length === 0) {
-      toast({ title: "Entrenamiento vacío", description: "No hay ninguna serie con datos válidos.", variant: "destructive" });
+    if (countRecordedSets(exercises) === 0) {
+      toast({
+        title: "Sin series registradas",
+        description: isActiveWorkout
+          ? "Registra al menos una serie con datos antes de finalizar."
+          : "Añade al menos una serie con datos antes de guardar el entrenamiento.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -635,6 +839,7 @@ export function WorkoutLogger() {
               titulo: titulo.trim(),
               fecha: new Date(fecha).toISOString(),
               fecha_fin: new Date().toISOString(),
+              icono: workoutIcon,
             })
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
@@ -670,6 +875,7 @@ export function WorkoutLogger() {
             .update({
               titulo: titulo.trim(),
               fecha: new Date(fecha).toISOString(),
+              icono: workoutIcon,
             })
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
@@ -711,6 +917,7 @@ export function WorkoutLogger() {
         fecha_fin: new Date().toISOString(),
         usuario_id: user!.id,
         es_publica: comunidadPublicaActividad,
+        icono: workoutIcon,
       })
       .select("id")
       .single();
@@ -754,6 +961,11 @@ export function WorkoutLogger() {
   };
 
   const saveButtonLabel = isActiveWorkout ? "Finalizar" : isEdit ? "Actualizar" : "Guardar";
+  const primaryActionIcon = isActiveWorkout ? (
+    <Flag className="h-4 w-4" />
+  ) : (
+    <Check className="h-4 w-4" />
+  );
 
   // Evita que Radix deje algún elemento con foco visible al abrir el drawer
   useEffect(() => {
@@ -776,50 +988,58 @@ export function WorkoutLogger() {
               data-active-workout-sheet-header
               className="sticky top-0 z-10 shrink-0 border-b border-border bg-card px-6 text-left"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 flex-col gap-1.5">
                   <DrawerTitle className="text-lg">
                     {isActiveWorkout ? "Entrenamiento Activo" : isEdit ? "Editar Entrenamiento" : "Nuevo Entrenamiento"}
                   </DrawerTitle>
-                  {isActiveWorkout && existingWorkout && (
-                    <ElapsedTime since={existingWorkout.fecha} />
+                  {isActiveWorkout && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {existingWorkout && (
+                        <ElapsedTime
+                          since={existingWorkout.fecha}
+                          pausedAccumMs={pausedAccumMs}
+                          pausedAt={pausedAt}
+                          paused={isPaused}
+                        />
+                      )}
+                      {restTimer.activeKey && (
+                        <span
+                          className={cn(
+                            "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-mono tabular-nums",
+                            restTimer.finished
+                              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                              : "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-300",
+                          )}
+                        >
+                          <Timer className="h-3.5 w-3.5" />
+                          <span className="text-[10px] font-semibold uppercase tracking-wide">Descanso</span>
+                          {restTimer.finished ? "¡Listo!" : formatMSS(restTimer.remaining)}
+                        </span>
+                      )}
+                    </div>
                   )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {isEdit && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive border-destructive/50 hover:bg-destructive/10"
-                      onClick={() => setConfirmDelete(true)}
-                      disabled={deleting}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 mr-1" />
-                      Borrar
-                    </Button>
-                  )}
-                  <Button variant="default" onClick={handleSave} disabled={saving || creatingActive} size="sm">
-                    {(saving || creatingActive) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {saveButtonLabel}
-                  </Button>
                 </div>
               </div>
             </DrawerHeader>
 
             <div className="min-h-0 flex-1 overflow-y-auto bg-background">
-              <div className="flex flex-col gap-1 bg-background pb-20">
+              <div className={cn("flex flex-col gap-1 bg-background", showFloatingActionBar ? "pb-32" : "pb-20")}>
                 <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
                   <CardContent className="space-y-3 px-6 py-4">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="col-span-2 space-y-1.5 sm:col-span-1">
                         <Label htmlFor="titulo">Título</Label>
-                        <Input
-                          id="titulo"
-                          placeholder="Ej: Día de Pierna"
-                          value={titulo}
-                          onChange={(e) => setTitulo(e.target.value)}
-                          className="h-12"
-                        />
+                        <div className="flex items-center gap-3">
+                          <WorkoutLeadingRoutineIcon iconKey={routineIcon} />
+                          <Input
+                            id="titulo"
+                            placeholder="Ej: Día de Pierna"
+                            value={titulo}
+                            onChange={(e) => setTitulo(e.target.value)}
+                            className="h-12 min-w-0 flex-1"
+                          />
+                        </div>
                       </div>
                       <div className="col-span-2 space-y-1.5 sm:col-span-1">
                         <Label htmlFor="fecha">Fecha</Label>
@@ -832,6 +1052,13 @@ export function WorkoutLogger() {
                         />
                       </div>
                     </div>
+                    {isEditingCompletedWorkout && (
+                      <RoutineIconPicker
+                        value={workoutIcon}
+                        onChange={setWorkoutIcon}
+                        label="Icono del entrenamiento"
+                      />
+                    )}
                   </CardContent>
                 </Card>
 
@@ -911,21 +1138,120 @@ export function WorkoutLogger() {
                         )}
                       </SortableContext>
                     </DndContext>
-
-                    <div className="border-t border-border px-6 py-4">
-                      <ExerciseSelector
-                        open={exercisePickerOpen}
-                        onOpenChange={setExercisePickerOpen}
-                        onSelect={addExercise}
-                      />
-                    </div>
                   </CardContent>
                 </Card>
+
+                {!showFloatingActionBar && (
+                  <div className="px-6 py-4">
+                    <ExerciseSelector
+                      open={exercisePickerOpen}
+                      onOpenChange={setExercisePickerOpen}
+                      onSelect={addExercise}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Contador de descanso dentro de Entrenamiento Activo */}
-            {isActiveWorkout && (restTimer.isRunning || restTimer.finished) && <RestTimerPill mode="sheet" />}
+            {/* Oscurecido inferior para destacar la barra flotante */}
+            {showFloatingActionBar && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 bottom-0 z-35 h-[120px] bg-linear-to-t from-black/40 via-black/14 to-transparent dark:from-black/55 dark:via-black/24"
+              />
+            )}
+
+            {/* Barra flotante de acciones (entreno activo o edición) */}
+            {showFloatingActionBar && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex items-center justify-center gap-2 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0))]">
+                <div
+                  data-vaul-no-drag
+                  className={cn("pointer-events-auto flex items-center gap-1.5", ACTIVE_WORKOUT_FLOATING_SHELL)}
+                >
+                  {isEditingCompletedWorkout ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-12 w-12 rounded-full text-foreground hover:bg-muted/60 hover:text-foreground"
+                      onClick={close}
+                      disabled={deleting || creatingActive}
+                      aria-label="Salir de la edición"
+                    >
+                      <LogOut className="h-5 w-5" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-12 w-12 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setConfirmDelete(true)}
+                      disabled={deleting || creatingActive}
+                      aria-label="Cancelar entrenamiento"
+                    >
+                      <X className="h-5 w-5" />
+                    </Button>
+                  )}
+                  {isActiveWorkout ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-12 w-12 rounded-full",
+                        isPaused && "bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 hover:text-amber-600 dark:text-amber-400",
+                      )}
+                      onClick={togglePause}
+                      aria-label={isPaused ? "Reanudar tiempo" : "Pausar tiempo"}
+                    >
+                      {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-12 w-12 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setConfirmDelete(true)}
+                      disabled={deleting || creatingActive}
+                      aria-label="Borrar entrenamiento"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
+                  )}
+                  <ExerciseSelector
+                    open={exercisePickerOpen}
+                    onOpenChange={setExercisePickerOpen}
+                    onSelect={addExercise}
+                    trigger={
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-12 w-12 rounded-full"
+                        aria-label="Agregar ejercicio"
+                      >
+                        <Plus className="h-5 w-5" />
+                      </Button>
+                    }
+                  />
+                </div>
+                <div
+                  data-vaul-no-drag
+                  className={cn("pointer-events-auto flex items-center", ACTIVE_WORKOUT_FLOATING_SHELL)}
+                >
+                  <Button
+                    variant="default"
+                    className="h-12 gap-1.5 rounded-full px-5 font-semibold"
+                    onClick={handleSave}
+                    disabled={saving || creatingActive || !canSubmitPrimaryAction}
+                  >
+                    {saving || creatingActive ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      primaryActionIcon
+                    )}
+                    {saveButtonLabel}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </DrawerContent>
       </Drawer>

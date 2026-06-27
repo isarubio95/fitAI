@@ -26,6 +26,7 @@ export function useCommunityFeed() {
         .from("actividad")
         .select("*")
         .eq("es_publica", true)
+        .not("fecha_fin", "is", null)
         .neq("usuario_id", user!.id)
         .order("fecha", { ascending: false })
         .limit(50);

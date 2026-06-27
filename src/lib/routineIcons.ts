@@ -65,6 +65,18 @@ export function resolveRoutineIcon(iconKey: string | null | undefined): RoutineI
   return ROUTINE_ICON_OPTIONS.find((opt) => opt.key === key)?.Icon ?? Dumbbell;
 }
 
+/** Icono del entrenamiento: actividad.icono tiene prioridad sobre rutina por título. */
+export function resolveWorkoutIconKey(
+  workout: { titulo: string; icono?: string | null },
+  routineIconByTitle?: Record<string, string | null | undefined> | string | null,
+): RoutineIconKey {
+  if (workout.icono) return resolveRoutineIconKey(workout.icono);
+  if (typeof routineIconByTitle === "string") return resolveRoutineIconKey(routineIconByTitle);
+  const fromTitle = routineIconByTitle?.[workout.titulo];
+  if (fromTitle) return resolveRoutineIconKey(fromTitle);
+  return DEFAULT_ROUTINE_ICON_KEY;
+}
+
 /** Migra iconos guardados en localStorage (versión anterior) a la columna rutina.icono. */
 export async function migrateRoutineIconsFromLocalStorage(
   userId: string,

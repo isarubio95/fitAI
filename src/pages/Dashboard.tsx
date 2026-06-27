@@ -6,7 +6,6 @@ import { useMonthWorkouts, useMonthWorkoutDates } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useMonthCardioSessionDates, useMonthCardioSessions } from "@/hooks/useCardioSessions";
-import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -147,9 +146,8 @@ function SortableWidget({ id, isDragMode, children }: { id: string, isDragMode: 
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { openNew, openEdit, openActiveWorkout, openFromPlannedRoutine } = useGlobalWorkoutDrawer();
+  const { openNew, openEdit, openFromPlannedRoutine } = useGlobalWorkoutDrawer();
   const { openEdit: openCardioEdit } = useGlobalCardioDrawer();
-  const { data: activeWorkout } = useActiveWorkout();
   const { toast } = useToast();
 
   const [calendarView, setCalendarView] = useState<"month" | "week">(loadCalendarView);
@@ -263,32 +261,6 @@ const Dashboard = () => {
   };
 
   const startPlanned = (planned: PlannedRoutine) => {
-    if (activeWorkout) {
-      // Evita que quede un foco/outline visible tras pulsar “Iniciar” (móvil/teclado)
-      const activeEl = document.activeElement as HTMLElement | null;
-      activeEl?.blur?.();
-      toast({
-        title: "Ya tienes un entrenamiento en curso",
-        description: "Termínalo o cancélalo antes de empezar otro.",
-        variant: "destructive",
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            className="shrink-0"
-            onClick={() => {
-              const activeEl = document.activeElement as HTMLElement | null;
-              activeEl?.blur?.();
-              openActiveWorkout(activeWorkout.id);
-            }}
-          >
-            Ir al entreno
-          </Button>
-        ),
-      });
-      return;
-    }
-
     type RoutineExercise = {
       tipo_ejercicio_id?: string | null;
       usuario_ejercicio_id?: string | null;
@@ -346,7 +318,7 @@ const Dashboard = () => {
     const activeEl = document.activeElement as HTMLElement | null;
     activeEl?.blur?.();
 
-    openFromPlannedRoutine(planned.id, routine.nombre ?? "Rutina", ejercicios);
+    openFromPlannedRoutine(planned.id, routine.nombre ?? "Rutina", ejercicios, planned.rutina?.icono ?? null);
   };
 
   // MouseSensor (escritorio) + TouchSensor (móvil) en lugar de PointerSensor:

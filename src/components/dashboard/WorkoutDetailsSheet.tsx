@@ -52,6 +52,10 @@ function isSerieDone(s: Serie) {
   return !!s.completed || setHasWork(s);
 }
 
+function countDoneSeries(ejercicios: EjercicioWithDetails[]): number {
+  return ejercicios.reduce((acc, ex) => acc + (ex.series ?? []).filter(isSerieDone).length, 0);
+}
+
 function estimate1RM(weightKg: number, reps: number) {
   const w = Number(weightKg);
   const r = Number(reps);
@@ -197,7 +201,9 @@ function SeriesList({
                 ? `${ds ?? 0} s · ${formatRitmoSegKmLabel(pace ?? null)}`
                 : showDurationOnly
                   ? `${ds ?? 0} s`
-                  : `${reps} reps · ${formatWeight(kg)} kg`}
+                  : reps > 0 && kg <= 0
+                    ? `${reps} reps · peso corporal`
+                    : `${reps} reps · ${formatWeight(kg)} kg`}
             </span>
           </div>
         );
@@ -304,14 +310,18 @@ type WorkoutDetailsContentProps = {
   leadingRoutineIcon?: string | null;
 };
 
-function WorkoutLeadingRoutineIcon({ iconKey }: { iconKey?: string | null }) {
+function WorkoutLeadingRoutineIcon({
+  iconKey,
+  className,
+}: {
+  iconKey?: string | null;
+  className?: string;
+}) {
   const Icon = resolveRoutineIcon(iconKey);
-  return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 ring-1 ring-border/60">
-      <Icon className="h-4 w-4 text-primary" />
-    </div>
-  );
+  return <Icon className={cn("h-5 w-5 shrink-0 text-primary", className)} strokeWidth={1.75} />;
 }
+
+export { WorkoutLeadingRoutineIcon };
 
 function WorkoutLeadingAvatarBadge({ avatar }: { avatar: WorkoutLeadingAvatar }) {
   const resolved = useUserAvatar([avatar.avatarUrl]);
@@ -341,20 +351,32 @@ function WorkoutCompactSummary({
   leadingAvatar?: WorkoutLeadingAvatar;
   leadingRoutineIcon?: string | null;
 }) {
-  const totalSets = visibleGroups.reduce((a, g) => a + (groupSets[g] ?? 0), 0);
+  const totalSets = countDoneSeries(workout.ejercicios);
   const exerciseCount = workout.ejercicios.filter((ex) => (ex.series ?? []).some(isSerieDone)).length;
   const statsLabel = `${exerciseCount} ejercicio${exerciseCount === 1 ? "" : "s"} · ${totalSets} series`;
 
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-1 items-start gap-3">
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 gap-3",
+            leadingRoutineIcon ? "items-center" : "items-start",
+          )}
+        >
           {leadingRoutineIcon ? (
-            <WorkoutLeadingRoutineIcon iconKey={leadingRoutineIcon} />
+            <WorkoutLeadingRoutineIcon iconKey={leadingRoutineIcon} className="h-4 w-4" />
           ) : leadingAvatar ? (
             <WorkoutLeadingAvatarBadge avatar={leadingAvatar} />
           ) : null}
-          <h3 className="min-w-0 flex-1 pt-1.5 text-sm font-semibold leading-snug">{workout.titulo}</h3>
+          <h3
+            className={cn(
+              "min-w-0 flex-1 text-sm font-semibold leading-snug",
+              leadingAvatar && "pt-1.5",
+            )}
+          >
+            {workout.titulo}
+          </h3>
         </div>
         <div className="shrink-0 text-right text-[11px] leading-tight text-muted-foreground tabular-nums">
           {!hideDate && workout.fecha ? (
@@ -363,11 +385,11 @@ function WorkoutCompactSummary({
           <p className={!hideDate && workout.fecha ? "mt-0.5" : undefined}>{statsLabel}</p>
         </div>
       </div>
-      {visibleGroups.length === 0 ? (
+      {totalSets === 0 ? (
         <p className="text-xs text-muted-foreground">Sin series registradas.</p>
-      ) : (
+      ) : visibleGroups.length > 0 ? (
         <WorkoutMuscleMiniMap groupSets={groupSets} maxSets={maxSets} />
-      )}
+      ) : null}
     </div>
   );
 }
@@ -446,10 +468,9 @@ export function WorkoutDetailsContent({
           const reps = Number(s.repeticiones);
           const kg = Number(s.peso_kg);
           const weight = reps * kg;
-          if (weight <= 0) continue;
           for (const g of mainGroups) {
             groupSetsAcc[g] += 1;
-            groupWeightAcc[g] += weight;
+            if (weight > 0) groupWeightAcc[g] += weight;
           }
         }
       }

@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import type { ExerciseFormData } from "@/types/workout";
+import { useActiveWorkout } from "@/hooks/useActiveWorkout";
+import { useToast } from "@/hooks/use-toast";
+import { toastActiveWorkoutBlocked } from "@/lib/activeWorkoutGuard";
 
 interface DrawerState {
   open: boolean;
@@ -7,6 +10,7 @@ interface DrawerState {
   defaultDate?: string;
   templateExercises?: ExerciseFormData[];
   templateTitle?: string;
+  templateRoutineIcon?: string | null;
   plannedId?: string;
 }
 
@@ -14,8 +18,13 @@ interface GlobalWorkoutDrawerContextType {
   state: DrawerState;
   openNew: (date?: string) => void;
   openEdit: (workoutId: string) => void;
-  openFromTemplate: (title: string, exercises: ExerciseFormData[]) => void;
-  openFromPlannedRoutine: (plannedId: string, title: string, exercises: ExerciseFormData[]) => void;
+  openFromTemplate: (title: string, exercises: ExerciseFormData[], routineIcon?: string | null) => void;
+  openFromPlannedRoutine: (
+    plannedId: string,
+    title: string,
+    exercises: ExerciseFormData[],
+    routineIcon?: string | null,
+  ) => void;
   openActiveWorkout: (workoutId: string) => void;
   setOpen: (open: boolean) => void;
   close: () => void;
@@ -27,26 +36,86 @@ const INITIAL: DrawerState = { open: false, workoutId: null };
 
 export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DrawerState>(INITIAL);
-
-  const openNew = useCallback((date?: string) => {
-    setState({ open: true, workoutId: null, defaultDate: date, templateExercises: undefined, templateTitle: undefined, plannedId: undefined });
-  }, []);
-
-  const openEdit = useCallback((workoutId: string) => {
-    setState({ open: true, workoutId, defaultDate: undefined, templateExercises: undefined, templateTitle: undefined, plannedId: undefined });
-  }, []);
-
-  const openFromTemplate = useCallback((title: string, exercises: ExerciseFormData[]) => {
-    setState({ open: true, workoutId: null, defaultDate: undefined, templateExercises: exercises, templateTitle: title, plannedId: undefined });
-  }, []);
-
-  const openFromPlannedRoutine = useCallback((plannedId: string, title: string, exercises: ExerciseFormData[]) => {
-    setState({ open: true, workoutId: null, defaultDate: undefined, templateExercises: exercises, templateTitle: title, plannedId });
-  }, []);
+  const { data: activeWorkout } = useActiveWorkout();
+  const { toast } = useToast();
 
   const openActiveWorkout = useCallback((workoutId: string) => {
-    setState({ open: true, workoutId, defaultDate: undefined, templateExercises: undefined, templateTitle: undefined, plannedId: undefined });
+    setState({
+      open: true,
+      workoutId,
+      defaultDate: undefined,
+      templateExercises: undefined,
+      templateTitle: undefined,
+      templateRoutineIcon: undefined,
+      plannedId: undefined,
+    });
   }, []);
+
+  const blockIfActiveWorkout = useCallback((): boolean => {
+    if (!activeWorkout) return false;
+    toastActiveWorkoutBlocked(toast, openActiveWorkout, activeWorkout);
+    return true;
+  }, [activeWorkout, toast, openActiveWorkout]);
+
+  const openNew = useCallback(
+    (date?: string) => {
+      if (blockIfActiveWorkout()) return;
+      setState({
+        open: true,
+        workoutId: null,
+        defaultDate: date,
+        templateExercises: undefined,
+        templateTitle: undefined,
+        templateRoutineIcon: undefined,
+        plannedId: undefined,
+      });
+    },
+    [blockIfActiveWorkout],
+  );
+
+  const openEdit = useCallback((workoutId: string) => {
+    setState({
+      open: true,
+      workoutId,
+      defaultDate: undefined,
+      templateExercises: undefined,
+      templateTitle: undefined,
+      templateRoutineIcon: undefined,
+      plannedId: undefined,
+    });
+  }, []);
+
+  const openFromTemplate = useCallback(
+    (title: string, exercises: ExerciseFormData[], routineIcon?: string | null) => {
+      if (blockIfActiveWorkout()) return;
+      setState({
+        open: true,
+        workoutId: null,
+        defaultDate: undefined,
+        templateExercises: exercises,
+        templateTitle: title,
+        templateRoutineIcon: routineIcon ?? null,
+        plannedId: undefined,
+      });
+    },
+    [blockIfActiveWorkout],
+  );
+
+  const openFromPlannedRoutine = useCallback(
+    (plannedId: string, title: string, exercises: ExerciseFormData[], routineIcon?: string | null) => {
+      if (blockIfActiveWorkout()) return;
+      setState({
+        open: true,
+        workoutId: null,
+        defaultDate: undefined,
+        templateExercises: exercises,
+        templateTitle: title,
+        templateRoutineIcon: routineIcon ?? null,
+        plannedId,
+      });
+    },
+    [blockIfActiveWorkout],
+  );
 
   const setOpen = useCallback((open: boolean) => {
     setState((prev) => {
@@ -62,7 +131,18 @@ export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode 
   }, []);
 
   return (
-    <GlobalWorkoutDrawerContext.Provider value={{ state, openNew, openEdit, openFromTemplate, openFromPlannedRoutine, openActiveWorkout, setOpen, close }}>
+    <GlobalWorkoutDrawerContext.Provider
+      value={{
+        state,
+        openNew,
+        openEdit,
+        openFromTemplate,
+        openFromPlannedRoutine,
+        openActiveWorkout,
+        setOpen,
+        close,
+      }}
+    >
       {children}
     </GlobalWorkoutDrawerContext.Provider>
   );

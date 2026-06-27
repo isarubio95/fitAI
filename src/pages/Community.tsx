@@ -10,6 +10,7 @@ import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { fetchProfileLevelsForUsers } from "@/hooks/useGamification";
 import { WorkoutDetailsContent, WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
+import { resolveWorkoutIconKey } from "@/lib/routineIcons";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,8 +44,8 @@ function CommunityAvatar({
 
 function CommunityAuthorLevel({ nivel }: { nivel: number }) {
   return (
-    <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold leading-tight tabular-nums text-foreground">
-      <Shield className="h-3.5 w-3.5 text-primary" />
+    <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold leading-tight tabular-nums text-muted-foreground">
+      <Shield className="h-3.5 w-3.5" />
       Nivel {nivel}
     </span>
   );
@@ -216,7 +217,7 @@ export default function Community() {
             <WorkoutDetailsContent
               workout={item.workout}
               variant="compact"
-              leadingRoutineIcon={routineIconsByAuthor[item.author.id]?.[item.workout.titulo]}
+              leadingRoutineIcon={resolveWorkoutIconKey(item.workout, routineIconsByAuthor[item.author.id])}
             />
           </Card>
         </button>

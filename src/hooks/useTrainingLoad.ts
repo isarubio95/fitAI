@@ -75,6 +75,7 @@ export function useTrainingLoad() {
           .from("actividad")
           .select("id, fecha")
           .eq("usuario_id", user!.id)
+          .not("fecha_fin", "is", null)
           .gte("fecha", fromIso)
           .lte("fecha", toIso)
           .order("fecha", { ascending: true })

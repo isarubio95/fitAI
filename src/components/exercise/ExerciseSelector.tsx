@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { normalizeRegistroSeries, type RegistroSeries } from "@/types/workout";
 import { useExerciseCatalogInfinite } from "@/hooks/useExerciseCatalog";
@@ -16,9 +16,11 @@ interface ExerciseSelectorProps {
     catalogRef: { tipo_ejercicio_id?: string; usuario_ejercicio_id?: string },
     nombre: string
   ) => void;
+  /** Permite reemplazar el botón por defecto (p. ej. para la barra flotante del entreno activo). */
+  trigger?: ReactNode;
 }
 
-export function ExerciseSelector({ open, onOpenChange, onSelect }: ExerciseSelectorProps) {
+export function ExerciseSelector({ open, onOpenChange, onSelect, trigger }: ExerciseSelectorProps) {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [onlyMine, setOnlyMine] = useState(false);
@@ -50,9 +52,11 @@ export function ExerciseSelector({ open, onOpenChange, onSelect }: ExerciseSelec
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full h-12">
-          <Search className="h-4 w-4 mr-2" /> Agregar Ejercicio
-        </Button>
+        {trigger ?? (
+          <Button variant="secondary" className="w-full h-12">
+            <Search className="h-4 w-4 mr-2" /> Agregar Ejercicio
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-[320px] p-0 max-h-[70svh] overflow-hidden" align="start">
         <div className="flex items-center justify-between px-3 py-2 border-b border-border">

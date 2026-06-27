@@ -31,11 +31,24 @@ export function useMuscleStatistics() {
         }
       }
 
-      // Fetch all exercises with musculos_involucrados
+      const { data: actividades, error: actErr } = await supabase
+        .from("actividad")
+        .select("id")
+        .eq("usuario_id", user!.id)
+        .not("fecha_fin", "is", null);
+
+      if (actErr) throw actErr;
+      if (!actividades?.length) {
+        return buildResult(mainGroupCounts, subGroupCounts);
+      }
+
+      const actIds = actividades.map((a) => a.id);
+
+      // Fetch exercises from finalized workouts only
       const { data: ejercicios, error: ejErr } = await supabase
         .from("ejercicio")
         .select("id, tipo_ejercicio:tipo_ejercicio_id(musculos_involucrados, grupo_muscular)")
-        .eq("usuario_id", user!.id);
+        .in("actividad_id", actIds);
 
       if (ejErr) throw ejErr;
       if (!ejercicios?.length) {
