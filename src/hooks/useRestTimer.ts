@@ -13,6 +13,79 @@ interface TimerState {
   finished: boolean;
 }
 
+interface PersistedRestTimer {
+  activeKey: string;
+  endTime: number;
+  duration: number;
+  workoutId?: string | null;
+}
+
+const REST_TIMER_STORAGE_KEY = "fitai-rest-timer";
+/** Tras este margen, un descanso ya vencido no se restaura al recargar. */
+const FINISHED_GRACE_MS = 5 * 60 * 1000;
+
+function clearPersistedRestTimer() {
+  try {
+    localStorage.removeItem(REST_TIMER_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+function loadPersistedRestTimer(): TimerState | null {
+  try {
+    const raw = localStorage.getItem(REST_TIMER_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as PersistedRestTimer;
+    if (!parsed.activeKey || !parsed.endTime || !parsed.duration) return null;
+
+    const remainingMs = parsed.endTime - Date.now();
+    if (remainingMs <= 0) {
+      if (Date.now() - parsed.endTime > FINISHED_GRACE_MS) {
+        clearPersistedRestTimer();
+        return null;
+      }
+      return {
+        activeKey: parsed.activeKey,
+        endTime: parsed.endTime,
+        remaining: 0,
+        duration: parsed.duration,
+        finished: true,
+      };
+    }
+
+    return {
+      activeKey: parsed.activeKey,
+      endTime: parsed.endTime,
+      remaining: Math.ceil(remainingMs / 1000),
+      duration: parsed.duration,
+      finished: false,
+    };
+  } catch {
+    clearPersistedRestTimer();
+    return null;
+  }
+}
+
+function persistRestTimer(state: TimerState, workoutId?: string | null) {
+  if (!state.activeKey || !state.endTime || !state.duration) {
+    clearPersistedRestTimer();
+    return;
+  }
+  try {
+    const payload: PersistedRestTimer = {
+      activeKey: state.activeKey,
+      endTime: state.endTime,
+      duration: state.duration,
+      workoutId: workoutId ?? null,
+    };
+    localStorage.setItem(REST_TIMER_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
 let notificationPermissionRequested = false;
 
 function requestNotifPermission() {
@@ -78,16 +151,44 @@ function playBeep() {
 }
 
 export function useRestTimer() {
-  const [state, setState] = useState<TimerState>({
-    activeKey: null,
-    endTime: null,
-    remaining: 0,
-    duration: 0,
-    finished: false,
+  const hydratedFinishedRef = useRef(false);
+  const workoutIdRef = useRef<string | null>(null);
+
+  const [state, setState] = useState<TimerState>(() => {
+    const restored = loadPersistedRestTimer();
+    if (restored?.finished) hydratedFinishedRef.current = true;
+    return restored ?? {
+      activeKey: null,
+      endTime: null,
+      remaining: 0,
+      duration: 0,
+      finished: false,
+    };
   });
 
   const notifRef = useRef<Notification | null>(null);
   const rafRef = useRef<number | null>(null);
+
+  // Restaurar workoutId asociado al descanso persistido
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(REST_TIMER_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as PersistedRestTimer;
+      workoutIdRef.current = parsed.workoutId ?? null;
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Persistir en localStorage mientras haya descanso activo o recién terminado
+  useEffect(() => {
+    if (state.activeKey && state.endTime && state.duration) {
+      persistRestTimer(state, workoutIdRef.current);
+    } else {
+      clearPersistedRestTimer();
+    }
+  }, [state.activeKey, state.endTime, state.duration, state.finished]);
 
   const tick = useCallback(() => {
     setState((prev) => {
@@ -104,6 +205,10 @@ export function useRestTimer() {
 
   // Handle completion side-effects (solo si el descanso sigue activo al terminar)
   useEffect(() => {
+    if (hydratedFinishedRef.current) {
+      hydratedFinishedRef.current = false;
+      return;
+    }
     if (state.finished && state.activeKey) {
       // Vibrate
       if ("vibrate" in navigator) {
@@ -147,15 +252,20 @@ export function useRestTimer() {
     };
   }, [state.activeKey, state.finished, tick]);
 
-  const start = useCallback((key: string, durationSeconds: number) => {
+  const start = useCallback((key: string, durationSeconds: number, workoutId?: string | null) => {
     requestNotifPermission();
-    setState({
+    workoutIdRef.current = workoutId ?? null;
+    hydratedFinishedRef.current = false;
+    const endTime = Date.now() + durationSeconds * 1000;
+    const next: TimerState = {
       activeKey: key,
-      endTime: Date.now() + durationSeconds * 1000,
+      endTime,
       remaining: durationSeconds,
       duration: durationSeconds,
       finished: false,
-    });
+    };
+    persistRestTimer(next, workoutIdRef.current);
+    setState(next);
   }, []);
 
   const stop = useCallback(() => {
@@ -170,6 +280,8 @@ export function useRestTimer() {
       notifRef.current.close();
       notifRef.current = null;
     }
+    workoutIdRef.current = null;
+    clearPersistedRestTimer();
     setState({ activeKey: null, endTime: null, remaining: 0, duration: 0, finished: false });
   }, []);
 

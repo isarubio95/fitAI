@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           comentarios: string | null
           created_at: string
+          es_publica: boolean
           fecha: string
           fecha_fin: string | null
           icono: string | null
@@ -28,6 +29,7 @@ export type Database = {
         Insert: {
           comentarios?: string | null
           created_at?: string
+          es_publica?: boolean
           fecha?: string
           fecha_fin?: string | null
           icono?: string | null
@@ -38,6 +40,7 @@ export type Database = {
         Update: {
           comentarios?: string | null
           created_at?: string
+          es_publica?: boolean
           fecha?: string
           fecha_fin?: string | null
           icono?: string | null

@@ -159,6 +159,52 @@ function ElapsedTime({
   );
 }
 
+// Barra de progreso de descanso a todo el ancho: el relleno se vacía y el color
+// se desplaza sutilmente de azul (lleno) a ámbar (casi vacío); verde al terminar.
+function RestProgressBar({
+  remaining,
+  duration,
+  finished,
+}: {
+  remaining: number;
+  duration: number;
+  finished: boolean;
+}) {
+  const ratio = duration > 0 ? Math.min(1, Math.max(0, remaining / duration)) : 0;
+  const pct = finished ? 100 : ratio * 100;
+  // Interpolación de tono: 212 (azul, lleno) → 28 (ámbar, casi vacío). Verde (152) al terminar.
+  const hue = finished ? 152 : Math.round(28 + ratio * (212 - 28));
+  const fill = `hsl(${hue} 88% 56%)`;
+  const fillSoft = `hsl(${hue} 92% 64%)`;
+
+  return (
+    <div className="flex w-full flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <Timer className="h-3.5 w-3.5" />
+          Descanso
+        </span>
+        <span
+          className="font-mono text-xs font-semibold tabular-nums transition-colors duration-700"
+          style={{ color: finished ? "hsl(152 70% 42%)" : fill }}
+        >
+          {finished ? "¡Listo!" : formatMSS(remaining)}
+        </span>
+      </div>
+      <div className="relative h-2.5 w-full overflow-hidden rounded-full border border-border/50 bg-muted/60">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full transition-[width,background-color] duration-1000 ease-linear"
+          style={{
+            width: `${pct}%`,
+            background: `linear-gradient(90deg, ${fill}, ${fillSoft})`,
+            boxShadow: `0 0 8px ${fill}80`,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function WorkoutLogger() {
   const { state, setOpen, close, openActiveWorkout } = useGlobalWorkoutDrawer();
   const { open, workoutId, defaultDate, templateExercises, templateTitle, templateRoutineIcon, plannedId } = state;
@@ -681,7 +727,7 @@ export function WorkoutLogger() {
 
       if (completed) {
         const restSeconds = ex.descanso ?? 120;
-        restTimer.start(`${exerciseIndex}-${setIndex}`, restSeconds);
+        restTimer.start(`${exerciseIndex}-${setIndex}`, restSeconds, effectiveWorkoutId);
       }
     },
     [exercises, effectiveWorkoutId, restTimer]
@@ -988,38 +1034,29 @@ export function WorkoutLogger() {
               data-active-workout-sheet-header
               className="sticky top-0 z-10 shrink-0 border-b border-border bg-card px-6 text-left"
             >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 flex-col gap-1.5">
-                  <DrawerTitle className="text-lg">
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <DrawerTitle className="min-w-0 truncate text-lg">
                     {isActiveWorkout ? "Entrenamiento Activo" : isEdit ? "Editar Entrenamiento" : "Nuevo Entrenamiento"}
                   </DrawerTitle>
-                  {isActiveWorkout && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      {existingWorkout && (
-                        <ElapsedTime
-                          since={existingWorkout.fecha}
-                          pausedAccumMs={pausedAccumMs}
-                          pausedAt={pausedAt}
-                          paused={isPaused}
-                        />
-                      )}
-                      {restTimer.activeKey && (
-                        <span
-                          className={cn(
-                            "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-mono tabular-nums",
-                            restTimer.finished
-                              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                              : "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-300",
-                          )}
-                        >
-                          <Timer className="h-3.5 w-3.5" />
-                          <span className="text-[10px] font-semibold uppercase tracking-wide">Descanso</span>
-                          {restTimer.finished ? "¡Listo!" : formatMSS(restTimer.remaining)}
-                        </span>
-                      )}
+                  {isActiveWorkout && existingWorkout && (
+                    <div className="shrink-0">
+                      <ElapsedTime
+                        since={existingWorkout.fecha}
+                        pausedAccumMs={pausedAccumMs}
+                        pausedAt={pausedAt}
+                        paused={isPaused}
+                      />
                     </div>
                   )}
                 </div>
+                {isActiveWorkout && restTimer.activeKey && (
+                  <RestProgressBar
+                    remaining={restTimer.remaining}
+                    duration={restTimer.duration}
+                    finished={restTimer.finished}
+                  />
+                )}
               </div>
             </DrawerHeader>
 
