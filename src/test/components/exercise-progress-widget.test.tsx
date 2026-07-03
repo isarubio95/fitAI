@@ -38,9 +38,7 @@ vi.mock("recharts", () => ({
   CartesianGrid: () => null,
   XAxis: () => null,
   YAxis: () => null,
-  Tooltip: ({ content }: { content: (props: unknown) => ReactNode }) => (
-    <div>{content({ active: false, payload: [] })}</div>
-  ),
+  Tooltip: () => null,
   Area: () => null,
 }));
 
