@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { format } from "date-fns";
+import { endOfDay, format, startOfDay } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { RutinaWithDetails } from "@/types/routine";
 import { isWorkoutPlanExpired, maxScheduledDate } from "@/lib/workoutPlanExpiry";
+import { findFulfilledPlannedRoutineIds } from "@/lib/plannedRoutineVisibility";
 
 export interface PlannedRoutine {
   id: string;
@@ -40,6 +41,57 @@ export async function cleanupExpiredWorkoutPlan(userId: string): Promise<boolean
   return true;
 }
 
+/** Elimina programaciones ya cumplidas (vinculadas o con entrenamiento equivalente el mismo día). */
+export async function cleanupFulfilledPlannedRoutines(userId: string): Promise<number> {
+  const { data: planned, error: plannedError } = await supabase
+    .from("rutina_programada")
+    .select("id, fecha_programada, actividad_id, rutina:rutina!inner(nombre)")
+    .eq("usuario_id", userId);
+
+  if (plannedError) throw plannedError;
+  if (!planned?.length) return 0;
+
+  const unlinkedDates = [
+    ...new Set(
+      planned
+        .filter((row) => !row.actividad_id)
+        .map((row) => row.fecha_programada.slice(0, 10)),
+    ),
+  ];
+
+  let workouts: Array<{ titulo: string; fecha: string; fecha_fin: string | null }> = [];
+  if (unlinkedDates.length > 0) {
+    const sortedDates = [...unlinkedDates].sort();
+    const from = startOfDay(new Date(`${sortedDates[0]}T12:00:00`)).toISOString();
+    const to = endOfDay(new Date(`${sortedDates[sortedDates.length - 1]}T12:00:00`)).toISOString();
+    const { data, error: workoutsError } = await supabase
+      .from("actividad")
+      .select("titulo, fecha, fecha_fin")
+      .eq("usuario_id", userId)
+      .not("fecha_fin", "is", null)
+      .gte("fecha", from)
+      .lte("fecha", to);
+    if (workoutsError) throw workoutsError;
+    workouts = data ?? [];
+  }
+
+  const idsToDelete = findFulfilledPlannedRoutineIds(
+    planned.map((row) => ({
+      id: row.id,
+      fecha_programada: row.fecha_programada,
+      actividad_id: row.actividad_id,
+      rutina_nombre: (row.rutina as { nombre?: string | null })?.nombre ?? null,
+    })),
+    workouts,
+  );
+
+  if (!idsToDelete.length) return 0;
+
+  const { error: deleteError } = await supabase.from("rutina_programada").delete().in("id", idsToDelete);
+  if (deleteError) throw deleteError;
+  return idsToDelete.length;
+}
+
 export function usePlannedRoutines(startDate: string | Date, endDate: string | Date) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -58,6 +110,8 @@ export function usePlannedRoutines(startDate: string | Date, endDate: string | D
         await queryClient.invalidateQueries({ queryKey: ["plannedRoutines", userId] });
         return [];
       }
+
+      await cleanupFulfilledPlannedRoutines(userId);
 
       const { data, error } = await supabase
         .from("rutina_programada")

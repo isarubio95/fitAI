@@ -58,6 +58,7 @@ import {
   type RoutineIconKey,
 } from "@/lib/routineIcons";
 import { buildWorkoutRoutineSnapshot, type WorkoutRoutineSnapshot } from "@/lib/workoutToRoutine";
+import { getDefaultWorkoutTitle } from "@/lib/defaultWorkoutTitle";
 import { completePlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { startOfMonth } from "date-fns";
 import {
@@ -368,7 +369,7 @@ export function WorkoutLogger() {
   // Reset form when opening for new workout (no template, no edit) — antes de crear la sesión activa
   useEffect(() => {
     if (open && !workoutId && !activeWorkoutId && !templateExercises) {
-      setTitulo("");
+      setTitulo(getDefaultWorkoutTitle());
       setExercises([]);
       setFecha(defaultDate || new Date().toISOString().slice(0, 10));
     }
@@ -495,10 +496,11 @@ export function WorkoutLogger() {
       }
 
       const now = new Date();
+      const defaultTitle = getDefaultWorkoutTitle(now);
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
         .insert({
-          titulo: "",
+          titulo: defaultTitle,
           fecha: now.toISOString(),
           usuario_id: user.id,
           es_publica: comunidadPublicaActividad,
@@ -509,7 +511,7 @@ export function WorkoutLogger() {
       if (actError) throw actError;
 
       setActiveWorkoutId(actividad.id);
-      setTitulo("");
+      setTitulo(defaultTitle);
       setExercises([]);
       setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
       setFecha(defaultDate || now.toISOString().slice(0, 10));
@@ -851,10 +853,9 @@ export function WorkoutLogger() {
   };
 
   const handleSave = async () => {
-    if (!user || !titulo.trim()) {
-      toast({ title: "Completa el formulario", description: "Agrega un título.", variant: "destructive" });
-      return;
-    }
+    if (!user) return;
+
+    const resolvedTitulo = titulo.trim() || getDefaultWorkoutTitle();
 
     // 1. Limpiamos los datos en memoria filtrando series vacías
     const ejerciciosLimpios = exercises
@@ -905,7 +906,7 @@ export function WorkoutLogger() {
           const { error } = await supabase
             .from("actividad")
             .update({
-              titulo: titulo.trim(),
+              titulo: resolvedTitulo,
               fecha: new Date(fecha).toISOString(),
               fecha_fin: new Date().toISOString(),
               icono: workoutIcon,
@@ -923,7 +924,7 @@ export function WorkoutLogger() {
           try {
             const breakdown = await calculateAndAwardXP(effectiveWorkoutId, completedSets, fecha);
             setPostWorkoutRoutineSnapshot(
-              buildWorkoutRoutineSnapshot(titulo.trim(), workoutIcon, ejerciciosLimpios),
+              buildWorkoutRoutineSnapshot(resolvedTitulo, workoutIcon, ejerciciosLimpios),
             );
             setPostWorkoutData(breakdown);
             setShowPostWorkout(true);
@@ -939,7 +940,7 @@ export function WorkoutLogger() {
           const { error } = await supabase
             .from("actividad")
             .update({
-              titulo: titulo.trim(),
+              titulo: resolvedTitulo,
               fecha: new Date(fecha).toISOString(),
               icono: workoutIcon,
             })
@@ -950,14 +951,14 @@ export function WorkoutLogger() {
           close();
         }
       } else {
-        await handleCreate(ejerciciosLimpios);
+        await handleCreate(ejerciciosLimpios, resolvedTitulo);
 
         // Also award XP for manual workouts
         const completedSets = ejerciciosLimpios.reduce((acc, ex) => acc + ex.sets.length, 0);
         try {
           const breakdown = await calculateAndAwardXP("manual", completedSets, fecha);
           setPostWorkoutRoutineSnapshot(
-            buildWorkoutRoutineSnapshot(titulo.trim(), workoutIcon, ejerciciosLimpios),
+            buildWorkoutRoutineSnapshot(resolvedTitulo, workoutIcon, ejerciciosLimpios),
           );
           setPostWorkoutData(breakdown);
           setShowPostWorkout(true);
@@ -977,11 +978,11 @@ export function WorkoutLogger() {
     }
   };
 
-  const handleCreate = async (ejerciciosLimpios: ExerciseFormData[]) => {
+  const handleCreate = async (ejerciciosLimpios: ExerciseFormData[], workoutTitle: string) => {
     const { data: actividad, error: actError } = await supabase
       .from("actividad")
       .insert({
-        titulo: titulo.trim(),
+        titulo: workoutTitle,
         fecha: new Date(fecha).toISOString(),
         fecha_fin: new Date().toISOString(),
         usuario_id: user!.id,
@@ -1052,7 +1053,7 @@ export function WorkoutLogger() {
         <DrawerContent
           className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0"
         >
-          <div className="relative flex h-full min-h-0 flex-col overflow-visible">
+          <div data-workout-drawer-surface className="relative flex h-full min-h-0 flex-col overflow-visible">
             <DrawerHeader
               data-active-workout-sheet-header
               className="sticky top-0 z-10 shrink-0 border-b border-border bg-card px-6 text-left"
@@ -1202,8 +1203,9 @@ export function WorkoutLogger() {
                 </Card>
 
                 {!showFloatingActionBar && (
-                  <div className="px-6 py-4">
+                  <div className="flex justify-center px-6 py-4">
                     <ExerciseSelector
+                      variant="floating"
                       open={exercisePickerOpen}
                       onOpenChange={setExercisePickerOpen}
                       onSelect={addExercise}
@@ -1213,8 +1215,17 @@ export function WorkoutLogger() {
               </div>
             </div>
 
+            {/* Blur solo del contenido del entreno; barra flotante y menú quedan por encima */}
+            {exercisePickerOpen && showFloatingActionBar && (
+              <div
+                aria-hidden
+                className="absolute inset-0 z-30 bg-black/25 backdrop-blur-sm transition-opacity duration-300"
+                onClick={() => setExercisePickerOpen(false)}
+              />
+            )}
+
             {/* Oscurecido inferior para destacar la barra flotante */}
-            {showFloatingActionBar && (
+            {showFloatingActionBar && !exercisePickerOpen && (
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 bottom-0 z-35 h-[120px] bg-linear-to-t from-black/40 via-black/14 to-transparent dark:from-black/55 dark:via-black/24"
@@ -1277,17 +1288,18 @@ export function WorkoutLogger() {
                     </Button>
                   )}
                   <ExerciseSelector
+                    variant="floating"
                     open={exercisePickerOpen}
                     onOpenChange={setExercisePickerOpen}
                     onSelect={addExercise}
                     trigger={
                       <Button
-                        variant="secondary"
+                        variant="default"
                         size="icon"
-                        className="h-12 w-12 rounded-full"
+                        className="h-12 w-12 rounded-full shadow-md"
                         aria-label="Agregar ejercicio"
                       >
-                        <Plus className="h-5 w-5" />
+                        <Plus className="h-5 w-5 stroke-[2px]" />
                       </Button>
                     }
                   />

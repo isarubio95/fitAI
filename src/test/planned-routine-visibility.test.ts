@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isPlannedRoutineFulfilled, pendingPlannedForDay } from "@/lib/plannedRoutineVisibility";
+import {
+  findFulfilledPlannedRoutineIds,
+  isPlannedRoutineFulfilled,
+  pendingPlannedForDay,
+} from "@/lib/plannedRoutineVisibility";
 import type { PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import type { ActividadWithDetails } from "@/types/workout";
 
@@ -46,5 +50,41 @@ describe("plannedRoutineVisibility", () => {
     const dayWorkouts = [workout({ titulo: "Espalda" })];
     expect(isPlannedRoutineFulfilled(item, dayWorkouts)).toBe(false);
     expect(pendingPlannedForDay([item], dayWorkouts)).toEqual([item]);
+  });
+});
+
+describe("findFulfilledPlannedRoutineIds", () => {
+  it("devuelve ids vinculados y los cumplidos por nombre y fecha", () => {
+    const ids = findFulfilledPlannedRoutineIds(
+      [
+        {
+          id: "linked",
+          fecha_programada: "2026-07-01",
+          actividad_id: "act-1",
+          rutina_nombre: "Piernas",
+        },
+        {
+          id: "matched",
+          fecha_programada: "2026-07-03",
+          actividad_id: null,
+          rutina_nombre: "Piernas",
+        },
+        {
+          id: "pending",
+          fecha_programada: "2026-07-05",
+          actividad_id: null,
+          rutina_nombre: "Espalda",
+        },
+      ],
+      [
+        {
+          titulo: "Piernas",
+          fecha: "2026-07-03T10:00:00Z",
+          fecha_fin: "2026-07-03T11:00:00Z",
+        },
+      ],
+    );
+
+    expect(ids).toEqual(["linked", "matched"]);
   });
 });
