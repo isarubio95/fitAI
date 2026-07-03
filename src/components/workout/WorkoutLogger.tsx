@@ -682,22 +682,45 @@ export function WorkoutLogger() {
     );
   };
 
+  /**
+   * Mantiene la caché de React Query (["workout", id]) sincronizada con los
+   * autosaves. Sin esto, al reabrir el entrenamiento activo la hidratación
+   * lee una foto obsoleta y "desaparecen" las últimas series registradas.
+   */
+  const patchSetInWorkoutCache = useCallback(
+    (setId: string, patch: Record<string, unknown>) => {
+      if (!effectiveWorkoutId) return;
+      queryClient.setQueryData(["workout", effectiveWorkoutId], (old: any) => {
+        if (!old?.ejercicios) return old;
+        return {
+          ...old,
+          ejercicios: old.ejercicios.map((ej: any) => ({
+            ...ej,
+            series: (ej.series ?? []).map((s: any) =>
+              s.id === setId ? { ...s, ...patch } : s,
+            ),
+          })),
+        };
+      });
+    },
+    [effectiveWorkoutId, queryClient],
+  );
+
   const persistSetToDb = useCallback(async (exerciseIndex: number, setIndex: number) => {
     const set = exercises[exerciseIndex]?.sets[setIndex];
     if (!set?.id) return;
     const exMode = normalizeRegistroSeries(exercises[exerciseIndex]?.registro_series);
     const dr = serieFieldsForRegistro(exMode, set);
-    await supabase
-      .from("serie")
-      .update({
-        repeticiones: set.repeticiones,
-        peso_kg: set.peso_kg,
-        duracion_seg: dr.duracion_seg,
-        ritmo_seg_km: dr.ritmo_seg_km,
-        completed: !!set.completed,
-      })
-      .eq("id", set.id);
-  }, [exercises]);
+    const payload = {
+      repeticiones: set.repeticiones,
+      peso_kg: set.peso_kg,
+      duracion_seg: dr.duracion_seg,
+      ritmo_seg_km: dr.ritmo_seg_km,
+      completed: !!set.completed,
+    };
+    await supabase.from("serie").update(payload).eq("id", set.id);
+    patchSetInWorkoutCache(set.id, payload);
+  }, [exercises, patchSetInWorkoutCache]);
 
   const handleAutoSaveSet = useCallback(
     async (exerciseIndex: number, setIndex: number) => {
@@ -735,6 +758,7 @@ export function WorkoutLogger() {
       if (set?.id && effectiveWorkoutId) {
         try {
           await supabase.from("serie").update({ completed }).eq("id", set.id);
+          patchSetInWorkoutCache(set.id, { completed });
         } catch {
           // Silent fail
         }
@@ -745,7 +769,7 @@ export function WorkoutLogger() {
         restTimer.start(`${exerciseIndex}-${setIndex}`, restSeconds, effectiveWorkoutId);
       }
     },
-    [exercises, effectiveWorkoutId, restTimer]
+    [exercises, effectiveWorkoutId, restTimer, patchSetInWorkoutCache]
   );
 
   const handleWorkoutIconChange = useCallback(
@@ -1043,6 +1067,22 @@ export function WorkoutLogger() {
     }
   };
 
+  /**
+   * Al minimizar/cerrar el drawer nos aseguramos de persistir en BD las
+   * series pendientes (p. ej. un input que se cierra sin disparar onBlur).
+   * El flush corre con los valores capturados en el closure aunque el estado
+   * del drawer se resetee justo después.
+   */
+  const handleDrawerOpenChange = useCallback(
+    (next: boolean) => {
+      if (!next) {
+        void flushAllSetsToDb();
+      }
+      setOpen(next);
+    },
+    [flushAllSetsToDb, setOpen],
+  );
+
   const saveButtonLabel = isActiveWorkout ? "Finalizar" : isEdit ? "Actualizar" : "Guardar";
   const primaryActionIcon = isActiveWorkout ? (
     <Flag className="h-4 w-4" />
@@ -1062,7 +1102,7 @@ export function WorkoutLogger() {
 
   return (
     <>
-      <Drawer open={open} onOpenChange={setOpen} shouldScaleBackground={false}>
+      <Drawer open={open} onOpenChange={handleDrawerOpenChange} shouldScaleBackground={false}>
         <DrawerContent
           className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0"
         >
