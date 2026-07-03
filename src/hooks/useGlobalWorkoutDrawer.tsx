@@ -24,6 +24,7 @@ interface GlobalWorkoutDrawerContextType {
     title: string,
     exercises: ExerciseFormData[],
     routineIcon?: string | null,
+    plannedDate?: string,
   ) => void;
   openActiveWorkout: (workoutId: string) => void;
   setOpen: (open: boolean) => void;
@@ -102,12 +103,18 @@ export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode 
   );
 
   const openFromPlannedRoutine = useCallback(
-    (plannedId: string, title: string, exercises: ExerciseFormData[], routineIcon?: string | null) => {
+    (
+      plannedId: string,
+      title: string,
+      exercises: ExerciseFormData[],
+      routineIcon?: string | null,
+      plannedDate?: string,
+    ) => {
       if (blockIfActiveWorkout()) return;
       setState({
         open: true,
         workoutId: null,
-        defaultDate: undefined,
+        defaultDate: plannedDate?.slice(0, 10),
         templateExercises: exercises,
         templateTitle: title,
         templateRoutineIcon: routineIcon ?? null,

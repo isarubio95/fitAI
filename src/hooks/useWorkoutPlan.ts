@@ -177,6 +177,12 @@ export function useDeleteAllPlannedRoutines() {
   });
 }
 
+/** Elimina la entrada de planificación al completar el entrenamiento programado. */
+export async function completePlannedRoutine(plannedId: string): Promise<void> {
+  const { error } = await supabase.from("rutina_programada").delete().eq("id", plannedId);
+  if (error) throw error;
+}
+
 export function useUpdatePlannedRoutine() {
   const queryClient = useQueryClient();
   return useMutation({

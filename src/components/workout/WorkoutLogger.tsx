@@ -58,6 +58,7 @@ import {
   type RoutineIconKey,
 } from "@/lib/routineIcons";
 import { buildWorkoutRoutineSnapshot, type WorkoutRoutineSnapshot } from "@/lib/workoutToRoutine";
+import { completePlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { startOfMonth } from "date-fns";
 import {
   type ExerciseFormData,
@@ -280,6 +281,12 @@ export function WorkoutLogger() {
     ? hasRecordedWork && hasUnsavedChanges
     : hasRecordedWork;
   const hydratedWorkoutIdRef = useRef<string | null>(null);
+  const linkedPlannedIdRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (open && plannedId) linkedPlannedIdRef.current = plannedId;
+    if (!open) linkedPlannedIdRef.current = undefined;
+  }, [open, plannedId]);
 
   // Pre-fill form when editing existing workout (no hacerlo si abrimos desde plantilla: createActiveWorkout ya puso exercises con superset_id)
   useEffect(() => {
@@ -397,11 +404,15 @@ export function WorkoutLogger() {
       }
 
       const templateIcon = resolveRoutineIconKey(templateRoutineIcon ?? DEFAULT_ROUTINE_ICON_KEY);
+      const plannedDate = defaultDate?.slice(0, 10);
+      const workoutDate = plannedDate
+        ? new Date(`${plannedDate}T12:00:00`)
+        : new Date();
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
         .insert({
           titulo: templateTitle.trim(),
-          fecha: new Date().toISOString(),
+          fecha: workoutDate.toISOString(),
           usuario_id: user.id,
           es_publica: comunidadPublicaActividad,
           icono: templateIcon,
@@ -463,6 +474,7 @@ export function WorkoutLogger() {
       setActiveWorkoutId(actividad.id);
       setTitulo(templateTitle);
       setWorkoutIcon(templateIcon);
+      setFecha(plannedDate || new Date().toISOString().slice(0, 10));
       setExercises(updatedExercises);
       invalidateActiveWorkoutQueries();
     } catch (error: any) {
@@ -786,6 +798,15 @@ export function WorkoutLogger() {
     }
     queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
     queryClient.invalidateQueries({ queryKey: ["communityFeed"] });
+    queryClient.invalidateQueries({ queryKey: ["plannedRoutines"] });
+  };
+
+  const finalizeLinkedPlannedRoutine = async () => {
+    const linkedPlannedId = linkedPlannedIdRef.current ?? plannedId;
+    if (!linkedPlannedId) return;
+    await completePlannedRoutine(linkedPlannedId);
+    linkedPlannedIdRef.current = undefined;
+    queryClient.invalidateQueries({ queryKey: ["plannedRoutines"] });
   };
 
   const handleDelete = async () => {
@@ -892,13 +913,7 @@ export function WorkoutLogger() {
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
 
-          // Marcar la rutina programada como completada, si aplica
-          if (plannedId) {
-            await (supabase as any)
-              .from("rutina_programada")
-              .update({ actividad_id: effectiveWorkoutId })
-              .eq("id", plannedId);
-          }
+          await finalizeLinkedPlannedRoutine();
 
           // Calculate XP and show post-workout modal
           const completedSets = exercises.reduce(

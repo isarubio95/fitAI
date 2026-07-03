@@ -56,6 +56,7 @@ import {
   getCalendarDayCircleClasses,
   resolveCalendarDayDisplay,
 } from "@/lib/calendarDayDisplay";
+import { pendingPlannedForDay } from "@/lib/plannedRoutineVisibility";
 import { cn } from "@/lib/utils";
 
 type CardioSessionLabelData = {
@@ -245,10 +246,11 @@ export function MonthlyPlanner({
                 const key = format(day, "yyyy-MM-dd");
                 const dayWorkouts = workoutsByDay.get(key) || [];
                 const dayPlanned = plannedByDay.get(key) || [];
+                const pendingPlanned = pendingPlannedForDay(dayPlanned, dayWorkouts);
                 const dayCardio = cardioByDay.get(key) || [];
                 const isTrained = dayWorkouts.length > 0;
                 const isCardioTrained = !isTrained && dayCardio.length > 0;
-                const isScheduled = !isTrained && dayPlanned.length > 0;
+                const isScheduled = !isTrained && pendingPlanned.length > 0;
 
                 const now = startOfDay(new Date());
                 const dayStart = startOfDay(day);
@@ -282,7 +284,7 @@ export function MonthlyPlanner({
 
                 const dayDisplay = resolveCalendarDayDisplay(
                   dayWorkouts,
-                  dayPlanned,
+                  pendingPlanned,
                   dayCardio,
                   routines,
                   calendarDataReady,
@@ -336,7 +338,10 @@ export function MonthlyPlanner({
                 (() => {
                   const expandedDate = new Date(`${expandedDayKey}T00:00:00`);
                   const expandedWorkouts = workoutsByDay.get(expandedDayKey) || [];
-                  const expandedPlanned = plannedByDay.get(expandedDayKey) || [];
+                  const expandedPlanned = pendingPlannedForDay(
+                    plannedByDay.get(expandedDayKey) || [],
+                    expandedWorkouts,
+                  );
                   const expandedCardio = cardioByDay.get(expandedDayKey) || [];
                   const dayStart = startOfDay(expandedDate);
                   const now = startOfDay(new Date());

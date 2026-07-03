@@ -318,7 +318,13 @@ const Dashboard = () => {
     const activeEl = document.activeElement as HTMLElement | null;
     activeEl?.blur?.();
 
-    openFromPlannedRoutine(planned.id, routine.nombre ?? "Rutina", ejercicios, planned.rutina?.icono ?? null);
+    openFromPlannedRoutine(
+      planned.id,
+      routine.nombre ?? "Rutina",
+      ejercicios,
+      planned.rutina?.icono ?? null,
+      planned.fecha_programada,
+    );
   };
 
   // MouseSensor (escritorio) + TouchSensor (móvil) en lugar de PointerSensor:
