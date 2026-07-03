@@ -20,10 +20,15 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg group-[.toaster]:text-[13px] group-[.toaster]:leading-snug",
-          title: "group-[.toast]:text-[13px] group-[.toast]:leading-snug",
-          description: "group-[.toast]:text-muted-foreground group-[.toast]:text-[13px] group-[.toast]:leading-snug",
-          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+            "group toast group-[.toaster]:border-success-border group-[.toaster]:border-l-4 group-[.toaster]:border-l-success group-[.toaster]:bg-success-muted group-[.toaster]:text-success-foreground group-[.toaster]:shadow-lg group-[.toaster]:shadow-success/10 group-[.toaster]:text-[13px] group-[.toaster]:leading-snug",
+          title: "group-[.toast]:text-[13px] group-[.toast]:font-semibold group-[.toast]:leading-snug",
+          description:
+            "group-[.toast]:text-success-foreground/75 group-[.toast]:text-[13px] group-[.toast]:leading-snug",
+          success:
+            "group-[.toaster]:border-success-border group-[.toaster]:border-l-success group-[.toaster]:bg-success-muted group-[.toaster]:text-success-foreground",
+          error:
+            "group-[.toaster]:border-destructive group-[.toaster]:border-l-destructive group-[.toaster]:bg-destructive group-[.toaster]:text-destructive-foreground",
+          actionButton: "group-[.toast]:bg-success group-[.toast]:text-white",
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
       }}

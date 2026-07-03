@@ -51,7 +51,7 @@ import { checkAndAwardLogros } from "@/hooks/useLogros";
 import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import { WorkoutLeadingRoutineIcon } from "@/components/dashboard/WorkoutDetailsSheet";
-import { RoutineIconPicker } from "@/components/routine/RoutineIconPicker";
+import { RoutineIconPicker, WorkoutIconPickerTrigger } from "@/components/routine/RoutineIconPicker";
 import {
   DEFAULT_ROUTINE_ICON_KEY,
   resolveRoutineIconKey,
@@ -221,7 +221,7 @@ export function WorkoutLogger() {
   const [activeWorkoutId, setActiveWorkoutId] = useState<string | null>(null);
   const effectiveWorkoutId = workoutId || activeWorkoutId;
 
-  const { data: existingWorkout } = useWorkoutById(effectiveWorkoutId ?? null);
+  const { data: existingWorkout, isLoading: loadingWorkout } = useWorkoutById(effectiveWorkoutId ?? null);
   const { data: serverActiveWorkout, isLoading: loadingServerActiveWorkout } = useActiveWorkout();
 
   const [titulo, setTitulo] = useState("");
@@ -264,15 +264,14 @@ export function WorkoutLogger() {
     },
   });
 
-  const routineIcon =
-    templateRoutineIcon != null
-      ? resolveRoutineIconKey(templateRoutineIcon)
-      : workoutIcon;
-
   const isEdit = !!effectiveWorkoutId;
-  const isActiveWorkout = !!activeWorkoutId || (!!existingWorkout && !existingWorkout.fecha_fin);
-  const isEditingCompletedWorkout = isEdit && !isActiveWorkout;
+  const isActiveWorkout =
+    !!activeWorkoutId ||
+    (!!existingWorkout && !existingWorkout.fecha_fin) ||
+    (!!workoutId && serverActiveWorkout?.id === workoutId);
+  const isEditingCompletedWorkout = isEdit && !isActiveWorkout && !loadingWorkout;
   const showFloatingActionBar = isActiveWorkout || isEditingCompletedWorkout;
+  const showFinishButton = isActiveWorkout ? exercises.length > 0 : isEditingCompletedWorkout;
   const hasRecordedWork = countRecordedSets(exercises) > 0;
   const hasUnsavedChanges = useMemo(() => {
     if (!isEditingCompletedWorkout || editBaseline === null) return false;
@@ -749,6 +748,20 @@ export function WorkoutLogger() {
     [exercises, effectiveWorkoutId, restTimer]
   );
 
+  const handleWorkoutIconChange = useCallback(
+    async (icon: RoutineIconKey) => {
+      setWorkoutIcon(icon);
+      if (effectiveWorkoutId) {
+        try {
+          await supabase.from("actividad").update({ icono: icon }).eq("id", effectiveWorkoutId);
+        } catch {
+          // Silent fail; el icono se guardará al finalizar
+        }
+      }
+    },
+    [effectiveWorkoutId],
+  );
+
   const handleViewExerciseDetails = useCallback(
     (exercise: ExerciseFormData) => {
       const catalogId = (exercise as any).tipo_ejercicio_id ?? (exercise as any).usuario_ejercicio_id;
@@ -1053,7 +1066,7 @@ export function WorkoutLogger() {
         <DrawerContent
           className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0"
         >
-          <div data-workout-drawer-surface className="relative flex h-full min-h-0 flex-col overflow-visible">
+          <div data-workout-drawer-surface className="relative isolate flex h-full min-h-0 flex-col overflow-hidden">
             <DrawerHeader
               data-active-workout-sheet-header
               className="sticky top-0 z-10 shrink-0 border-b border-border bg-card px-6 text-left"
@@ -1084,7 +1097,15 @@ export function WorkoutLogger() {
               </div>
             </DrawerHeader>
 
-            <div className="min-h-0 flex-1 overflow-y-auto bg-background">
+            <div className="relative min-h-0 flex-1">
+              {exercisePickerOpen && (
+                <div
+                  aria-hidden
+                  className="absolute inset-0 z-20 bg-black/30 backdrop-blur-[3px] transition-opacity duration-300"
+                  onClick={() => setExercisePickerOpen(false)}
+                />
+              )}
+              <div className="min-h-0 h-full overflow-y-auto bg-background">
               <div className={cn("flex flex-col gap-1 bg-background", showFloatingActionBar ? "pb-32" : "pb-20")}>
                 <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
                   <CardContent className="space-y-3 px-6 py-4">
@@ -1092,7 +1113,15 @@ export function WorkoutLogger() {
                       <div className="col-span-2 space-y-1.5 sm:col-span-1">
                         <Label htmlFor="titulo">Título</Label>
                         <div className="flex items-center gap-3">
-                          <WorkoutLeadingRoutineIcon iconKey={routineIcon} />
+                          {isActiveWorkout ? (
+                            <WorkoutIconPickerTrigger
+                              value={workoutIcon}
+                              onChange={handleWorkoutIconChange}
+                              disabled={creatingActive}
+                            />
+                          ) : (
+                            <WorkoutLeadingRoutineIcon iconKey={workoutIcon} />
+                          )}
                           <Input
                             id="titulo"
                             placeholder="Ej: Día de Pierna"
@@ -1213,16 +1242,8 @@ export function WorkoutLogger() {
                   </div>
                 )}
               </div>
+              </div>
             </div>
-
-            {/* Blur solo del contenido del entreno; barra flotante y menú quedan por encima */}
-            {exercisePickerOpen && showFloatingActionBar && (
-              <div
-                aria-hidden
-                className="absolute inset-0 z-30 bg-black/25 backdrop-blur-sm transition-opacity duration-300"
-                onClick={() => setExercisePickerOpen(false)}
-              />
-            )}
 
             {/* Oscurecido inferior para destacar la barra flotante */}
             {showFloatingActionBar && !exercisePickerOpen && (
@@ -1294,7 +1315,7 @@ export function WorkoutLogger() {
                     onSelect={addExercise}
                     trigger={
                       <Button
-                        variant="default"
+                        variant={isActiveWorkout && exercises.length > 0 ? "secondary" : "default"}
                         size="icon"
                         className="h-12 w-12 rounded-full shadow-md"
                         aria-label="Agregar ejercicio"
@@ -1304,24 +1325,26 @@ export function WorkoutLogger() {
                     }
                   />
                 </div>
-                <div
-                  data-vaul-no-drag
-                  className={cn("pointer-events-auto flex items-center", ACTIVE_WORKOUT_FLOATING_SHELL)}
-                >
-                  <Button
-                    variant="default"
-                    className="h-12 gap-1.5 rounded-full px-5 font-semibold"
-                    onClick={handleSave}
-                    disabled={saving || creatingActive || !canSubmitPrimaryAction}
+                {showFinishButton && (
+                  <div
+                    data-vaul-no-drag
+                    className={cn("pointer-events-auto flex items-center", ACTIVE_WORKOUT_FLOATING_SHELL)}
                   >
-                    {saving || creatingActive ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      primaryActionIcon
-                    )}
-                    {saveButtonLabel}
-                  </Button>
-                </div>
+                    <Button
+                      variant="default"
+                      className="h-12 gap-1.5 rounded-full px-5 font-semibold"
+                      onClick={handleSave}
+                      disabled={saving || creatingActive || !canSubmitPrimaryAction}
+                    >
+                      {saving || creatingActive ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        primaryActionIcon
+                      )}
+                      {saveButtonLabel}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -102,7 +102,7 @@ function ExerciseSelectorPanel({
           </div>
         </div>
         <div
-          className="max-h-[min(50svh,22rem)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
+          className="max-h-[min(58svh,28rem)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
           onWheelCapture={(e) => e.stopPropagation()}
           onTouchMoveCapture={(e) => e.stopPropagation()}
           onScroll={(e) => {
@@ -329,7 +329,7 @@ export function ExerciseSelector({
           </Button>
         )}
       </PopoverTrigger>
-      <PopoverContent className="max-h-[70svh] w-[320px] overflow-hidden p-0" align="start">
+      <PopoverContent className="max-h-[75svh] w-[320px] overflow-hidden p-0" align="start">
         {panel}
       </PopoverContent>
     </Popover>
