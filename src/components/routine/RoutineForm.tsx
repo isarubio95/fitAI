@@ -46,7 +46,7 @@ import { badgeVariants } from "@/components/ui/badge";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { RoutineIconPicker } from "@/components/routine/RoutineIconPicker";
 import { useToast } from "@/hooks/use-toast";
-import type { RoutineExerciseFormData, RutinaEjercicioWithDetails } from "@/types/routine";
+import type { RoutineExerciseFormData, RoutineFormSnapshot, RutinaEjercicioWithDetails } from "@/types/routine";
 import { type RegistroSeries, normalizeRegistroSeries } from "@/types/workout";
 import {
   DEFAULT_ROUTINE_ICON_KEY,
@@ -59,6 +59,7 @@ interface RoutineFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   routineId?: string | null;
+  prefillSnapshot?: RoutineFormSnapshot | null;
 }
 
 function generateUUID(): string {
@@ -83,7 +84,7 @@ function groupExercises(ejercicios: RoutineExerciseFormData[]) {
   return groups;
 }
 
-type RoutineFormSnapshot = {
+type RoutineFormEditSnapshot = {
   nombre: string;
   descripcion: string;
   icono: RoutineIconKey;
@@ -125,7 +126,7 @@ function exerciseSnapshotKey(ej: RoutineExerciseFormData) {
   });
 }
 
-function routineFormSnapshotsEqual(a: RoutineFormSnapshot, b: RoutineFormSnapshot) {
+function routineFormSnapshotsEqual(a: RoutineFormEditSnapshot, b: RoutineFormEditSnapshot) {
   if (a.nombre.trim() !== b.nombre.trim()) return false;
   if (a.descripcion.trim() !== b.descripcion.trim()) return false;
   if (a.icono !== b.icono) return false;
@@ -133,7 +134,7 @@ function routineFormSnapshotsEqual(a: RoutineFormSnapshot, b: RoutineFormSnapsho
   return a.ejercicios.every((ej, i) => exerciseSnapshotKey(ej) === exerciseSnapshotKey(b.ejercicios[i]));
 }
 
-export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFormProps) {
+export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnapshot = null }: RoutineFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -153,14 +154,14 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
   // When linking a superset, we store the index + generated superset_id
   const [supersetLink, setSupersetLink] = useState<{ afterIndex: number; supersetId: string } | null>(null);
-  const [initialSnapshot, setInitialSnapshot] = useState<RoutineFormSnapshot | null>(null);
+  const [initialSnapshot, setInitialSnapshot] = useState<RoutineFormEditSnapshot | null>(null);
 
   const isEdit = !!routineId;
 
   useEffect(() => {
     if (isEdit && existingRoutine && open) {
       const loadedEjercicios = mapRoutineExercisesFromApi(existingRoutine.ejercicios);
-      const snapshot: RoutineFormSnapshot = {
+      const snapshot: RoutineFormEditSnapshot = {
         nombre: existingRoutine.nombre,
         descripcion: existingRoutine.descripcion || "",
         icono: resolveRoutineIconKey(existingRoutine.icono),
@@ -176,14 +177,26 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
   useEffect(() => {
     if (open && !isEdit) {
-      setNombre("");
-      setDescripcion("");
-      setIcono(DEFAULT_ROUTINE_ICON_KEY);
-      setEjercicios([]);
+      if (prefillSnapshot) {
+        setNombre(prefillSnapshot.nombre);
+        setDescripcion(prefillSnapshot.descripcion);
+        setIcono(resolveRoutineIconKey(prefillSnapshot.icono));
+        setEjercicios(
+          prefillSnapshot.ejercicios.map((ej, index) => ({
+            ...ej,
+            orden: index,
+          })),
+        );
+      } else {
+        setNombre("");
+        setDescripcion("");
+        setIcono(DEFAULT_ROUTINE_ICON_KEY);
+        setEjercicios([]);
+      }
       setSupersetLink(null);
       setInitialSnapshot(null);
     }
-  }, [open, isEdit]);
+  }, [open, isEdit, prefillSnapshot]);
 
   useEffect(() => {
     if (!open) setInitialSnapshot(null);
@@ -191,7 +204,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null }: RoutineFor
 
   const isDirty = useMemo(() => {
     if (!isEdit || !initialSnapshot) return false;
-    const current: RoutineFormSnapshot = { nombre, descripcion, icono, ejercicios };
+    const current: RoutineFormEditSnapshot = { nombre, descripcion, icono, ejercicios };
     return !routineFormSnapshotsEqual(initialSnapshot, current);
   }, [isEdit, initialSnapshot, nombre, descripcion, icono, ejercicios]);
 

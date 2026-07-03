@@ -35,3 +35,10 @@ export interface RoutineFormData {
   descripcion: string;
   ejercicios: RoutineExerciseFormData[];
 }
+
+export interface RoutineFormSnapshot {
+  nombre: string;
+  descripcion: string;
+  icono: string;
+  ejercicios: RoutineExerciseFormData[];
+}

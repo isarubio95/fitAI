@@ -57,6 +57,7 @@ import {
   resolveRoutineIconKey,
   type RoutineIconKey,
 } from "@/lib/routineIcons";
+import { buildWorkoutRoutineSnapshot, type WorkoutRoutineSnapshot } from "@/lib/workoutToRoutine";
 import { startOfMonth } from "date-fns";
 import {
   type ExerciseFormData,
@@ -233,6 +234,7 @@ export function WorkoutLogger() {
   const [pausedAccumMs, setPausedAccumMs] = useState(0);
   const isPaused = pausedAt !== null;
   const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
+  const [postWorkoutRoutineSnapshot, setPostWorkoutRoutineSnapshot] = useState<WorkoutRoutineSnapshot | null>(null);
   const [showPostWorkout, setShowPostWorkout] = useState(false);
   const calculateAndAwardXP = useCalculateAndAwardXP();
   const removeXP = useRemoveWorkoutXP();
@@ -905,6 +907,9 @@ export function WorkoutLogger() {
           );
           try {
             const breakdown = await calculateAndAwardXP(effectiveWorkoutId, completedSets, fecha);
+            setPostWorkoutRoutineSnapshot(
+              buildWorkoutRoutineSnapshot(titulo.trim(), workoutIcon, ejerciciosLimpios),
+            );
             setPostWorkoutData(breakdown);
             setShowPostWorkout(true);
             checkAndAwardLogros(user!.id).then(() => {
@@ -936,6 +941,9 @@ export function WorkoutLogger() {
         const completedSets = ejerciciosLimpios.reduce((acc, ex) => acc + ex.sets.length, 0);
         try {
           const breakdown = await calculateAndAwardXP("manual", completedSets, fecha);
+          setPostWorkoutRoutineSnapshot(
+            buildWorkoutRoutineSnapshot(titulo.trim(), workoutIcon, ejerciciosLimpios),
+          );
           setPostWorkoutData(breakdown);
           setShowPostWorkout(true);
           checkAndAwardLogros(user!.id).then(() => {
@@ -1321,8 +1329,10 @@ export function WorkoutLogger() {
         onClose={() => {
           setShowPostWorkout(false);
           setPostWorkoutData(null);
+          setPostWorkoutRoutineSnapshot(null);
         }}
         breakdown={postWorkoutData}
+        routineSnapshot={postWorkoutRoutineSnapshot}
       />
 
       <ExerciseDetailSheet
