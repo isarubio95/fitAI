@@ -405,14 +405,15 @@ export function WorkoutLogger() {
 
       const templateIcon = resolveRoutineIconKey(templateRoutineIcon ?? DEFAULT_ROUTINE_ICON_KEY);
       const plannedDate = defaultDate?.slice(0, 10);
-      const workoutDate = plannedDate
-        ? new Date(`${plannedDate}T12:00:00`)
-        : new Date();
+      // La fecha de la actividad activa debe ser el instante REAL de inicio para
+      // que el cronómetro cuente bien (antes se fijaba a las 12:00 del día
+      // planificado, lo que dejaba el contador a 0:00 al entrenar por la mañana).
+      // La fecha "de calendario" se conserva en el estado y se guarda al finalizar.
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
         .insert({
           titulo: templateTitle.trim(),
-          fecha: workoutDate.toISOString(),
+          fecha: new Date().toISOString(),
           usuario_id: user.id,
           es_publica: comunidadPublicaActividad,
           icono: templateIcon,
@@ -667,6 +668,24 @@ export function WorkoutLogger() {
     );
   };
 
+  const autoSaveTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const persistSetRef = useRef<((ei: number, si: number) => Promise<void>) | null>(null);
+
+  /**
+   * Autoguardado con debounce: red de seguridad para que reps/peso se persistan
+   * aunque el onBlur del input no llegue a dispararse (frecuente en móvil al
+   * tocar el checkbox "Hecho" o al minimizar el drawer mientras se escribe).
+   */
+  const scheduleAutoSave = useCallback((exerciseIndex: number, setIndex: number) => {
+    const key = `${exerciseIndex}-${setIndex}`;
+    const timers = autoSaveTimersRef.current;
+    if (timers[key]) clearTimeout(timers[key]);
+    timers[key] = setTimeout(() => {
+      delete timers[key];
+      void persistSetRef.current?.(exerciseIndex, setIndex);
+    }, 600);
+  }, []);
+
   const updateSet = (
     exerciseIndex: number,
     setIndex: number,
@@ -680,6 +699,7 @@ export function WorkoutLogger() {
           : ex
       )
     );
+    if (isActiveWorkout) scheduleAutoSave(exerciseIndex, setIndex);
   };
 
   /**
@@ -733,7 +753,13 @@ export function WorkoutLogger() {
     [persistSetToDb]
   );
 
+  useEffect(() => {
+    persistSetRef.current = handleAutoSaveSet;
+  }, [handleAutoSaveSet]);
+
   const flushAllSetsToDb = useCallback(async () => {
+    Object.values(autoSaveTimersRef.current).forEach((t) => clearTimeout(t));
+    autoSaveTimersRef.current = {};
     if (!effectiveWorkoutId) return;
     const pending = exercises.flatMap((ex, exerciseIndex) =>
       ex.sets.map((set, setIndex) => ({ exerciseIndex, setIndex, set })).filter(({ set }) => set.id),
@@ -756,9 +782,21 @@ export function WorkoutLogger() {
       );
 
       if (set?.id && effectiveWorkoutId) {
+        // Persistimos la fila COMPLETA (no solo `completed`): al marcar "Hecho"
+        // en móvil el onBlur del input de reps/peso puede no dispararse, así que
+        // guardamos también esos valores para no perder lo recién escrito.
+        const exMode = normalizeRegistroSeries(ex.registro_series);
+        const dr = serieFieldsForRegistro(exMode, set);
+        const payload = {
+          repeticiones: set.repeticiones,
+          peso_kg: set.peso_kg,
+          duracion_seg: dr.duracion_seg,
+          ritmo_seg_km: dr.ritmo_seg_km,
+          completed,
+        };
         try {
-          await supabase.from("serie").update({ completed }).eq("id", set.id);
-          patchSetInWorkoutCache(set.id, { completed });
+          await supabase.from("serie").update(payload).eq("id", set.id);
+          patchSetInWorkoutCache(set.id, payload);
         } catch {
           // Silent fail
         }
