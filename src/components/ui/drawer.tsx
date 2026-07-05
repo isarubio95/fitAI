@@ -178,8 +178,8 @@ DrawerContent.displayName = "DrawerContent";
 const DrawerGrabber = ({ className }: { className?: string }) => (
   <DrawerPrimitive.Handle
     // `!` para vencer los estilos base que Vaul inyecta en runtime (color/tamaño fijos)
-    // y así respetar el tema claro/oscuro con un grabber fino tipo iOS/Android.
-    className={cn("mx-auto h-1.5! w-10! shrink-0 rounded-full! bg-muted-foreground/40!", className)}
+    // y así respetar el tema claro/oscuro con el color `bg-muted` habitual del drawer.
+    className={cn("mx-auto h-1.25! w-11! shrink-0 rounded-full!", className)}
   />
 );
 
