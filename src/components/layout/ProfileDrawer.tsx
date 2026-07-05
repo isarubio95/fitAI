@@ -481,7 +481,7 @@ function ProfileDrawerSheet() {
           </div>
 
           <div className="space-y-3">
-            <p className="px-6 text-sm font-medium pt-3">Últimos entrenamientos</p>
+            <p className="px-6 text-sm font-medium pt-3 mb-0">Últimos entrenamientos</p>
 
             {loadingWorkoutHistory ? (
               <div className="grid grid-cols-1 gap-2 px-6">
