@@ -152,7 +152,7 @@ const Sidebar = React.forwardRef<
 
   if (isMobile) {
     return (
-      <Drawer direction={side} open={openMobile} onOpenChange={setOpenMobile} {...props}>
+      <Drawer direction={side} open={openMobile} onOpenChange={setOpenMobile}>
         <DrawerContent
           data-sidebar="sidebar"
           data-mobile="true"
@@ -165,7 +165,9 @@ const Sidebar = React.forwardRef<
           side={side}
         >
           <DrawerTitle className="sr-only">Menú de navegación</DrawerTitle>
-          <div className={cn("flex h-full w-full flex-col", drawerSafeAreaBottom)}>{children}</div>
+          <div ref={ref} className={cn("flex h-full w-full flex-col", drawerSafeAreaBottom)} {...props}>
+            {children}
+          </div>
         </DrawerContent>
       </Drawer>
     );
@@ -195,8 +197,8 @@ const Sidebar = React.forwardRef<
         className={cn(
           "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
           side === "left"
-            ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-            : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
+            ? "left-0 group-data-[collapsible=offcanvas]:-left-(--sidebar-width)"
+            : "right-0 group-data-[collapsible=offcanvas]:-right-(--sidebar-width)",
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
