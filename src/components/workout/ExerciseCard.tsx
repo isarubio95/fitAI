@@ -69,7 +69,7 @@ export function ExerciseCard({
   const wrapperClass = cn(
     "space-y-3",
     inDrawer
-      ? cn("px-6 py-4", isInSuperset ? "bg-primary/5" : "bg-card")
+      ? cn("p-6", isInSuperset ? "bg-primary/5" : "bg-card")
       : cn("rounded-xl border border-border bg-card p-4"),
   );
 

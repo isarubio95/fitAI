@@ -1241,7 +1241,7 @@ export function WorkoutLogger() {
 
                 <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
                   <CardContent className="p-0">
-                    <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-3">
+                    <div className="flex items-center justify-between gap-3 px-6 pt-4">
                       <div className="font-semibold">Ejercicios</div>
                       <div className="text-xs text-muted-foreground tabular-nums">
                         {exercises.length} ejercicio{exercises.length === 1 ? "" : "s"}
