@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { useInAppNotifications } from "@/hooks/useInAppNotifications";
 import { cn } from "@/lib/utils";
 import { isNewFollowerNotification, type InAppNotificationItem } from "@/types/inAppNotification";
@@ -141,7 +141,7 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
             ) : null}
           </DrawerHeader>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-4">
+          <div className={cn("min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-4", drawerSafeAreaBottom)}>
             {items.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">No hay novedades por ahora.</p>
             ) : (

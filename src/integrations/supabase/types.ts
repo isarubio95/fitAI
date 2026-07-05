@@ -689,6 +689,7 @@ export type Database = {
           ritmo_objetivo_seg_km: number | null
           rutina_id: string
           series_objetivo: number
+          superset_id: string | null
           tipo_ejercicio_id: string | null
           usuario_ejercicio_id: string | null
         }
@@ -705,6 +706,7 @@ export type Database = {
           ritmo_objetivo_seg_km?: number | null
           rutina_id: string
           series_objetivo?: number
+          superset_id?: string | null
           tipo_ejercicio_id?: string | null
           usuario_ejercicio_id?: string | null
         }
@@ -721,6 +723,7 @@ export type Database = {
           ritmo_objetivo_seg_km?: number | null
           rutina_id?: string
           series_objetivo?: number
+          superset_id?: string | null
           tipo_ejercicio_id?: string | null
           usuario_ejercicio_id?: string | null
         }

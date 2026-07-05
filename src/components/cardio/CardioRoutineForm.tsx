@@ -3,7 +3,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpsertCardioRoutine } from "@/hooks/useCardioRoutines";
 import { useCardioDisciplinas } from "@/hooks/useCardioSessions";
@@ -97,7 +97,7 @@ export function CardioRoutineForm({ open, onOpenChange, initial }: Props) {
           </div>
         </DrawerHeader>
 
-        <div className="space-y-6 p-4">
+        <div className={cn("space-y-6 p-4", drawerSafeAreaBottom)}>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="rutina-nombre">Nombre</Label>

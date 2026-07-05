@@ -443,7 +443,7 @@ export function GenerateRoutineDialog({ open, onOpenChange, onApplyPlan }: Gener
             )}
           </div>
 
-          <DrawerFooter className="mt-auto border-t border-border bg-background p-4">
+          <DrawerFooter className="mt-auto border-t border-border bg-background px-4 pt-4">
             <Button
               onClick={generatePlan}
               disabled={generateRoutine.isPending || !canGenerate}

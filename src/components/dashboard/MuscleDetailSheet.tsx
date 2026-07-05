@@ -1,7 +1,8 @@
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
+import { cn } from "@/lib/utils";
 
 interface MuscleDetailSheetProps {
   open: boolean;
@@ -29,7 +30,7 @@ export function MuscleDetailSheet({ open, onOpenChange, group, specificVolume }:
           </DrawerHeader>
 
           <div className="overflow-y-auto bg-background">
-            <div className="flex flex-col gap-1 bg-background pb-6">
+            <div className={cn("flex flex-col gap-1 bg-background", drawerSafeAreaBottom)}>
               <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
                 <CardContent className="space-y-4 px-6 py-4">
                   {muscles.map((muscle) => {

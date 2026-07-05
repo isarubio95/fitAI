@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle,
+  drawerSafeAreaBottom,
 } from "@/components/ui/drawer";
 import { useMuscleStatistics, type MuscleStatistics } from "@/hooks/useMuscleStatistics";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
@@ -73,7 +74,7 @@ export function MuscleRankingWidget() {
 
       {/* Drill-down Sheet */}
       <Drawer open={!!detailGroup} onOpenChange={(open) => !open && setDetailGroup(null)}>
-        <DrawerContent side="bottom" className="max-h-[70dvh] overflow-y-auto">
+        <DrawerContent side="bottom" className={cn("max-h-[70dvh] overflow-y-auto", drawerSafeAreaBottom)}>
           {detailGroup && (
             <DetailContent group={detailGroup} data={data} />
           )}

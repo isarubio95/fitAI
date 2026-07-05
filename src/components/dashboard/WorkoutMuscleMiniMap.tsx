@@ -28,7 +28,7 @@ export function WorkoutMuscleMiniMap({ groupSets, maxSets, className }: WorkoutM
 
   return (
     <div className={cn(className)} aria-label={ariaLabel} role="img">
-      <MuscleBodyMap getLevel={getLevel} size="compact" className="mx-auto w-full max-w-[280px]" />
+      <MuscleBodyMap getLevel={getLevel} className="w-full" />
     </div>
   );
 }

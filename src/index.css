@@ -105,36 +105,36 @@
   }
 
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 210 20% 92%;
-    --card: 222 47% 8%;
-    --card-foreground: 210 20% 92%;
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 20% 92%;
+    --background: 0 0% 0%;
+    --foreground: 30 8% 92%;
+    --card: 220 38% 8%;
+    --card-foreground: 30 8% 92%;
+    --popover: 220 38% 8%;
+    --popover-foreground: 30 8% 92%;
     --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 14%;
-    --secondary-foreground: 210 20% 92%;
-    --muted: 217 33% 14%;
-    --muted-foreground: 215 20% 62%;
+    --secondary: 218 28% 14%;
+    --secondary-foreground: 30 8% 92%;
+    --muted: 218 28% 14%;
+    --muted-foreground: 218 16% 62%;
     --accent: 142 71% 45%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 20% 92%;
+    --destructive-foreground: 30 8% 92%;
     --success: 142 71% 45%;
     --success-foreground: 142 45% 90%;
     --success-muted: 142 32% 12%;
     --success-border: 142 38% 28%;
-    --border: 217 33% 18%;
-    --input: 217 33% 18%;
+    --border: 218 28% 18%;
+    --input: 218 28% 18%;
     --ring: 142 71% 45%;
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 210 20% 92%;
+    --sidebar-background: 220 38% 6%;
+    --sidebar-foreground: 30 8% 92%;
     --sidebar-primary: 142 71% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 14%;
-    --sidebar-accent-foreground: 210 20% 92%;
-    --sidebar-border: 217 33% 18%;
+    --sidebar-accent: 218 28% 14%;
+    --sidebar-accent-foreground: 30 8% 92%;
+    --sidebar-border: 218 28% 18%;
     --sidebar-ring: 142 71% 45%;
   }
   .dark[data-accent="orange"] {
@@ -199,7 +199,7 @@
     background-image:
       radial-gradient(1100px circle at 10% -5%, hsl(var(--primary) / 0.35), transparent 45%),
       radial-gradient(1000px circle at 95% 5%, hsl(var(--primary) / 0.28), transparent 50%),
-      radial-gradient(1200px circle at 50% 105%, hsl(220 20% 20% / 0.5), transparent 55%),
+      radial-gradient(1200px circle at 50% 105%, hsl(220 18% 19% / 0.5), transparent 55%),
       radial-gradient(800px circle at 70% 50%, hsl(var(--primary) / 0.18), transparent 55%);
   }
   /* Restaurar cursor pointer en elementos clicables (Tailwind v4 usa default) */

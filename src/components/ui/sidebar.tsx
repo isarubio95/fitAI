@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -165,7 +165,7 @@ const Sidebar = React.forwardRef<
           side={side}
         >
           <DrawerTitle className="sr-only">Menú de navegación</DrawerTitle>
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div className={cn("flex h-full w-full flex-col", drawerSafeAreaBottom)}>{children}</div>
         </DrawerContent>
       </Drawer>
     );

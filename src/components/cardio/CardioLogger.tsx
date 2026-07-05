@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { useToast } from "@/hooks/use-toast";
 import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
@@ -333,7 +333,7 @@ export function CardioLogger() {
           </div>
         </DrawerHeader>
 
-        <div className="space-y-6 p-4">
+        <div className={cn("space-y-6 p-4", drawerSafeAreaBottom)}>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 sm:col-span-1">
               <FormField id="cardio-titulo" label="Título">

@@ -1184,7 +1184,7 @@ export function WorkoutLogger() {
                 />
               )}
               <div className="min-h-0 h-full overflow-y-auto bg-background">
-              <div className={cn("flex flex-col gap-1 bg-background", showFloatingActionBar ? "pb-32" : "pb-20")}>
+              <div className={cn("flex flex-col gap-1 bg-background", showFloatingActionBar ? "pb-32" : "pb-[calc(5rem+env(safe-area-inset-bottom,0px))]")}>
                 <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
                   <CardContent className="space-y-3 px-6 py-4">
                     <div className="grid grid-cols-2 gap-3">
@@ -1310,7 +1310,7 @@ export function WorkoutLogger() {
                 </Card>
 
                 {!showFloatingActionBar && (
-                  <div className="flex justify-center px-6 py-4">
+                  <div className="flex justify-center p-6 py-4">
                     <ExerciseSelector
                       variant="floating"
                       open={exercisePickerOpen}

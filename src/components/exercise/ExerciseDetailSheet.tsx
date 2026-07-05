@@ -3,6 +3,7 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
+  drawerSafeAreaBottom,
 } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -122,7 +123,7 @@ const ExerciseDetailSheet = ({
               )}
             </div>
 
-            <div className="p-5 space-y-5">
+            <div className={cn("p-5 space-y-5", drawerSafeAreaBottom)}>
               {/* Header */}
               <DrawerHeader className="p-0">
                 <div className="flex items-start justify-between gap-3">

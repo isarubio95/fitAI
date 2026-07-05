@@ -70,7 +70,7 @@ export default function Community() {
     "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
 
   const workoutCompactCardClass =
-    "w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs transition-colors hover:bg-muted/30 md:border-x";
+    "w-full max-w-none overflow-hidden border-0 rounded-none transition-colors hover:bg-muted/30";
 
   const authorIds = useMemo(
     () => Array.from(new Set(normalizedFeed.map((item) => item.author.id))),
@@ -117,7 +117,7 @@ export default function Community() {
         />
       </div>
       {usernameQuery.trim().length === 0 && (
-        <p className="mt-3 text-sm text-muted-foreground mb-4">Escribe un username para encontrar usuarios.</p>
+        <p className="mt-3 text-sm text-muted-foreground mb-3">Escribe un username para encontrar usuarios.</p>
       )}
     </>
   );
@@ -191,7 +191,7 @@ export default function Community() {
             if (item.author.id === user?.id) openMyProfile();
             else openUserProfile(item.author.id);
           }}
-          className="-m-1 mb-2 flex w-full min-w-0 items-center gap-3 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+          className="-m-1 mb-2 flex w-full min-w-0 items-center gap-3 rounded-lg pt-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={`Ver perfil de ${item.author.username ?? "usuario"}`}
         >
           <CommunityAvatar

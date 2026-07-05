@@ -9,7 +9,9 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  type TooltipContentProps,
 } from "recharts";
+import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 import { Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -100,11 +102,6 @@ function formatXAxisTickLabel(dateValue: string, rangeDays: number) {
   }
   return format(parsedDate, "MMM", { locale: es });
 }
-
-type TrainingLoadTooltipProps = {
-  active?: boolean;
-  payload?: Array<{ payload?: TrainingLoadPoint }>;
-};
 
 export function TrainingLoadWidget() {
   const { data, isLoading, isFetching } = useTrainingLoad();
@@ -352,7 +349,7 @@ export function TrainingLoadWidget() {
   );
 }
 
-function TrainingLoadTooltip({ active, payload }: TrainingLoadTooltipProps) {
+function TrainingLoadTooltip({ active, payload }: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload as TrainingLoadPoint | undefined;
   if (!row) return null;

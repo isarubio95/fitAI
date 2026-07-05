@@ -33,7 +33,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Tooltip,
-  type TooltipProps,
+  type TooltipContentProps,
 } from "recharts";
 import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 
@@ -106,7 +106,7 @@ function getNiceRadarMax(max: number) {
   return Math.ceil(max / 250) * 250;
 }
 
-function RadarWeightTooltip({ active, payload }: TooltipProps<ValueType, NameType>) {
+function RadarWeightTooltip({ active, payload }: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
   const data = payload[0]?.payload as { group?: string; name?: string; weight?: number } | undefined;
   const group = data?.group ?? data?.name;
@@ -280,7 +280,7 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
             isLoading={isLoading}
             hideHeader
             radarChartId={workout?.id ? `workout-radar-weight-${workout.id}` : undefined}
-            containerClassName="pb-20"
+            containerClassName="pb-[calc(5rem+env(safe-area-inset-bottom,0px))]"
           />
         </div>
       </DrawerContent>
@@ -357,7 +357,7 @@ function WorkoutCompactSummary({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <div
           className={cn(
             "flex min-w-0 flex-1 gap-3",
@@ -405,8 +405,6 @@ export function WorkoutDetailsContent({
   leadingAvatar,
   leadingRoutineIcon,
 }: WorkoutDetailsContentProps) {
-  const resolvedContainerClassName =
-    containerClassName ?? (variant === "compact" ? "px-6 py-4" : "p-6");
   const groups = useMemo(() => Object.keys(MUSCLE_GROUPS) as MainMuscleGroup[], []);
 
   const {
@@ -521,7 +519,7 @@ export function WorkoutDetailsContent({
   const isCompact = variant === "compact";
 
   return (
-    <div className={cn(resolvedContainerClassName)}>
+    <div className={cn(containerClassName)}>
       {isLoading || !workout ? (
         isCompact ? (
           <div className="space-y-2">
@@ -624,7 +622,7 @@ export function WorkoutDetailsContent({
                         tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
                         domain={[0, maxWeight]}
                       />
-                      <Tooltip content={<RadarWeightTooltip />} />
+                      <Tooltip content={RadarWeightTooltip} />
                       <Radar
                         name="Peso"
                         dataKey="weight"

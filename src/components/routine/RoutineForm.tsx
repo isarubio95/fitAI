@@ -24,7 +24,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRoutineById } from "@/hooks/useRoutines";
 import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +53,7 @@ import {
   resolveRoutineIconKey,
   type RoutineIconKey,
 } from "@/lib/routineIcons";
+import type { TablesInsert } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
 interface RoutineFormProps {
@@ -380,10 +381,10 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
         rutinaId = data.id;
       }
 
-      const inserts = ejercicios.map((ej, i) => ({
+      const inserts: TablesInsert<"rutina_ejercicio">[] = ejercicios.map((ej, i) => ({
         rutina_id: rutinaId,
         tipo_ejercicio_id: ej.tipo_ejercicio_id ?? null,
-        usuario_ejercicio_id: (ej as any).usuario_ejercicio_id ?? null,
+        usuario_ejercicio_id: ej.usuario_ejercicio_id ?? null,
         series_objetivo: ej.series_objetivo,
         repes_min: ej.repes_min,
         repes_max: ej.repes_max,
@@ -448,7 +449,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
           </DrawerHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-background">
-            <div className="flex flex-col gap-1 bg-background pb-20">
+            <div className={cn("flex flex-col gap-1 bg-background pb-[calc(5rem+env(safe-area-inset-bottom,0px))]")}>
               <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
                 <CardContent className="space-y-3 px-6 py-4">
                   <div className="space-y-1.5">

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle,
+  drawerSafeAreaBottom,
 } from "@/components/ui/drawer";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
 import { format } from "date-fns";
@@ -149,7 +150,7 @@ const Measurements = () => {
         )}
       <header>
         <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
-          <DrawerContent side="bottom" className="max-h-[85lvh] overflow-y-auto">
+          <DrawerContent side="bottom" className={cn("max-h-[85lvh] overflow-y-auto", drawerSafeAreaBottom)}>
             <DrawerHeader>
               <DrawerTitle>Registrar Medidas</DrawerTitle>
             </DrawerHeader>

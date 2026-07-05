@@ -100,13 +100,24 @@ const DrawerOverlay = React.forwardRef<
   React.ComponentRef<typeof DrawerPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/80", className)} {...props} />
+  <DrawerPrimitive.Overlay
+    ref={ref}
+    className={cn(
+      // Atenuado ligero + desenfoque: sensación nativa (iOS/Android) en lugar de un negro pesado.
+      "fixed inset-0 z-50 bg-black/40 backdrop-blur-[3px] supports-backdrop-filter:bg-black/30 dark:bg-black/55 dark:supports-backdrop-filter:bg-black/45",
+      className,
+    )}
+    {...props}
+  />
 ));
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
 
 type DrawerSide = "left" | "right" | "top" | "bottom";
 
 const DrawerSideContext = React.createContext<DrawerSide | undefined>(undefined);
+
+/** Padding inferior con safe-area para contenido scrolleable o footers de drawers en móvil. */
+export const drawerSafeAreaBottom = "pb-[max(1rem,env(safe-area-inset-bottom,0px))]" as const;
 
 /** true dentro de `DrawerContent` (p. ej. ExerciseCard sin bordes redondeados). */
 export const DrawerInContentContext = React.createContext(false);
@@ -140,9 +151,9 @@ const DrawerContent = React.forwardRef<
         "**:data-[slot=card]:rounded-none! **:data-drawer-section:rounded-none!",
         "[&_[data-slot=card]:first-child]:border-t-0!",
         side === "bottom" &&
-          "inset-x-0 bottom-0 mt-24 max-h-lvh flex-col rounded-t-[10px] border-x-0 border-t border-b-0 md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
+          "inset-x-0 bottom-0 mt-24 max-h-lvh flex-col rounded-t-2xl border-x-0 border-t border-b-0 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.35)] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
         side === "top" &&
-          "inset-x-0 top-0 mb-24 max-h-lvh flex-col rounded-b-[10px] border-x-0 border-b border-t-0 md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
+          "inset-x-0 top-0 mb-24 max-h-lvh flex-col rounded-b-2xl border-x-0 border-b border-t-0 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.35)] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
         side === "left" &&
           "inset-y-0 left-0 h-lvh w-[92vw] max-w-md flex-col border-x-0 border-t-0 border-b-0 md:border-r",
         side === "right" &&
@@ -159,26 +170,35 @@ const DrawerContent = React.forwardRef<
 ));
 DrawerContent.displayName = "DrawerContent";
 
-const drawerDragHandleClass = "mx-auto h-2 w-[100px] shrink-0 rounded-full bg-muted";
+/**
+ * Grabber nativo: usa el `Handle` de Vaul para tener un área de arrastre amplia
+ * (hit-area invisible mayor que el indicador visible) y un indicador fino estilo
+ * iOS/Android en vez de una barra gruesa.
+ */
+const DrawerGrabber = ({ className }: { className?: string }) => (
+  <DrawerPrimitive.Handle
+    // `!` para vencer los estilos base que Vaul inyecta en runtime (color/tamaño fijos)
+    // y así respetar el tema claro/oscuro con un grabber fino tipo iOS/Android.
+    className={cn("mx-auto h-1.5! w-10! shrink-0 rounded-full! bg-muted-foreground/40!", className)}
+  />
+);
 
 const DrawerHeader = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
   const side = React.useContext(DrawerSideContext);
   const showEdgeHandle = side === "bottom" || side === "top";
 
   return (
-    <div className={cn("grid gap-1.5 pt-3 pb-4 px-4 text-center sm:text-left", className)} {...props}>
-      {showEdgeHandle && side === "bottom" && (
-        <div className={cn(drawerDragHandleClass, "mb-1")} aria-hidden />
-      )}
+    <div className={cn("grid gap-1.5 pt-2.5 pb-4 px-4 text-center sm:text-left", className)} {...props}>
+      {showEdgeHandle && side === "bottom" && <DrawerGrabber className="mb-2" />}
       {children}
-      {showEdgeHandle && side === "top" && <div className={cn(drawerDragHandleClass, "mt-1")} aria-hidden />}
+      {showEdgeHandle && side === "top" && <DrawerGrabber className="mt-2" />}
     </div>
   );
 };
 DrawerHeader.displayName = "DrawerHeader";
 
 const DrawerFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("mt-auto flex flex-col gap-3 p-4", className)} {...props} />
+  <div className={cn("mt-auto flex flex-col gap-3 px-4 pt-4", drawerSafeAreaBottom, className)} {...props} />
 );
 DrawerFooter.displayName = "DrawerFooter";
 

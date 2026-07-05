@@ -24,17 +24,11 @@ const SKELETON_FILL = "hsl(var(--muted))";
 
 const BODY_OUTLINE_FILTER = "drop-shadow(0 0 1px hsl(var(--foreground) / 0.55))";
 
-export type MuscleBodyMapSize = "default" | "compact";
-
-const BODY_MAP_SVG_SIZE: Record<MuscleBodyMapSize, string> = {
-  default: "max-w-[126px] sm:max-w-[140px]",
-  compact: "max-w-[108px] sm:max-w-[122px]",
-};
+const BODY_MAP_SVG_CLASS = "max-w-[126px] sm:max-w-[140px]";
 
 export interface MuscleBodyMapProps {
   getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
   isLoading?: boolean;
-  size?: MuscleBodyMapSize;
   onZoneClick?: (group: MainMuscleGroup) => void;
   onZoneHover?: (group: MainMuscleGroup, event: React.MouseEvent<SVGPathElement>) => void;
   onZoneLeave?: () => void;
@@ -128,30 +122,27 @@ const BodyView = memo(function BodyView({
 export function MuscleBodyMap({
   getLevel,
   isLoading = false,
-  size = "default",
   onZoneClick,
   onZoneHover,
   onZoneLeave,
   className,
 }: MuscleBodyMapProps) {
-  const svgSizeClass = BODY_MAP_SVG_SIZE[size];
-
   return (
     <div
       className={cn(
-        "mx-auto flex w-full items-end",
+        "flex w-full items-end justify-around",
         isLoading && "pointer-events-none",
         className,
       )}
       data-loading={isLoading || undefined}
     >
-      <div className="flex w-1/2 justify-center">
+      <div className="flex w-[45%] min-w-0 justify-center">
         <BodyView
           zones={FRONT_ZONES}
           viewBox={FRONT_BODY_MAP_VIEWBOX}
           viewKey="front"
           ariaLabel="Vista frontal del cuerpo"
-          svgSizeClass={svgSizeClass}
+          svgSizeClass={BODY_MAP_SVG_CLASS}
           getLevel={getLevel}
           isLoading={isLoading}
           onZoneClick={onZoneClick}
@@ -159,13 +150,13 @@ export function MuscleBodyMap({
           onZoneLeave={onZoneLeave}
         />
       </div>
-      <div className="flex w-1/2 justify-center">
+      <div className="flex w-[45%] min-w-0 justify-center">
         <BodyView
           zones={BACK_ZONES}
           viewBox={BACK_BODY_MAP_VIEWBOX}
           viewKey="back"
           ariaLabel="Vista trasera del cuerpo"
-          svgSizeClass={svgSizeClass}
+          svgSizeClass={BODY_MAP_SVG_CLASS}
           getLevel={getLevel}
           isLoading={isLoading}
           onZoneClick={onZoneClick}
