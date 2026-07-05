@@ -24,8 +24,10 @@ import { supabase } from "@/integrations/supabase/client";
 import UsernameSetup from "@/pages/UsernameSetup";
 import { InAppNotificationsProvider } from "@/contexts/InAppNotificationsContext";
 import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
+import { useSafeAreaInsetsSync } from "@/hooks/useSafeAreaInsetsSync";
 
 export function AppLayout() {
+  useSafeAreaInsetsSync();
   const { user, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { location, pageTitle, showSectionPills, showNotificationsBell, activeSubsectionLabel } =
@@ -207,7 +209,7 @@ export function AppLayout() {
           <header
             ref={headerRef}
             className={cn(
-              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/50 bg-card px-4 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] dark:bg-[hsl(222_47%_12%/0.88)] dark:backdrop-blur-2xl md:hidden",
+              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/50 bg-card px-4 pb-2 pt-[calc(0.5rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] dark:bg-[hsl(222_47%_12%/0.88)] dark:backdrop-blur-2xl md:hidden",
               showSectionPills ? "max-md:gap-2" : "gap-0",
             )}
           >

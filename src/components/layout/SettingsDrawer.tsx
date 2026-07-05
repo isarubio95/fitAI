@@ -50,7 +50,7 @@ export function SettingsDrawer() {
         side="right"
         className="flex h-full w-full flex-col border-0 bg-card p-0 shadow-none"
       >
-        <DrawerHeader className="px-6 pt-6 text-left">
+        <DrawerHeader className="px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
           <DrawerTitle className="text-lg">Ajustes</DrawerTitle>
         </DrawerHeader>
 

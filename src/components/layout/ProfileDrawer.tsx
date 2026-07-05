@@ -289,7 +289,7 @@ function ProfileDrawerSheet() {
         className="flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
       >
         <div className="min-h-0 flex-1 overflow-y-auto bg-card dark:bg-transparent">
-          <DrawerHeader className="bg-card px-6 pb-2 pt-8 text-left dark:bg-transparent">
+          <DrawerHeader className="bg-card px-6 pb-2 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left dark:bg-transparent">
             <DrawerTitle className="sr-only">{displayNameLine}</DrawerTitle>
             <div className="flex gap-4 items-start">
             <div className="relative mr-1 shrink-0">
