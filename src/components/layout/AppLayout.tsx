@@ -23,14 +23,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import UsernameSetup from "@/pages/UsernameSetup";
 import { InAppNotificationsProvider } from "@/contexts/InAppNotificationsContext";
-import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
 import { useSafeAreaInsetsSync } from "@/hooks/useSafeAreaInsetsSync";
 
 export function AppLayout() {
   useSafeAreaInsetsSync();
   const { user, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { location, pageTitle, showSectionPills, showNotificationsBell, activeSubsectionLabel } =
+  const { location, pageTitle, showSectionPills, activeSubsectionLabel } =
     usePageLayoutMeta();
   const [areHeaderPillsCollapsed, setAreHeaderPillsCollapsed] = useState(false);
   const lastScrollYRef = useRef(0);
@@ -233,7 +232,6 @@ export function AppLayout() {
 
               <div className="flex shrink-0 items-center justify-end gap-1 max-md:gap-2">
                 <div id="header-actions-slot" className="flex items-center gap-2 max-md:gap-3" />
-                {showNotificationsBell && <InAppNotificationsBell />}
                 <SettingsDrawer />
                 <ProfileDrawerTrigger />
               </div>

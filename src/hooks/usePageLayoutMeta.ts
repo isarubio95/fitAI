@@ -23,8 +23,6 @@ export function usePageLayoutMeta() {
   const showSectionPills =
     location.pathname === "/evolution" || location.pathname === "/routines";
 
-  const showNotificationsBell = location.pathname === "/";
-
   const activeSubsectionLabel =
     location.pathname === "/evolution"
       ? (currentTab || "history") === "measurements"
@@ -42,7 +40,6 @@ export function usePageLayoutMeta() {
     currentTab,
     pageTitle,
     showSectionPills,
-    showNotificationsBell,
     activeSubsectionLabel,
   };
 }

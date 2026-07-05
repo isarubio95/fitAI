@@ -17,7 +17,6 @@ import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
 import { AnimatedTabsList, pillTabsListClass, pillTabsTriggerClass, Tabs, TabsTrigger } from "@/components/ui/tabs";
-import { DashboardNotificationPills } from "@/components/notifications/DashboardNotificationPills";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashboard/ProgramWizard";
 import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears } from "date-fns";
@@ -565,8 +564,6 @@ const Dashboard = () => {
           </Button>,
           headerActionsSlot
         )}
-
-      <DashboardNotificationPills />
 
       <DndContext 
         sensors={sensors}
