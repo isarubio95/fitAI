@@ -1,4 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  cancelRestTimerNotification,
+  requestRestTimerNotificationPermission,
+  scheduleRestTimerNotification,
+} from "@/lib/restTimerNotifications";
 
 interface TimerState {
   /** Which exercise+set is running, e.g. "0-2" */
@@ -91,9 +96,7 @@ let notificationPermissionRequested = false;
 function requestNotifPermission() {
   if (notificationPermissionRequested) return;
   notificationPermissionRequested = true;
-  if ("Notification" in window && Notification.permission === "default") {
-    Notification.requestPermission();
-  }
+  void requestRestTimerNotificationPermission();
 }
 
 /** Format seconds to M:SS */
@@ -181,6 +184,15 @@ export function useRestTimer() {
     }
   }, []);
 
+  // Reprogramar notificación nativa si el descanso se restauró tras recargar la app
+  useEffect(() => {
+    if (state.activeKey && state.endTime && !state.finished) {
+      void scheduleRestTimerNotification(state.endTime);
+    }
+    // Solo al montar: el estado inicial ya incluye el descanso persistido
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Persistir en localStorage mientras haya descanso activo o recién terminado
   useEffect(() => {
     if (state.activeKey && state.endTime && state.duration) {
@@ -210,13 +222,15 @@ export function useRestTimer() {
       return;
     }
     if (state.finished && state.activeKey) {
+      void cancelRestTimerNotification();
+
       // Vibrate
       if ("vibrate" in navigator) {
         navigator.vibrate([500, 200, 500]);
       }
       // Sound
       playBeep();
-      // Notification if hidden
+      // Web notification if hidden (native uses scheduled local notification)
       if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
         notifRef.current = new Notification("¡Descanso terminado!", {
           body: "Hora de tu siguiente serie. 💪",
@@ -265,6 +279,7 @@ export function useRestTimer() {
       finished: false,
     };
     persistRestTimer(next, workoutIdRef.current);
+    void scheduleRestTimerNotification(endTime);
     setState(next);
   }, []);
 
@@ -280,6 +295,7 @@ export function useRestTimer() {
       notifRef.current.close();
       notifRef.current = null;
     }
+    void cancelRestTimerNotification();
     workoutIdRef.current = null;
     clearPersistedRestTimer();
     setState({ activeKey: null, endTime: null, remaining: 0, duration: 0, finished: false });
