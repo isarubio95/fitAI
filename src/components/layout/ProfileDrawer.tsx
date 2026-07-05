@@ -509,6 +509,7 @@ function ProfileDrawerSheet() {
                       <WorkoutDetailsContent
                         workout={w}
                         variant="compact"
+                        containerClassName="p-6"
                         leadingRoutineIcon={resolveWorkoutIconKey(w, routineIconsByTitle)}
                       />
                     </Card>

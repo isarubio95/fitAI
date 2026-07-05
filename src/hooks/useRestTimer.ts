@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { App } from "@capacitor/app";
+import { isNativeApp } from "@/lib/nativeAuth";
 import {
   cancelRestTimerNotification,
   requestRestTimerNotificationPermission,
@@ -91,15 +93,6 @@ function persistRestTimer(state: TimerState, workoutId?: string | null) {
   }
 }
 
-let notificationPermissionRequested = false;
-
-function requestNotifPermission() {
-  if (notificationPermissionRequested) return;
-  notificationPermissionRequested = true;
-  void requestRestTimerNotificationPermission();
-}
-
-/** Format seconds to M:SS */
 export function formatMSS(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
@@ -153,9 +146,22 @@ function playBeep() {
   }
 }
 
+function playRestCompleteFeedback() {
+  if ("vibrate" in navigator) {
+    navigator.vibrate([500, 200, 500]);
+  }
+  playBeep();
+}
+
 export function useRestTimer() {
   const hydratedFinishedRef = useRef(false);
   const workoutIdRef = useRef<string | null>(null);
+  const endedWhileAppInactiveRef = useRef(false);
+  const timerRuntimeRef = useRef<{
+    activeKey: string | null;
+    endTime: number | null;
+    finished: boolean;
+  }>({ activeKey: null, endTime: null, finished: false });
 
   const [state, setState] = useState<TimerState>(() => {
     const restored = loadPersistedRestTimer();
@@ -184,10 +190,40 @@ export function useRestTimer() {
     }
   }, []);
 
+  useEffect(() => {
+    timerRuntimeRef.current = {
+      activeKey: state.activeKey,
+      endTime: state.endTime,
+      finished: state.finished,
+    };
+  }, [state.activeKey, state.endTime, state.finished]);
+
+  // Saber si el descanso venció con la app en segundo plano (evita beep al volver)
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    const handle = App.addListener("appStateChange", ({ isActive }) => {
+      const t = timerRuntimeRef.current;
+      if (!t.activeKey || t.finished || !t.endTime) return;
+      if (!isActive) {
+        endedWhileAppInactiveRef.current = true;
+        return;
+      }
+      if (t.endTime > Date.now()) {
+        endedWhileAppInactiveRef.current = false;
+      }
+    });
+    return () => {
+      void handle.then((h) => h.remove());
+    };
+  }, []);
+
   // Reprogramar notificación nativa si el descanso se restauró tras recargar la app
   useEffect(() => {
+    if (!isNativeApp()) return;
     if (state.activeKey && state.endTime && !state.finished) {
-      void scheduleRestTimerNotification(state.endTime);
+      void requestRestTimerNotificationPermission().then(() => {
+        if (state.endTime) scheduleRestTimerNotification(state.endTime);
+      });
     }
     // Solo al montar: el estado inicial ya incluye el descanso persistido
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -222,15 +258,17 @@ export function useRestTimer() {
       return;
     }
     if (state.finished && state.activeKey) {
-      void cancelRestTimerNotification();
-
-      // Vibrate
-      if ("vibrate" in navigator) {
-        navigator.vibrate([500, 200, 500]);
+      if (isNativeApp()) {
+        void cancelRestTimerNotification();
+        if (!endedWhileAppInactiveRef.current) {
+          playRestCompleteFeedback();
+        }
+        endedWhileAppInactiveRef.current = false;
+        return;
       }
-      // Sound
-      playBeep();
-      // Web notification if hidden (native uses scheduled local notification)
+
+      // Web/PWA: beep, vibración y Notification API
+      playRestCompleteFeedback();
       if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
         notifRef.current = new Notification("¡Descanso terminado!", {
           body: "Hora de tu siguiente serie. 💪",
@@ -244,8 +282,9 @@ export function useRestTimer() {
     }
   }, [state.finished]);
 
-  // Auto-dismiss notification when app becomes visible
+  // Auto-dismiss web notification when app becomes visible
   useEffect(() => {
+    if (isNativeApp()) return;
     const handler = () => {
       if (document.visibilityState === "visible" && state.finished && notifRef.current) {
         notifRef.current.close();
@@ -267,9 +306,9 @@ export function useRestTimer() {
   }, [state.activeKey, state.finished, tick]);
 
   const start = useCallback((key: string, durationSeconds: number, workoutId?: string | null) => {
-    requestNotifPermission();
     workoutIdRef.current = workoutId ?? null;
     hydratedFinishedRef.current = false;
+    endedWhileAppInactiveRef.current = false;
     const endTime = Date.now() + durationSeconds * 1000;
     const next: TimerState = {
       activeKey: key,
@@ -279,8 +318,12 @@ export function useRestTimer() {
       finished: false,
     };
     persistRestTimer(next, workoutIdRef.current);
-    void scheduleRestTimerNotification(endTime);
     setState(next);
+    if (isNativeApp()) {
+      void requestRestTimerNotificationPermission().then(() => scheduleRestTimerNotification(endTime));
+    } else {
+      void requestRestTimerNotificationPermission();
+    }
   }, []);
 
   const stop = useCallback(() => {
@@ -288,6 +331,7 @@ export function useRestTimer() {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+    endedWhileAppInactiveRef.current = false;
     if ("vibrate" in navigator) {
       navigator.vibrate(0);
     }
@@ -295,7 +339,9 @@ export function useRestTimer() {
       notifRef.current.close();
       notifRef.current = null;
     }
-    void cancelRestTimerNotification();
+    if (isNativeApp()) {
+      void cancelRestTimerNotification();
+    }
     workoutIdRef.current = null;
     clearPersistedRestTimer();
     setState({ activeKey: null, endTime: null, remaining: 0, duration: 0, finished: false });

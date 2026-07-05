@@ -8,6 +8,12 @@ const config: CapacitorConfig = {
     // Carga empaquetada en https://localhost — experiencia nativa, sin barra de Chrome.
     allowMixedContent: false,
   },
+  plugins: {
+    LocalNotifications: {
+      smallIcon: 'ic_stat_notification',
+      iconColor: '#22c55e',
+    },
+  },
 };
 
 export default config;
