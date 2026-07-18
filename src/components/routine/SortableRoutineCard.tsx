@@ -61,7 +61,7 @@ export function SortableRoutineCard({
         isDragging && "shadow-lg ring-2 ring-primary/30",
       )}
     >
-      <CardContent className="px-6 py-4">
+      <CardContent className="px-6 py-6">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-2 flex-1 min-w-0">
