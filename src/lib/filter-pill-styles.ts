@@ -7,15 +7,16 @@ export const filterPillBase =
 export const filterPillInactive =
   "border-border/20 bg-muted/40 text-foreground [@media(hover:hover)]:hover:border-border/35 [@media(hover:hover)]:hover:bg-muted/55";
 
+/** Fondo activo un poco más oscuro que `--primary` para mejorar contraste con texto claro. */
 export const filterPillActive =
-  "border-primary/45 bg-primary text-primary-foreground shadow-sm";
+  "border-primary/45 bg-[color-mix(in_srgb,hsl(var(--primary))_86%,black)] text-primary-foreground shadow-sm";
 
 export const filterPillTabsTrigger = cn(
   filterPillBase,
   "border-border/20 bg-muted/40 text-foreground",
   "data-[state=inactive]:[@media(hover:hover)]:hover:border-border/35 data-[state=inactive]:[@media(hover:hover)]:hover:bg-muted/55",
-  "data-[state=active]:border-primary/45 data-[state=active]:bg-primary data-[state=active]:text-black data-[state=active]:shadow-sm",
-  "data-[state=active]:[@media(hover:hover)]:hover:border-primary/45 data-[state=active]:[@media(hover:hover)]:hover:bg-primary",
+  "data-[state=active]:border-primary/45 data-[state=active]:bg-[color-mix(in_srgb,hsl(var(--primary))_86%,black)] data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm",
+  "data-[state=active]:[@media(hover:hover)]:hover:border-primary/45 data-[state=active]:[@media(hover:hover)]:hover:bg-[color-mix(in_srgb,hsl(var(--primary))_86%,black)]",
 );
 
 /** Botones de filtro (outline / toggle). */
