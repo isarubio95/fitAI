@@ -122,7 +122,7 @@ export function PostWorkoutModal({
   return (
     <>
       <AlertDialog open={open}>
-        <AlertDialogContent className="max-w-sm text-center overflow-hidden">
+        <AlertDialogContent className="text-center overflow-hidden">
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
