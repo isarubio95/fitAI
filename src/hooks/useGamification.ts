@@ -98,23 +98,6 @@ export function useProfileStats(profileUserId?: string) {
   });
 }
 
-/** Nivel de varios usuarios (p. ej. feed de comunidad). */
-export async function fetchProfileLevelsForUsers(
-  userIds: string[],
-): Promise<Record<string, number>> {
-  if (userIds.length === 0) return {};
-
-  const { data, error } = await supabase.from("perfil" as any).select("id, xp_total").in("id", userIds);
-  if (error) throw error;
-
-  const result: Record<string, number> = {};
-  for (const row of (data ?? []) as unknown as Array<{ id: string; xp_total?: number }>) {
-    result[row.id] = calculateLevel(row.xp_total ?? 0);
-  }
-
-  return result;
-}
-
 // Función que calcula la XP y ACTUALIZA la base de datos desde el frontend
 export function useCalculateAndAwardXP() {
   const { user } = useAuth();

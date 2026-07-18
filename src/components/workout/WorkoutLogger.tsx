@@ -73,6 +73,32 @@ import {
   serieFieldsForRegistro,
 } from "@/types/workout";
 
+const fromRoutineStorageKey = (workoutId: string) => `fitai:workout-from-routine:${workoutId}`;
+
+function markWorkoutStartedFromRoutine(workoutId: string) {
+  try {
+    sessionStorage.setItem(fromRoutineStorageKey(workoutId), "1");
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+function clearWorkoutStartedFromRoutine(workoutId: string) {
+  try {
+    sessionStorage.removeItem(fromRoutineStorageKey(workoutId));
+  } catch {
+    /* ignore */
+  }
+}
+
+function wasWorkoutStartedFromRoutine(workoutId: string) {
+  try {
+    return sessionStorage.getItem(fromRoutineStorageKey(workoutId)) === "1";
+  } catch {
+    return false;
+  }
+}
+
 /** Agrupa ejercicios consecutivos con el mismo superset_id para mostrar el bloque superserie. */
 function groupExercisesBySuperset(exercises: ExerciseFormData[]): { supersetId: string | null; items: { exercise: ExerciseFormData; originalIndex: number }[] }[] {
   const groups: { supersetId: string | null; items: { exercise: ExerciseFormData; originalIndex: number }[] }[] = [];
@@ -245,6 +271,8 @@ export function WorkoutLogger() {
   const [selectedExerciseDetail, setSelectedExerciseDetail] = useState<any | null>(null);
   const [editBaseline, setEditBaseline] = useState<string | null>(null);
   const [workoutIcon, setWorkoutIcon] = useState<RoutineIconKey>(DEFAULT_ROUTINE_ICON_KEY);
+  /** Entrenamiento iniciado desde una rutina (biblioteca o planificada): sin fecha editable ni "guardar como rutina". */
+  const [startedFromRoutine, setStartedFromRoutine] = useState(false);
 
   const { data: routineIconsByTitle = {} } = useQuery({
     queryKey: ["workout-logger-routine-icons", user?.id],
@@ -280,6 +308,7 @@ export function WorkoutLogger() {
   const canSubmitPrimaryAction = isEditingCompletedWorkout
     ? hasRecordedWork && hasUnsavedChanges
     : hasRecordedWork;
+  const hideWorkoutDate = isActiveWorkout && (startedFromRoutine || !!(templateExercises && templateTitle));
   const hydratedWorkoutIdRef = useRef<string | null>(null);
   const linkedPlannedIdRef = useRef<string | undefined>(undefined);
 
@@ -287,6 +316,12 @@ export function WorkoutLogger() {
     if (open && plannedId) linkedPlannedIdRef.current = plannedId;
     if (!open) linkedPlannedIdRef.current = undefined;
   }, [open, plannedId]);
+
+  useEffect(() => {
+    if (open && templateExercises && templateTitle) {
+      setStartedFromRoutine(true);
+    }
+  }, [open, templateExercises, templateTitle]);
 
   // Pre-fill form when editing existing workout (no hacerlo si abrimos desde plantilla: createActiveWorkout ya puso exercises con superset_id)
   useEffect(() => {
@@ -326,6 +361,9 @@ export function WorkoutLogger() {
         existingWorkout.icono ?? routineIconsByTitle[hydratedTitulo] ?? DEFAULT_ROUTINE_ICON_KEY,
       );
       setWorkoutIcon(hydratedIcon);
+      setStartedFromRoutine(
+        !existingWorkout.fecha_fin && wasWorkoutStartedFromRoutine(existingWorkout.id),
+      );
       setEditBaseline(
         existingWorkout.fecha_fin
           ? serializeWorkoutFormSnapshot(hydratedTitulo, hydratedFecha, hydratedExercises, hydratedIcon)
@@ -371,6 +409,7 @@ export function WorkoutLogger() {
       setTitulo(getDefaultWorkoutTitle());
       setExercises([]);
       setFecha(defaultDate || new Date().toISOString().slice(0, 10));
+      setStartedFromRoutine(false);
     }
   }, [open, workoutId, activeWorkoutId, defaultDate, templateExercises]);
 
@@ -477,6 +516,8 @@ export function WorkoutLogger() {
       setWorkoutIcon(templateIcon);
       setFecha(plannedDate || new Date().toISOString().slice(0, 10));
       setExercises(updatedExercises);
+      setStartedFromRoutine(true);
+      markWorkoutStartedFromRoutine(actividad.id);
       invalidateActiveWorkoutQueries();
     } catch (error: any) {
       toast({ title: "Error al crear entrenamiento", description: error.message, variant: "destructive" });
@@ -515,6 +556,8 @@ export function WorkoutLogger() {
       setExercises([]);
       setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
       setFecha(defaultDate || now.toISOString().slice(0, 10));
+      setStartedFromRoutine(false);
+      clearWorkoutStartedFromRoutine(actividad.id);
       invalidateActiveWorkoutQueries();
     } catch (error: any) {
       toast({ title: "Error al crear entrenamiento", description: error.message, variant: "destructive" });
@@ -915,6 +958,8 @@ export function WorkoutLogger() {
       const { error } = await supabase.from("actividad").delete().eq("id", targetId);
       if (error) throw error;
       toast({ title: "Entrenamiento eliminado correctamente" });
+      clearWorkoutStartedFromRoutine(targetId);
+      setStartedFromRoutine(false);
       const deletedFecha = existingWorkout?.fecha ? new Date(existingWorkout.fecha).toISOString().slice(0, 10) : undefined;
       invalidateWorkoutQueries({ workoutId: targetId, fecha: deletedFecha, isDelete: true });
       close();
@@ -999,7 +1044,9 @@ export function WorkoutLogger() {
           try {
             const breakdown = await calculateAndAwardXP(effectiveWorkoutId, completedSets, fecha);
             setPostWorkoutRoutineSnapshot(
-              buildWorkoutRoutineSnapshot(resolvedTitulo, workoutIcon, ejerciciosLimpios),
+              startedFromRoutine
+                ? null
+                : buildWorkoutRoutineSnapshot(resolvedTitulo, workoutIcon, ejerciciosLimpios),
             );
             setPostWorkoutData(breakdown);
             setShowPostWorkout(true);
@@ -1009,6 +1056,8 @@ export function WorkoutLogger() {
           } catch {
             // XP failed silently, still close
           }
+          if (effectiveWorkoutId) clearWorkoutStartedFromRoutine(effectiveWorkoutId);
+          setStartedFromRoutine(false);
           invalidateWorkoutQueries({ workoutId: effectiveWorkoutId, fecha });
           close();
         } else {
@@ -1188,7 +1237,12 @@ export function WorkoutLogger() {
                 <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
                   <CardContent className="space-y-3 px-6 py-4">
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                      <div
+                        className={cn(
+                          "space-y-1.5",
+                          hideWorkoutDate ? "col-span-2" : "col-span-2 sm:col-span-1",
+                        )}
+                      >
                         <Label htmlFor="titulo">Título</Label>
                         <div className="flex items-center gap-3">
                           {isActiveWorkout ? (
@@ -1209,16 +1263,18 @@ export function WorkoutLogger() {
                           />
                         </div>
                       </div>
-                      <div className="col-span-2 space-y-1.5 sm:col-span-1">
-                        <Label htmlFor="fecha">Fecha</Label>
-                        <Input
-                          id="fecha"
-                          type="date"
-                          value={fecha}
-                          onChange={(e) => setFecha(e.target.value)}
-                          className="h-12"
-                        />
-                      </div>
+                      {!hideWorkoutDate && (
+                        <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                          <Label htmlFor="fecha">Fecha</Label>
+                          <Input
+                            id="fecha"
+                            type="date"
+                            value={fecha}
+                            onChange={(e) => setFecha(e.target.value)}
+                            className="h-12"
+                          />
+                        </div>
+                      )}
                     </div>
                     {isEditingCompletedWorkout && (
                       <RoutineIconPicker

@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { Shield, UserPlus, UserCheck } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { UserPlus, UserCheck } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useUserSearch } from "@/hooks/useUserSearch";
@@ -8,10 +7,8 @@ import { useFollows } from "@/hooks/useFollows";
 import { useCommunityFeed } from "@/hooks/useCommunityFeed";
 import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
-import { fetchProfileLevelsForUsers } from "@/hooks/useGamification";
 import { WorkoutDetailsContent, WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
-import { resolveWorkoutIconKey } from "@/lib/routineIcons";
-import { supabase } from "@/integrations/supabase/client";
+import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,15 +39,6 @@ function CommunityAvatar({
   );
 }
 
-function CommunityAuthorLevel({ nivel }: { nivel: number }) {
-  return (
-    <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold leading-tight tabular-nums text-muted-foreground">
-      <Shield className="h-3.5 w-3.5" />
-      Nivel {nivel}
-    </span>
-  );
-}
-
 export default function Community() {
   const { user } = useAuth();
   const [usernameQuery, setUsernameQuery] = useState("");
@@ -71,37 +59,6 @@ export default function Community() {
 
   const workoutCompactCardClass =
     "w-full max-w-none overflow-hidden border-0 rounded-none transition-colors hover:bg-muted/30";
-
-  const authorIds = useMemo(
-    () => Array.from(new Set(normalizedFeed.map((item) => item.author.id))),
-    [normalizedFeed],
-  );
-
-  const { data: routineIconsByAuthor = {} } = useQuery({
-    queryKey: ["community-routine-icons", authorIds],
-    enabled: authorIds.length > 0,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rutina")
-        .select("usuario_id, nombre, icono")
-        .in("usuario_id", authorIds)
-        .not("es_plantilla", "eq", true);
-      if (error) throw error;
-
-      const map: Record<string, Record<string, string>> = {};
-      for (const row of data ?? []) {
-        if (!map[row.usuario_id]) map[row.usuario_id] = {};
-        if (!map[row.usuario_id][row.nombre]) map[row.usuario_id][row.nombre] = row.icono;
-      }
-      return map;
-    },
-  });
-
-  const { data: profileLevelsByAuthor = {} } = useQuery({
-    queryKey: ["community-profile-levels", authorIds],
-    enabled: authorIds.length > 0,
-    queryFn: () => fetchProfileLevelsForUsers(authorIds),
-  });
 
   const hasMergedSecondBlock =
     showSearchPanel || (!showSearchPanel && (loadingFeed || normalizedFeed.length > 0));
@@ -180,10 +137,7 @@ export default function Community() {
       </div>
     );
 
-  const renderFeedItemBody = (item: (typeof normalizedFeed)[number]) => {
-    const authorLevel = profileLevelsByAuthor[item.author.id];
-
-    return (
+  const renderFeedItemBody = (item: (typeof normalizedFeed)[number]) => (
       <>
         <button
           type="button"
@@ -191,7 +145,7 @@ export default function Community() {
             if (item.author.id === user?.id) openMyProfile();
             else openUserProfile(item.author.id);
           }}
-          className="-m-1 mb-2 flex w-full min-w-0 items-center gap-3 rounded-lg pt-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+          className="-m-1 mb-4 flex w-full min-w-0 items-center gap-3 rounded-lg pt-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={`Ver perfil de ${item.author.username ?? "usuario"}`}
         >
           <CommunityAvatar
@@ -199,12 +153,14 @@ export default function Community() {
             username={item.author.username}
             className="h-9 w-9 shrink-0"
           />
-          <p className="min-w-0 flex-1 truncate text-sm font-semibold">{item.author.username}</p>
-          {authorLevel != null ? (
-            <CommunityAuthorLevel nivel={authorLevel} />
-          ) : (
-            <Skeleton className="h-3.5 w-14 shrink-0" />
-          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{item.author.username}</p>
+            {item.workout.fecha ? (
+              <time dateTime={item.workout.fecha} className="block text-xs text-muted-foreground">
+                {formatActivityRelativeDate(item.workout.fecha)}
+              </time>
+            ) : null}
+          </div>
         </button>
 
         <button
@@ -217,17 +173,16 @@ export default function Community() {
             <WorkoutDetailsContent
               workout={item.workout}
               variant="compact"
-              leadingRoutineIcon={resolveWorkoutIconKey(item.workout, routineIconsByAuthor[item.author.id])}
+              hideDate
             />
           </Card>
         </button>
       </>
-    );
-  };
+  );
 
   const renderFeedCard = (item: (typeof normalizedFeed)[number]) => (
     <Card key={item.workout.id} className={communityCardClass}>
-      <CardContent className="space-y-3 px-6 py-4">{renderFeedItemBody(item)}</CardContent>
+      <CardContent className="space-y-4 px-6 py-4">{renderFeedItemBody(item)}</CardContent>
     </Card>
   );
 
@@ -250,7 +205,7 @@ export default function Community() {
               </div>
             )}
             {!showSearchPanel && !loadingFeed && normalizedFeed.length > 0 && (
-              <CardContent className="space-y-3 px-6 pb-4 pt-0">
+              <CardContent className="space-y-4 px-6 pb-4 pt-0">
                 {renderFeedItemBody(normalizedFeed[0])}
               </CardContent>
             )}

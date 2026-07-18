@@ -10,6 +10,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       position="bottom-center"
+      duration={5000}
       offset={24}
       mobileOffset={{
         bottom: "var(--app-bottom-nav-inset, calc(1rem + env(safe-area-inset-bottom, 0px)))",

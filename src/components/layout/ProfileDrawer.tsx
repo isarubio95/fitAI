@@ -26,7 +26,6 @@ import { cn } from "@/lib/utils";
 import { buildAuthAvatarCandidates, useUserAvatar } from "@/hooks/useUserAvatar";
 import { useProfileAvatarUpload } from "@/hooks/useProfileAvatarUpload";
 import { useToast } from "@/hooks/use-toast";
-import { resolveWorkoutIconKey } from "@/lib/routineIcons";
 
 const iconMap: Record<string, React.ElementType> = {
   Swords,
@@ -177,24 +176,6 @@ function ProfileDrawerSheet() {
   const { data: stats } = useProfileStats(statsUserId);
   const { data: logros = [], isLoading: loadingLogros } = useLogros(statsUserId);
   const { data: workoutsHistory = [], isLoading: loadingWorkoutHistory } = useWorkoutHistory(statsUserId);
-
-  const { data: routineIconsByTitle = {} } = useQuery({
-    queryKey: ["profile-routine-icons", profileUserId],
-    enabled: open && !!profileUserId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rutina")
-        .select("nombre, icono")
-        .eq("usuario_id", profileUserId)
-        .not("es_plantilla", "eq", true);
-      if (error) throw error;
-      const map: Record<string, string> = {};
-      for (const row of data ?? []) {
-        if (!map[row.nombre]) map[row.nombre] = row.icono;
-      }
-      return map;
-    },
-  });
 
   const { data: perfilRow, isLoading: loadingPerfil } = useQuery({
     queryKey: ["perfil-drawer", profileUserId],
@@ -510,7 +491,6 @@ function ProfileDrawerSheet() {
                         workout={w}
                         variant="compact"
                         containerClassName="p-6"
-                        leadingRoutineIcon={resolveWorkoutIconKey(w, routineIconsByTitle)}
                       />
                     </Card>
                   </button>
