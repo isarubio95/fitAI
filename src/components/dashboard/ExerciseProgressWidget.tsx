@@ -163,10 +163,10 @@ export function ExerciseProgressWidget() {
   const canGoNext = selectedIndex < exercises.length - 1;
 
   return (
-    <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+    <Card className="w-full min-w-0 overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
       <CardHeader className="px-6 pt-8 pb-4">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
+          <div className="flex min-w-0 items-center gap-1.5">
             <CardTitle asChild className="text-base font-bold">
               <h2>Fuerza Máxima</h2>
             </CardTitle>
@@ -231,7 +231,7 @@ export function ExerciseProgressWidget() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-6 pt-0">
+      <CardContent className="min-w-0 px-6 pt-0">
         <div
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
@@ -297,24 +297,32 @@ export function ExerciseProgressWidget() {
           )}
         </div>
 
-        <Select
-          value={selectedExercise?.id}
-          onValueChange={(val) => {
-            const idx = exercises.findIndex((e) => e.id === val);
-            if (idx >= 0) setSelectedIndex(idx);
-          }}
-        >
-          <SelectTrigger className={cn(buttonVariants({ variant: "ghost" }), "mt-3 h-10 w-full justify-between text-left")}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {exercises.map((ex) => (
-              <SelectItem key={ex.id} value={ex.id}>
-                {ex.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* w-0 min-w-full: el select no puede ensanchar al padre con nombres largos */}
+        <div className="mt-3 w-0 min-w-full max-w-full overflow-hidden">
+          <Select
+            value={selectedExercise?.id}
+            onValueChange={(val) => {
+              const idx = exercises.findIndex((e) => e.id === val);
+              if (idx >= 0) setSelectedIndex(idx);
+            }}
+          >
+            <SelectTrigger
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "h-10 w-full max-w-full justify-between gap-2 overflow-hidden text-left [&>span]:min-w-0 [&>span]:flex-1 [&>span]:truncate",
+              )}
+            >
+              <SelectValue placeholder="Ejercicio" />
+            </SelectTrigger>
+            <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
+              {exercises.map((ex) => (
+                <SelectItem key={ex.id} value={ex.id} className="whitespace-normal wrap-break-word">
+                  {ex.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardContent>
     </Card>
   );

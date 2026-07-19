@@ -226,6 +226,50 @@
   background-color: hsl(var(--primary));
 }
 
+/*
+ * Skeleton de carga para las celdas del calendario (mensual y semanal).
+ * Un reflejo diagonal sutil recorre el disco del día mientras cargan los datos,
+ * sobre un disco atenuado y sin número. Se recorta al círculo con overflow-hidden.
+ */
+@keyframes calendar-day-shimmer {
+  0% { transform: translateX(-160%); }
+  100% { transform: translateX(160%); }
+}
+
+.calendar-day-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    100deg,
+    transparent 25%,
+    hsl(var(--foreground) / 0.07) 45%,
+    hsl(var(--foreground) / 0.13) 50%,
+    hsl(var(--foreground) / 0.07) 55%,
+    transparent 75%
+  );
+  animation: calendar-day-shimmer 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.dark .calendar-day-skeleton::after {
+  background: linear-gradient(
+    100deg,
+    transparent 25%,
+    hsl(0 0% 100% / 0.05) 45%,
+    hsl(0 0% 100% / 0.11) 50%,
+    hsl(0 0% 100% / 0.05) 55%,
+    transparent 75%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-day-skeleton::after {
+    animation: none;
+  }
+}
+
 /* En móvil ocultamos barras de scroll para una experiencia más nativa (desktop sin cambios) */
 @media (max-width: 767px) {
   html,

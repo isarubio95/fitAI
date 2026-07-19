@@ -10,19 +10,19 @@ import {
 } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfileStats, xpProgress } from "@/hooks/useGamification";
 import { useLogros } from "@/hooks/useLogros";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Pencil, Loader2 } from "lucide-react";
-import { WorkoutDetailsContent, WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
+import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
+import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
+import { WorkoutFeedCard, type WorkoutFeedCardAuthor } from "@/components/dashboard/WorkoutFeedCard";
 import { cn } from "@/lib/utils";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { buildAuthAvatarCandidates, useUserAvatar } from "@/hooks/useUserAvatar";
 import { useProfileAvatarUpload } from "@/hooks/useProfileAvatarUpload";
 import { useToast } from "@/hooks/use-toast";
@@ -157,7 +157,7 @@ function UserAvatar({
 
 function ProfileDrawerSheet() {
   const { user } = useAuth();
-  const { open, onOpenChange, targetUserId, openUserProfile } = useProfileDrawer();
+  const { open, onOpenChange, targetUserId, openMyProfile, openUserProfile } = useProfileDrawer();
   const { toast } = useToast();
   const [followListMode, setFollowListMode] = useState<"seguidores" | "seguidos" | null>(null);
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
@@ -173,7 +173,6 @@ function ProfileDrawerSheet() {
   }, [open]);
 
   const statsUserId = profileUserId || undefined;
-  const { data: stats } = useProfileStats(statsUserId);
   const { data: logros = [], isLoading: loadingLogros } = useLogros(statsUserId);
   const { data: workoutsHistory = [], isLoading: loadingWorkoutHistory } = useWorkoutHistory(statsUserId);
 
@@ -190,8 +189,6 @@ function ProfileDrawerSheet() {
       return data as { username: string | null; avatar_url: string | null } | null;
     },
   });
-
-  const xp = stats ? xpProgress(stats.xp_total) : null;
 
   const { data: followCounts, isLoading: loadingFollowCounts } = useQuery({
     queryKey: ["follow-counts", profileUserId],
@@ -259,6 +256,17 @@ function ProfileDrawerSheet() {
     isViewingSelf && user?.email && !displayAvatar.src
       ? user.email.trim()?.[0]?.toUpperCase() || "U"
       : initialsFromUsername(perfilRow?.username);
+
+  const workoutAuthor: WorkoutFeedCardAuthor = {
+    id: profileUserId,
+    username: displayNameLine,
+    avatar_url: isViewingSelf && localAvatarPreview ? localAvatarPreview : perfilRow?.avatar_url ?? null,
+  };
+
+  const openAuthorProfile = (authorId: string) => {
+    if (authorId === user?.id) openMyProfile();
+    else openUserProfile(authorId);
+  };
 
   if (!user) return null;
 
@@ -372,44 +380,7 @@ function ProfileDrawerSheet() {
           </DrawerHeader>
 
           <div className="space-y-6 pb-6">
-          {xp && stats && (
-            <Card className="w-full max-w-none rounded-none border-0 bg-card shadow-none dark:bg-transparent">
-              <CardContent className="space-y-3 px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-primary" />
-                    <span className="font-bold">Nivel {xp.level}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Flame
-                      className={`h-4 w-4 ${stats.racha_actual > 0 ? "text-orange-500" : "text-muted-foreground"}`}
-                      fill={stats.racha_actual > 0 ? "currentColor" : "none"}
-                    />
-                    <span
-                      className={`text-sm font-semibold ${stats.racha_actual > 0 ? "text-orange-500" : "text-muted-foreground"}`}
-                    >
-                      {stats.racha_actual} {stats.racha_actual === 1 ? "semana" : "semanas"}
-                    </span>
-                  </div>
-                </div>
-                <Progress value={xp.percent} className="h-2" />
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Zap className="h-3 w-3" /> {xp.progress} / {xp.needed} XP para nivel {xp.level + 1}
-                </p>
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground text-left">
-                  <div>
-                    XP Total: <span className="font-semibold text-foreground">{stats.xp_total}</span>
-                  </div>
-                  <div>
-                    Racha máx:{" "}
-                    <span className="font-semibold text-foreground">
-                      {stats.racha_maxima} {stats.racha_maxima === 1 ? "semana" : "semanas"}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {statsUserId ? <GamificationWidget userId={statsUserId} contentClassName="pt-5 pb-4" /> : null}
 
           <div className="space-y-3 bg-card dark:bg-transparent">
             <p className="flex items-center gap-2 px-6 text-sm font-medium">
@@ -465,7 +436,7 @@ function ProfileDrawerSheet() {
             <p className="px-6 text-sm font-medium pt-3 mb-0">Últimos entrenamientos</p>
 
             {loadingWorkoutHistory ? (
-              <div className="grid grid-cols-1 gap-2 px-6">
+              <div className={cn("grid grid-cols-1 px-6", PAGE_CARD_STACK_GAP)}>
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div key={i} className="h-16 rounded-none border bg-muted/30 animate-pulse" />
                 ))}
@@ -477,23 +448,15 @@ function ProfileDrawerSheet() {
                   : "Este usuario no tiene entrenos visibles."}
               </p>
             ) : (
-              <div className="space-y-2 bg-background">
+              <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
                 {lastWorkouts.map((w) => (
-                  <button
+                  <WorkoutFeedCard
                     key={w.id}
-                    type="button"
-                    className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    onClick={() => setWorkoutDetailsId(w.id)}
-                    aria-label={`Ver detalle de ${w.titulo}`}
-                  >
-                    <Card className="w-full max-w-none overflow-hidden rounded-none border-x-0 border-border/20 shadow-xs transition-colors hover:bg-muted/30 md:border-x">
-                      <WorkoutDetailsContent
-                        workout={w}
-                        variant="compact"
-                        containerClassName="p-6"
-                      />
-                    </Card>
-                  </button>
+                    workout={w}
+                    author={workoutAuthor}
+                    onSelectAuthor={openAuthorProfile}
+                    onSelectWorkout={setWorkoutDetailsId}
+                  />
                 ))}
               </div>
             )}

@@ -312,23 +312,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
     value: RoutineExerciseFormData[K]
   ) => {
     setEjercicios((prev) =>
-      prev.map((ej, i) => {
-        if (i !== index) return ej;
-        const next = { ...ej, [field]: value } as RoutineExerciseFormData;
-        if (field === "registro_series") {
-          if (value === "duracion") {
-            next.duracion_objetivo_seg = next.duracion_objetivo_seg ?? 45;
-            next.ritmo_objetivo_seg_km = null;
-          } else if (value === "duracion_ritmo") {
-            next.duracion_objetivo_seg = next.duracion_objetivo_seg ?? 600;
-            next.ritmo_objetivo_seg_km = next.ritmo_objetivo_seg_km ?? 300;
-          } else {
-            next.duracion_objetivo_seg = null;
-            next.ritmo_objetivo_seg_km = null;
-          }
-        }
-        return next;
-      })
+      prev.map((ej, i) => (i === index ? ({ ...ej, [field]: value } as RoutineExerciseFormData) : ej))
     );
   };
 
@@ -717,22 +701,6 @@ function ExerciseRow({
       </AlertDialog>
 
       <div className="space-y-2">
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Registro de series</Label>
-          <Select
-            value={ej.registro_series}
-            onValueChange={(val) => onUpdateField(i, "registro_series", val as RegistroSeries)}
-          >
-            <SelectTrigger className="h-10">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="peso_reps">Peso y repeticiones</SelectItem>
-              <SelectItem value="duracion">Duración (segundos)</SelectItem>
-              <SelectItem value="duracion_ritmo">Duración y ritmo (s/km)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
         <div className="grid grid-cols-5 gap-2">
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">Series</Label>

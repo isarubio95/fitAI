@@ -14,7 +14,6 @@ import {
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Pencil, Trash2, Eye } from "lucide-react";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
-import { CalendarLoadingIndicator } from "@/components/dashboard/CalendarLoadingIndicator";
 import {
   CalendarDayCircleContent,
   getCalendarDayCircleClasses,
@@ -210,8 +209,6 @@ export function WeekCalendar({
           </div>
         ))}
       </div>
-
-      <CalendarLoadingIndicator show={!calendarDataReady} />
 
       {/* Week row */}
       <div className="bg-transparent rounded-b-xl overflow-hidden px-2">

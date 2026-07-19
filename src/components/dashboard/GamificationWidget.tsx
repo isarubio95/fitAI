@@ -2,15 +2,24 @@ import { useProfileStats, xpProgress } from "@/hooks/useGamification";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Flame, Shield, Zap } from "lucide-react";
+import { Flame, Zap } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function GamificationWidget() {
-  const { data: stats, isLoading } = useProfileStats();
+type GamificationWidgetProps = {
+  /** Si se omite, usa el usuario autenticado (como en el dashboard). */
+  userId?: string;
+  /** Padding del contenido. Por defecto el del dashboard (`py-8`). */
+  contentClassName?: string;
+};
+
+export function GamificationWidget({ userId, contentClassName }: GamificationWidgetProps) {
+  const { data: stats, isLoading } = useProfileStats(userId);
+  const bodyClass = cn("space-y-3 p-0 px-6 py-8", contentClassName);
 
   if (isLoading) {
     return (
       <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-        <CardContent className="px-6 py-8">
+        <CardContent className={bodyClass}>
           <Skeleton className="h-16 w-full" />
         </CardContent>
       </Card>
@@ -24,12 +33,9 @@ export function GamificationWidget() {
 
   return (
     <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-      <CardContent className="space-y-3 px-6 py-8">
+      <CardContent className={bodyClass}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <span className="font-bold text-lg">Nivel {level}</span>
-          </div>
+          <span className="font-bold text-base">Nivel {level}</span>
           <div className="flex items-center gap-1.5">
             <Flame
               className={`h-5 w-5 transition-colors ${
@@ -38,7 +44,7 @@ export function GamificationWidget() {
               fill={hasStreak ? "currentColor" : "none"}
             />
             <span className={`font-semibold text-sm ${hasStreak ? "text-orange-500" : "text-muted-foreground"}`}>
-              {stats.racha_actual}
+              {stats.racha_actual} {stats.racha_actual === 1 ? "semana" : "semanas"}
             </span>
           </div>
         </div>

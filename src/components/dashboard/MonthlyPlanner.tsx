@@ -50,7 +50,6 @@ import { useDeleteWorkout } from "@/hooks/useWorkouts";
 import { useDeleteCardioSession } from "@/hooks/useCardioSessions";
 import { useToast } from "@/hooks/use-toast";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
-import { CalendarLoadingIndicator } from "@/components/dashboard/CalendarLoadingIndicator";
 import {
   CalendarDayCircleContent,
   getCalendarDayCircleClasses,
@@ -231,8 +230,6 @@ export function MonthlyPlanner({
           </div>
         ))}
       </div>
-
-      <CalendarLoadingIndicator show={!calendarDataReady} />
 
       {/* Grid */}
       <div className="bg-transparent rounded-b-xl overflow-hidden px-2">

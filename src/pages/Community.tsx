@@ -6,38 +6,20 @@ import { useUserSearch } from "@/hooks/useUserSearch";
 import { useFollows } from "@/hooks/useFollows";
 import { useCommunityFeed } from "@/hooks/useCommunityFeed";
 import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
-import { useUserAvatar } from "@/hooks/useUserAvatar";
-import { WorkoutDetailsContent, WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
-import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
+import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
+import {
+  CommunityAvatar,
+  COMMUNITY_CARD_CLASS,
+  WorkoutFeedCard,
+  WorkoutFeedCardBody,
+} from "@/components/dashboard/WorkoutFeedCard";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
-function initialsFromUsername(username?: string | null) {
-  return username?.trim()?.[0]?.toUpperCase() || "U";
-}
-
-function CommunityAvatar({
-  avatarUrl,
-  username,
-  className,
-}: {
-  avatarUrl?: string | null;
-  username?: string | null;
-  className: string;
-}) {
-  const avatar = useUserAvatar([avatarUrl]);
-  return (
-    <Avatar className={className}>
-      {avatar.src ? <AvatarImage src={avatar.src} alt="" onError={avatar.onError} /> : null}
-      <AvatarFallback>{initialsFromUsername(username)}</AvatarFallback>
-    </Avatar>
-  );
-}
 
 export default function Community() {
   const { user } = useAuth();
@@ -54,11 +36,12 @@ export default function Community() {
   }, [feed]);
 
   const showSearchPanel = searching || usernameQuery.trim().length > 0;
-  const communityCardClass =
-    "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
+  const communityCardClass = COMMUNITY_CARD_CLASS;
 
-  const workoutCompactCardClass =
-    "w-full max-w-none overflow-hidden border-0 rounded-none transition-colors hover:bg-muted/30";
+  const openAuthorProfile = (authorId: string) => {
+    if (authorId === user?.id) openMyProfile();
+    else openUserProfile(authorId);
+  };
 
   const hasMergedSecondBlock =
     showSearchPanel || (!showSearchPanel && (loadingFeed || normalizedFeed.length > 0));
@@ -138,52 +121,22 @@ export default function Community() {
     );
 
   const renderFeedItemBody = (item: (typeof normalizedFeed)[number]) => (
-      <>
-        <button
-          type="button"
-          onClick={() => {
-            if (item.author.id === user?.id) openMyProfile();
-            else openUserProfile(item.author.id);
-          }}
-          className="-m-1 mb-4 flex w-full min-w-0 items-center gap-3 rounded-lg pt-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label={`Ver perfil de ${item.author.username ?? "usuario"}`}
-        >
-          <CommunityAvatar
-            avatarUrl={item.author.avatar_url}
-            username={item.author.username}
-            className="h-9 w-9 shrink-0"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{item.author.username}</p>
-            {item.workout.fecha ? (
-              <time dateTime={item.workout.fecha} className="block text-xs text-muted-foreground">
-                {formatActivityRelativeDate(item.workout.fecha)}
-              </time>
-            ) : null}
-          </div>
-        </button>
-
-        <button
-          type="button"
-          className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          onClick={() => setWorkoutDetailsId(item.workout.id)}
-          aria-label={`Ver detalle de ${item.workout.titulo}`}
-        >
-          <Card className={workoutCompactCardClass}>
-            <WorkoutDetailsContent
-              workout={item.workout}
-              variant="compact"
-              hideDate
-            />
-          </Card>
-        </button>
-      </>
+    <WorkoutFeedCardBody
+      workout={item.workout}
+      author={item.author}
+      onSelectAuthor={openAuthorProfile}
+      onSelectWorkout={setWorkoutDetailsId}
+    />
   );
 
   const renderFeedCard = (item: (typeof normalizedFeed)[number]) => (
-    <Card key={item.workout.id} className={communityCardClass}>
-      <CardContent className="space-y-4 px-6 py-4">{renderFeedItemBody(item)}</CardContent>
-    </Card>
+    <WorkoutFeedCard
+      key={item.workout.id}
+      workout={item.workout}
+      author={item.author}
+      onSelectAuthor={openAuthorProfile}
+      onSelectWorkout={setWorkoutDetailsId}
+    />
   );
 
   return (

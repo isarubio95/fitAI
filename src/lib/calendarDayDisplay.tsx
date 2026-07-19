@@ -17,6 +17,7 @@ type IconComponent = LucideIcon | ComponentType<SVGProps<SVGSVGElement>>;
 
 export type CalendarDayDisplay =
   | { type: "number" }
+  | { type: "loading" }
   | { type: "routine"; Icon: IconComponent }
   | { type: "cardio"; Icon: typeof CardioWorkoutIcon };
 
@@ -38,6 +39,19 @@ export function getCalendarDayCircleClasses({
   today,
   dataReady,
 }: CalendarDayActivityFlags) {
+  // Mientras cargan los datos mostramos un skeleton neutro (disco atenuado con
+  // reflejo animado), sin número ni colores de actividad, para que se vea
+  // claramente que el día todavía está cargando.
+  if (!dataReady) {
+    return {
+      circleFill: "bg-muted/60 dark:bg-muted/45",
+      circleText: "text-transparent",
+      circleBorder: "border-transparent",
+      transitionClass: "transition-none",
+      loadingClass: "calendar-day-skeleton overflow-hidden",
+    };
+  }
+
   const showTrained = dataReady && isTrained;
   const showCardio = dataReady && isCardioTrained;
   const showScheduled = dataReady && isScheduled;
@@ -87,7 +101,7 @@ export function resolveCalendarDayDisplay(
   dataReady = true,
 ): CalendarDayDisplay {
   if (!dataReady) {
-    return { type: "number" };
+    return { type: "loading" };
   }
 
   if (dayWorkouts.length > 0) {
@@ -121,6 +135,11 @@ export function CalendarDayCircleContent({
   display: CalendarDayDisplay;
   today: boolean;
 }) {
+  // Cargando: no mostramos el número del día todavía, solo el disco con reflejo.
+  if (display.type === "loading") {
+    return null;
+  }
+
   if (display.type !== "number") {
     const Icon = display.Icon;
     return <Icon className="relative z-10 h-5 w-5" strokeWidth={1.75} />;
