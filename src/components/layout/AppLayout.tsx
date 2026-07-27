@@ -24,9 +24,11 @@ import { supabase } from "@/integrations/supabase/client";
 import UsernameSetup from "@/pages/UsernameSetup";
 import { InAppNotificationsProvider } from "@/contexts/InAppNotificationsContext";
 import { useSafeAreaInsetsSync } from "@/hooks/useSafeAreaInsetsSync";
+import { useLogrosSync } from "@/hooks/useLogrosSync";
 
 export function AppLayout() {
   useSafeAreaInsetsSync();
+  useLogrosSync();
   const { user, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { location, pageTitle, showSectionPills, activeSubsectionLabel } =

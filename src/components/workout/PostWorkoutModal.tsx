@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Zap, Dumbbell, ArrowUp, CheckCircle2, Flame, ListPlus } from "lucide-react";
+import { Zap, Dumbbell, ArrowUp, CheckCircle2, Flame, ListPlus, Trophy } from "lucide-react";
 import type { XPBreakdown } from "@/hooks/useGamification";
+import type { LogroRow } from "@/hooks/useLogros";
+import { LogroMedal } from "@/components/logros/LogroMedal";
 import type { WorkoutRoutineSnapshot } from "@/lib/workoutToRoutine";
 import { workoutSnapshotToRoutineFormSnapshot } from "@/lib/workoutToRoutine";
 import { RoutineForm } from "@/components/routine/RoutineForm";
@@ -22,6 +24,7 @@ interface PostWorkoutModalProps {
   onClose: () => void;
   breakdown: XPBreakdown | null;
   routineSnapshot?: WorkoutRoutineSnapshot | null;
+  nuevosLogros?: LogroRow[];
 }
 
 const easeOut = [0.22, 1, 0.36, 1] as const;
@@ -52,9 +55,11 @@ function useCountUp(target: number, active: boolean, duration = 700) {
   return value;
 }
 
-function playCompletionHaptic(leveledUp: boolean) {
+function playCompletionHaptic(leveledUp: boolean, unlockedLogros: boolean) {
   if ("vibrate" in navigator) {
-    navigator.vibrate(leveledUp ? [80, 40, 80, 40, 120] : [60, 30, 60]);
+    navigator.vibrate(
+      unlockedLogros ? [100, 40, 100, 40, 100, 40, 160] : leveledUp ? [80, 40, 80, 40, 120] : [60, 30, 60],
+    );
   }
 }
 
@@ -63,15 +68,16 @@ export function PostWorkoutModal({
   onClose,
   breakdown,
   routineSnapshot = null,
+  nuevosLogros = [],
 }: PostWorkoutModalProps) {
   const navigate = useNavigate();
   const [routineFormOpen, setRoutineFormOpen] = useState(false);
 
   useEffect(() => {
     if (open && breakdown) {
-      playCompletionHaptic(breakdown.leveledUp);
+      playCompletionHaptic(breakdown.leveledUp, nuevosLogros.length > 0);
     }
-  }, [open, breakdown]);
+  }, [open, breakdown, nuevosLogros.length]);
 
   useEffect(() => {
     if (!open) setRoutineFormOpen(false);
@@ -84,10 +90,13 @@ export function PostWorkoutModal({
 
   const canSaveAsRoutine = !!routinePrefill?.ejercicios.length;
 
+  const logrosXpTotal = nuevosLogros.reduce((acc, l) => acc + l.xp_recompensa, 0);
+
   const baseXp = useCountUp(breakdown?.base ?? 0, open && !!breakdown, 500);
   const seriesXp = useCountUp(breakdown?.series ?? 0, open && !!breakdown, 600);
   const streakXp = useCountUp(breakdown?.streakBonus ?? 0, open && !!breakdown, 650);
-  const totalXp = useCountUp(breakdown?.total ?? 0, open && !!breakdown, 800);
+  const logrosXp = useCountUp(logrosXpTotal, open && !!breakdown, 700);
+  const totalXp = useCountUp((breakdown?.total ?? 0) + logrosXpTotal, open && !!breakdown, 800);
 
   if (!breakdown) return null;
 
@@ -117,6 +126,17 @@ export function PostWorkoutModal({
           },
         ]
       : []),
+    ...(logrosXpTotal > 0
+      ? [
+          {
+            key: "logros",
+            icon: <Trophy className="h-4 w-4 text-amber-500" />,
+            label: `Logros (${nuevosLogros.length})`,
+            value: logrosXp,
+            className: "text-amber-500",
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -140,6 +160,38 @@ export function PostWorkoutModal({
                 ¡Entrenamiento Completado!
               </AlertDialogTitle>
             </AlertDialogHeader>
+
+            {nuevosLogros.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {nuevosLogros.map((logro, index) => (
+                  <motion.div
+                    key={logro.id}
+                    initial={{ opacity: 0, scale: 0.85, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ delay: 0.15 + index * 0.15, type: "spring", stiffness: 260, damping: 20 }}
+                    className="flex items-center gap-3 rounded-lg border border-amber-500/25 bg-amber-500/10 p-2.5 text-left"
+                  >
+                    <motion.div
+                      initial={{ rotate: -12, scale: 0.6 }}
+                      animate={{ rotate: 0, scale: 1 }}
+                      transition={{ delay: 0.25 + index * 0.15, type: "spring", stiffness: 220, damping: 14 }}
+                    >
+                      <LogroMedal nivel={logro.nivel} icono={logro.icono} size={56} />
+                    </motion.div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                        ¡Logro desbloqueado!
+                      </p>
+                      <p className="truncate text-sm font-bold">{logro.nombre}</p>
+                      <p className="truncate text-xs text-muted-foreground">{logro.descripcion}</p>
+                    </div>
+                    <span className="shrink-0 text-sm font-bold tabular-nums text-amber-500">
+                      +{logro.xp_recompensa}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+            )}
 
             <div className="space-y-3 py-2">
               {rows.map((row, index) => (

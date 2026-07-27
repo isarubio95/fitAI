@@ -47,7 +47,7 @@ import { useRestTimerContext } from "./RestTimerProvider";
 import { formatMSS } from "@/hooks/useRestTimer";
 import { cn } from "@/lib/utils";
 import { useCalculateAndAwardXP, useRemoveWorkoutXP, type XPBreakdown } from "@/hooks/useGamification";
-import { checkAndAwardLogros } from "@/hooks/useLogros";
+import { checkAndAwardLogros, type LogroRow } from "@/hooks/useLogros";
 import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import { WorkoutLeadingRoutineIcon } from "@/components/dashboard/WorkoutDetailsSheet";
@@ -263,6 +263,7 @@ export function WorkoutLogger() {
   const isPaused = pausedAt !== null;
   const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
   const [postWorkoutRoutineSnapshot, setPostWorkoutRoutineSnapshot] = useState<WorkoutRoutineSnapshot | null>(null);
+  const [postWorkoutLogros, setPostWorkoutLogros] = useState<LogroRow[]>([]);
   const [showPostWorkout, setShowPostWorkout] = useState(false);
   const calculateAndAwardXP = useCalculateAndAwardXP();
   const removeXP = useRemoveWorkoutXP();
@@ -1043,16 +1044,18 @@ export function WorkoutLogger() {
           );
           try {
             const breakdown = await calculateAndAwardXP(effectiveWorkoutId, completedSets, fecha);
+            // Evaluar logros antes de abrir el modal para celebrarlos en él
+            const logrosResult = await checkAndAwardLogros(user!.id).catch(() => ({ nuevos: [] as LogroRow[] }));
+            queryClient.invalidateQueries({ queryKey: ["logros"] });
+            queryClient.invalidateQueries({ queryKey: ["profileStats"] });
             setPostWorkoutRoutineSnapshot(
               startedFromRoutine
                 ? null
                 : buildWorkoutRoutineSnapshot(resolvedTitulo, workoutIcon, ejerciciosLimpios),
             );
+            setPostWorkoutLogros(logrosResult.nuevos);
             setPostWorkoutData(breakdown);
             setShowPostWorkout(true);
-            checkAndAwardLogros(user!.id).then(() => {
-              queryClient.invalidateQueries({ queryKey: ["logros"] });
-            }).catch(() => {});
           } catch {
             // XP failed silently, still close
           }
@@ -1081,14 +1084,15 @@ export function WorkoutLogger() {
         const completedSets = ejerciciosLimpios.reduce((acc, ex) => acc + ex.sets.length, 0);
         try {
           const breakdown = await calculateAndAwardXP("manual", completedSets, fecha);
+          const logrosResult = await checkAndAwardLogros(user!.id).catch(() => ({ nuevos: [] as LogroRow[] }));
+          queryClient.invalidateQueries({ queryKey: ["logros"] });
+          queryClient.invalidateQueries({ queryKey: ["profileStats"] });
           setPostWorkoutRoutineSnapshot(
             buildWorkoutRoutineSnapshot(resolvedTitulo, workoutIcon, ejerciciosLimpios),
           );
+          setPostWorkoutLogros(logrosResult.nuevos);
           setPostWorkoutData(breakdown);
           setShowPostWorkout(true);
-          checkAndAwardLogros(user!.id).then(() => {
-            queryClient.invalidateQueries({ queryKey: ["logros"] });
-          }).catch(() => {});
         } catch {
           // silent
         }
@@ -1514,9 +1518,11 @@ export function WorkoutLogger() {
           setShowPostWorkout(false);
           setPostWorkoutData(null);
           setPostWorkoutRoutineSnapshot(null);
+          setPostWorkoutLogros([]);
         }}
         breakdown={postWorkoutData}
         routineSnapshot={postWorkoutRoutineSnapshot}
+        nuevosLogros={postWorkoutLogros}
       />
 
       <ExerciseDetailSheet

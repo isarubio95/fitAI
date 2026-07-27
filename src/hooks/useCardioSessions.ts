@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { checkAndAwardLogros } from "@/hooks/useLogros";
+import { notifyLogrosDesbloqueados } from "@/components/logros/logroToast";
 import type { CardioBlockInput, CardioSportDetailInput, CardioTrackInput } from "@/types/cardio";
 import { endOfMonth, startOfMonth } from "date-fns";
 
@@ -246,7 +248,7 @@ export function useUpsertCardioSession() {
 
       return sessionId;
     },
-    onSuccess: () => {
+    onSuccess: (_sessionId, { input }) => {
       qc.invalidateQueries({ queryKey: ["cardioSessions"] });
       qc.invalidateQueries({ queryKey: ["cardioSession"] });
       qc.invalidateQueries({ queryKey: ["monthCardioSessions"] });
@@ -254,6 +256,18 @@ export function useUpsertCardioSession() {
       qc.invalidateQueries({ queryKey: ["cardioDisciplinas"] });
       qc.invalidateQueries({ queryKey: ["activeCardioSession"] });
       qc.invalidateQueries({ queryKey: ["trainingLoad"] });
+
+      // Sesión completada: evaluar logros y celebrar los nuevos con un toast.
+      if (input.fecha_fin && user?.id) {
+        checkAndAwardLogros(user.id)
+          .then(({ nuevos }) => {
+            if (nuevos.length === 0) return;
+            notifyLogrosDesbloqueados(nuevos);
+            qc.invalidateQueries({ queryKey: ["logros"] });
+            qc.invalidateQueries({ queryKey: ["profileStats"] });
+          })
+          .catch(() => {});
+      }
     },
   });
 }

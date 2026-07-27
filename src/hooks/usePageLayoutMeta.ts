@@ -16,9 +16,11 @@ export function usePageLayoutMeta() {
             ? "Comunidad"
             : location.pathname === "/cardio-routines"
               ? "Rutinas de Cardio"
-              : location.pathname === "/profile"
-                ? "Perfil"
-                : "Track Gym";
+              : location.pathname === "/logros"
+                ? "Logros"
+                : location.pathname === "/profile"
+                  ? "Perfil"
+                  : "Track Gym";
 
   const showSectionPills =
     location.pathname === "/evolution" || location.pathname === "/routines";

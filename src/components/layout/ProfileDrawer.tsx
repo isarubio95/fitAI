@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogros } from "@/hooks/useLogros";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
@@ -17,7 +18,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, Flame, Zap, Trophy, Swords, Target, Award, Pencil, Loader2 } from "lucide-react";
+import { Trophy, ChevronRight, Pencil, Loader2 } from "lucide-react";
+import { LogroMedal } from "@/components/logros/LogroMedal";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { WorkoutFeedCard, type WorkoutFeedCardAuthor } from "@/components/dashboard/WorkoutFeedCard";
@@ -26,15 +28,6 @@ import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { buildAuthAvatarCandidates, useUserAvatar } from "@/hooks/useUserAvatar";
 import { useProfileAvatarUpload } from "@/hooks/useProfileAvatarUpload";
 import { useToast } from "@/hooks/use-toast";
-
-const iconMap: Record<string, React.ElementType> = {
-  Swords,
-  Shield,
-  Flame,
-  Target,
-  Trophy,
-  Award,
-};
 
 type ProfileDrawerContextValue = {
   open: boolean;
@@ -158,6 +151,7 @@ function UserAvatar({
 function ProfileDrawerSheet() {
   const { user } = useAuth();
   const { open, onOpenChange, targetUserId, openMyProfile, openUserProfile } = useProfileDrawer();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [followListMode, setFollowListMode] = useState<"seguidores" | "seguidos" | null>(null);
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
@@ -266,6 +260,19 @@ function ProfileDrawerSheet() {
   const openAuthorProfile = (authorId: string) => {
     if (authorId === user?.id) openMyProfile();
     else openUserProfile(authorId);
+  };
+
+  const unlockedLogros = useMemo(
+    () =>
+      logros
+        .filter((l) => l.unlocked)
+        .sort((a, b) => (b.fecha_desbloqueo ?? "").localeCompare(a.fecha_desbloqueo ?? "")),
+    [logros],
+  );
+
+  const goToLogros = () => {
+    onOpenChange(false);
+    navigate(isViewingSelf ? "/logros" : `/logros?user=${profileUserId}`);
   };
 
   if (!user) return null;
@@ -383,52 +390,53 @@ function ProfileDrawerSheet() {
           {statsUserId ? <GamificationWidget userId={statsUserId} contentClassName="pt-5 pb-4" /> : null}
 
           <div className="space-y-3 bg-card dark:bg-transparent">
-            <p className="flex items-center gap-2 px-6 text-sm font-medium">
-              <Trophy className="h-4 w-4 text-muted-foreground" /> Logros
-            </p>
+            <button
+              type="button"
+              onClick={goToLogros}
+              className="flex w-full items-center justify-between px-6 text-sm font-medium transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-muted-foreground" /> Logros
+              </span>
+              <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
+                {loadingLogros ? "…" : `${unlockedLogros.length}/${logros.length}`}
+                <ChevronRight className="h-4 w-4" />
+              </span>
+            </button>
             {loadingLogros ? (
-              <div className="grid grid-cols-2 gap-0 px-6">
+              <div className="flex gap-3 px-6">
                 {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="h-24 animate-pulse border-b border-r border-black/5 bg-muted/50 p-3 nth-[n+3]:border-b-0 dark:border-white/10 nth-[2n]:border-r-0"
-                  />
+                  <div key={i} className="h-16 w-16 animate-pulse rounded-full bg-muted/50" />
                 ))}
               </div>
-            ) : logros.length === 0 ? (
-              <p className="px-6 text-xs text-muted-foreground">No hay logros definidos.</p>
+            ) : unlockedLogros.length === 0 ? (
+              <button
+                type="button"
+                onClick={goToLogros}
+                className="block w-full px-6 text-left text-xs text-muted-foreground transition-opacity hover:opacity-80"
+              >
+                {isViewingSelf
+                  ? "Aún no has desbloqueado logros. Toca para ver todos los retos."
+                  : "Este usuario aún no ha desbloqueado logros."}
+              </button>
             ) : (
-              <div className="grid grid-cols-2 gap-0 px-6">
-                {logros.map((a, i) => {
-                  const Icon = iconMap[a.icono] || Trophy;
-                  const row = Math.floor(i / 2);
-                  const totalRows = Math.ceil(logros.length / 2);
-                  const hasCellToRight = i % 2 === 0 && i + 1 < logros.length;
-                  const showBottomSep = row < totalRows - 1;
-                  return (
-                    <div
-                      key={a.id}
-                      className={cn(
-                        "flex min-w-0 w-full flex-col items-center gap-2 p-3 text-center transition-opacity",
-                        hasCellToRight && "border-r border-black/5 dark:border-white/10",
-                        showBottomSep && "border-b border-black/5 dark:border-white/10",
-                        !a.unlocked && "opacity-50 grayscale",
-                      )}
-                    >
-                      <div className={`p-2 rounded-full ${a.unlocked ? "bg-primary/10" : "bg-muted"}`}>
-                        <Icon
-                          className={`h-6 w-6 ${a.unlocked ? "text-primary" : "text-muted-foreground"}`}
-                        />
-                      </div>
-                      <p className="text-xs font-semibold leading-tight">{a.nombre}</p>
-                      <p className="text-[10px] text-muted-foreground leading-tight">{a.descripcion}</p>
-                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                        <Zap className="h-2.5 w-2.5" /> {a.xp_recompensa} XP
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              <button
+                type="button"
+                onClick={goToLogros}
+                className="flex w-full items-center gap-3 overflow-x-auto px-6 pb-1 transition-opacity hover:opacity-90"
+              >
+                {unlockedLogros.slice(0, 5).map((l) => (
+                  <div key={l.id} className="flex w-16 shrink-0 flex-col items-center gap-1 text-center">
+                    <LogroMedal nivel={l.nivel} icono={l.icono} size={60} />
+                    <p className="w-full truncate text-[10px] font-medium leading-tight">{l.nombre}</p>
+                  </div>
+                ))}
+                {unlockedLogros.length > 5 && (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    +{unlockedLogros.length - 5}
+                  </span>
+                )}
+              </button>
             )}
           </div>
 

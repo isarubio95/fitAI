@@ -522,6 +522,51 @@ export type Database = {
           },
         ]
       }
+      logro: {
+        Row: {
+          categoria: string
+          codigo: string
+          created_at: string
+          descripcion: string
+          icono: string
+          id: string
+          meta: number
+          nivel: string
+          nombre: string
+          orden: number
+          tipo: string
+          xp_recompensa: number
+        }
+        Insert: {
+          categoria: string
+          codigo: string
+          created_at?: string
+          descripcion: string
+          icono: string
+          id?: string
+          meta?: number
+          nivel: string
+          nombre: string
+          orden?: number
+          tipo: string
+          xp_recompensa?: number
+        }
+        Update: {
+          categoria?: string
+          codigo?: string
+          created_at?: string
+          descripcion?: string
+          icono?: string
+          id?: string
+          meta?: number
+          nivel?: string
+          nombre?: string
+          orden?: number
+          tipo?: string
+          xp_recompensa?: number
+        }
+        Relationships: []
+      }
       medidas: {
         Row: {
           brazo: number | null
@@ -935,6 +980,35 @@ export type Database = {
           registro_series?: string
         }
         Relationships: []
+      }
+      usuario_logro: {
+        Row: {
+          fecha_desbloqueo: string
+          id: string
+          logro_id: string
+          usuario_id: string
+        }
+        Insert: {
+          fecha_desbloqueo?: string
+          id?: string
+          logro_id: string
+          usuario_id?: string
+        }
+        Update: {
+          fecha_desbloqueo?: string
+          id?: string
+          logro_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usuario_logro_logro_id_fkey"
+            columns: ["logro_id"]
+            isOneToOne: false
+            referencedRelation: "logro"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
