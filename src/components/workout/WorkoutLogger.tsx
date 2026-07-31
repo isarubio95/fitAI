@@ -22,12 +22,12 @@ import { useWorkoutById } from "@/hooks/useWorkouts";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { fetchUnfinishedWorkoutId } from "@/lib/activeWorkoutGuard";
-import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -119,11 +119,13 @@ function serializeWorkoutFormSnapshot(
   fecha: string,
   exercises: ExerciseFormData[],
   icono: RoutineIconKey,
+  esPublica: boolean,
 ): string {
   return JSON.stringify({
     titulo: titulo.trim(),
     fecha,
     icono,
+    esPublica,
     exercises: exercises.map((ex) => ({
       id: ex.id ?? null,
       tipo_ejercicio_id: ex.tipo_ejercicio_id ?? null,
@@ -239,7 +241,6 @@ export function WorkoutLogger() {
   const { open, workoutId, defaultDate, templateExercises, templateTitle, templateRoutineIcon, plannedId } = state;
 
   const { user } = useAuth();
-  const { comunidadPublicaActividad } = useCommunitySettings();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -253,6 +254,7 @@ export function WorkoutLogger() {
   const [titulo, setTitulo] = useState("");
   const [fecha, setFecha] = useState(defaultDate || new Date().toISOString().slice(0, 10));
   const [exercises, setExercises] = useState<ExerciseFormData[]>([]);
+  const [esPublica, setEsPublica] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -264,6 +266,7 @@ export function WorkoutLogger() {
   const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
   const [postWorkoutRoutineSnapshot, setPostWorkoutRoutineSnapshot] = useState<WorkoutRoutineSnapshot | null>(null);
   const [postWorkoutLogros, setPostWorkoutLogros] = useState<LogroRow[]>([]);
+  const [postWorkoutId, setPostWorkoutId] = useState<string | null>(null);
   const [showPostWorkout, setShowPostWorkout] = useState(false);
   const calculateAndAwardXP = useCalculateAndAwardXP();
   const removeXP = useRemoveWorkoutXP();
@@ -304,8 +307,8 @@ export function WorkoutLogger() {
   const hasRecordedWork = countRecordedSets(exercises) > 0;
   const hasUnsavedChanges = useMemo(() => {
     if (!isEditingCompletedWorkout || editBaseline === null) return false;
-    return serializeWorkoutFormSnapshot(titulo, fecha, exercises, workoutIcon) !== editBaseline;
-  }, [isEditingCompletedWorkout, editBaseline, titulo, fecha, exercises, workoutIcon]);
+    return serializeWorkoutFormSnapshot(titulo, fecha, exercises, workoutIcon, esPublica) !== editBaseline;
+  }, [isEditingCompletedWorkout, editBaseline, titulo, fecha, exercises, workoutIcon, esPublica]);
   const canSubmitPrimaryAction = isEditingCompletedWorkout
     ? hasRecordedWork && hasUnsavedChanges
     : hasRecordedWork;
@@ -362,12 +365,20 @@ export function WorkoutLogger() {
         existingWorkout.icono ?? routineIconsByTitle[hydratedTitulo] ?? DEFAULT_ROUTINE_ICON_KEY,
       );
       setWorkoutIcon(hydratedIcon);
+      const hydratedEsPublica = !!(existingWorkout as { es_publica?: boolean }).es_publica;
+      setEsPublica(hydratedEsPublica);
       setStartedFromRoutine(
         !existingWorkout.fecha_fin && wasWorkoutStartedFromRoutine(existingWorkout.id),
       );
       setEditBaseline(
         existingWorkout.fecha_fin
-          ? serializeWorkoutFormSnapshot(hydratedTitulo, hydratedFecha, hydratedExercises, hydratedIcon)
+          ? serializeWorkoutFormSnapshot(
+              hydratedTitulo,
+              hydratedFecha,
+              hydratedExercises,
+              hydratedIcon,
+              hydratedEsPublica,
+            )
           : null,
       );
     }
@@ -411,6 +422,7 @@ export function WorkoutLogger() {
       setExercises([]);
       setFecha(defaultDate || new Date().toISOString().slice(0, 10));
       setStartedFromRoutine(false);
+      setEsPublica(false);
     }
   }, [open, workoutId, activeWorkoutId, defaultDate, templateExercises]);
 
@@ -422,6 +434,7 @@ export function WorkoutLogger() {
       setPausedAccumMs(0);
       setEditBaseline(null);
       setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
+      setEsPublica(false);
     }
   }, [open]);
 
@@ -455,7 +468,7 @@ export function WorkoutLogger() {
           titulo: templateTitle.trim(),
           fecha: new Date().toISOString(),
           usuario_id: user.id,
-          es_publica: comunidadPublicaActividad,
+          es_publica: false,
           icono: templateIcon,
         })
         .select("id")
@@ -517,6 +530,7 @@ export function WorkoutLogger() {
       setWorkoutIcon(templateIcon);
       setFecha(plannedDate || new Date().toISOString().slice(0, 10));
       setExercises(updatedExercises);
+      setEsPublica(false);
       setStartedFromRoutine(true);
       markWorkoutStartedFromRoutine(actividad.id);
       invalidateActiveWorkoutQueries();
@@ -545,7 +559,7 @@ export function WorkoutLogger() {
           titulo: defaultTitle,
           fecha: now.toISOString(),
           usuario_id: user.id,
-          es_publica: comunidadPublicaActividad,
+          es_publica: false,
           icono: DEFAULT_ROUTINE_ICON_KEY,
         })
         .select("id")
@@ -1031,6 +1045,7 @@ export function WorkoutLogger() {
               fecha: new Date(fecha).toISOString(),
               fecha_fin: new Date().toISOString(),
               icono: workoutIcon,
+              es_publica: false,
             })
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
@@ -1055,6 +1070,7 @@ export function WorkoutLogger() {
             );
             setPostWorkoutLogros(logrosResult.nuevos);
             setPostWorkoutData(breakdown);
+            setPostWorkoutId(effectiveWorkoutId);
             setShowPostWorkout(true);
           } catch {
             // XP failed silently, still close
@@ -1070,6 +1086,7 @@ export function WorkoutLogger() {
               titulo: resolvedTitulo,
               fecha: new Date(fecha).toISOString(),
               icono: workoutIcon,
+              es_publica: esPublica,
             })
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
@@ -1078,7 +1095,7 @@ export function WorkoutLogger() {
           close();
         }
       } else {
-        await handleCreate(ejerciciosLimpios, resolvedTitulo);
+        const createdId = await handleCreate(ejerciciosLimpios, resolvedTitulo);
 
         // Also award XP for manual workouts
         const completedSets = ejerciciosLimpios.reduce((acc, ex) => acc + ex.sets.length, 0);
@@ -1092,6 +1109,7 @@ export function WorkoutLogger() {
           );
           setPostWorkoutLogros(logrosResult.nuevos);
           setPostWorkoutData(breakdown);
+          setPostWorkoutId(createdId);
           setShowPostWorkout(true);
         } catch {
           // silent
@@ -1114,7 +1132,7 @@ export function WorkoutLogger() {
         fecha: new Date(fecha).toISOString(),
         fecha_fin: new Date().toISOString(),
         usuario_id: user!.id,
-        es_publica: comunidadPublicaActividad,
+        es_publica: false,
         icono: workoutIcon,
       })
       .select("id")
@@ -1156,6 +1174,8 @@ export function WorkoutLogger() {
       const { error: sError } = await supabase.from("serie").insert(serieInserts);
       if (sError) throw sError;
     }
+
+    return actividad.id as string;
   };
 
   /**
@@ -1281,11 +1301,28 @@ export function WorkoutLogger() {
                       )}
                     </div>
                     {isEditingCompletedWorkout && (
-                      <RoutineIconPicker
-                        value={workoutIcon}
-                        onChange={setWorkoutIcon}
-                        label="Icono del entrenamiento"
-                      />
+                      <>
+                        <RoutineIconPicker
+                          value={workoutIcon}
+                          onChange={setWorkoutIcon}
+                          label="Icono del entrenamiento"
+                        />
+                        <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5">
+                          <div className="min-w-0 space-y-0.5">
+                            <p className="text-sm font-medium">Publicar en comunidad</p>
+                            <p className="text-[12px] text-muted-foreground">
+                              {esPublica
+                                ? "Este entreno se verá en el feed público."
+                                : "Este entreno se mantendrá privado."}
+                            </p>
+                          </div>
+                          <Switch
+                            checked={esPublica}
+                            onCheckedChange={setEsPublica}
+                            aria-label="Publicar en comunidad"
+                          />
+                        </div>
+                      </>
                     )}
                   </CardContent>
                 </Card>
@@ -1519,10 +1556,12 @@ export function WorkoutLogger() {
           setPostWorkoutData(null);
           setPostWorkoutRoutineSnapshot(null);
           setPostWorkoutLogros([]);
+          setPostWorkoutId(null);
         }}
         breakdown={postWorkoutData}
         routineSnapshot={postWorkoutRoutineSnapshot}
         nuevosLogros={postWorkoutLogros}
+        workoutId={postWorkoutId}
       />
 
       <ExerciseDetailSheet

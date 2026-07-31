@@ -47,7 +47,8 @@ export default function PrivacyPolicy() {
                 </li>
                 <li>
                   <strong className="text-foreground">Datos de perfil:</strong> nombre de usuario, avatar y
-                  preferencias de la aplicación (tema, visibilidad en comunidad, etc.).
+                  preferencias de la aplicación (tema, etc.) y, por cada entrenamiento, si decides
+                  publicarlo en la comunidad.
                 </li>
                 <li>
                   <strong className="text-foreground">Datos de entrenamiento:</strong> rutinas, ejercicios,

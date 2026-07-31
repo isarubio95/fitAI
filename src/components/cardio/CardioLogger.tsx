@@ -6,10 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { useToast } from "@/hooks/use-toast";
-import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useCardioDisciplinas, useCardioSessionById, useUpsertCardioSession } from "@/hooks/useCardioSessions";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import type { CardioBlockInput, CardioDisciplineCode, CardioSportDetailInput, CardioTrackInput, CardioTrackPointInput } from "@/types/cardio";
 
 type NestedOneOrMany<T> = T | T[] | null | undefined;
@@ -70,13 +70,13 @@ export function CardioLogger() {
   const upsert = useUpsertCardioSession();
   const { data: sessionData, isLoading } = useCardioSessionById(state.sessionId);
   const { data: disciplinas } = useCardioDisciplinas();
-  const { comunidadPublicaActividad } = useCommunitySettings();
 
   const [titulo, setTitulo] = useState("");
   const [disciplinaId, setDisciplinaId] = useState<string | null>(null);
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [comentarios, setComentarios] = useState("");
+  const [esPublica, setEsPublica] = useState(false);
   const [runningRitmo, setRunningRitmo] = useState("");
   const [runningCadencia, setRunningCadencia] = useState("");
   const [runningDesnivel, setRunningDesnivel] = useState("");
@@ -119,6 +119,7 @@ export function CardioLogger() {
       setFechaInicio((sessionData.fecha_inicio ?? "").slice(0, 16));
       setFechaFin((sessionData.fecha_fin ?? "").slice(0, 16));
       setComentarios(sessionData.comentarios ?? "");
+      setEsPublica(!!sessionData.es_publica);
       const running = first(sessionData.cardio_sesion_running as NestedOneOrMany<CardioRunningRow>);
       const cycling = first(sessionData.cardio_sesion_cycling as NestedOneOrMany<CardioCyclingRow>);
       const track = first(sessionData.cardio_track as NestedOneOrMany<CardioTrackRow>);
@@ -189,6 +190,7 @@ export function CardioLogger() {
     setFechaInicio(defaultStart);
     setFechaFin("");
     setComentarios("");
+    setEsPublica(false);
     setRunningRitmo("");
     setRunningCadencia("");
     setRunningDesnivel("");
@@ -296,7 +298,7 @@ export function CardioLogger() {
         fecha_inicio: new Date(fechaInicio).toISOString(),
         fecha_fin: fechaFin ? new Date(fechaFin).toISOString() : null,
         comentarios: comentarios.trim() || null,
-        es_publica: comunidadPublicaActividad,
+        es_publica: esPublica,
         bloques,
       },
     });
@@ -356,6 +358,21 @@ export function CardioLogger() {
                   placeholder="Notas..."
                 />
               </FormField>
+            </div>
+            <div className="col-span-2 flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5">
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-sm font-medium">Publicar en comunidad</p>
+                <p className="text-[12px] text-muted-foreground">
+                  {esPublica
+                    ? "Este entreno se verá en el feed público."
+                    : "Este entreno se mantendrá privado."}
+                </p>
+              </div>
+              <Switch
+                checked={esPublica}
+                onCheckedChange={setEsPublica}
+                aria-label="Publicar en comunidad"
+              />
             </div>
           </div>
 

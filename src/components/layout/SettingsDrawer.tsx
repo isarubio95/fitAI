@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
-import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 import { useAuth } from "@/hooks/useAuth";
 import { ColorThemeSelector } from "@/components/ColorThemeSelector";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -21,16 +19,10 @@ import {
 } from "@/components/ui/drawer";
 import { Settings } from "lucide-react";
 import { Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
-
-/** Panel de preferencia de comunidad: se distingue del bloque plano de color de acento. */
-const preferencePanelClass =
-  "rounded-none border border-border/80 bg-secondary/50 p-4 shadow-sm dark:bg-secondary/25 dark:border-border/60";
 
 export function SettingsDrawer() {
   const { signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { comunidadPublicaActividad, isLoading: settingsLoading, isUpdating, setComunidadPublicaActividad } = useCommunitySettings();
   const [open, setOpen] = useState(false);
 
   return (
@@ -55,35 +47,6 @@ export function SettingsDrawer() {
         </DrawerHeader>
 
         <div className="mt-3 flex-1 space-y-6 overflow-y-auto px-6 pb-4">
-          {/* Privacidad en comunidad */}
-          <div className="space-y-3">
-            <p className="text-sm font-medium flex items-center gap-2">Comunidad</p>
-            <div
-              data-drawer-section
-              className={cn(preferencePanelClass, "flex items-center justify-between gap-4")}
-            >
-              <div className="space-y-1 min-w-0">
-                <p className="text-sm font-semibold">Publicar entrenos</p>
-                <p className="text-[12px] text-muted-foreground">
-                  {settingsLoading
-                    ? "Cargando..."
-                    : comunidadPublicaActividad
-                      ? "Tus entrenos se verán en el feed público."
-                      : "Tus entrenos se mantendrán privados."}
-                </p>
-              </div>
-              <Switch
-                checked={comunidadPublicaActividad}
-                onCheckedChange={(v) => {
-                  setComunidadPublicaActividad(v).catch(() => {
-                    // Error silencioso: el backend puede no estar migrado aún.
-                  });
-                }}
-                disabled={settingsLoading || isUpdating}
-              />
-            </div>
-          </div>
-
           {/* Color de acento */}
           <ColorThemeSelector />
 
@@ -138,4 +101,3 @@ export function SettingsDrawer() {
     </Drawer>
   );
 }
-

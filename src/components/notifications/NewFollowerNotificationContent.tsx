@@ -71,7 +71,7 @@ export function NewFollowerNotificationContent({
         <Button
           type="button"
           size="sm"
-          variant={isFollowing ? "secondary" : "default"}
+          variant="default"
           className="h-9 shrink-0 self-center gap-1.5 px-3"
           disabled={isToggling.has(seguidorId)}
           onClick={(e) => {

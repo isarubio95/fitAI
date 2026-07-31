@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   AlertDialog,
@@ -10,6 +11,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Zap, Dumbbell, ArrowUp, CheckCircle2, Flame, ListPlus, Trophy } from "lucide-react";
 import type { XPBreakdown } from "@/hooks/useGamification";
@@ -18,6 +20,7 @@ import { LogroMedal } from "@/components/logros/LogroMedal";
 import type { WorkoutRoutineSnapshot } from "@/lib/workoutToRoutine";
 import { workoutSnapshotToRoutineFormSnapshot } from "@/lib/workoutToRoutine";
 import { RoutineForm } from "@/components/routine/RoutineForm";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PostWorkoutModalProps {
   open: boolean;
@@ -25,6 +28,8 @@ interface PostWorkoutModalProps {
   breakdown: XPBreakdown | null;
   routineSnapshot?: WorkoutRoutineSnapshot | null;
   nuevosLogros?: LogroRow[];
+  /** Actividad recién finalizada; permite publicar desde este modal. */
+  workoutId?: string | null;
 }
 
 const easeOut = [0.22, 1, 0.36, 1] as const;
@@ -69,9 +74,13 @@ export function PostWorkoutModal({
   breakdown,
   routineSnapshot = null,
   nuevosLogros = [],
+  workoutId = null,
 }: PostWorkoutModalProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [routineFormOpen, setRoutineFormOpen] = useState(false);
+  const [esPublica, setEsPublica] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     if (open && breakdown) {
@@ -80,8 +89,36 @@ export function PostWorkoutModal({
   }, [open, breakdown, nuevosLogros.length]);
 
   useEffect(() => {
-    if (!open) setRoutineFormOpen(false);
+    if (!open) {
+      setRoutineFormOpen(false);
+      setEsPublica(false);
+      setPublishing(false);
+    }
   }, [open]);
+
+  const persistPublicacion = async (value: boolean) => {
+    if (!workoutId || workoutId === "manual") return;
+    setPublishing(true);
+    try {
+      const { error } = await supabase
+        .from("actividad")
+        .update({ es_publica: value })
+        .eq("id", workoutId);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["communityFeed"] });
+      queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
+      queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
+    } catch {
+      setEsPublica(!value);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const onPublicarChange = (value: boolean) => {
+    setEsPublica(value);
+    void persistPublicacion(value);
+  };
 
   const routinePrefill = useMemo(
     () => (routineSnapshot ? workoutSnapshotToRoutineFormSnapshot(routineSnapshot) : null),
@@ -149,14 +186,7 @@ export function PostWorkoutModal({
             transition={{ duration: 0.35, ease: easeOut }}
           >
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-2xl font-extrabold flex items-center justify-center gap-2">
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.1, type: "spring", stiffness: 320, damping: 18 }}
-                >
-                  <CheckCircle2 className="h-7 w-7 text-green-500" />
-                </motion.span>
+              <AlertDialogTitle className="mx-auto mb-1 max-w-[11.5rem] text-center text-2xl font-extrabold leading-tight">
                 ¡Entrenamiento Completado!
               </AlertDialogTitle>
             </AlertDialogHeader>
@@ -256,6 +286,30 @@ export function PostWorkoutModal({
                 </motion.div>
               )}
             </div>
+
+            {workoutId && workoutId !== "manual" && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.35, ease: easeOut }}
+                className="my-2 flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5 text-left"
+              >
+                <div className="min-w-0 space-y-0.5">
+                  <p className="text-sm font-medium">Publicar en comunidad</p>
+                  <p className="text-[12px] text-muted-foreground">
+                    {esPublica
+                      ? "Este entreno se verá en el feed público."
+                      : "Este entreno se mantendrá privado."}
+                  </p>
+                </div>
+                <Switch
+                  checked={esPublica}
+                  onCheckedChange={onPublicarChange}
+                  disabled={publishing}
+                  aria-label="Publicar en comunidad"
+                />
+              </motion.div>
+            )}
 
             <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:justify-center sm:space-x-0">
               {canSaveAsRoutine && (

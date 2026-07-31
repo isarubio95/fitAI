@@ -138,7 +138,7 @@ export function useUpsertCardioSession() {
         fecha_inicio: input.fecha_inicio,
         fecha_fin: input.fecha_fin ?? null,
         comentarios: input.comentarios ?? null,
-        es_publica: input.es_publica ?? true,
+        es_publica: input.es_publica ?? false,
         cardio_disciplina_id: input.cardio_disciplina_id ?? null,
         usuario_id: user!.id,
       };

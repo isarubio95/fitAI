@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useCardioGpsRecorder } from "@/hooks/useCardioGpsRecorder";
 import { useCardioSessionById, useUpsertCardioSession } from "@/hooks/useCardioSessions";
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import type { CardioDisciplineCode, CardioSportDetailInput, CardioTrackPointInput } from "@/types/cardio";
 
 const OSM_TILE = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -59,7 +59,6 @@ export function CardioLiveRecorder() {
 
   const { toast } = useToast();
   const upsert = useUpsertCardioSession();
-  const { comunidadPublicaActividad } = useCommunitySettings();
   const { data: sessionData, isLoading: sessionLoading } = useCardioSessionById(open ? sessionId : null);
 
   const [step, setStep] = useState<"recording" | "summary">("recording");
@@ -72,6 +71,7 @@ export function CardioLiveRecorder() {
 
   const [summaryTitulo, setSummaryTitulo] = useState("");
   const [summaryComentarios, setSummaryComentarios] = useState("");
+  const [esPublica, setEsPublica] = useState(false);
 
   const discipline = firstNested(sessionData?.cardio_disciplina);
   const code = discipline?.codigo ?? null;
@@ -96,6 +96,7 @@ export function CardioLiveRecorder() {
       setDistanceFrozenM(null);
       setSummaryTitulo("");
       setSummaryComentarios("");
+      setEsPublica(false);
     }
   }, [open]);
 
@@ -205,7 +206,7 @@ export function CardioLiveRecorder() {
           sport_detail: buildSportDetail(),
           track,
           bloques: [],
-          es_publica: comunidadPublicaActividad,
+          es_publica: esPublica,
         },
       });
       clearDraft();
@@ -343,6 +344,22 @@ export function CardioLiveRecorder() {
               onChange={(e) => setSummaryComentarios(e.target.value)}
               className="min-h-[88px] rounded-xl resize-none"
               placeholder="Sensaciones, clima…"
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5">
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-sm font-medium">Publicar en comunidad</p>
+              <p className="text-[12px] text-muted-foreground">
+                {esPublica
+                  ? "Este entreno se verá en el feed público."
+                  : "Este entreno se mantendrá privado."}
+              </p>
+            </div>
+            <Switch
+              checked={esPublica}
+              onCheckedChange={setEsPublica}
+              aria-label="Publicar en comunidad"
             />
           </div>
 

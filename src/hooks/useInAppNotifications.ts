@@ -4,13 +4,12 @@ import { toast } from "sonner";
 import { subYears, addYears } from "date-fns";
 import { useInAppNotificationsDismiss } from "@/contexts/InAppNotificationsContext";
 import { usePlannedRoutines } from "@/hooks/useWorkoutPlan";
-import { useCommunitySettings } from "@/hooks/useCommunitySettings";
 import { useMyFollowersReceived } from "@/hooks/useMyFollowersReceived";
 import type { InAppNotificationItem } from "@/types/inAppNotification";
 import { useAuth } from "@/hooks/useAuth";
 
 /**
- * `true`: muestra siempre las 3 notificaciones (nuevo seguidor, plan, comunidad) con datos de ejemplo.
+ * `true`: muestra siempre las notificaciones de diseño (seguidor, plan) con datos de ejemplo.
  * Pon `false` cuando termines de maquetar o antes de desplegar.
  *
  * Si las descartas y quieres verlas otra vez: en localStorage quita del array de
@@ -87,13 +86,6 @@ function buildDesignPreviewInAppNotifications(
         onClick: () => navigate("/", { state: { openPlanWizard: true } }),
       },
     },
-    {
-      id: "design-preview-community",
-      kind: "info",
-      title: "Comunidad",
-      body: "Tus entrenos no aparecen en el feed público. Puedes activarlo en Ajustes (icono del engrane).",
-      dismissable: true,
-    },
   ];
 }
 
@@ -113,8 +105,6 @@ export function useInAppNotifications() {
   );
   const plannedKnown = allPlannedRoutines !== undefined;
   const hasPlanned = plannedKnown ? allPlannedRoutines.length > 0 : false;
-
-  const { comunidadPublicaActividad, isLoading: settingsLoading } = useCommunitySettings();
 
   const {
     data: followersReceived = [],
@@ -191,25 +181,8 @@ export function useInAppNotifications() {
       });
     }
 
-    if (!settingsLoading && !comunidadPublicaActividad) {
-      list.push({
-        id: "community-privacy-hint",
-        kind: "info",
-        title: "Comunidad",
-        body: "Tus entrenos no aparecen en el feed público. Puedes activarlo en Ajustes (icono del engrane).",
-        dismissable: true,
-      });
-    }
-
     return list;
-  }, [
-    followerNotifications,
-    plannedKnown,
-    hasPlanned,
-    settingsLoading,
-    comunidadPublicaActividad,
-    navigate,
-  ]);
+  }, [followerNotifications, plannedKnown, hasPlanned, navigate]);
 
   const items = useMemo(() => {
     return built.filter((n) => {
