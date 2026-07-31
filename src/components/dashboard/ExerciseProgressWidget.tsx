@@ -29,7 +29,9 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
-  type TooltipProps,
+  type TooltipContentProps,
+  usePlotArea,
+  useXAxisScale,
   XAxis,
   YAxis,
 } from "recharts";
@@ -38,24 +40,79 @@ import { addDays, format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 
-const SWIPE_THRESHOLD = 50;
+/**
+ * ── Medidas del gráfico de Fuerza Máxima ──────────────────────────────────────
+ * Tocá solo este bloque para ajustar espaciados y tamaños.
+ */
+const CHART = {
+  /** Altura total del ResponsiveContainer (px). */
+  height: 190,
+
+  /** Margen interno del AreaChart. `left` negativo acerca el área al borde. */
+  margin: { top: 5, right: 5, left: -8, bottom: 0 },
+
+  /** Eje Y: ancho reservado para los números (px). */
+  yAxisWidth: 36,
+
+  /** Eje Y: cantidad de marcas (ticks). */
+  yTickCount: 5,
+
+  /** Eje X: máximo de etiquetas de fecha. */
+  xMaxLabels: 6,
+
+  /**
+   * Eje X — padding de las etiquetas (custom; no mueve línea/puntos).
+   * - left: espacio extra de la 1.ª etiqueta hacia la derecha.
+   * - top: separación entre el área del gráfico y las fechas.
+   * Nativo equivalente: `padding.left` (mueve el área) y `tickMargin` (si ticks nativos).
+   */
+  xLabelPad: { left: 22, top: 24 },
+
+  /** Eje X: padding nativo de la escala a la derecha (sí desplaza un poco el área). */
+  xScalePadRight: 12,
+
+  /** Tamaño de fuente de ticks/etiquetas (px). */
+  tickFontSize: 11,
+
+  /** Grosor de la línea del área. */
+  strokeWidth: 2,
+
+  /** Radio del punto en cada entrenamiento. */
+  dotRadius: 4,
+
+  /** Radio del punto activo (hover). */
+  activeDotRadius: 5,
+
+  /** Con un solo registro, días a izquierda/derecha para dibujar el trazo. */
+  singlePointDaySpan: 5,
+
+  /** Umbral de swipe horizontal entre ejercicios (px). */
+  swipeThreshold: 50,
+} as const;
+
+const X_AXIS_HEIGHT = Math.ceil(CHART.xLabelPad.top + CHART.tickFontSize);
 
 function formatWeight(value: number) {
   const n = Number(value);
   return Number.isInteger(n) ? n.toString() : n.toFixed(2);
 }
 
+/** 1RM en el gráfico: siempre entero para no gastar espacio en el eje Y. */
+function formatMaxStrength(value: number) {
+  return Math.round(Math.max(0, Number(value))).toString();
+}
+
 function getNiceStep(range: number) {
-  if (range <= 10) return 2.5;
+  if (range <= 10) return 1;
   if (range <= 30) return 5;
   if (range <= 80) return 10;
   if (range <= 200) return 25;
   return 50;
 }
 
-function getUniformYScale(history: { oneRepMax: number }[], tickCount = 5) {
+function getUniformYScale(history: { oneRepMax: number }[], tickCount = CHART.yTickCount) {
   if (!history.length) {
-    const ticks = [0, 12.5, 25, 37.5, 50];
+    const ticks = [0, 10, 20, 30, 40];
     return { domain: [ticks[0], ticks[ticks.length - 1]] as [number, number], ticks };
   }
 
@@ -65,19 +122,79 @@ function getUniformYScale(history: { oneRepMax: number }[], tickCount = 5) {
   const rawRange = Math.max(1, max - min);
   const step = getNiceStep(rawRange);
   const minDomain = Math.max(0, Math.floor((min - step) / step) * step);
-  const maxDomain = Math.ceil((max + step) / step) * step;
-  const finalStep = (maxDomain - minDomain) / (tickCount - 1);
+  let maxDomain = Math.ceil((max + step) / step) * step;
+  const divisions = tickCount - 1;
+  const tickStep = Math.max(1, Math.ceil((maxDomain - minDomain) / divisions));
+  maxDomain = minDomain + tickStep * divisions;
 
-  const ticks = Array.from({ length: tickCount }, (_, i) => minDomain + i * finalStep);
+  const ticks = Array.from({ length: tickCount }, (_, i) => minDomain + i * tickStep);
   return { domain: [minDomain, maxDomain] as [number, number], ticks };
 }
 
+/** Hasta `maxTicks` posiciones equiespaciadas en el eje X (índices numéricos). */
+function getEvenXTicks(pointCount: number, maxTicks = CHART.xMaxLabels): number[] {
+  if (pointCount <= 0) return [];
+  if (pointCount === 1) return [0];
+  const tickCount = Math.min(pointCount, maxTicks);
+  const last = pointCount - 1;
+  return Array.from({ length: tickCount }, (_, i) => (i * last) / (tickCount - 1));
+}
+
 interface ChartHistoryPoint {
+  x: number;
   date: string;
   oneRepMax: number;
   weight: number;
   reps: number;
   tooltipDate?: string;
+}
+
+/** Etiquetas del eje X: padding izquierdo + misma distancia entre todas; no mueve el área del gráfico. */
+function EqualSpacedXLabels({
+  chartData,
+  xTicks,
+}: {
+  chartData: ChartHistoryPoint[];
+  xTicks: number[];
+}) {
+  const scale = useXAxisScale();
+  const plotArea = usePlotArea();
+
+  if (!scale || !plotArea || xTicks.length === 0) return null;
+
+  const xStart = Number(scale(xTicks[0]));
+  const xEnd = Number(scale(xTicks[xTicks.length - 1]));
+  if (!Number.isFinite(xStart) || !Number.isFinite(xEnd)) return null;
+
+  const left = xStart + CHART.xLabelPad.left;
+  const right = xEnd;
+  const y = plotArea.y + plotArea.height;
+
+  return (
+    <g className="recharts-equal-x-labels">
+      {xTicks.map((tick, i) => {
+        const point = chartData[Math.round(tick)];
+        if (!point) return null;
+        const x =
+          xTicks.length === 1
+            ? (left + right) / 2
+            : left + (i * (right - left)) / (xTicks.length - 1);
+        return (
+          <text
+            key={`${tick}-${i}`}
+            x={x}
+            y={y}
+            dy={CHART.xLabelPad.top}
+            textAnchor="middle"
+            fill="hsl(var(--muted-foreground))"
+            fontSize={CHART.tickFontSize}
+          >
+            {format(new Date(point.date), "d MMM", { locale: es })}
+          </text>
+        );
+      })}
+    </g>
+  );
 }
 
 export function ExerciseProgressWidget() {
@@ -106,12 +223,14 @@ export function ExerciseProgressWidget() {
       const p = history[0];
       const d = new Date(p.date);
       return [
-        { ...p, date: format(subDays(d, 5), "yyyy-MM-dd"), tooltipDate: p.date },
-        { ...p, date: format(addDays(d, 5), "yyyy-MM-dd"), tooltipDate: p.date },
+        { ...p, x: 0, date: format(subDays(d, CHART.singlePointDaySpan), "yyyy-MM-dd"), tooltipDate: p.date },
+        { ...p, x: 1, date: format(addDays(d, CHART.singlePointDaySpan), "yyyy-MM-dd"), tooltipDate: p.date },
       ];
     }
-    return history.map((row) => ({ ...row, tooltipDate: row.date }));
+    return history.map((row, i) => ({ ...row, x: i, tooltipDate: row.date }));
   }, [history]);
+
+  const xTicks = useMemo(() => getEvenXTicks(chartData.length), [chartData.length]);
 
   // Swipe handling
   const touchStartX = useRef(0);
@@ -138,8 +257,8 @@ export function ExerciseProgressWidget() {
     touchDeltaX.current = e.touches[0].clientX - touchStartX.current;
   };
   const onTouchEnd = () => {
-    if (touchDeltaX.current < -SWIPE_THRESHOLD) goNext();
-    else if (touchDeltaX.current > SWIPE_THRESHOLD) goPrev();
+    if (touchDeltaX.current < -CHART.swipeThreshold) goNext();
+    else if (touchDeltaX.current > CHART.swipeThreshold) goPrev();
     touchDeltaX.current = 0;
     setSwiping(false);
   };
@@ -190,7 +309,7 @@ export function ExerciseProgressWidget() {
                   <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
                     <p className="font-medium">Tu mejor serie registrada:</p>
                     <p className="text-muted-foreground">Moviste: {formatWeight(lastRecord.weight)}kg × {lastRecord.reps} reps</p>
-                    <p className="text-primary font-semibold">Tu 1RM teórico es: {formatWeight(lastRecord.oneRepMax)}kg</p>
+                    <p className="text-primary font-semibold">Tu 1RM teórico es: {formatMaxStrength(lastRecord.oneRepMax)}kg</p>
                     <p className="text-[10px] text-muted-foreground mt-1 font-mono">
                       {Number(lastRecord.weight).toFixed(2)} × (1 + 0.0333 × {lastRecord.reps})
                     </p>
@@ -248,8 +367,8 @@ export function ExerciseProgressWidget() {
             </div>
           ) : (
             <div className="py-2">
-              <ResponsiveContainer width="100%" height={176}>
-                <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height={CHART.height}>
+                <AreaChart data={chartData} margin={{ ...CHART.margin }}>
                   <defs>
                     <linearGradient id="progressGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
@@ -263,34 +382,43 @@ export function ExerciseProgressWidget() {
                     horizontal
                   />
                   <XAxis
-                    dataKey="date"
+                    type="number"
+                    dataKey="x"
+                    domain={[0, Math.max(0, chartData.length - 1)]}
                     axisLine={false}
                     tickLine={false}
-                    tickMargin={10}
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                    tickFormatter={(d) => format(new Date(d), "d MMM", { locale: es })}
-                    padding={{ left: 20, right: 20 }}
+                    tick={false}
+                    height={X_AXIS_HEIGHT}
+                    ticks={xTicks}
+                    padding={{ left: 0, right: CHART.xScalePadRight }}
                   />
                   <YAxis
+                    width={CHART.yAxisWidth}
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: CHART.tickFontSize }}
                     domain={yScale.domain}
                     ticks={yScale.ticks}
                     interval={0}
-                    tickFormatter={(v) => formatWeight(Math.max(0, v as number))}
+                    tickFormatter={(v) => formatMaxStrength(v as number)}
                   />
-                  <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={CustomTooltip} />
                   <Area
                     type="monotone"
                     dataKey="oneRepMax"
                     isAnimationActive={false}
                     stroke="hsl(var(--primary))"
-                    strokeWidth={2}
+                    strokeWidth={CHART.strokeWidth}
                     fill="url(#progressGradient)"
-                    dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
-                    activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
+                    dot={{
+                      r: CHART.dotRadius,
+                      fill: "hsl(var(--primary))",
+                      strokeWidth: CHART.strokeWidth,
+                      stroke: "hsl(var(--background))",
+                    }}
+                    activeDot={{ r: CHART.activeDotRadius, fill: "hsl(var(--primary))" }}
                   />
+                  <EqualSpacedXLabels chartData={chartData} xTicks={xTicks} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -328,7 +456,7 @@ export function ExerciseProgressWidget() {
   );
 }
 
-function CustomTooltip({ active, payload }: TooltipProps<ValueType, NameType>) {
+function CustomTooltip({ active, payload }: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
   const data = payload[0].payload as ChartHistoryPoint;
   const when = data.tooltipDate ?? data.date;
@@ -337,7 +465,7 @@ function CustomTooltip({ active, payload }: TooltipProps<ValueType, NameType>) {
       <p className="font-medium">
         {format(new Date(when), "d MMM yyyy", { locale: es })}
       </p>
-      <p className="text-primary font-semibold">1RM: {formatWeight(data.oneRepMax)} kg</p>
+      <p className="text-primary font-semibold">1RM: {formatMaxStrength(data.oneRepMax)} kg</p>
       <p className="text-muted-foreground">Real: {formatWeight(data.weight)}kg × {data.reps} reps</p>
     </div>
   );

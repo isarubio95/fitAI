@@ -40,6 +40,8 @@ vi.mock("recharts", () => ({
   YAxis: () => null,
   Tooltip: () => null,
   Area: () => null,
+  useXAxisScale: () => undefined,
+  usePlotArea: () => undefined,
 }));
 
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
