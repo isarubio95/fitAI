@@ -4,6 +4,7 @@ import {
   exerciseHistoryQueryOptions,
   useExerciseWithHistory,
   useExerciseHistory,
+  type ExerciseProgressMetric,
 } from "@/hooks/useExerciseProgress";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,9 +98,14 @@ function formatWeight(value: number) {
   return Number.isInteger(n) ? n.toString() : n.toFixed(2);
 }
 
-/** 1RM en el gráfico: siempre entero para no gastar espacio en el eje Y. */
-function formatMaxStrength(value: number) {
+/** Valor del eje Y: siempre entero para no gastar espacio. */
+function formatProgressValue(value: number) {
   return Math.round(Math.max(0, Number(value))).toString();
+}
+
+function formatRealSet(weight: number, reps: number) {
+  if (Number(weight) <= 0) return `${reps} reps · peso corporal`;
+  return `${formatWeight(weight)}kg × ${reps} reps`;
 }
 
 function getNiceStep(range: number) {
@@ -214,6 +220,7 @@ export function ExerciseProgressWidget() {
   }, [exercises, queryClient, user?.id]);
   const history = historyData?.history;
   const lastRecord = historyData?.lastRecord;
+  const metric: ExerciseProgressMetric = historyData?.metric ?? "1rm";
   const yScale = useMemo(() => getUniformYScale(history ?? []), [history]);
 
   /** Un solo punto no dibuja trazo en Area; duplicamos en el eje X (misma Y) y guardamos la fecha real para el tooltip. */
@@ -294,33 +301,61 @@ export function ExerciseProgressWidget() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Qué es la fuerza máxima"
                   className="touch-styled h-6 w-6 rounded-full transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100"
                 >
                   <Info className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-72 text-sm" side="bottom" align="start">
-                <p className="font-semibold mb-1">¿Qué es el 1RM Estimado?</p>
-                <p className="text-muted-foreground mb-3">
-                  Es el peso máximo teórico que podrías levantar a una sola repetición. 
-                  El cálculo toma automáticamente tu <strong>mejor serie efectiva del día</strong>, ignorando calentamientos o series de fatiga.
-                </p>
-                {lastRecord ? (
-                  <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
-                    <p className="font-medium">Tu mejor serie registrada:</p>
-                    <p className="text-muted-foreground">Moviste: {formatWeight(lastRecord.weight)}kg × {lastRecord.reps} reps</p>
-                    <p className="text-primary font-semibold">Tu 1RM teórico es: {formatMaxStrength(lastRecord.oneRepMax)}kg</p>
-                    <p className="text-[10px] text-muted-foreground mt-1 font-mono">
-                      {Number(lastRecord.weight).toFixed(2)} × (1 + 0.0333 × {lastRecord.reps})
+                {metric === "reps" ? (
+                  <>
+                    <p className="font-semibold mb-1">¿Qué es el máximo de reps?</p>
+                    <p className="text-muted-foreground mb-3">
+                      En ejercicios a peso corporal (0 kg) medimos el progreso por tu{" "}
+                      <strong>mejor serie del día en repeticiones</strong>, sin estimar 1RM.
                     </p>
-                  </div>
+                    {lastRecord ? (
+                      <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
+                        <p className="font-medium">Tu mejor serie registrada:</p>
+                        <p className="text-muted-foreground">{formatRealSet(lastRecord.weight, lastRecord.reps)}</p>
+                        <p className="text-primary font-semibold">
+                          Máximo: {formatProgressValue(lastRecord.oneRepMax)} reps
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
+                        <p className="text-muted-foreground">
+                          Aquí verás tu máximo de reps cuando registres el primer entrenamiento.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
-                    <p className="text-muted-foreground">Aquí verás el cálculo cuando registres tu primer entrenamiento.</p>
-                    <p className="text-[10px] text-muted-foreground font-mono mt-1">
-                      Peso × (1 + 0.0333 × Reps)
+                  <>
+                    <p className="font-semibold mb-1">¿Qué es el 1RM Estimado?</p>
+                    <p className="text-muted-foreground mb-3">
+                      Es el peso máximo teórico que podrías levantar a una sola repetición.
+                      El cálculo toma automáticamente tu <strong>mejor serie efectiva del día</strong>, ignorando calentamientos o series de fatiga.
                     </p>
-                  </div>
+                    {lastRecord ? (
+                      <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
+                        <p className="font-medium">Tu mejor serie registrada:</p>
+                        <p className="text-muted-foreground">{formatRealSet(lastRecord.weight, lastRecord.reps)}</p>
+                        <p className="text-primary font-semibold">Tu 1RM teórico es: {formatProgressValue(lastRecord.oneRepMax)}kg</p>
+                        <p className="text-[10px] text-muted-foreground mt-1 font-mono">
+                          {Number(lastRecord.weight).toFixed(2)} × (1 + 0.0333 × {lastRecord.reps})
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
+                        <p className="text-muted-foreground">Aquí verás el cálculo cuando registres tu primer entrenamiento.</p>
+                        <p className="text-[10px] text-muted-foreground font-mono mt-1">
+                          Peso × (1 + 0.0333 × Reps)
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
               </PopoverContent>
             </Popover>
@@ -400,9 +435,9 @@ export function ExerciseProgressWidget() {
                     domain={yScale.domain}
                     ticks={yScale.ticks}
                     interval={0}
-                    tickFormatter={(v) => formatMaxStrength(v as number)}
+                    tickFormatter={(v) => formatProgressValue(v as number)}
                   />
-                  <Tooltip content={CustomTooltip} />
+                  <Tooltip content={(props) => <CustomTooltip {...props} metric={metric} />} />
                   <Area
                     type="monotone"
                     dataKey="oneRepMax"
@@ -456,7 +491,11 @@ export function ExerciseProgressWidget() {
   );
 }
 
-function CustomTooltip({ active, payload }: TooltipContentProps<ValueType, NameType>) {
+function CustomTooltip({
+  active,
+  payload,
+  metric,
+}: TooltipContentProps<ValueType, NameType> & { metric: ExerciseProgressMetric }) {
   if (!active || !payload?.length) return null;
   const data = payload[0].payload as ChartHistoryPoint;
   const when = data.tooltipDate ?? data.date;
@@ -465,8 +504,12 @@ function CustomTooltip({ active, payload }: TooltipContentProps<ValueType, NameT
       <p className="font-medium">
         {format(new Date(when), "d MMM yyyy", { locale: es })}
       </p>
-      <p className="text-primary font-semibold">1RM: {formatMaxStrength(data.oneRepMax)} kg</p>
-      <p className="text-muted-foreground">Real: {formatWeight(data.weight)}kg × {data.reps} reps</p>
+      {metric === "reps" ? (
+        <p className="text-primary font-semibold">{formatProgressValue(data.oneRepMax)} reps</p>
+      ) : (
+        <p className="text-primary font-semibold">1RM: {formatProgressValue(data.oneRepMax)} kg</p>
+      )}
+      <p className="text-muted-foreground">Real: {formatRealSet(data.weight, data.reps)}</p>
     </div>
   );
 }

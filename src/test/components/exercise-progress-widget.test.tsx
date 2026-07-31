@@ -72,6 +72,7 @@ describe("ExerciseProgressWidget", () => {
       data: {
         history: [{ date: "2026-05-01", oneRepMax: 100, weight: 80, reps: 8 }],
         lastRecord: { oneRepMax: 100, weight: 80, reps: 8, date: "2026-05-01" },
+        metric: "1rm",
       },
     });
 
@@ -88,11 +89,30 @@ describe("ExerciseProgressWidget", () => {
       isLoading: false,
     });
     mockUseExerciseHistory.mockReturnValue({
-      data: { history: [], lastRecord: null },
+      data: { history: [], lastRecord: null, metric: "1rm" },
     });
 
     render(<ExerciseProgressWidget />);
     expect(screen.getByText("Sigue entrenando para ver tu progreso 💪")).toBeInTheDocument();
+  });
+
+  it("explica progreso por reps en ejercicios a peso corporal", () => {
+    mockUseExerciseWithHistory.mockReturnValue({
+      data: [{ id: "dominadas", name: "Dominadas", lastPerformed: "2026-05-01" }],
+      isLoading: false,
+    });
+    mockUseExerciseHistory.mockReturnValue({
+      data: {
+        history: [{ date: "2026-05-01", oneRepMax: 12, weight: 0, reps: 12 }],
+        lastRecord: { oneRepMax: 12, weight: 0, reps: 12, date: "2026-05-01" },
+        metric: "reps",
+      },
+    });
+
+    render(<ExerciseProgressWidget />);
+    fireEvent.click(screen.getByLabelText("Qué es la fuerza máxima"));
+    expect(screen.getByText("¿Qué es el máximo de reps?")).toBeInTheDocument();
+    expect(screen.getByText("Máximo: 12 reps")).toBeInTheDocument();
   });
 });
 
