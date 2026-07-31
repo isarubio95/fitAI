@@ -330,7 +330,7 @@ export function PostWorkoutModal({
                 }}
                 className={cn(buttonVariants({ variant: "default" }), "w-full mt-2")}
               >
-                Ir al Dashboard
+                Ir al inicio
               </AlertDialogAction>
             </AlertDialogFooter>
           </motion.div>
