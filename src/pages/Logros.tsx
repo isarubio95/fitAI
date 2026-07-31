@@ -70,7 +70,7 @@ function CategoriaSection({
 
         {showProgress && progress && (
           <div className="space-y-1.5">
-            <Progress value={Math.min(100, (progress.current / progress.target) * 100)} className="h-2" />
+            <Progress value={Math.min(100, (progress.current / progress.target) * 100)} className="h-1.5" />
             <p className="text-xs tabular-nums text-muted-foreground">
               {formatNumber(progress.current)} / {formatNumber(progress.target)} para el siguiente nivel
             </p>

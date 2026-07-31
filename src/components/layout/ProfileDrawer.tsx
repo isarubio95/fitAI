@@ -11,7 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useLogros } from "@/hooks/useLogros";
+import { useLogros, pickFeaturedLogros } from "@/hooks/useLogros";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -262,13 +262,8 @@ function ProfileDrawerSheet() {
     else openUserProfile(authorId);
   };
 
-  const unlockedLogros = useMemo(
-    () =>
-      logros
-        .filter((l) => l.unlocked)
-        .sort((a, b) => (b.fecha_desbloqueo ?? "").localeCompare(a.fecha_desbloqueo ?? "")),
-    [logros],
-  );
+  const unlockedLogros = useMemo(() => logros.filter((l) => l.unlocked), [logros]);
+  const featuredLogros = useMemo(() => pickFeaturedLogros(logros), [logros]);
 
   const goToLogros = () => {
     onOpenChange(false);
@@ -285,7 +280,7 @@ function ProfileDrawerSheet() {
         className="flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
       >
         <div className={cn("min-h-0 flex-1 overflow-y-auto bg-card dark:bg-transparent", drawerSafeAreaBottom)}>
-          <DrawerHeader className="bg-card px-6 pb-2 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left dark:bg-transparent">
+          <DrawerHeader className="bg-card px-6 pb-2 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left dark:bg-transparent">
             <DrawerTitle className="sr-only">{displayNameLine}</DrawerTitle>
             <div className="flex gap-4 items-start">
             <div className="relative mr-1 shrink-0">
@@ -404,9 +399,9 @@ function ProfileDrawerSheet() {
               </span>
             </button>
             {loadingLogros ? (
-              <div className="flex gap-3 px-6">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-16 w-16 animate-pulse rounded-full bg-muted/50" />
+              <div className="grid grid-cols-5 gap-1.5 px-6">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="mx-auto h-14 w-14 animate-pulse rounded-full bg-muted/50" />
                 ))}
               </div>
             ) : unlockedLogros.length === 0 ? (
@@ -423,19 +418,14 @@ function ProfileDrawerSheet() {
               <button
                 type="button"
                 onClick={goToLogros}
-                className="flex w-full items-center gap-3 overflow-x-auto px-6 pb-1 transition-opacity hover:opacity-90"
+                className="grid w-full grid-cols-5 gap-1.5 px-6 transition-opacity hover:opacity-90"
               >
-                {unlockedLogros.slice(0, 5).map((l) => (
-                  <div key={l.id} className="flex w-16 shrink-0 flex-col items-center gap-1 text-center">
-                    <LogroMedal nivel={l.nivel} icono={l.icono} size={60} />
+                {featuredLogros.map((l) => (
+                  <div key={l.id} className="flex min-w-0 flex-col items-center gap-1 text-center">
+                    <LogroMedal nivel={l.nivel} icono={l.icono} size={56} />
                     <p className="w-full truncate text-[10px] font-medium leading-tight">{l.nombre}</p>
                   </div>
                 ))}
-                {unlockedLogros.length > 5 && (
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    +{unlockedLogros.length - 5}
-                  </span>
-                )}
               </button>
             )}
           </div>

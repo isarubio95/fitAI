@@ -414,3 +414,35 @@ export function useLogroStats() {
     queryFn: () => fetchLogroStats(user!.id),
   });
 }
+
+/** Rangos para destacar en perfil (sin retos): diamante > platino > oro > plata > bronce. */
+const LOGRO_NIVEL_RANK: Record<string, number> = {
+  diamante: 5,
+  platino: 4,
+  oro: 3,
+  plata: 2,
+  bronce: 1,
+};
+
+/** Los más importantes primero (nivel, luego XP, luego orden del catálogo). */
+export function compareLogrosByImportance(
+  a: Pick<LogroRow, "nivel" | "xp_recompensa" | "orden">,
+  b: Pick<LogroRow, "nivel" | "xp_recompensa" | "orden">,
+): number {
+  const rankDiff = (LOGRO_NIVEL_RANK[b.nivel] ?? 0) - (LOGRO_NIVEL_RANK[a.nivel] ?? 0);
+  if (rankDiff !== 0) return rankDiff;
+  const xpDiff = Number(b.xp_recompensa) - Number(a.xp_recompensa);
+  if (xpDiff !== 0) return xpDiff;
+  return a.orden - b.orden;
+}
+
+const PROFILE_FEATURED_LOGROS = 5;
+
+/** Hasta 5 logros desbloqueados más relevantes para el perfil (excluye retos). */
+export function pickFeaturedLogros<T extends LogroConEstado>(logros: T[], limit = PROFILE_FEATURED_LOGROS): T[] {
+  return logros
+    .filter((l) => l.unlocked && l.nivel !== "reto" && l.tipo !== "reto")
+    .slice()
+    .sort(compareLogrosByImportance)
+    .slice(0, limit);
+}
