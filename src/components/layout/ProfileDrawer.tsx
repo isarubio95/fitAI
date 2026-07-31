@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogros, pickFeaturedLogros } from "@/hooks/useLogros";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
@@ -20,6 +19,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Trophy, ChevronRight, Pencil, Loader2 } from "lucide-react";
 import { LogroMedal } from "@/components/logros/LogroMedal";
+import { LogrosDrawer } from "@/components/logros/LogrosDrawer";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { WorkoutFeedCard, type WorkoutFeedCardAuthor } from "@/components/dashboard/WorkoutFeedCard";
@@ -35,8 +35,6 @@ type ProfileDrawerContextValue = {
   openMyProfile: () => void;
   openUserProfile: (userId: string) => void;
   onOpenChange: (open: boolean) => void;
-  /** Marca que, al volver atrás desde /logros, hay que reabrir este perfil (null = propio). */
-  markReturnToProfileFromLogros: (userId: string | null) => void;
 };
 
 const ProfileDrawerContext = createContext<ProfileDrawerContextValue | null>(null);
@@ -52,9 +50,6 @@ export function useProfileDrawer() {
 export function ProfileDrawerProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
-  const location = useLocation();
-  const navigationType = useNavigationType();
-  const pendingReopenProfileRef = useRef<{ userId: string | null } | null>(null);
 
   const openMyProfile = useCallback(() => {
     setTargetUserId(null);
@@ -71,32 +66,6 @@ export function ProfileDrawerProvider({ children }: { children: ReactNode }) {
     if (!next) setTargetUserId(null);
   }, []);
 
-  const markReturnToProfileFromLogros = useCallback((userId: string | null) => {
-    pendingReopenProfileRef.current = { userId };
-  }, []);
-
-  // Si se llegó a logros desde el perfil, al volver atrás (POP) reabrir el drawer.
-  useEffect(() => {
-    if (location.pathname === "/logros") return;
-    if (!pendingReopenProfileRef.current) return;
-
-    if (navigationType === "POP") {
-      const { userId } = pendingReopenProfileRef.current;
-      pendingReopenProfileRef.current = null;
-      queueMicrotask(() => {
-        if (userId == null) {
-          setTargetUserId(null);
-          setOpen(true);
-        } else {
-          setTargetUserId(userId);
-          setOpen(true);
-        }
-      });
-    } else {
-      pendingReopenProfileRef.current = null;
-    }
-  }, [location.pathname, location.search, navigationType]);
-
   const value = useMemo(
     () => ({
       open,
@@ -104,9 +73,8 @@ export function ProfileDrawerProvider({ children }: { children: ReactNode }) {
       openMyProfile,
       openUserProfile,
       onOpenChange,
-      markReturnToProfileFromLogros,
     }),
-    [open, targetUserId, openMyProfile, openUserProfile, onOpenChange, markReturnToProfileFromLogros],
+    [open, targetUserId, openMyProfile, openUserProfile, onOpenChange],
   );
 
   return (
@@ -182,18 +150,11 @@ function UserAvatar({
 
 function ProfileDrawerSheet() {
   const { user } = useAuth();
-  const {
-    open,
-    onOpenChange,
-    targetUserId,
-    openMyProfile,
-    openUserProfile,
-    markReturnToProfileFromLogros,
-  } = useProfileDrawer();
-  const navigate = useNavigate();
+  const { open, onOpenChange, targetUserId, openMyProfile, openUserProfile } = useProfileDrawer();
   const { toast } = useToast();
   const [followListMode, setFollowListMode] = useState<"seguidores" | "seguidos" | null>(null);
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
+  const [logrosOpen, setLogrosOpen] = useState(false);
   const [localAvatarPreview, setLocalAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadAvatar = useProfileAvatarUpload();
@@ -201,8 +162,19 @@ function ProfileDrawerSheet() {
   const profileUserId = targetUserId ?? user?.id ?? "";
   const isViewingSelf = !targetUserId || targetUserId === user?.id;
 
+  const handleProfileOpenChange = useCallback(
+    (next: boolean) => {
+      if (!next) setLogrosOpen(false);
+      onOpenChange(next);
+    },
+    [onOpenChange],
+  );
+
   useEffect(() => {
-    if (!open) setWorkoutDetailsId(null);
+    if (!open) {
+      setWorkoutDetailsId(null);
+      setLogrosOpen(false);
+    }
   }, [open]);
 
   const statsUserId = profileUserId || undefined;
@@ -304,17 +276,13 @@ function ProfileDrawerSheet() {
   const unlockedLogros = useMemo(() => logros.filter((l) => l.unlocked), [logros]);
   const featuredLogros = useMemo(() => pickFeaturedLogros(logros), [logros]);
 
-  const goToLogros = () => {
-    markReturnToProfileFromLogros(isViewingSelf ? null : profileUserId);
-    onOpenChange(false);
-    navigate(isViewingSelf ? "/logros" : `/logros?user=${profileUserId}`);
-  };
+  const goToLogros = () => setLogrosOpen(true);
 
   if (!user) return null;
 
   return (
     <>
-    <Drawer direction="left" open={open} onOpenChange={onOpenChange}>
+    <Drawer direction="left" open={open} onOpenChange={handleProfileOpenChange}>
       <DrawerContent
         side="left"
         className="flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
@@ -543,6 +511,16 @@ function ProfileDrawerSheet() {
       }}
       workoutId={workoutDetailsId}
     />
+
+    {!!profileUserId && (
+      <LogrosDrawer
+        open={logrosOpen}
+        onOpenChange={setLogrosOpen}
+        userId={profileUserId}
+        isSelf={isViewingSelf}
+        username={perfilRow?.username}
+      />
+    )}
     </>
   );
 }

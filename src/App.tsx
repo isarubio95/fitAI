@@ -17,7 +17,6 @@ import Community from "./pages/Community";
 import WorkoutHistory from "./pages/WorkoutHistory";
 import Evolution from "./pages/Evolution";
 import CardioRoutines from "./pages/CardioRoutines";
-import Logros from "./pages/Logros";
 import NotFound from "./pages/NotFound";
 import AdminImport from "./pages/AdminImport";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -50,7 +49,7 @@ const App = () => {
                     <Route path="/history" element={<WorkoutHistory />} />
                     <Route path="/evolution" element={<Evolution />} />
                     <Route path="/cardio-routines" element={<CardioRoutines />} />
-                    <Route path="/logros" element={<Logros />} />
+                    <Route path="/logros" element={<Navigate to="/" replace />} />
                   </Route>
                   <Route path="/admin-import" element={<AdminImport />} />
                   <Route path="*" element={<NotFound />} />
