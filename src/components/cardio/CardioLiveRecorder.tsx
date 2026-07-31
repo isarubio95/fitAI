@@ -14,6 +14,11 @@ import { useCardioSessionById, useUpsertCardioSession } from "@/hooks/useCardioS
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import {
+  formatDistanceLabel,
+  stopLiveCardio,
+  updateLiveCardio,
+} from "@/lib/liveSessionNotifications";
 import type { CardioDisciplineCode, CardioSportDetailInput, CardioTrackPointInput } from "@/types/cardio";
 
 const OSM_TILE = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -121,6 +126,38 @@ export function CardioLiveRecorder() {
   const elapsedSec = step === "summary" && elapsedSecFrozen != null ? elapsedSecFrozen : computeElapsedSec();
   const displayDistanceM = step === "summary" && distanceFrozenM != null ? distanceFrozenM : distanceM;
 
+  const cardioTitle = useMemo(() => {
+    return (discipline?.nombre?.trim() || sessionData?.titulo?.trim() || "Cardio") as string;
+  }, [discipline?.nombre, sessionData?.titulo]);
+
+  // Sync Android Live Update while recording
+  useEffect(() => {
+    if (!open || !sessionId || !sessionData?.fecha_inicio || step !== "recording") return;
+    let pauseExtra = pausedMsAccum;
+    if (paused && pauseStartedAt.current != null) {
+      pauseExtra += Date.now() - pauseStartedAt.current;
+    }
+    void updateLiveCardio({
+      sessionId,
+      title: cardioTitle,
+      paused,
+      distanceLabel: formatDistanceLabel(distanceM),
+      startedAtMs: new Date(sessionData.fecha_inicio).getTime(),
+      pausedAccumMs: pauseExtra,
+      wantsLocation: showMap,
+    });
+  }, [
+    open,
+    sessionId,
+    sessionData?.fecha_inicio,
+    step,
+    paused,
+    pausedMsAccum,
+    distanceM,
+    cardioTitle,
+    showMap,
+  ]);
+
   const onPauseToggle = () => {
     if (paused) {
       if (pauseStartedAt.current != null) {
@@ -143,6 +180,13 @@ export function CardioLiveRecorder() {
     setElapsedSecFrozen(computeElapsedSec());
     setDistanceFrozenM(distanceM);
     setStep("summary");
+    void updateLiveCardio({
+      sessionId: sessionId!,
+      title: cardioTitle,
+      paused: true,
+      distanceLabel: formatDistanceLabel(distanceM),
+      wantsLocation: showMap,
+    });
   };
 
   const openManualEditor = () => {
@@ -210,6 +254,7 @@ export function CardioLiveRecorder() {
         },
       });
       clearDraft();
+      void stopLiveCardio();
       closeLiveRecording();
       toast({ title: "Entrenamiento guardado" });
     } catch {

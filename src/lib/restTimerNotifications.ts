@@ -1,6 +1,7 @@
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
+import { isRestFinishedNotificationEnabled } from "@/lib/notificationPreferences";
 
 export const REST_TIMER_NOTIFICATION_ID = 9001;
 const CHANNEL_ID = "rest-timer";
@@ -56,6 +57,7 @@ async function ensureExactAlarmPermission(): Promise<boolean> {
 
 export async function ensureRestTimerNotificationsReady(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return true;
+  if (!isRestFinishedNotificationEnabled()) return false;
 
   registerAppStateListener();
   await ensureChannel();
@@ -70,6 +72,7 @@ export async function ensureRestTimerNotificationsReady(): Promise<boolean> {
 }
 
 export async function requestRestTimerNotificationPermission(): Promise<void> {
+  if (!isRestFinishedNotificationEnabled()) return;
   await ensureRestTimerNotificationsReady();
 
   if (!Capacitor.isNativePlatform() && "Notification" in window && Notification.permission === "default") {
@@ -78,6 +81,10 @@ export async function requestRestTimerNotificationPermission(): Promise<void> {
 }
 
 export async function scheduleRestTimerNotification(endTimeMs: number): Promise<void> {
+  if (!isRestFinishedNotificationEnabled()) {
+    pendingEndTimeMs = null;
+    return;
+  }
   if (!Capacitor.isNativePlatform()) return;
   if (endTimeMs <= Date.now()) return;
 

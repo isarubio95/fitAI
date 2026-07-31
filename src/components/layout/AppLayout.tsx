@@ -14,6 +14,7 @@ import { GlobalCardioDrawerProvider } from "@/hooks/useGlobalCardioDrawer";
 import { CardioLogger } from "@/components/cardio/CardioLogger";
 import { CardioLiveRecorder } from "@/components/cardio/CardioLiveRecorder";
 import { ActiveCardioPill } from "@/components/cardio/ActiveCardioPill";
+import { LiveSessionRehydrator } from "@/components/live/LiveSessionRehydrator";
 import { Loader2 } from "lucide-react";
 // import { SwipeableRoutesWrapper } from "./SwipeableRoutesWrapper";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
@@ -337,6 +338,7 @@ export function AppLayout() {
             <Outlet />
           </main>
         </div>
+        <LiveSessionRehydrator />
         <ActiveWorkoutPill />
         <ActiveCardioPill />
         <div

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { ColorThemeSelector } from "@/components/ColorThemeSelector";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -17,13 +19,21 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { Settings } from "lucide-react";
+import { Bell, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 
 export function SettingsDrawer() {
   const { signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const {
+    liveSessionEnabled,
+    restFinishedEnabled,
+    setLiveSessionEnabled,
+    setRestFinishedEnabled,
+  } = useNotificationPreferences();
   const [open, setOpen] = useState(false);
+  const showLiveToggle = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 
   return (
     <Drawer direction="right" open={open} onOpenChange={setOpen}>
@@ -63,6 +73,45 @@ export function SettingsDrawer() {
                 <SelectItem value="dark">Oscuro</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Notificaciones */}
+          <div className="space-y-4">
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Bell className="h-4 w-4 text-muted-foreground" />
+              Notificaciones
+            </p>
+
+            {showLiveToggle && (
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 space-y-1">
+                  <p className="text-sm font-medium leading-none">Sesión en curso</p>
+                  <p className="text-xs leading-snug text-muted-foreground">
+                    Muestra una notificación persistente mientras entrenas, con el
+                    progreso del descanso.
+                  </p>
+                </div>
+                <Switch
+                  checked={liveSessionEnabled}
+                  onCheckedChange={setLiveSessionEnabled}
+                  aria-label="Activar notificación de sesión en curso"
+                />
+              </div>
+            )}
+
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 space-y-1">
+                <p className="text-sm font-medium leading-none">Descanso terminado</p>
+                <p className="text-xs leading-snug text-muted-foreground">
+                  Aviso cuando acaba el temporizador de descanso entre series.
+                </p>
+              </div>
+              <Switch
+                checked={restFinishedEnabled}
+                onCheckedChange={setRestFinishedEnabled}
+                aria-label="Activar notificación de descanso terminado"
+              />
+            </div>
           </div>
         </div>
 

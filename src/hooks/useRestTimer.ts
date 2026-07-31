@@ -6,6 +6,7 @@ import {
   requestRestTimerNotificationPermission,
   scheduleRestTimerNotification,
 } from "@/lib/restTimerNotifications";
+import { isRestFinishedNotificationEnabled } from "@/lib/notificationPreferences";
 
 interface TimerState {
   /** Which exercise+set is running, e.g. "0-2" */
@@ -269,7 +270,12 @@ export function useRestTimer() {
 
       // Web/PWA: beep, vibración y Notification API
       playRestCompleteFeedback();
-      if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
+      if (
+        isRestFinishedNotificationEnabled() &&
+        document.visibilityState === "hidden" &&
+        "Notification" in window &&
+        Notification.permission === "granted"
+      ) {
         notifRef.current = new Notification("¡Descanso terminado!", {
           body: "Hora de tu siguiente serie. 💪",
           tag: "rest-timer",
@@ -352,6 +358,7 @@ export function useRestTimer() {
     remaining: state.remaining,
     duration: state.duration,
     finished: state.finished,
+    endTime: state.endTime,
     isRunning: !!state.activeKey && !state.finished,
     start,
     stop,

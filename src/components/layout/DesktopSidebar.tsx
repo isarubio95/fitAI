@@ -16,6 +16,8 @@ import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useStartCardioLiveSession, useCardioDisciplinas } from "@/hooks/useCardioSessions";
 import { useToast } from "@/hooks/use-toast";
 import { CardioTypePickerDialog } from "@/components/cardio/CardioTypePickerDialog";
+import { startLiveCardio } from "@/lib/liveSessionNotifications";
+import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,6 +94,12 @@ export function DesktopSidebar() {
               const id = await startCardioLive.mutateAsync({
                 cardio_disciplina_id: disciplineId,
                 titulo,
+              });
+              void startLiveCardio({
+                sessionId: id,
+                title: (d?.nombre ?? "Cardio").trim() || "Cardio",
+                startedAtMs: Date.now(),
+                wantsLocation: cardioDisciplineUsesGpsMap(d?.codigo ?? null),
               });
               openLiveRecording(id);
               setCardioTypeDialogOpen(false);

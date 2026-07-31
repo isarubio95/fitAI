@@ -12,6 +12,8 @@ import { useStartCardioLiveSession, useCardioDisciplinas } from "@/hooks/useCard
 import { useToast } from "@/hooks/use-toast";
 import { CardioTypePickerDialog } from "@/components/cardio/CardioTypePickerDialog";
 import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
+import { startLiveCardio } from "@/lib/liveSessionNotifications";
+import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
@@ -148,6 +150,12 @@ export function BottomNav() {
             const id = await startCardioLive.mutateAsync({
               cardio_disciplina_id: disciplineId,
               titulo,
+            });
+            void startLiveCardio({
+              sessionId: id,
+              title: (d?.nombre ?? "Cardio").trim() || "Cardio",
+              startedAtMs: Date.now(),
+              wantsLocation: cardioDisciplineUsesGpsMap(d?.codigo ?? null),
             });
             openLiveRecording(id);
             setCardioTypeDialogOpen(false);

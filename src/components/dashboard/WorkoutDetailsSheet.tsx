@@ -43,6 +43,8 @@ type WorkoutDetailsSheetProps = {
   workoutId: string | null;
 };
 
+const RADAR_TICK_FONT_SIZE = 11;
+
 function formatWeight(value: number) {
   const n = Number(value);
   return Number.isInteger(n) ? n.toString() : n.toFixed(2);
@@ -515,6 +517,14 @@ export function WorkoutDetailsContent({
     []
   );
 
+  // Reserva espacio lateral para las etiquetas del eje: recharts las dibuja
+  // fuera del radio y quedarían recortadas por el borde del SVG.
+  const radarMargin = useMemo(() => {
+    const longest = visibleGroups.reduce((max, g) => Math.max(max, g.length), 0);
+    const side = Math.min(80, Math.max(24, Math.round(longest * RADAR_TICK_FONT_SIZE * 0.58) + 10));
+    return { top: 16, right: side, bottom: 16, left: side };
+  }, [visibleGroups]);
+
   const radarId = radarChartId ?? (workout?.id ? `workout-radar-weight-${workout.id}` : "workout-radar-weight");
   const isCompact = variant === "compact";
 
@@ -608,13 +618,13 @@ export function WorkoutDetailsContent({
                   <div className="text-sm text-muted-foreground">No hay peso levantado para mostrar.</div>
                 ) : (
                   <ChartContainer id={radarId} config={radarConfig} className="aspect-square w-full">
-                    <RadarChart data={radarData} outerRadius="85%" margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
+                    <RadarChart data={radarData} outerRadius="85%" margin={radarMargin}>
                       <PolarGrid stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} />
                       <PolarAngleAxis
                         dataKey="group"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: RADAR_TICK_FONT_SIZE }}
                       />
                       <PolarRadiusAxis
                         tickLine={false}

@@ -62,6 +62,12 @@ import { getDefaultWorkoutTitle } from "@/lib/defaultWorkoutTitle";
 import { completePlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { startOfMonth } from "date-fns";
 import {
+  formatSetLabel,
+  startLiveWorkout,
+  stopLiveWorkout,
+  updateLiveWorkout,
+} from "@/lib/liveSessionNotifications";
+import {
   type ExerciseFormData,
   type SetFormData,
   type RegistroSeries,
@@ -446,6 +452,102 @@ export function WorkoutLogger() {
     });
   }, []);
 
+  const resolveLiveExerciseFields = useCallback(() => {
+    let exerciseName = "";
+    let setLabel = "";
+    if (restTimer.activeKey) {
+      const [eiRaw, siRaw] = restTimer.activeKey.split("-");
+      const ei = Number(eiRaw);
+      const si = Number(siRaw);
+      if (Number.isFinite(ei) && exercises[ei]) {
+        exerciseName = exercises[ei].nombre || "";
+        if (Number.isFinite(si)) setLabel = formatSetLabel(si);
+      }
+    } else {
+      for (let i = exercises.length - 1; i >= 0; i--) {
+        const sets = exercises[i].sets;
+        for (let si = sets.length - 1; si >= 0; si--) {
+          if (sets[si].completed) {
+            exerciseName = exercises[i].nombre || "";
+            setLabel = formatSetLabel(si);
+            return { exerciseName, setLabel };
+          }
+        }
+      }
+    }
+    return { exerciseName, setLabel };
+  }, [exercises, restTimer.activeKey]);
+
+  const pushLiveWorkoutNotification = useCallback(
+    (mode: "start" | "update" = "update") => {
+      if (!isActiveWorkout || !effectiveWorkoutId) return;
+      const startedAtMs = existingWorkout?.fecha
+        ? new Date(existingWorkout.fecha).getTime()
+        : Date.now();
+      const { exerciseName, setLabel } = resolveLiveExerciseFields();
+      const restFinished = !!restTimer.activeKey && restTimer.finished;
+      const resting = restTimer.isRunning;
+      const showRest = resting || restFinished;
+      const pauseExtra =
+        pausedAccumMs + (pausedAt != null ? Math.max(0, Date.now() - pausedAt) : 0);
+      const restEndAtMs =
+        resting && restTimer.endTime != null
+          ? restTimer.endTime
+          : resting
+            ? Date.now() + Math.max(0, restTimer.remaining) * 1000
+            : 0;
+      const payload = {
+        sessionId: effectiveWorkoutId,
+        title: (titulo || existingWorkout?.titulo || "Entrenamiento").trim() || "Entrenamiento",
+        exerciseName,
+        setLabel,
+        paused: isPaused,
+        resting,
+        restFinished,
+        restEndAtMs,
+        restDurationSec: showRest ? Math.max(0, restTimer.duration) : 0,
+        startedAtMs,
+        pausedAccumMs: pauseExtra,
+      };
+      if (mode === "start") void startLiveWorkout(payload);
+      else void updateLiveWorkout(payload);
+    },
+    [
+      isActiveWorkout,
+      effectiveWorkoutId,
+      existingWorkout?.fecha,
+      existingWorkout?.titulo,
+      resolveLiveExerciseFields,
+      restTimer.activeKey,
+      restTimer.isRunning,
+      restTimer.finished,
+      restTimer.endTime,
+      restTimer.remaining,
+      restTimer.duration,
+      pausedAccumMs,
+      pausedAt,
+      isPaused,
+      titulo,
+    ],
+  );
+
+  // Keep Android Live Update in sync while an active workout is open in the logger
+  useEffect(() => {
+    if (!isActiveWorkout || !effectiveWorkoutId) return;
+    pushLiveWorkoutNotification("update");
+  }, [
+    isActiveWorkout,
+    effectiveWorkoutId,
+    exercises,
+    isPaused,
+    pausedAccumMs,
+    restTimer.activeKey,
+    restTimer.isRunning,
+    restTimer.finished,
+    titulo,
+    pushLiveWorkoutNotification,
+  ]);
+
   const createActiveWorkout = async () => {
     if (!user || !templateExercises || !templateTitle) return;
     setCreatingActive(true);
@@ -462,11 +564,12 @@ export function WorkoutLogger() {
       // que el cronómetro cuente bien (antes se fijaba a las 12:00 del día
       // planificado, lo que dejaba el contador a 0:00 al entrenar por la mañana).
       // La fecha "de calendario" se conserva en el estado y se guarda al finalizar.
+      const startedAtMs = Date.now();
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
         .insert({
           titulo: templateTitle.trim(),
-          fecha: new Date().toISOString(),
+          fecha: new Date(startedAtMs).toISOString(),
           usuario_id: user.id,
           es_publica: false,
           icono: templateIcon,
@@ -534,6 +637,11 @@ export function WorkoutLogger() {
       setStartedFromRoutine(true);
       markWorkoutStartedFromRoutine(actividad.id);
       invalidateActiveWorkoutQueries();
+      void startLiveWorkout({
+        sessionId: actividad.id,
+        title: templateTitle.trim() || "Entrenamiento",
+        startedAtMs,
+      });
     } catch (error: any) {
       toast({ title: "Error al crear entrenamiento", description: error.message, variant: "destructive" });
     } finally {
@@ -552,6 +660,7 @@ export function WorkoutLogger() {
       }
 
       const now = new Date();
+      const startedAtMs = now.getTime();
       const defaultTitle = getDefaultWorkoutTitle(now);
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
@@ -574,6 +683,11 @@ export function WorkoutLogger() {
       setStartedFromRoutine(false);
       clearWorkoutStartedFromRoutine(actividad.id);
       invalidateActiveWorkoutQueries();
+      void startLiveWorkout({
+        sessionId: actividad.id,
+        title: defaultTitle,
+        startedAtMs,
+      });
     } catch (error: any) {
       toast({ title: "Error al crear entrenamiento", description: error.message, variant: "destructive" });
     } finally {
@@ -862,10 +976,43 @@ export function WorkoutLogger() {
 
       if (completed) {
         const restSeconds = ex.descanso ?? 120;
+        const restEndAtMs = Date.now() + restSeconds * 1000;
         restTimer.start(`${exerciseIndex}-${setIndex}`, restSeconds, effectiveWorkoutId);
+        if (isActiveWorkout && effectiveWorkoutId) {
+          const startedAtMs = existingWorkout?.fecha
+            ? new Date(existingWorkout.fecha).getTime()
+            : Date.now();
+          const pauseExtra =
+            pausedAccumMs + (pausedAt != null ? Math.max(0, Date.now() - pausedAt) : 0);
+          void updateLiveWorkout({
+            sessionId: effectiveWorkoutId,
+            title: (titulo || existingWorkout?.titulo || "Entrenamiento").trim() || "Entrenamiento",
+            exerciseName: ex.nombre || "",
+            setLabel: formatSetLabel(setIndex),
+            paused: isPaused,
+            resting: true,
+            restFinished: false,
+            restEndAtMs,
+            restDurationSec: restSeconds,
+            startedAtMs,
+            pausedAccumMs: pauseExtra,
+          });
+        }
       }
     },
-    [exercises, effectiveWorkoutId, restTimer, patchSetInWorkoutCache]
+    [
+      exercises,
+      effectiveWorkoutId,
+      restTimer,
+      patchSetInWorkoutCache,
+      isActiveWorkout,
+      existingWorkout?.fecha,
+      existingWorkout?.titulo,
+      pausedAccumMs,
+      pausedAt,
+      isPaused,
+      titulo,
+    ]
   );
 
   const handleWorkoutIconChange = useCallback(
@@ -947,7 +1094,10 @@ export function WorkoutLogger() {
   const handleDelete = async () => {
     const targetId = effectiveWorkoutId;
     if (!targetId) return;
-    if (isActiveWorkout) restTimer.stop();
+    if (isActiveWorkout) {
+      restTimer.stop();
+      void stopLiveWorkout();
+    }
     setDeleting(true);
     try {
       const { data: oldEjercicios } = await supabase
@@ -1011,7 +1161,10 @@ export function WorkoutLogger() {
       return;
     }
 
-    if (isActiveWorkout) restTimer.stop();
+    if (isActiveWorkout) {
+      restTimer.stop();
+      void stopLiveWorkout();
+    }
 
     setSaving(true);
     try {
