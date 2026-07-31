@@ -380,6 +380,22 @@
   }
 }
 
+/*
+ * Drawers laterales (Vaul): el WebView de Android cancela el pointer al tocar
+ * un hijo con overflow-y / touch-action:manipulation|auto, y el swipe de cierre
+ * nunca llega a Vaul. pan-y deja el scroll vertical y cede el gesto horizontal.
+ * Opt-out: data-vaul-allow-horizontal-pan (carruseles internos).
+ */
+[data-vaul-drawer][data-vaul-drawer-direction="left"] *:not([data-vaul-allow-horizontal-pan]),
+[data-vaul-drawer][data-vaul-drawer-direction="right"] *:not([data-vaul-allow-horizontal-pan]) {
+  touch-action: pan-y;
+}
+
+[data-vaul-drawer][data-vaul-drawer-direction="left"] [data-vaul-allow-horizontal-pan],
+[data-vaul-drawer][data-vaul-drawer-direction="right"] [data-vaul-allow-horizontal-pan] {
+  touch-action: pan-x pan-y;
+}
+
 /* Toasts: tamaño fijo y sin escalado del SO para que no cambien de posición en móvil */
 @media (max-width: 767px) {
   [data-sonner-toaster],

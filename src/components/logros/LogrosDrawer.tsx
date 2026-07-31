@@ -47,7 +47,10 @@ function CategoriaSection({
         </div>
       </CardHeader>
       <CardContent className="min-w-0 space-y-4">
-        <div className="flex min-w-0 w-full items-start gap-1 overflow-x-auto overscroll-x-contain touch-[pan-x_pan-y] pb-1">
+        <div
+          data-vaul-allow-horizontal-pan
+          className="flex min-w-0 w-full items-start gap-1 overflow-x-auto overscroll-x-contain touch-[pan-x_pan-y] pb-1"
+        >
           {logros.map((l) => (
             <div
               key={l.id}
