@@ -235,7 +235,7 @@ export function useDeleteWorkout() {
     mutationFn: async (workoutId: string) => {
       const { data: actividad, error: actErr } = await supabase
         .from("actividad")
-        .select("id, fecha")
+        .select("id, fecha, fecha_fin")
         .eq("id", workoutId)
         .maybeSingle();
       if (actErr) throw actErr;
@@ -247,7 +247,8 @@ export function useDeleteWorkout() {
         .eq("actividad_id", workoutId);
       const oldIds = oldEjercicios?.length ? oldEjercicios.map((e) => e.id) : [];
 
-      if (oldIds.length) {
+      // Solo restar XP si el entreno estaba completado (la XP se otorga al finalizar)
+      if (actividad.fecha_fin && oldIds.length) {
         const { data: series } = await supabase
           .from("serie")
           .select("id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km")

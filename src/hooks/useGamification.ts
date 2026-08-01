@@ -204,6 +204,9 @@ export function useRemoveWorkoutXP() {
         .maybeSingle();
       if (actErr) throw actErr;
 
+      // Solo se otorga XP al finalizar (fecha_fin). Si el entreno no estaba completado, no hay nada que restar.
+      if (!deletedAct?.fecha_fin) return;
+
       const completedDay = deletedAct?.fecha
         ? (deletedAct.fecha as string).slice(0, 10)
         : deletedAct?.fecha_fin

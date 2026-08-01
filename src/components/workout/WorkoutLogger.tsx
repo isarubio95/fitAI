@@ -1114,8 +1114,9 @@ export function WorkoutLogger() {
         .select("id")
         .eq("actividad_id", targetId);
       const oldIds = oldEjercicios?.length ? oldEjercicios.map((e) => e.id) : [];
-      // Restar XP antes de borrar (mismo criterio que al guardar: series con repes o peso > 0)
-      if (oldIds.length) {
+      // Solo restar XP si el entreno estaba completado (la XP se otorga al finalizar, no al empezar)
+      const wasCompleted = !!existingWorkout?.fecha_fin && !isActiveWorkout;
+      if (wasCompleted && oldIds.length) {
         const { data: series } = await supabase
           .from("serie")
           .select("id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km")
