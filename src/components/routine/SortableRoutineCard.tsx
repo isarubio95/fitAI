@@ -10,13 +10,15 @@ import type { RutinaWithDetails } from "@/types/routine";
 import { formatRitmoSegKmLabel } from "@/types/workout";
 import { cn } from "@/lib/utils";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
+import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
+import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
 
 interface SortableRoutineCardProps {
   routine: RutinaWithDetails;
   isDragMode: boolean;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-  onStart: (routine: RutinaWithDetails) => void;
+  onStart: (routine: RutinaWithDetails, origin?: PillCircleOrigin) => void;
 }
 
 export function SortableRoutineCard({
@@ -164,7 +166,11 @@ export function SortableRoutineCard({
           </div>
         </div>
 
-        <Button className="w-full mt-3" variant="secondary" onClick={() => onStart(r)}>
+        <Button
+          className="w-full mt-3"
+          variant="secondary"
+          onClick={(e) => onStart(r, pillCircleOriginFromElement(e.currentTarget))}
+        >
           <Play className="h-4 w-4 mr-2" /> Iniciar Entrenamiento
         </Button>
       </CardContent>

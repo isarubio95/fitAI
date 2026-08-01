@@ -13,7 +13,7 @@ interface DrawerState {
   templateTitle?: string;
   templateRoutineIcon?: string | null;
   plannedId?: string;
-  /** Origen de la revelación circular al abrir desde la pill «en curso». */
+  /** Origen de la revelación circular (pill «en curso», botón iniciar rutina, etc.). */
   pillOrigin?: PillCircleOrigin;
 }
 
@@ -21,7 +21,12 @@ interface GlobalWorkoutDrawerContextType {
   state: DrawerState;
   openNew: (date?: string) => void;
   openEdit: (workoutId: string) => void;
-  openFromTemplate: (title: string, exercises: ExerciseFormData[], routineIcon?: string | null) => void;
+  openFromTemplate: (
+    title: string,
+    exercises: ExerciseFormData[],
+    routineIcon?: string | null,
+    pillOrigin?: PillCircleOrigin,
+  ) => void;
   openFromPlannedRoutine: (
     plannedId: string,
     title: string,
@@ -91,7 +96,12 @@ export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode 
   }, []);
 
   const openFromTemplate = useCallback(
-    (title: string, exercises: ExerciseFormData[], routineIcon?: string | null) => {
+    (
+      title: string,
+      exercises: ExerciseFormData[],
+      routineIcon?: string | null,
+      pillOrigin?: PillCircleOrigin,
+    ) => {
       if (blockIfActiveWorkout()) return;
       setState({
         open: true,
@@ -101,6 +111,7 @@ export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode 
         templateTitle: title,
         templateRoutineIcon: routineIcon ?? null,
         plannedId: undefined,
+        pillOrigin,
       });
     },
     [blockIfActiveWorkout],

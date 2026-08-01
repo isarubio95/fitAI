@@ -15,7 +15,7 @@ export const PILL_CIRCLE_DURATION_MS = 500;
 const DURATION = "0.5s";
 const EASING = "ease-in-out";
 
-export type PillCirclePhase = "in" | "out";
+export type PillCirclePhase = "in" | "settled" | "out";
 
 /** Capture pill center in viewport coordinates for a circle reveal origin. */
 export function pillCircleOriginFromElement(el: Element | null): PillCircleOrigin | undefined {
@@ -36,11 +36,16 @@ function timingVars(): CSSProperties {
  * Open: expand from the pill (`in:circle:bottom-right`).
  * Close: `out:circle:bottom-right` collapsing back to the pill (bottom),
  * so the layer disappears top→bottom and the UI behind reveals top→bottom.
+ *
+ * After `in` finishes, switch to `settled` so clip-path is cleared (otherwise
+ * leftover clip-path clips descendant borders like the header bottom edge).
  */
 export function pillCircleTransitionStyle(
   origin: PillCircleOrigin,
   phase: PillCirclePhase = "in",
 ): CSSProperties {
+  if (phase === "settled") return {};
+
   const vw = typeof window !== "undefined" ? window.innerWidth : 1;
   const vh = typeof window !== "undefined" ? window.innerHeight : 1;
   const pillX = `${Math.max(0, Math.min(100, (origin.x / vw) * 100)).toFixed(2)}%`;
@@ -71,6 +76,8 @@ export function pillCircleTransitionStyleForBottomSheet(
   heightRatio = 0.92,
   phase: PillCirclePhase = "in",
 ): CSSProperties {
+  if (phase === "settled") return {};
+
   const vw = typeof window !== "undefined" ? window.innerWidth : 1;
   const vh = typeof window !== "undefined" ? window.innerHeight : 1;
   const sheetH = vh * heightRatio;
@@ -96,6 +103,7 @@ export function pillCircleTransitionStyleForBottomSheet(
   };
 }
 
-export function pillCircleTransitionAttr(phase: PillCirclePhase) {
+export function pillCircleTransitionAttr(phase: PillCirclePhase): string | undefined {
+  if (phase === "settled") return undefined;
   return phase === "out" ? PILL_CIRCLE_OUT : PILL_CIRCLE_IN;
 }

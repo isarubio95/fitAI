@@ -1367,6 +1367,15 @@ export function WorkoutLogger() {
     }
   }, [open, pillOrigin]);
 
+  // Quitar clip-path residual tras el in (evita que desaparezca el border-b del header).
+  useEffect(() => {
+    if (pillAnim?.phase !== "in") return;
+    const t = window.setTimeout(() => {
+      setPillAnim((prev) => (prev?.phase === "in" ? { ...prev, phase: "settled" } : prev));
+    }, PILL_CIRCLE_DURATION_MS);
+    return () => window.clearTimeout(t);
+  }, [pillAnim?.phase]);
+
   useEffect(() => {
     return () => {
       if (pillCloseTimerRef.current != null) window.clearTimeout(pillCloseTimerRef.current);
@@ -1427,8 +1436,12 @@ export function WorkoutLogger() {
     ? {
         "data-open-from-pill": true as const,
         "data-pill-circle": pillAnim.phase,
-        "transition-style": pillCircleTransitionAttr(pillAnim.phase),
-        style: pillCircleTransitionStyleForBottomSheet(pillAnim.origin, 0.92, pillAnim.phase),
+        ...(pillAnim.phase !== "settled"
+          ? {
+              "transition-style": pillCircleTransitionAttr(pillAnim.phase),
+              style: pillCircleTransitionStyleForBottomSheet(pillAnim.origin, 0.92, pillAnim.phase),
+            }
+          : { style: { clipPath: "none" } }),
       }
     : {};
 

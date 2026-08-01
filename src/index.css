@@ -411,6 +411,13 @@
   will-change: clip-path;
 }
 
+/* Tras el in: quitar clip-path residual (si no, recorta borders de hijos p.ej. header) */
+[data-vaul-drawer][data-open-from-pill][data-pill-circle="settled"] {
+  animation: none !important;
+  clip-path: none !important;
+  will-change: auto;
+}
+
 [data-vaul-drawer][data-open-from-pill][data-pill-circle="out"] {
   animation-name: circle-out-bottom-right !important;
   animation-duration: var(--transition__duration, 0.5s) !important;

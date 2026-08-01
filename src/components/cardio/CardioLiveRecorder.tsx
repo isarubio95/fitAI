@@ -124,13 +124,21 @@ export function CardioLiveRecorder() {
   }, [open, pillOrigin]);
 
   useEffect(() => {
+    if (pillCirclePhase !== "in") return;
+    const t = window.setTimeout(() => {
+      setPillCirclePhase((prev) => (prev === "in" ? "settled" : prev));
+    }, PILL_CIRCLE_DURATION_MS);
+    return () => window.clearTimeout(t);
+  }, [pillCirclePhase]);
+
+  useEffect(() => {
     return () => {
       if (pillCloseTimerRef.current != null) window.clearTimeout(pillCloseTimerRef.current);
     };
   }, []);
 
   const requestClose = useCallback(() => {
-    if (pillOrigin && pillCirclePhase !== "out") {
+    if (pillOrigin && pillCirclePhase && pillCirclePhase !== "out") {
       setPillCirclePhase("out");
       if (pillCloseTimerRef.current != null) window.clearTimeout(pillCloseTimerRef.current);
       pillCloseTimerRef.current = window.setTimeout(() => {
@@ -303,8 +311,13 @@ export function CardioLiveRecorder() {
   const pillCircleProps =
     pillOrigin && pillCirclePhase
       ? {
-          "transition-style": pillCircleTransitionAttr(pillCirclePhase),
-          style: pillCircleTransitionStyle(pillOrigin, pillCirclePhase),
+          "data-pill-circle": pillCirclePhase,
+          ...(pillCirclePhase !== "settled"
+            ? {
+                "transition-style": pillCircleTransitionAttr(pillCirclePhase),
+                style: pillCircleTransitionStyle(pillOrigin, pillCirclePhase),
+              }
+            : { style: { clipPath: "none" } }),
         }
       : {};
 

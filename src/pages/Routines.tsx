@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { RutinaWithDetails } from "@/types/routine";
+import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 import {
   type ExerciseFormData,
   normalizeRegistroSeries,
@@ -240,7 +241,7 @@ const Routines = () => {
     setDeleteId(null);
   };
 
-  const startRoutine = (routine: RutinaWithDetails) => {
+  const startRoutine = (routine: RutinaWithDetails, origin?: PillCircleOrigin) => {
     const exercises: ExerciseFormData[] = routine.ejercicios
       .sort((a, b) => a.orden - b.orden)
       .map((ej) => {
@@ -269,7 +270,7 @@ const Routines = () => {
         };
       });
 
-    openFromTemplate(routine.nombre, exercises, routine.icono);
+    openFromTemplate(routine.nombre, exercises, routine.icono, origin);
   };
 
   const sortLabel = () => {
