@@ -13,6 +13,12 @@ import { useCardioGpsRecorder } from "@/hooks/useCardioGpsRecorder";
 import { useCardioSessionById, useUpsertCardioSession } from "@/hooks/useCardioSessions";
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { cn } from "@/lib/utils";
+import {
+  PILL_CIRCLE_DURATION_MS,
+  pillCircleTransitionAttr,
+  pillCircleTransitionStyle,
+  type PillCirclePhase,
+} from "@/lib/pillCircleTransition";
 import { Switch } from "@/components/ui/switch";
 import {
   formatDistanceLabel,
@@ -61,6 +67,7 @@ export function CardioLiveRecorder() {
   const { state, closeLiveRecording, openEdit } = useGlobalCardioDrawer();
   const sessionId = state.liveSessionId;
   const open = state.liveOpen && !!sessionId;
+  const pillOrigin = state.pillOrigin;
 
   const { toast } = useToast();
   const upsert = useUpsertCardioSession();
@@ -77,6 +84,8 @@ export function CardioLiveRecorder() {
   const [summaryTitulo, setSummaryTitulo] = useState("");
   const [summaryComentarios, setSummaryComentarios] = useState("");
   const [esPublica, setEsPublica] = useState(false);
+  const [pillCirclePhase, setPillCirclePhase] = useState<PillCirclePhase | null>(null);
+  const pillCloseTimerRef = useRef<number | null>(null);
 
   const discipline = firstNested(sessionData?.cardio_disciplina);
   const code = discipline?.codigo ?? null;
@@ -102,8 +111,35 @@ export function CardioLiveRecorder() {
       setSummaryTitulo("");
       setSummaryComentarios("");
       setEsPublica(false);
+      setPillCirclePhase(null);
+      if (pillCloseTimerRef.current != null) {
+        window.clearTimeout(pillCloseTimerRef.current);
+        pillCloseTimerRef.current = null;
+      }
     }
   }, [open]);
+
+  useEffect(() => {
+    if (open && pillOrigin) setPillCirclePhase("in");
+  }, [open, pillOrigin]);
+
+  useEffect(() => {
+    return () => {
+      if (pillCloseTimerRef.current != null) window.clearTimeout(pillCloseTimerRef.current);
+    };
+  }, []);
+
+  const requestClose = useCallback(() => {
+    if (pillOrigin && pillCirclePhase !== "out") {
+      setPillCirclePhase("out");
+      if (pillCloseTimerRef.current != null) window.clearTimeout(pillCloseTimerRef.current);
+      pillCloseTimerRef.current = window.setTimeout(() => {
+        closeLiveRecording();
+      }, PILL_CIRCLE_DURATION_MS);
+      return;
+    }
+    closeLiveRecording();
+  }, [pillOrigin, pillCirclePhase, closeLiveRecording]);
 
   useEffect(() => {
     if (sessionData?.titulo) setSummaryTitulo((t) => t || sessionData.titulo || "");
@@ -264,21 +300,30 @@ export function CardioLiveRecorder() {
 
   if (!open || !sessionId) return null;
 
-  if (sessionLoading || !sessionData) {
-    return (
-      <div className="fixed inset-0 z-100 flex flex-col items-center justify-center gap-3 bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Cargando sesión…</p>
-      </div>
-    );
-  }
+  const pillCircleProps =
+    pillOrigin && pillCirclePhase
+      ? {
+          "transition-style": pillCircleTransitionAttr(pillCirclePhase),
+          style: pillCircleTransitionStyle(pillOrigin, pillCirclePhase),
+        }
+      : {};
 
-  const headerTitle = discipline?.nombre?.trim() || sessionData.titulo || "Cardio";
+  const loading = sessionLoading || !sessionData;
+  const headerTitle = !loading
+    ? discipline?.nombre?.trim() || sessionData.titulo || "Cardio"
+    : "Cardio";
 
   return (
-    <div className="fixed inset-0 z-100 flex flex-col bg-background">
+    <div className="fixed inset-0 z-100 flex flex-col bg-background" {...pillCircleProps}>
+      {loading ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Cargando sesión…</p>
+        </div>
+      ) : (
+        <>
       <header className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-        <Button type="button" size="icon" variant="ghost" className="shrink-0 rounded-full" onClick={() => closeLiveRecording()} aria-label="Minimizar">
+        <Button type="button" size="icon" variant="ghost" className="shrink-0 rounded-full" onClick={requestClose} aria-label="Minimizar">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="min-w-0 flex-1">
@@ -418,6 +463,8 @@ export function CardioLiveRecorder() {
             </Button>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

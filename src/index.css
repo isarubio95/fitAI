@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "transition-style/transition.circles.min.css";
 
 @config "../tailwind.config.ts";
 
@@ -395,6 +396,37 @@
 [data-vaul-drawer][data-vaul-drawer-direction="left"] [data-vaul-allow-horizontal-pan],
 [data-vaul-drawer][data-vaul-drawer-direction="right"] [data-vaul-allow-horizontal-pan] {
   touch-action: pan-x pan-y;
+}
+
+/*
+ * Abrir / cerrar entrenamiento activo desde la pill: transition.css circle.
+ * Anula el slide de Vaul; hace falta mantener data-open-from-pill también en
+ * data-state=closed (si se quita, gana slideToBottom).
+ */
+[data-vaul-drawer][data-open-from-pill][data-pill-circle="in"][data-state="open"] {
+  animation-name: circle-in-bottom-right !important;
+  animation-duration: var(--transition__duration, 0.5s) !important;
+  animation-timing-function: var(--transition__easing, ease-in-out) !important;
+  animation-fill-mode: both;
+  will-change: clip-path;
+}
+
+[data-vaul-drawer][data-open-from-pill][data-pill-circle="out"] {
+  animation-name: circle-out-bottom-right !important;
+  animation-duration: var(--transition__duration, 0.5s) !important;
+  animation-timing-function: var(--transition__easing, ease-in-out) !important;
+  animation-fill-mode: both;
+  will-change: clip-path;
+  /* Cancela el translate del swipe/dismiss de Vaul; solo queda el círculo */
+  transform: none !important;
+  transition: none !important;
+}
+
+[data-vaul-drawer][data-open-from-pill][data-state="closed"] {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  opacity: 0 !important;
 }
 
 /* Toasts: tamaño fijo y sin escalado del SO para que no cambien de posición en móvil */

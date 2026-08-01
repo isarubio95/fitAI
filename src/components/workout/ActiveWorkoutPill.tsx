@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useDraggablePillPosition } from "@/hooks/useDraggablePillPosition";
+import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
 import { ChevronRight } from "lucide-react";
 
 function formatElapsed(startDate: string): string {
@@ -28,6 +29,11 @@ export function ActiveWorkoutPill() {
     return () => clearInterval(interval);
   }, [active?.id, active?.fecha]);
 
+  const openFromPill = () => {
+    if (!active) return;
+    openActiveWorkout(active.id, pillCircleOriginFromElement(drag.elRef.current));
+  };
+
   // Don't show pill if drawer is already open or no active workout
   if (!active || state.open) return null;
 
@@ -45,13 +51,13 @@ export function ActiveWorkoutPill() {
         drag.onPointerUp(e);
         const wasDrag = drag.didDrag();
         drag.resetMovedFlag();
-        if (!wasDrag) openActiveWorkout(active.id);
+        if (!wasDrag) openFromPill();
       }}
       onPointerCancel={drag.onPointerCancel}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          openActiveWorkout(active.id);
+          openFromPill();
         }
       }}
     >

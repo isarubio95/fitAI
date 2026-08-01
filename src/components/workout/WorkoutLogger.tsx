@@ -22,6 +22,12 @@ import { useWorkoutById } from "@/hooks/useWorkouts";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { fetchUnfinishedWorkoutId } from "@/lib/activeWorkoutGuard";
+import {
+  PILL_CIRCLE_DURATION_MS,
+  pillCircleTransitionAttr,
+  pillCircleTransitionStyleForBottomSheet,
+  type PillCirclePhase,
+} from "@/lib/pillCircleTransition";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -244,7 +250,7 @@ function RestProgressBar({
 
 export function WorkoutLogger() {
   const { state, setOpen, close, openActiveWorkout } = useGlobalWorkoutDrawer();
-  const { open, workoutId, defaultDate, templateExercises, templateTitle, templateRoutineIcon, plannedId } = state;
+  const { open, workoutId, defaultDate, templateExercises, templateTitle, templateRoutineIcon, plannedId, pillOrigin } = state;
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -1341,15 +1347,63 @@ export function WorkoutLogger() {
    * series pendientes (p. ej. un input que se cierra sin disparar onBlur).
    * El flush corre con los valores capturados en el closure aunque el estado
    * del drawer se resetee justo después.
+   *
+   * pillAnim es estado local: sobrevive a setOpen(false) (que borra pillOrigin
+   * del contexto) para que data-open-from-pill siga en el DOM mientras Vaul
+   * pasa a data-state=closed y así no se dispare slideToBottom.
    */
+  const [pillAnim, setPillAnim] = useState<{
+    origin: NonNullable<typeof pillOrigin>;
+    phase: PillCirclePhase;
+  } | null>(null);
+  const pillCloseTimerRef = useRef<number | null>(null);
+  const pillCleanupTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (open && pillOrigin) {
+      setPillAnim({ origin: pillOrigin, phase: "in" });
+    } else if (open && !pillOrigin) {
+      setPillAnim(null);
+    }
+  }, [open, pillOrigin]);
+
+  useEffect(() => {
+    return () => {
+      if (pillCloseTimerRef.current != null) window.clearTimeout(pillCloseTimerRef.current);
+      if (pillCleanupTimerRef.current != null) window.clearTimeout(pillCleanupTimerRef.current);
+    };
+  }, []);
+
+  const commitDrawerClose = useCallback(() => {
+    void flushAllSetsToDb();
+    setOpen(false);
+    // Mantener data-open-from-pill un frame más allá del unmount animado de Vaul.
+    if (pillCleanupTimerRef.current != null) window.clearTimeout(pillCleanupTimerRef.current);
+    pillCleanupTimerRef.current = window.setTimeout(() => {
+      setPillAnim(null);
+      pillCleanupTimerRef.current = null;
+    }, 100);
+  }, [flushAllSetsToDb, setOpen]);
+
   const handleDrawerOpenChange = useCallback(
     (next: boolean) => {
       if (!next) {
-        void flushAllSetsToDb();
+        if (pillAnim && pillAnim.phase !== "out") {
+          setPillAnim({ origin: pillAnim.origin, phase: "out" });
+          if (pillCloseTimerRef.current != null) window.clearTimeout(pillCloseTimerRef.current);
+          pillCloseTimerRef.current = window.setTimeout(() => {
+            pillCloseTimerRef.current = null;
+            commitDrawerClose();
+          }, PILL_CIRCLE_DURATION_MS);
+          return;
+        }
+        if (pillAnim?.phase === "out") return;
+        commitDrawerClose();
+        return;
       }
-      setOpen(next);
+      setOpen(true);
     },
-    [flushAllSetsToDb, setOpen],
+    [pillAnim, commitDrawerClose, setOpen],
   );
 
   const saveButtonLabel = isActiveWorkout ? "Finalizar" : isEdit ? "Actualizar" : "Guardar";
@@ -1369,16 +1423,26 @@ export function WorkoutLogger() {
     return () => window.clearTimeout(t);
   }, [open]);
 
+  const pillCircleProps = pillAnim
+    ? {
+        "data-open-from-pill": true as const,
+        "data-pill-circle": pillAnim.phase,
+        "transition-style": pillCircleTransitionAttr(pillAnim.phase),
+        style: pillCircleTransitionStyleForBottomSheet(pillAnim.origin, 0.92, pillAnim.phase),
+      }
+    : {};
+
   return (
     <>
       <Drawer open={open} onOpenChange={handleDrawerOpenChange} shouldScaleBackground={false}>
         <DrawerContent
           className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0"
+          {...pillCircleProps}
         >
           <div data-workout-drawer-surface className="relative isolate flex h-full min-h-0 flex-col overflow-hidden">
             <DrawerHeader
               data-active-workout-sheet-header
-              className="sticky top-0 z-10 shrink-0 border-b border-border bg-card px-6 text-left"
+              className="relative z-10 shrink-0 border-b border-border bg-card px-6 text-left"
             >
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between gap-3">

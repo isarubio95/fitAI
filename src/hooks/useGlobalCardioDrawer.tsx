@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import type { CardioRoutineBlockInput } from "@/types/cardio";
+import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 
 type CardioDrawerState = {
   open: boolean;
@@ -10,6 +11,8 @@ type CardioDrawerState = {
   templateTitle?: string;
   templateDisciplineId?: string | null;
   templateBlocks?: CardioRoutineBlockInput[];
+  /** Origen de la revelación circular al abrir desde la pill «en curso». */
+  pillOrigin?: PillCircleOrigin;
 };
 
 type GlobalCardioDrawerContextType = {
@@ -18,7 +21,7 @@ type GlobalCardioDrawerContextType = {
   openNewWithDiscipline: (disciplineId: string) => void;
   openEdit: (sessionId: string) => void;
   openFromTemplate: (title: string, disciplineId: string | null, blocks: CardioRoutineBlockInput[]) => void;
-  openLiveRecording: (sessionId: string) => void;
+  openLiveRecording: (sessionId: string, pillOrigin?: PillCircleOrigin) => void;
   closeLiveRecording: () => void;
   setOpen: (open: boolean) => void;
   close: () => void;
@@ -87,7 +90,7 @@ export function GlobalCardioDrawerProvider({ children }: { children: ReactNode }
     });
   }, []);
 
-  const openLiveRecording = useCallback((sessionId: string) => {
+  const openLiveRecording = useCallback((sessionId: string, pillOrigin?: PillCircleOrigin) => {
     setState({
       open: false,
       sessionId: null,
@@ -97,11 +100,12 @@ export function GlobalCardioDrawerProvider({ children }: { children: ReactNode }
       templateBlocks: undefined,
       templateTitle: undefined,
       templateDisciplineId: undefined,
+      pillOrigin,
     });
   }, []);
 
   const closeLiveRecording = useCallback(() => {
-    setState((prev) => ({ ...prev, liveOpen: false, liveSessionId: null }));
+    setState((prev) => ({ ...prev, liveOpen: false, liveSessionId: null, pillOrigin: undefined }));
   }, []);
 
   const setOpen = useCallback((open: boolean) => {

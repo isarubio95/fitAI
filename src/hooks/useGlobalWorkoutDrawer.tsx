@@ -3,6 +3,7 @@ import type { ExerciseFormData } from "@/types/workout";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useToast } from "@/hooks/use-toast";
 import { toastActiveWorkoutBlocked } from "@/lib/activeWorkoutGuard";
+import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 
 interface DrawerState {
   open: boolean;
@@ -12,6 +13,8 @@ interface DrawerState {
   templateTitle?: string;
   templateRoutineIcon?: string | null;
   plannedId?: string;
+  /** Origen de la revelación circular al abrir desde la pill «en curso». */
+  pillOrigin?: PillCircleOrigin;
 }
 
 interface GlobalWorkoutDrawerContextType {
@@ -26,7 +29,7 @@ interface GlobalWorkoutDrawerContextType {
     routineIcon?: string | null,
     plannedDate?: string,
   ) => void;
-  openActiveWorkout: (workoutId: string) => void;
+  openActiveWorkout: (workoutId: string, pillOrigin?: PillCircleOrigin) => void;
   setOpen: (open: boolean) => void;
   close: () => void;
 }
@@ -40,7 +43,7 @@ export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode 
   const { data: activeWorkout } = useActiveWorkout();
   const { toast } = useToast();
 
-  const openActiveWorkout = useCallback((workoutId: string) => {
+  const openActiveWorkout = useCallback((workoutId: string, pillOrigin?: PillCircleOrigin) => {
     setState({
       open: true,
       workoutId,
@@ -49,6 +52,7 @@ export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode 
       templateTitle: undefined,
       templateRoutineIcon: undefined,
       plannedId: undefined,
+      pillOrigin,
     });
   }, []);
 

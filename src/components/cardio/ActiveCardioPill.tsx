@@ -3,6 +3,7 @@ import { useActiveCardioSession } from "@/hooks/useActiveCardioSession";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useDraggablePillPosition } from "@/hooks/useDraggablePillPosition";
+import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
 import { ChevronRight } from "lucide-react";
 
 function formatElapsed(startDate: string): string {
@@ -43,6 +44,10 @@ export function ActiveCardioPill() {
 
   const label = firstDisciplinaNombre(active);
 
+  const openFromPill = () => {
+    openLiveRecording(active.id, pillCircleOriginFromElement(drag.elRef.current));
+  };
+
   return (
     <div
       ref={drag.elRef}
@@ -59,13 +64,13 @@ export function ActiveCardioPill() {
         drag.onPointerUp(e);
         const wasDrag = drag.didDrag();
         drag.resetMovedFlag();
-        if (!wasDrag) openLiveRecording(active.id);
+        if (!wasDrag) openFromPill();
       }}
       onPointerCancel={drag.onPointerCancel}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          openLiveRecording(active.id);
+          openFromPill();
         }
       }}
     >
