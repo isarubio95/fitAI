@@ -21,6 +21,7 @@ import {
   formatRitmoSegKmLabel,
 } from "@/types/workout";
 import { cn } from "@/lib/utils";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import { WorkoutMuscleMiniMap } from "@/components/dashboard/WorkoutMuscleMiniMap";
 import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
@@ -43,7 +44,79 @@ type WorkoutDetailsSheetProps = {
   workoutId: string | null;
 };
 
-const RADAR_TICK_FONT_SIZE = 11;
+const RADAR = {
+  /** Centro del radar (porcentaje del contenedor). */
+  cx: "50%",
+  cy: "50%",
+
+  /** Radio exterior del polígono (porcentaje). */
+  outerRadius: "98%",
+
+  /**
+   * Relación de aspecto del contenedor (ancho ÷ alto).
+   * 1 = cuadrado. Valores >1 (p. ej. 1.2–1.4) recortan el espacio muerto arriba/abajo.
+   */
+  aspectRatio: 1.05,
+
+  /**
+   * Márgenes del RadarChart.
+   * - top/bottom fijos: espacio para etiquetas verticales.
+   * - laterales: se calculan según la etiqueta más larga (ver `labelSide*`).
+   */
+  marginY: 12,
+
+  /**
+   * Márgenes laterales dinámicos para etiquetas del eje angular.
+   * - min/max: límites del margen lateral (px).
+   * - charFactor: ancho aproximado por carácter × tickFontSize.
+   * - pad: padding extra tras el cálculo.
+   */
+  labelSideMin: 18,
+  labelSideMax: 44,
+  labelSideCharFactor: 0.38,
+  labelSidePad: 6,
+
+  /** Tamaño de fuente de etiquetas de grupo (PolarAngleAxis). */
+  tickFontSize: 11,
+
+  /** Tamaño de fuente de ticks del radio (PolarRadiusAxis). */
+  radiusTickFontSize: 10,
+
+  /** Ancho reservado para ticks del radio (px). */
+  radiusAxisWidth: 28,
+
+  /** Opacidad de la rejilla polar. */
+  gridOpacity: 0.2,
+
+  /** Opacidad del relleno del polígono. */
+  fillOpacity: 0.12,
+
+  /** Grosor del trazo del polígono. */
+  strokeWidth: 2,
+
+  /** Radio del punto en cada grupo. */
+  dotRadius: 3.2,
+
+  /** Grosor del borde del punto. */
+  dotStrokeWidth: 2,
+
+  /** Radio del punto activo (hover). */
+  activeDotRadius: 4.2,
+
+  /**
+   * Ajuste extra solo para etiquetas laterales (no arriba/abajo).
+   * - nudgeY: negativo = hacia arriba (px).
+   * - nudgeXTowardCenter: desplazamiento horizontal hacia el centro (px).
+   */
+  sideLabelNudgeY: -16,
+  sideLabelNudgeXTowardCenter: 10,
+
+  /**
+   * Separación extra de etiquetas verticales (arriba/abajo) hacia afuera (px).
+   * Positivo = más lejos del centro.
+   */
+  verticalLabelNudgeOut: 5,
+} as const;
 
 function formatWeight(value: number) {
   const n = Number(value);
@@ -100,6 +173,26 @@ function buildSupersetGroups(exercises: EjercicioWithDetails[]): {
   return groups;
 }
 
+/** Instante aproximado de ejecución: primera serie hecha, o alta del ejercicio. */
+function exerciseExecutionTime(ex: EjercicioWithDetails): number {
+  const doneTimes = (ex.series ?? [])
+    .filter(isSerieDone)
+    .map((s) => new Date(s.created_at).getTime())
+    .filter((t) => Number.isFinite(t));
+  if (doneTimes.length > 0) return Math.min(...doneTimes);
+  const t = ex.created_at ? new Date(ex.created_at).getTime() : NaN;
+  return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
+}
+
+function compareExercisesByExecutionOrder(a: EjercicioWithDetails, b: EjercicioWithDetails): number {
+  const byExec = exerciseExecutionTime(a) - exerciseExecutionTime(b);
+  if (byExec !== 0) return byExec;
+  const ca = a.created_at ? new Date(a.created_at).getTime() : 0;
+  const cb = b.created_at ? new Date(b.created_at).getTime() : 0;
+  if (ca !== cb) return ca - cb;
+  return a.id.localeCompare(b.id);
+}
+
 function getNiceRadarMax(max: number) {
   if (!Number.isFinite(max) || max <= 0) return 1;
   if (max < 10) return Math.ceil(max);
@@ -123,6 +216,46 @@ function RadarWeightTooltip({ active, payload }: TooltipContentProps<ValueType, 
         {formatWeight(weight)} kg levantados
       </div>
     </div>
+  );
+}
+
+/** Tick del eje angular: las etiquetas laterales se acercan al centro y suben. */
+function RadarAngleTick(props: {
+  payload?: { value?: string };
+  x?: number;
+  y?: number;
+  cx?: number;
+  cy?: number;
+  textAnchor?: string;
+  fill?: string;
+}) {
+  const { payload, x = 0, y = 0, cx = 0, cy = 0, textAnchor = "middle", fill } = props;
+  if (!payload?.value) return null;
+
+  // Más horizontal que vertical → etiqueta de lado (izq/der).
+  const isSide = Math.abs(x - cx) > Math.abs(y - cy);
+  let dx = 0;
+  let dy = 0;
+
+  if (isSide) {
+    dx = x < cx ? RADAR.sideLabelNudgeXTowardCenter : -RADAR.sideLabelNudgeXTowardCenter;
+    dy = RADAR.sideLabelNudgeY;
+  } else {
+    // Arriba → subir; abajo → bajar (hacia afuera).
+    dy = y < cy ? -RADAR.verticalLabelNudgeOut : RADAR.verticalLabelNudgeOut;
+  }
+
+  return (
+    <text
+      x={x + dx}
+      y={y + dy}
+      textAnchor={textAnchor}
+      dominantBaseline="central"
+      fill={fill ?? "hsl(var(--muted-foreground))"}
+      fontSize={RADAR.tickFontSize}
+    >
+      {payload.value}
+    </text>
   );
 }
 
@@ -170,7 +303,7 @@ function SeriesList({
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300"
+                      className="touch-styled inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 outline-none focus-visible:outline-none dark:text-emerald-300"
                       title="Mayor RM estimada (pulsar para ver explicación)"
                       aria-label="Mayor RM estimada: explicación"
                     >
@@ -258,7 +391,7 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         side="bottom"
-        className="flex h-[92lvh] max-h-[92lvh] flex-col overflow-hidden rounded-t-2xl p-0"
+        className="flex h-[92lvh] max-h-[92lvh] flex-col overflow-hidden rounded-t-2xl bg-card p-0"
       >
         <DrawerHeader className="shrink-0 border-b border-border bg-card text-left">
           <DrawerTitle className={isLoading || !workout ? "sr-only" : undefined}>
@@ -276,7 +409,7 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
           )}
         </DrawerHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-background">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-card">
           <WorkoutDetailsContent
             workout={workout}
             isLoading={isLoading}
@@ -431,12 +564,7 @@ export function WorkoutDetailsContent({
     let topId: string | null = null;
 
     const exs = workout?.ejercicios ?? [];
-    const ordered = [...exs].sort((a, b) => {
-      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
-      if (ta !== tb) return ta - tb;
-      return a.id.localeCompare(b.id);
-    });
+    const ordered = [...exs].sort(compareExercisesByExecutionOrder);
 
     for (const ex of ordered) {
       const series = ex.series ?? [];
@@ -476,8 +604,8 @@ export function WorkoutDetailsContent({
       }
     }
 
-    const groupsBySuperset = buildSupersetGroups(ordered);
-    const filteredOrderedExercises = ordered.filter((ex) => (ex.series ?? []).some(isSerieDone)) ?? [];
+    const filteredOrderedExercises = ordered.filter((ex) => (ex.series ?? []).some(isSerieDone));
+    const groupsBySuperset = buildSupersetGroups(filteredOrderedExercises);
 
     return {
       groupSets: groupSetsAcc,
@@ -517,12 +645,19 @@ export function WorkoutDetailsContent({
     []
   );
 
-  // Reserva espacio lateral para las etiquetas del eje: recharts las dibuja
-  // fuera del radio y quedarían recortadas por el borde del SVG.
+  // Reserva espacio para las etiquetas del eje (fuera del radio) sin
+  // encoger demasiado el gráfico: márgenes laterales grandes dejan el
+  // radar pequeño y centrado con mucho vacío arriba/abajo.
   const radarMargin = useMemo(() => {
     const longest = visibleGroups.reduce((max, g) => Math.max(max, g.length), 0);
-    const side = Math.min(80, Math.max(24, Math.round(longest * RADAR_TICK_FONT_SIZE * 0.58) + 10));
-    return { top: 16, right: side, bottom: 16, left: side };
+    const side = Math.min(
+      RADAR.labelSideMax,
+      Math.max(
+        RADAR.labelSideMin,
+        Math.round(longest * RADAR.tickFontSize * RADAR.labelSideCharFactor) + RADAR.labelSidePad,
+      ),
+    );
+    return { top: RADAR.marginY, right: side, bottom: RADAR.marginY, left: side };
   }, [visibleGroups]);
 
   const radarId = radarChartId ?? (workout?.id ? `workout-radar-weight-${workout.id}` : "workout-radar-weight");
@@ -569,20 +704,20 @@ export function WorkoutDetailsContent({
             </DrawerHeader>
           ) : null}
 
-          <div className="space-y-2 bg-background">
+          <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
             {workout.comentarios ? (
-              <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
-                <CardContent className="px-6 py-4 text-sm text-muted-foreground whitespace-pre-wrap">
+              <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+                <CardContent className="px-6 py-6 text-sm text-muted-foreground whitespace-pre-wrap">
                   {workout.comentarios}
                 </CardContent>
               </Card>
             ) : null}
 
-            <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
-              <CardContent className="px-6 py-4">
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div className="font-semibold">Series por grupo muscular</div>
-                  <div className="text-xs text-muted-foreground tabular-nums">
+            <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+              <CardContent className="px-6 py-6">
+                <div className="flex items-baseline justify-between gap-3 mb-3">
+                  <div className="font-semibold leading-none">Series por grupo muscular</div>
+                  <div className="text-xs text-muted-foreground tabular-nums leading-none">
                     Total: {visibleGroups.reduce((a, g) => a + (groupSets[g] ?? 0), 0)}
                   </div>
                 </div>
@@ -608,28 +743,40 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
-              <CardContent className="px-6 py-4">
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div className="font-semibold">Peso levantado por grupo muscular</div>
-                  <div className="text-xs text-muted-foreground tabular-nums">Max: {formatWeight(maxWeight)} kg</div>
+            <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+              <CardContent className="px-3 py-6 sm:px-6">
+                <div className="flex items-baseline justify-between gap-3 mb-3 px-3 sm:px-0">
+                  <div className="font-semibold leading-none">Peso levantado por grupo</div>
+                  <div className="text-xs text-muted-foreground tabular-nums leading-none">Max: {formatWeight(maxWeight)} kg</div>
                 </div>
                 {visibleGroups.length === 0 ? (
                   <div className="text-sm text-muted-foreground">No hay peso levantado para mostrar.</div>
                 ) : (
-                  <ChartContainer id={radarId} config={radarConfig} className="aspect-square w-full">
-                    <RadarChart data={radarData} outerRadius="85%" margin={radarMargin}>
-                      <PolarGrid stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} />
+                  <ChartContainer
+                    id={radarId}
+                    config={radarConfig}
+                    className="aspect-auto w-full overflow-visible [&_.recharts-surface]:overflow-visible"
+                    style={{ aspectRatio: RADAR.aspectRatio }}
+                  >
+                    <RadarChart
+                      data={radarData}
+                      cx={RADAR.cx}
+                      cy={RADAR.cy}
+                      outerRadius={RADAR.outerRadius}
+                      margin={radarMargin}
+                    >
+                      <PolarGrid stroke="hsl(var(--muted-foreground))" strokeOpacity={RADAR.gridOpacity} />
                       <PolarAngleAxis
                         dataKey="group"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: RADAR_TICK_FONT_SIZE }}
+                        tick={RadarAngleTick}
                       />
                       <PolarRadiusAxis
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                        width={RADAR.radiusAxisWidth}
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: RADAR.radiusTickFontSize }}
                         domain={[0, maxWeight]}
                       />
                       <Tooltip content={RadarWeightTooltip} />
@@ -639,15 +786,15 @@ export function WorkoutDetailsContent({
                         isAnimationActive={false}
                         stroke="hsl(var(--primary))"
                         fill="hsl(var(--primary))"
-                        fillOpacity={0.12}
-                        strokeWidth={2}
+                        fillOpacity={RADAR.fillOpacity}
+                        strokeWidth={RADAR.strokeWidth}
                         dot={{
-                          r: 3.2,
+                          r: RADAR.dotRadius,
                           stroke: "hsl(var(--background))",
-                          strokeWidth: 2,
+                          strokeWidth: RADAR.dotStrokeWidth,
                           fill: "hsl(var(--primary))",
                         }}
-                        activeDot={{ r: 4.2 }}
+                        activeDot={{ r: RADAR.activeDotRadius }}
                       />
                     </RadarChart>
                   </ChartContainer>
@@ -655,52 +802,44 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
-              <CardContent className="p-0">
-                <div className="px-6 pt-4 pb-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="font-semibold">Ejercicios realizados</div>
-                    <div className="text-xs text-muted-foreground tabular-nums">{orderedExercises.length} ejercicios</div>
+            <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+              <CardContent className="px-0 py-6">
+                <div className="px-6 pb-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="font-semibold leading-none">Ejercicios realizados</div>
+                    <div className="text-xs text-muted-foreground tabular-nums leading-none">{orderedExercises.length} ejercicios</div>
                   </div>
                 </div>
                 {orderedExercises.length === 0 ? (
-                  <div className="px-6 pb-4 text-sm text-muted-foreground">Aún no hay series completadas para mostrar.</div>
+                  <div className="px-6 text-sm text-muted-foreground">Aún no hay series completadas para mostrar.</div>
                 ) : (
-                  <div className="divide-y divide-border">
-                    {exerciseGroups
-                      .filter((g) => g.items.some((ex) => (ex.series ?? []).some(isSerieDone)))
-                      .map((g, idx) => {
+                  <div className="flex flex-col gap-2 px-4">
+                    {exerciseGroups.map((g, idx) => {
                         const superset = !!g.supersetId && g.items.length > 1;
                         if (superset) {
                           return (
-                            <div key={`${g.supersetId}-${idx}`} className="relative border-t-0 bg-primary/5 border-border/0">
-                              <div
-                                data-drawer-section
-                                className="mx-4 mb-0 mt-0 rounded-none border-2 border-primary/40 bg-primary/5 overflow-hidden"
-                              >
-                                <div className="px-3 pt-2 pb-1">
-                                  <span className="text-xs font-medium text-primary">Superserie</span>
-                                </div>
-                                <div className="divide-y divide-border">
-                                  {g.items.map((ex) => {
-                                    if (!(ex.series ?? []).some(isSerieDone)) return null;
-                                    return (
-                                      <ExerciseBlock key={ex.id} ex={ex} topExerciseId={topExerciseId} rmByExerciseId={rmByExerciseId} />
-                                    );
-                                  })}
-                                </div>
+                            <div
+                              key={`${g.supersetId}-${idx}`}
+                              className="overflow-hidden rounded-xl border-2 border-primary/40 bg-muted/50"
+                            >
+                              <div className="px-3 pt-2 pb-1">
+                                <span className="text-xs font-medium text-primary">Superserie</span>
+                              </div>
+                              <div className="divide-y divide-border">
+                                {g.items.map((ex) => (
+                                  <ExerciseBlock key={ex.id} ex={ex} topExerciseId={topExerciseId} rmByExerciseId={rmByExerciseId} />
+                                ))}
                               </div>
                             </div>
                           );
                         }
 
                         const ex = g.items[0];
-                        if (!ex || !(ex.series ?? []).some(isSerieDone)) return null;
+                        if (!ex) return null;
                         return (
                           <div
                             key={ex.id}
-                            data-drawer-section
-                            className="mx-4 my-2 rounded-none border border-border/40 bg-card"
+                            className="rounded-xl border border-border/40 bg-muted/50"
                           >
                             <ExerciseBlock ex={ex} topExerciseId={topExerciseId} rmByExerciseId={rmByExerciseId} />
                           </div>

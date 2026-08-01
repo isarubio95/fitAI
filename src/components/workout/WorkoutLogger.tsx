@@ -578,7 +578,8 @@ export function WorkoutLogger() {
         .single();
       if (actError) throw actError;
 
-      const ejercicioInserts = templateExercises.map((ex) => ({
+      const baseCreatedAt = Date.now();
+      const ejercicioInserts = templateExercises.map((ex, i) => ({
         actividad_id: actividad.id,
         tipo_ejercicio_id: (ex as any).tipo_ejercicio_id ?? null,
         usuario_ejercicio_id: (ex as any).usuario_ejercicio_id ?? null,
@@ -587,6 +588,8 @@ export function WorkoutLogger() {
         rep_range: ex.repRange ?? null,
         rir_objetivo: ex.targetRir ?? null,
         registro_series: normalizeRegistroSeries(ex.registro_series),
+        // Escalonar created_at para conservar el orden de ejecución al listar después.
+        created_at: new Date(baseCreatedAt + i).toISOString(),
       }));
       const { data: ejercicios, error: ejError } = await supabase
         .from("ejercicio")
@@ -1292,12 +1295,14 @@ export function WorkoutLogger() {
       .single();
     if (actError) throw actError;
 
-    const ejercicioInserts = ejerciciosLimpios.map((ex) => ({
+    const baseCreatedAt = Date.now();
+    const ejercicioInserts = ejerciciosLimpios.map((ex, i) => ({
       actividad_id: actividad.id,
       tipo_ejercicio_id: (ex as any).tipo_ejercicio_id ?? null,
       usuario_ejercicio_id: (ex as any).usuario_ejercicio_id ?? null,
       usuario_id: user!.id,
       registro_series: normalizeRegistroSeries(ex.registro_series),
+      created_at: new Date(baseCreatedAt + i).toISOString(),
     }));
 
     const { data: ejerciciosDB, error: ejError } = await supabase

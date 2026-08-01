@@ -122,7 +122,8 @@ export function useWorkoutById(id: string | null) {
       const { data: ejercicios, error: ejError } = await supabase
         .from("ejercicio")
         .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
-        .eq("actividad_id", id);
+        .eq("actividad_id", id)
+        .order("created_at", { ascending: true });
       if (ejError) throw ejError;
 
       const ejercicioIds = (ejercicios || []).map((e) => e.id);
@@ -131,7 +132,9 @@ export function useWorkoutById(id: string | null) {
         const { data, error: sError } = await supabase
           .from("serie")
           .select("*")
-          .in("ejercicio_id", ejercicioIds);
+          .in("ejercicio_id", ejercicioIds)
+          .order("created_at", { ascending: true })
+          .order("numero_serie", { ascending: true });
         if (sError) throw sError;
         series = data || [];
       }
