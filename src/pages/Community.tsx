@@ -96,10 +96,16 @@ export default function Community() {
               </button>
 
               {!isOwn && (
-                <Button onClick={() => toggleFollow(p.id)} disabled={isToggling.has(p.id)} className="mt-0 w-auto">
-                  {isToggling.has(p.id) ? (
-                    "..."
-                  ) : isFollowing ? (
+                <Button
+                  variant={isFollowing ? "secondary" : "default"}
+                  onClick={() => toggleFollow(p.id)}
+                  disabled={isToggling.has(p.id)}
+                  className={cn(
+                    "mt-0 w-auto",
+                    isFollowing && "bg-border hover:bg-border/80 dark:hover:bg-border/90",
+                  )}
+                >
+                  {isFollowing ? (
                     <span className="flex items-center gap-2">
                       <UserCheck className="h-4 w-4" /> Siguiendo
                     </span>
