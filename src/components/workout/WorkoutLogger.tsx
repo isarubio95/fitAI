@@ -155,6 +155,12 @@ function serializeWorkoutFormSnapshot(
   });
 }
 
+/**
+ * Margen tras el último `onDrag` de Vaul dentro del cual un cierre se considera
+ * provocado por el swipe hacia abajo (el `pointerup` llega inmediatamente después).
+ */
+const SWIPE_DISMISS_WINDOW_MS = 250;
+
 /** Mismo acabado glass que header móvil y BottomNav */
 const ACTIVE_WORKOUT_FLOATING_SHELL =
   "rounded-[28px] border border-black/10 bg-white/70 p-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-[hsl(222_47%_12%/0.88)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.06)] dark:ring-1 dark:ring-white/5";
@@ -1359,6 +1365,7 @@ export function WorkoutLogger() {
   } | null>(null);
   const pillCloseTimerRef = useRef<number | null>(null);
   const pillCleanupTimerRef = useRef<number | null>(null);
+  const lastDragAtRef = useRef(Number.NEGATIVE_INFINITY);
 
   useEffect(() => {
     if (open && pillOrigin) {
@@ -1395,10 +1402,22 @@ export function WorkoutLogger() {
     }, 100);
   }, [flushAllSetsToDb, setOpen]);
 
+  const handleDrawerDrag = useCallback(() => {
+    lastDragAtRef.current = performance.now();
+  }, []);
+
   const handleDrawerOpenChange = useCallback(
     (next: boolean) => {
       if (!next) {
-        if (pillAnim && pillAnim.phase !== "out") {
+        if (pillAnim?.phase === "out") return;
+        /**
+         * Cierre por swipe: el círculo hacia la pill anula el `transform` del
+         * arrastre, así que el panel saltaría a su sitio antes de animarse.
+         * Quitamos la animación de pill y dejamos que Vaul continúe el
+         * deslizamiento desde donde se soltó el dedo.
+         */
+        const fromSwipe = performance.now() - lastDragAtRef.current < SWIPE_DISMISS_WINDOW_MS;
+        if (pillAnim && !fromSwipe) {
           setPillAnim({ origin: pillAnim.origin, phase: "out" });
           if (pillCloseTimerRef.current != null) window.clearTimeout(pillCloseTimerRef.current);
           pillCloseTimerRef.current = window.setTimeout(() => {
@@ -1407,10 +1426,11 @@ export function WorkoutLogger() {
           }, PILL_CIRCLE_DURATION_MS);
           return;
         }
-        if (pillAnim?.phase === "out") return;
+        if (pillAnim) setPillAnim(null);
         commitDrawerClose();
         return;
       }
+      lastDragAtRef.current = Number.NEGATIVE_INFINITY;
       setOpen(true);
     },
     [pillAnim, commitDrawerClose, setOpen],
@@ -1448,7 +1468,12 @@ export function WorkoutLogger() {
 
   return (
     <>
-      <Drawer open={open} onOpenChange={handleDrawerOpenChange} shouldScaleBackground={false}>
+      <Drawer
+        open={open}
+        onOpenChange={handleDrawerOpenChange}
+        onDrag={handleDrawerDrag}
+        shouldScaleBackground={false}
+      >
         <DrawerContent
           className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0"
           {...pillCircleProps}
