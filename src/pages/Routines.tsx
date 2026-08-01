@@ -279,8 +279,17 @@ const Routines = () => {
     return "Orden manual";
   };
 
+  const fillBottomWithCard = (routines?.length ?? 0) > 3;
+
   return (
-    <div className="w-full min-w-0 bg-background md:max-w-2xl md:mx-auto md:px-8 md:pt-3">
+    <div
+      className={cn(
+        "flex w-full min-w-0 flex-col md:max-w-2xl md:mx-auto md:px-8 md:pt-3",
+        fillBottomWithCard
+          ? "flex-1 bg-card max-md:-mb-24 max-md:pb-24 md:bg-transparent"
+          : "bg-background",
+      )}
+    >
       {mobileActionsSlot &&
         createPortal(
           <div className="flex items-center gap-2">
@@ -425,7 +434,13 @@ const Routines = () => {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sortedRoutines.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-            <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+            <div
+              className={cn(
+                "flex w-full flex-col bg-background",
+                fillBottomWithCard && "md:bg-transparent",
+                PAGE_CARD_STACK_GAP,
+              )}
+            >
               {sortedRoutines.map((r) => (
                 <SortableRoutineCard
                   key={r.id}

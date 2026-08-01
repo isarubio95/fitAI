@@ -1,28 +1,22 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
-import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Calendar, Dumbbell, Hash, Pencil, TrendingUp, TrendingDown,
+  TrendingUp, TrendingDown,
   Activity, Weight, Layers, Trophy, Star,
 } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import {
-  format, startOfWeek, subWeeks, isAfter, isBefore, addWeeks,
+  format, startOfWeek, subWeeks, isBefore, addWeeks,
   startOfMonth, endOfMonth, subMonths,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { type ActividadWithDetails, normalizeRegistroSeries, formatRitmoSegKmLabel } from "@/types/workout";
+import { type ActividadWithDetails } from "@/types/workout";
 import { MuscleRankingWidget } from "@/components/dashboard/MuscleRankingWidget";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
-import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
 import { cn } from "@/lib/utils";
-
-const INITIAL_SHOW = 5;
 
 // ── helpers ──────────────────────────────────────────────
 function inRange(fecha: string, start: Date, end: Date) {
@@ -72,8 +66,6 @@ function ChangeBadge({ pct }: { pct: number | null }) {
 // ── Main component ───────────────────────────────────────
 const WorkoutHistory = () => {
   const { data: workouts, isLoading } = useWorkoutHistory();
-  const { openEdit } = useGlobalWorkoutDrawer();
-  const [showAll, setShowAll] = useState(false);
 
   const now = useMemo(() => new Date(), []);
 
@@ -153,9 +145,6 @@ const WorkoutHistory = () => {
     return Object.values(maxes).sort((a, b) => b.max - a.max).slice(0, 5);
   }, [workouts]);
 
-  const visibleWorkouts = showAll ? workouts : workouts?.slice(0, INITIAL_SHOW);
-  const hasMore = (workouts?.length ?? 0) > INITIAL_SHOW;
-
   const kpiCards = [
     {
       label: "Volumen semanal",
@@ -179,7 +168,8 @@ const WorkoutHistory = () => {
     "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
 
   return (
-    <div className={cn("flex w-full min-w-0 flex-col bg-background pb-28 md:mx-auto md:max-w-2xl md:px-8 md:pt-3", PAGE_CARD_STACK_GAP)}>
+    <div className="flex w-full min-w-0 flex-1 flex-col bg-card max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3">
+      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP)}>
       {/* ── KPI Grid (ahora dentro de Card, con líneas divisorias internas) ── */}
       <Card className={cardClass}>
         <CardContent className="p-0">
@@ -328,101 +318,7 @@ const WorkoutHistory = () => {
           )}
         </div>
       )}
-
-      {/* ── Recent History ── */}
-      <section className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
-        <h2 className="px-6 py-2 text-lg font-semibold md:px-0">Historial Reciente</h2>
-
-        {isLoading ? (
-          <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-none border-0 bg-card md:rounded-3xl" />
-            ))}
-          </div>
-        ) : !workouts?.length ? (
-          <p className="px-6 py-8 text-center text-sm text-muted-foreground md:px-0">
-            Aún no tienes entrenamientos registrados.
-          </p>
-        ) : (
-          <>
-            <Accordion type="single" collapsible className={cn("flex flex-col", PAGE_CARD_STACK_GAP)}>
-              {visibleWorkouts?.map((w) => {
-                const totalSets = w.ejercicios.reduce((a, ej) => a + ej.series.length, 0);
-                return (
-                  <AccordionItem
-                    key={w.id}
-                    value={w.id}
-                    className="overflow-hidden rounded-none border-0 bg-card px-4 shadow-none md:rounded-3xl md:border md:border-border/20"
-                  >
-                    <AccordionTrigger className="hover:no-underline py-3">
-                      <article className="flex flex-col items-start text-left gap-1">
-                        <h3 className="font-semibold">{w.titulo}</h3>
-                        <div className="flex gap-3 text-xs text-muted-foreground">
-                          <time className="flex items-center gap-1" dateTime={w.fecha}>
-                            <Calendar className="h-3 w-3" />
-                            {formatActivityRelativeDate(w.fecha)}
-                          </time>
-                          <span className="flex items-center gap-1">
-                            <Dumbbell className="h-3 w-3" />
-                            {w.ejercicios.length}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Hash className="h-3 w-3" />
-                            {totalSets} series
-                          </span>
-                        </div>
-                      </article>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <section className="space-y-3 pb-2">
-                        {w.ejercicios.map((ej) => (
-                          <div key={ej.id} className="space-y-1">
-                            <h4 className="text-sm font-medium">{ej.tipo_ejercicio.nombre}</h4>
-                            <div className="space-y-0.5">
-                              {ej.series
-                                .sort((a, b) => a.numero_serie - b.numero_serie)
-                                .map((s) => {
-                                  const mode = normalizeRegistroSeries((ej as { registro_series?: string }).registro_series);
-                                  const ds = s.duracion_seg;
-                                  const pace = (s as { ritmo_seg_km?: number | null }).ritmo_seg_km;
-                                  const showPace =
-                                    mode === "duracion_ritmo" || ((ds ?? 0) > 0 && (pace ?? 0) > 0);
-                                  const txt = showPace
-                                    ? `Serie ${s.numero_serie}: ${ds ?? 0} s · ${formatRitmoSegKmLabel(pace ?? null)}`
-                                    : mode === "duracion" || (ds != null && ds > 0)
-                                      ? `Serie ${s.numero_serie}: ${ds ?? 0} s`
-                                      : `Serie ${s.numero_serie}: ${s.repeticiones} reps × ${s.peso_kg} kg`;
-                                  return (
-                                    <p key={s.id} className="text-xs text-muted-foreground pl-3">
-                                      {txt}
-                                    </p>
-                                  );
-                                })}
-                            </div>
-                          </div>
-                        ))}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-2"
-                          onClick={() => openEdit(w.id)}
-                        >
-                          <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar
-                        </Button>
-                      </section>
-                    </AccordionContent>
-                  </AccordionItem>
-                );
-              })}
-            </Accordion>
-            {hasMore && !showAll && (
-              <Button variant="ghost" size="sm" className="w-full px-6" onClick={() => setShowAll(true)}>
-                Ver anteriores ({(workouts?.length ?? 0) - INITIAL_SHOW} más)
-              </Button>
-            )}
-          </>
-        )}
-      </section>
+      </div>
     </div>
   );
 };

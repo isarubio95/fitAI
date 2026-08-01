@@ -143,17 +143,12 @@ export default function Community() {
 
   return (
     <>
-      <div
-        className={cn(
-          "flex w-full min-w-0 flex-col md:mx-auto md:max-w-2xl md:px-8",
-          showSearchPanel ? "flex-1 bg-card md:bg-transparent" : "bg-background",
-        )}
-      >
+      <div className="flex w-full min-w-0 flex-1 flex-col bg-card max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8">
         <section
           className={cn(
             "flex w-full flex-col",
             PAGE_CARD_STACK_GAP,
-            showSearchPanel ? "flex-1 bg-card md:bg-transparent" : "bg-background",
+            showSearchPanel ? "flex-1 bg-card md:bg-transparent" : "bg-background md:bg-transparent",
           )}
         >
           {/* Móvil: una sola card sin línea entre búsqueda y el bloque siguiente */}

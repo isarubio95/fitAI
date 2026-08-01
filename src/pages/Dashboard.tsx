@@ -544,7 +544,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className={cn("flex w-full min-w-0 flex-col bg-background md:max-w-2xl md:mx-auto md:px-8", PAGE_CARD_STACK_GAP)}>
+    <div className="flex w-full min-w-0 flex-1 flex-col bg-card max-md:-mb-24 max-md:pb-24 md:max-w-2xl md:mx-auto md:bg-transparent md:px-8">
       {headerActionsSlot &&
         createPortal(
           <Button
@@ -574,7 +574,7 @@ const Dashboard = () => {
           items={widgetOrder}
           strategy={verticalListSortingStrategy}
         >
-          <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+          <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP)}>
             {widgetOrder.map((id) => (
               <SortableWidget key={id} id={id} isDragMode={isDragMode}>
                 {renderWidget(id)}
