@@ -43,8 +43,7 @@ export default function Community() {
     else openUserProfile(authorId);
   };
 
-  const hasMergedSecondBlock =
-    showSearchPanel || (!showSearchPanel && (loadingFeed || normalizedFeed.length > 0));
+  const hasMergedSecondBlock = !showSearchPanel && (loadingFeed || normalizedFeed.length > 0);
 
   const searchFields = (
     <>
@@ -56,15 +55,12 @@ export default function Community() {
           className="h-12"
         />
       </div>
-      {usernameQuery.trim().length === 0 && (
-        <p className="mt-3 text-sm text-muted-foreground mb-3">Escribe un username para encontrar usuarios.</p>
-      )}
     </>
   );
 
   const searchResultsBody =
     searching ? (
-      <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+      <div className="flex flex-col gap-2">
         {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton key={i} className="h-16 w-full rounded-none border-0 bg-card md:rounded-xl" />
         ))}
@@ -72,7 +68,7 @@ export default function Community() {
     ) : searchResults.length === 0 ? (
       <p className="text-sm text-muted-foreground">No encontramos usuarios con ese nombre.</p>
     ) : (
-      <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+      <div className="flex flex-col gap-2">
         {searchResults.map((p) => {
           const isOwn = p.id === user?.id;
           const isFollowing = followingIds.has(p.id);
@@ -85,7 +81,7 @@ export default function Community() {
           return (
             <div
               key={p.id}
-              className="flex items-center justify-between gap-3 rounded-none border-0 bg-card px-6 py-3 md:rounded-xl"
+              className="flex items-center justify-between gap-3 border-0 p-3 rounded-xl bg-muted"
             >
               <button
                 type="button"
@@ -141,14 +137,38 @@ export default function Community() {
 
   return (
     <>
-      <div className="flex w-full min-w-0 flex-col bg-background md:mx-auto md:max-w-2xl md:px-8">
-        <section className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+      <div
+        className={cn(
+          "flex w-full min-w-0 flex-col md:mx-auto md:max-w-2xl md:px-8",
+          showSearchPanel ? "flex-1 bg-card md:bg-transparent" : "bg-background",
+        )}
+      >
+        <section
+          className={cn(
+            "flex w-full flex-col",
+            PAGE_CARD_STACK_GAP,
+            showSearchPanel ? "flex-1 bg-card md:bg-transparent" : "bg-background",
+          )}
+        >
           {/* Móvil: una sola card sin línea entre búsqueda y el bloque siguiente */}
-          <Card className={cn(communityCardClass, "md:hidden")}>
-            <CardHeader className="px-6 pb-0 pt-8">
+          <Card
+            className={cn(
+              communityCardClass,
+              "md:hidden",
+              showSearchPanel && "flex-1",
+            )}
+          >
+            <CardHeader className="px-6 pb-0 pt-6">
               <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
             </CardHeader>
-            <CardContent className={cn("px-6 pt-4", hasMergedSecondBlock && "pb-4")}>{searchFields}</CardContent>
+            <CardContent
+              className={cn(
+                "px-6 pt-3",
+                showSearchPanel ? "pb-4" : hasMergedSecondBlock && "pb-8",
+              )}
+            >
+              {searchFields}
+            </CardContent>
             {showSearchPanel && (
               <CardContent className="space-y-3 px-6 pb-4 pt-0">{searchResultsBody}</CardContent>
             )}
@@ -170,14 +190,13 @@ export default function Community() {
               <CardHeader className="px-6 pt-8">
                 <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
               </CardHeader>
-              <CardContent className="px-6 pt-4">{searchFields}</CardContent>
+              <CardContent className={cn("px-6 pt-4", showSearchPanel && "pb-4")}>
+                {searchFields}
+              </CardContent>
+              {showSearchPanel && (
+                <CardContent className="space-y-3 px-6 pb-4 pt-0">{searchResultsBody}</CardContent>
+              )}
             </Card>
-
-            {showSearchPanel && (
-              <Card className={communityCardClass}>
-                <CardContent className="space-y-3 px-6 py-4">{searchResultsBody}</CardContent>
-              </Card>
-            )}
 
             {!showSearchPanel && loadingFeed && (
               <Skeleton className="h-28 w-full rounded-3xl border-0 bg-card" />
@@ -202,24 +221,6 @@ export default function Community() {
             <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
               {normalizedFeed.slice(1).map((item) => renderFeedCard(item))}
             </div>
-          )}
-
-          {showSearchPanel && (
-            <>
-              {loadingFeed ? (
-                <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-28 w-full rounded-none border-0 bg-card md:rounded-3xl" />
-                  ))}
-                </div>
-              ) : normalizedFeed.length === 0 ? (
-                <p className="px-6 py-6 text-center text-sm text-muted-foreground">Todavía no hay entrenos publicados.</p>
-              ) : (
-                <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
-                  {normalizedFeed.map((item) => renderFeedCard(item))}
-                </div>
-              )}
-            </>
           )}
         </section>
       </div>
