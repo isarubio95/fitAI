@@ -87,6 +87,9 @@ interface ExerciseDetailSheetProps {
   onOpenChange: (open: boolean) => void;
   currentUserId?: string;
   onEdit?: (exercise: ExerciseDetail) => void;
+  /** Clases extra del panel (p. ej. z-index en drawers anidados). */
+  className?: string;
+  overlayClassName?: string;
 }
 
 const ExerciseDetailSheet = ({
@@ -95,6 +98,8 @@ const ExerciseDetailSheet = ({
   onOpenChange,
   currentUserId,
   onEdit,
+  className,
+  overlayClassName,
 }: ExerciseDetailSheetProps) => {
   if (!exercise) return null;
 
@@ -103,7 +108,11 @@ const ExerciseDetailSheet = ({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent side="bottom" className="h-[85lvh] max-h-[85lvh] rounded-t-2xl p-0">
+      <DrawerContent
+        side="bottom"
+        overlayClassName={overlayClassName}
+        className={cn("h-[85lvh] max-h-[85lvh] rounded-t-2xl bg-card p-0", className)}
+      >
         <ScrollArea className="h-full">
           <div className="flex flex-col">
             {/* Media */}

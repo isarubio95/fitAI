@@ -124,6 +124,8 @@ export const DrawerInContentContext = React.createContext(false);
 
 interface DrawerContentProps extends React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> {
   side?: DrawerSide;
+  /** Clases extra para el overlay (p. ej. z-index en drawers anidados). */
+  overlayClassName?: string;
 }
 
 function isDraggablePillTarget(target: EventTarget | null) {
@@ -133,9 +135,9 @@ function isDraggablePillTarget(target: EventTarget | null) {
 const DrawerContent = React.forwardRef<
   React.ComponentRef<typeof DrawerPrimitive.Content>,
   DrawerContentProps
->(({ className, children, side = "bottom", onPointerDownOutside, onInteractOutside, ...props }, ref) => (
+>(({ className, children, side = "bottom", overlayClassName, onPointerDownOutside, onInteractOutside, ...props }, ref) => (
   <DrawerPortal>
-    <DrawerOverlay />
+    <DrawerOverlay className={overlayClassName} />
     <DrawerPrimitive.Content
       ref={ref}
       onPointerDownOutside={(e) => {

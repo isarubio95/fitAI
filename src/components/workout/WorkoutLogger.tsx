@@ -1510,13 +1510,6 @@ export function WorkoutLogger() {
             </DrawerHeader>
 
             <div className="relative min-h-0 flex-1">
-              {exercisePickerOpen && (
-                <div
-                  aria-hidden
-                  className="absolute inset-0 z-20 bg-black/30 backdrop-blur-[3px] transition-opacity duration-300"
-                  onClick={() => setExercisePickerOpen(false)}
-                />
-              )}
               <div className="min-h-0 h-full overflow-y-auto bg-background">
               <div className={cn("flex flex-col gap-1 bg-background", showFloatingActionBar ? "pb-32" : "pb-[calc(5rem+env(safe-area-inset-bottom,0px))]")}>
                 <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
@@ -1670,7 +1663,7 @@ export function WorkoutLogger() {
                 {!showFloatingActionBar && (
                   <div className="flex justify-center p-6 py-4">
                     <ExerciseSelector
-                      variant="floating"
+                      variant="drawer"
                       open={exercisePickerOpen}
                       onOpenChange={setExercisePickerOpen}
                       onSelect={addExercise}
@@ -1745,7 +1738,7 @@ export function WorkoutLogger() {
                     </Button>
                   )}
                   <ExerciseSelector
-                    variant="floating"
+                    variant="drawer"
                     open={exercisePickerOpen}
                     onOpenChange={setExercisePickerOpen}
                     onSelect={addExercise}
