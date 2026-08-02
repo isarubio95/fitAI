@@ -9,7 +9,7 @@ import { ChartContainer } from "@/components/ui/chart";
 import { Check, Trophy } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
-import { MUSCLE_GROUPS } from "@/constants/muscleGroups";
+import { MUSCLE_GROUPS, MUSCLE_GROUP_ICON_SRC } from "@/constants/muscleGroups";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
 import { useWorkoutById } from "@/hooks/useWorkouts";
 import {
@@ -715,7 +715,7 @@ export function WorkoutDetailsContent({
 
             <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
               <CardContent className="px-6 py-6">
-                <div className="flex items-baseline justify-between gap-3 mb-3">
+                <div className="flex items-baseline justify-between gap-3 mb-4">
                   <div className="font-semibold leading-none">Series por grupo muscular</div>
                   <div className="text-xs text-muted-foreground tabular-nums leading-none">
                     Total: {visibleGroups.reduce((a, g) => a + (groupSets[g] ?? 0), 0)}
@@ -730,9 +730,17 @@ export function WorkoutDetailsContent({
                       const pct = (sets / maxSets) * 100;
                       return (
                         <div key={g} className="space-y-1.5">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium truncate">{g}</span>
-                            <span className="text-muted-foreground tabular-nums">{sets} series</span>
+                          <div className="flex items-end justify-between gap-2 text-xs">
+                            <span className="flex min-w-0 items-end gap-2">
+                              <img
+                                src={MUSCLE_GROUP_ICON_SRC[g]}
+                                alt=""
+                                className="h-7 w-8 shrink-0"
+                                draggable={false}
+                              />
+                              <span className="truncate text-muted-foreground">{g}</span>
+                            </span>
+                            <span className="shrink-0 text-muted-foreground tabular-nums">{sets} series</span>
                           </div>
                           <Progress value={pct} className="h-2.5" />
                         </div>

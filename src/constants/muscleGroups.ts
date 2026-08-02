@@ -14,6 +14,21 @@ export const MUSCLE_GROUPS = {
 
 export type MainMuscleGroup = keyof typeof MUSCLE_GROUPS;
 
+/** Iconos anatómicos (Lyfta) por grupo muscular principal. */
+export const MUSCLE_GROUP_ICON_SRC: Record<MainMuscleGroup, string> = {
+  Pecho: "/iconos/lyfta-muscles/chest.svg",
+  Espalda: "/iconos/lyfta-muscles/back.svg",
+  Hombro: "/iconos/lyfta-muscles/shoulders.svg",
+  Bíceps: "/iconos/lyfta-muscles/biceps.svg",
+  Tríceps: "/iconos/lyfta-muscles/triceps.svg",
+  Antebrazo: "/iconos/lyfta-muscles/forearms.svg",
+  Cuádriceps: "/iconos/lyfta-muscles/quadriceps.svg",
+  Femoral: "/iconos/lyfta-muscles/hamstrings.svg",
+  Glúteo: "/iconos/lyfta-muscles/hips.svg",
+  Pantorrilla: "/iconos/lyfta-muscles/calves.svg",
+  Core: "/iconos/lyfta-muscles/waist.svg",
+};
+
 export type SpecificMuscle = (typeof MUSCLE_GROUPS)[MainMuscleGroup][number];
 
 /** Flat list of all specific muscles */
