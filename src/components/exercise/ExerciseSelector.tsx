@@ -144,7 +144,10 @@ function ExerciseSelectorPanel({
       <Command
         value={highlightedValue}
         onValueChange={onHighlightedValueChange}
-        className={cn("**:[[cmdk-input-wrapper]]:px-6", fillHeight && "min-h-0 flex-1")}
+        className={cn(
+          "rounded-none bg-transparent **:[[cmdk-input-wrapper]]:px-6",
+          fillHeight && "min-h-0 flex-1",
+        )}
       >
         <CommandInput placeholder="Buscar ejercicio..." value={search} onValueChange={onSearchChange} />
         <div className="shrink-0 border-b border-border px-4 py-2">
@@ -164,7 +167,7 @@ function ExerciseSelectorPanel({
                   <img
                     src={MUSCLE_GROUP_ICON_SRC[grupo]}
                     alt=""
-                    className="h-9 w-9 shrink-0"
+                    className="h-11 w-11 shrink-0"
                     draggable={false}
                   />
                   {grupo}
@@ -178,7 +181,7 @@ function ExerciseSelectorPanel({
             <div
               className={cn(
                 "pointer-events-none absolute inset-x-0 bottom-0 z-20 h-12",
-                "bg-linear-to-t from-background/55 via-background/20 to-transparent",
+                "bg-linear-to-t from-card/55 via-card/20 to-transparent",
               )}
               aria-hidden
             />
@@ -440,12 +443,12 @@ export function ExerciseSelector({
           <DrawerContent
             side="bottom"
             overlayClassName="z-[55]"
-            className="z-[60] flex h-[min(90lvh,46rem)] max-h-[90lvh] flex-col overflow-hidden rounded-t-[20px] p-0"
+            className="z-[60] flex h-[min(90lvh,46rem)] max-h-[90lvh] flex-col overflow-hidden rounded-t-[20px] bg-card p-0"
           >
             <DrawerHeader className="shrink-0 border-b border-border bg-card px-6 text-left">
               <DrawerTitle className="text-lg">Agregar ejercicio</DrawerTitle>
             </DrawerHeader>
-            <div className="min-h-0 flex-1 overflow-hidden bg-background">{panel}</div>
+            <div className="min-h-0 flex-1 overflow-hidden bg-card">{panel}</div>
           </DrawerContent>
         </Drawer>
         {detailSheet}
