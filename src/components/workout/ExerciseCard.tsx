@@ -76,7 +76,7 @@ export function ExerciseCard({
   return (
     <div className={wrapperClass}>
       {/* Header */}
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing shrink-0">
             <GripVertical className="h-4 w-4 text-muted-foreground" />
