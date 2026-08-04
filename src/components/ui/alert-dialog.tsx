@@ -54,12 +54,18 @@ const AlertDialogOverlay = React.forwardRef<
 });
 AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
 
+interface AlertDialogContentProps
+  extends React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content> {
+  /** Añade o sustituye clases del overlay (p. ej. z-index por encima de capas full-screen). */
+  overlayClassName?: string;
+}
+
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(({ className, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => (
+  AlertDialogContentProps
+>(({ className, overlayClassName, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => (
   <AlertDialogPortal>
-    <AlertDialogOverlay />
+    <AlertDialogOverlay className={overlayClassName} />
     <AlertDialogPrimitive.Content
       ref={ref}
       className={cn(

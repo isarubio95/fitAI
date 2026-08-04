@@ -1,7 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, Polyline, TileLayer, useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { ArrowLeft, Loader2, MapPin, Pause, Play, Square } from "lucide-react";
 import {
   AlertDialog,
@@ -17,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { LiveCardioMap } from "@/components/cardio/LiveCardioMap";
 import { useToast } from "@/hooks/use-toast";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useCardioGpsRecorder } from "@/hooks/useCardioGpsRecorder";
@@ -38,9 +36,6 @@ import {
 } from "@/lib/liveSessionNotifications";
 import type { CardioDisciplineCode, CardioSportDetailInput, CardioTrackPointInput } from "@/types/cardio";
 
-const OSM_TILE = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const DEFAULT_CENTER: [number, number] = [40.4168, -3.7038];
-
 function formatDuration(totalSec: number) {
   const s = Math.max(0, Math.floor(totalSec));
   const h = Math.floor(s / 3600);
@@ -58,20 +53,6 @@ function formatDistanceM(m: number) {
 function firstNested<T>(value: T | T[] | null | undefined): T | null {
   if (value == null) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
-}
-
-function MapFitBounds({ positions }: { positions: L.LatLngExpression[] }) {
-  const map = useMap();
-  useEffect(() => {
-    if (positions.length === 0) return;
-    if (positions.length === 1) {
-      const p = positions[0] as L.LatLngTuple;
-      map.setView(p, 15);
-      return;
-    }
-    map.fitBounds(L.latLngBounds(positions), { padding: [40, 40], maxZoom: 17 });
-  }, [map, positions]);
-  return null;
 }
 
 export function CardioLiveRecorder() {
@@ -108,10 +89,10 @@ export function CardioLiveRecorder() {
   const { points, distanceM, error: gpsError, denied: gpsDenied, clearDraft } = useCardioGpsRecorder({
     sessionId: open ? sessionId : null,
     recording: gpsRecording,
+    // Muestreo más denso para que el trazado crezca de forma fluida al caminar/correr
+    minIntervalMs: 2000,
+    minDeltaM: 4,
   });
-
-  const linePositions = useMemo((): L.LatLngExpression[] => points.map((p) => [p.lat, p.lng]), [points]);
-  const mapCenter = linePositions.length > 0 ? (linePositions[linePositions.length - 1] as [number, number]) : DEFAULT_CENTER;
 
   useEffect(() => {
     if (!open) {
@@ -415,20 +396,7 @@ export function CardioLiveRecorder() {
                   </Button>
                 </div>
               ) : (
-                <MapContainer
-                  center={mapCenter}
-                  zoom={linePositions.length ? 15 : 12}
-                  className="h-full min-h-55 w-full z-0"
-                  scrollWheelZoom
-                >
-                  <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url={OSM_TILE} />
-                  {linePositions.length > 0 ? (
-                    <>
-                      <Polyline positions={linePositions} pathOptions={{ color: "#0ea5e9", weight: 4, opacity: 0.92 }} />
-                      <MapFitBounds positions={linePositions} />
-                    </>
-                  ) : null}
-                </MapContainer>
+                <LiveCardioMap points={points} followUser className="h-full min-h-55 w-full" />
               )}
             </div>
           ) : (
@@ -464,7 +432,7 @@ export function CardioLiveRecorder() {
                 {paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
                 {paused ? "Reanudar" : "Pausa"}
               </Button>
-              <Button type="button" size="lg" className="min-w-[120px] rounded-full gap-2 bg-sky-600 hover:bg-sky-700 text-white" onClick={onFinishRecording}>
+              <Button type="button" size="lg" className="min-w-30 rounded-full gap-2 bg-sky-600 hover:bg-sky-700 text-white" onClick={onFinishRecording}>
                 <Square className="h-4 w-4 fill-current" />
                 Finalizar
               </Button>
@@ -549,7 +517,8 @@ export function CardioLiveRecorder() {
     </div>
 
     <AlertDialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
-      <AlertDialogContent>
+      {/* Por encima del full-screen del grabador (z-100); el portal default es z-50. */}
+      <AlertDialogContent className="z-110" overlayClassName="z-110">
         <AlertDialogHeader>
           <AlertDialogTitle>¿Descartar este entrenamiento?</AlertDialogTitle>
           <AlertDialogDescription>
