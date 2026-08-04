@@ -31,7 +31,7 @@ const emptyBlock = (): CardioRoutineBlockInput => ({
   fc_objetivo: null,
 });
 
-const sectionCardClass = cn("rounded-none border border-border bg-card p-4 space-y-4");
+const sectionCardClass = cn("space-y-4 rounded-xl border border-border/60 bg-secondary/40 p-4");
 
 export function CardioRoutineForm({ open, onOpenChange, initial }: Props) {
   const [nombre, setNombre] = useState("");
@@ -83,11 +83,11 @@ export function CardioRoutineForm({ open, onOpenChange, initial }: Props) {
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         side="bottom"
-        className="h-[92lvh] max-h-[92lvh] overflow-y-auto rounded-t-[20px] p-0"
+        className="flex h-[92lvh] max-h-[92lvh] min-h-0 flex-col overflow-hidden rounded-t-[20px] bg-card p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
-        <DrawerHeader className="sticky top-0 z-10 border-b border-border bg-card p-4">
+        <DrawerHeader className="shrink-0 border-b border-border bg-card p-4">
           <div className="flex items-center justify-between gap-3">
             <DrawerTitle className="text-lg">{title}</DrawerTitle>
             <Button type="button" size="sm" onClick={save} disabled={upsert.isPending}>
@@ -97,6 +97,7 @@ export function CardioRoutineForm({ open, onOpenChange, initial }: Props) {
           </div>
         </DrawerHeader>
 
+        <div className="min-h-0 flex-1 overflow-y-auto bg-card">
         <div className={cn("space-y-6 p-4", drawerSafeAreaBottom)}>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5">
@@ -133,7 +134,7 @@ export function CardioRoutineForm({ open, onOpenChange, initial }: Props) {
               </Button>
             </div>
             {bloques.map((b, idx) => (
-              <div key={idx} className={cn(sectionCardClass, "space-y-4")}>
+              <div key={idx} className={sectionCardClass}>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   <div className="col-span-2 space-y-1.5 sm:col-span-1">
                     <Label htmlFor={`rb-${idx}-tipo`}>Tipo</Label>
@@ -212,6 +213,7 @@ export function CardioRoutineForm({ open, onOpenChange, initial }: Props) {
               </div>
             ))}
           </div>
+        </div>
         </div>
       </DrawerContent>
     </Drawer>

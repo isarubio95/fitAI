@@ -1,11 +1,11 @@
 export type WorkoutTimeOfDay = "madrugada" | "manana" | "mediodia" | "tarde" | "noche";
 
-const TITLES: Record<WorkoutTimeOfDay, string> = {
-  madrugada: "Entrenamiento de madrugada",
-  manana: "Entrenamiento de mañana",
-  mediodia: "Entrenamiento al mediodía",
-  tarde: "Entrenamiento de tarde",
-  noche: "Entrenamiento de noche",
+const TIME_SUFFIX: Record<WorkoutTimeOfDay, string> = {
+  madrugada: "de madrugada",
+  manana: "de mañana",
+  mediodia: "al mediodía",
+  tarde: "de tarde",
+  noche: "de noche",
 };
 
 /** Franja horaria local (0–23) para el título por defecto del entrenamiento. */
@@ -17,7 +17,17 @@ export function workoutTimeOfDay(hour: number): WorkoutTimeOfDay {
   return "noche";
 }
 
+function titleWithTimeOfDay(base: string, at: Date = new Date()): string {
+  return `${base} ${TIME_SUFFIX[workoutTimeOfDay(at.getHours())]}`;
+}
+
 /** Título sugerido según la hora local en la que se inicia el entrenamiento. */
 export function getDefaultWorkoutTitle(at: Date = new Date()): string {
-  return TITLES[workoutTimeOfDay(at.getHours())];
+  return titleWithTimeOfDay("Entrenamiento", at);
+}
+
+/** Título sugerido para cardio manual según disciplina y franja horaria. */
+export function getDefaultCardioTitle(disciplineName?: string | null, at: Date = new Date()): string {
+  const base = disciplineName?.trim() || "Cardio";
+  return titleWithTimeOfDay(base, at);
 }

@@ -12,6 +12,7 @@ import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useCardioGpsRecorder } from "@/hooks/useCardioGpsRecorder";
 import { useCardioSessionById, useUpsertCardioSession } from "@/hooks/useCardioSessions";
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
+import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
 import { cn } from "@/lib/utils";
 import {
   PILL_CIRCLE_DURATION_MS,
@@ -150,8 +151,11 @@ export function CardioLiveRecorder() {
   }, [pillOrigin, pillCirclePhase, closeLiveRecording]);
 
   useEffect(() => {
-    if (sessionData?.titulo) setSummaryTitulo((t) => t || sessionData.titulo || "");
-  }, [sessionData?.titulo]);
+    if (!sessionData) return;
+    const startedAt = sessionData.fecha_inicio ? new Date(sessionData.fecha_inicio) : new Date();
+    const fallback = getDefaultCardioTitle(discipline?.nombre, startedAt);
+    setSummaryTitulo((t) => t || sessionData.titulo?.trim() || fallback);
+  }, [sessionData, discipline?.nombre]);
 
   useEffect(() => {
     if (step !== "recording") return;
@@ -250,11 +254,10 @@ export function CardioLiveRecorder() {
 
   const onSaveSummary = async () => {
     if (!sessionId || !sessionData?.fecha_inicio) return;
-    const titulo = summaryTitulo.trim();
-    if (!titulo) {
-      toast({ title: "Añade un título", variant: "destructive" });
-      return;
-    }
+    const startedAt = new Date(sessionData.fecha_inicio);
+    const titulo =
+      summaryTitulo.trim() ||
+      getDefaultCardioTitle(discipline?.nombre, Number.isNaN(startedAt.getTime()) ? undefined : startedAt);
 
     const trackPoints: CardioTrackPointInput[] = points.map((p, idx) => ({
       orden: idx,
@@ -293,7 +296,17 @@ export function CardioLiveRecorder() {
           cardio_disciplina_id: sessionData.cardio_disciplina_id ?? null,
           sport_detail: buildSportDetail(),
           track,
-          bloques: [],
+          bloques: [
+            {
+              tipo_bloque: "work",
+              distancia_m: Math.round(dist * 10) / 10,
+              duracion_seg: dur,
+              elevacion_m: null,
+              fc_media: null,
+              fc_max: null,
+              calorias: null,
+            },
+          ],
           es_publica: esPublica,
         },
       });
@@ -327,7 +340,7 @@ export function CardioLiveRecorder() {
     : "Cardio";
 
   return (
-    <div className="fixed inset-0 z-100 flex flex-col bg-background" {...pillCircleProps}>
+    <div className="fixed inset-0 z-100 flex flex-col bg-card" {...pillCircleProps}>
       {loading ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -335,7 +348,7 @@ export function CardioLiveRecorder() {
         </div>
       ) : (
         <>
-      <header className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+      <header className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <Button type="button" size="icon" variant="ghost" className="shrink-0 rounded-full" onClick={requestClose} aria-label="Minimizar">
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -423,7 +436,7 @@ export function CardioLiveRecorder() {
           </div>
         </>
       ) : (
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className="rounded-2xl border border-border bg-muted/30 p-4">
             <p className="text-xs font-medium text-muted-foreground">Resumen</p>
             <p className="mt-2 font-mono text-lg tabular-nums">
@@ -436,7 +449,7 @@ export function CardioLiveRecorder() {
 
           <div className="space-y-2">
             <Label htmlFor="cardio-live-titulo">Título</Label>
-            <Input id="cardio-live-titulo" value={summaryTitulo} onChange={(e) => setSummaryTitulo(e.target.value)} className="h-12 rounded-xl" placeholder="Ej. Rodaje suave" />
+            <Input id="cardio-live-titulo" value={summaryTitulo} onChange={(e) => setSummaryTitulo(e.target.value)} className="h-12 rounded-xl" placeholder="Ej. Ciclismo de tarde" />
           </div>
 
           <div className="space-y-2">

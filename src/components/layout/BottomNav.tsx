@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { Home, BarChart3, ClipboardList, Scale, Plus, Users } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
+import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useStartCardioLiveSession, useCardioDisciplinas } from "@/hooks/useCardioSessions";
@@ -145,7 +144,7 @@ export function BottomNav() {
         isConfirmPending={startCardioLive.isPending}
         onConfirm={async (disciplineId) => {
           const d = cardioDisciplinas?.find((x) => x.id === disciplineId);
-          const titulo = `${(d?.nombre ?? "Cardio").trim()} · ${format(new Date(), "d MMM HH:mm", { locale: es })}`;
+          const titulo = getDefaultCardioTitle(d?.nombre);
           try {
             const id = await startCardioLive.mutateAsync({
               cardio_disciplina_id: disciplineId,
@@ -153,7 +152,7 @@ export function BottomNav() {
             });
             void startLiveCardio({
               sessionId: id,
-              title: (d?.nombre ?? "Cardio").trim() || "Cardio",
+              title: titulo,
               startedAtMs: Date.now(),
               wantsLocation: cardioDisciplineUsesGpsMap(d?.codigo ?? null),
             });
