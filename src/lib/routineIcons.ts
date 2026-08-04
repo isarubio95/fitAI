@@ -12,7 +12,7 @@ import {
   HeartPulse,
   BicepsFlexed,
   CircleDot,
-  LayoutGrid,
+  PersonStanding,
 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -48,7 +48,7 @@ export const ROUTINE_ICON_OPTIONS: Array<{ key: RoutineIconKey; label: string; I
   { key: "arm", label: "Brazo", Icon: BicepsFlexed },
   { key: "leg", label: "Pierna", Icon: LegRoutineIcon },
   { key: "abs", label: "Abdomen", Icon: CircleDot },
-  { key: "fullBody", label: "Cuerpo entero", Icon: LayoutGrid },
+  { key: "fullBody", label: "Cuerpo entero", Icon: PersonStanding },
 ];
 
 const VALID_ICON_KEYS = new Set<string>(ROUTINE_ICON_OPTIONS.map((opt) => opt.key));
