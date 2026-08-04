@@ -10,6 +10,7 @@ import {
   startOfDay,
   format,
   startOfMonth,
+  isSameMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Pencil, Trash2, Eye } from "lucide-react";
@@ -20,6 +21,7 @@ import {
   resolveCalendarDayDisplay,
 } from "@/lib/calendarDayDisplay";
 import { pendingPlannedForDay } from "@/lib/plannedRoutineVisibility";
+import { resolveCardioSessionIcon } from "@/lib/cardioIcons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,16 +98,52 @@ export function WeekCalendar({
     () => startOfWeek(selectedDate ?? displayWeekStart ?? new Date(), { weekStartsOn: 1 }),
     [selectedDate, displayWeekStart],
   );
+  // Clave estable: al seleccionar un día se recrea el Date de weekStart aunque sea la misma
+  // semana; si el efecto dependiera del objeto, cerraría el panel al instante.
+  const weekStartKey = format(weekStart, "yyyy-MM-dd");
+  const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
 
-  const monthForWeek = useMemo(() => startOfMonth(weekStart), [weekStart]);
+  // Una semana puede cruzar dos meses: hay que cargar ambos para no perder sesiones.
+  const monthA = useMemo(() => startOfMonth(weekStart), [weekStart]);
+  const monthB = useMemo(() => startOfMonth(weekEnd), [weekEnd]);
+  const spansTwoMonths = !isSameMonth(weekStart, weekEnd);
 
-  const { data: monthWorkouts, isPending: workoutsPending } = useMonthWorkouts(monthForWeek);
-  const { data: monthCardioSessions, isPending: cardioPending } = useMonthCardioSessions(monthForWeek);
-  const { data: planned, isPending: plannedPending } = usePlannedRoutines(
-    weekStart,
-    addDays(weekStart, 6),
-  );
-  const calendarDataReady = !workoutsPending && !cardioPending && !plannedPending;
+  const { data: workoutsMonthA, isPending: workoutsPendingA } = useMonthWorkouts(monthA);
+  const { data: workoutsMonthB, isPending: workoutsPendingB } = useMonthWorkouts(monthB);
+  const { data: cardioMonthA, isPending: cardioPendingA } = useMonthCardioSessions(monthA);
+  const { data: cardioMonthB, isPending: cardioPendingB } = useMonthCardioSessions(monthB);
+  const { data: planned, isPending: plannedPending } = usePlannedRoutines(weekStart, weekEnd);
+
+  const monthWorkouts = useMemo(() => {
+    if (!spansTwoMonths) return workoutsMonthA ?? [];
+    const seen = new Set<string>();
+    const merged: ActividadWithDetails[] = [];
+    for (const w of [...(workoutsMonthA ?? []), ...(workoutsMonthB ?? [])]) {
+      if (seen.has(w.id)) continue;
+      seen.add(w.id);
+      merged.push(w);
+    }
+    return merged;
+  }, [spansTwoMonths, workoutsMonthA, workoutsMonthB]);
+
+  const monthCardioSessions = useMemo(() => {
+    if (!spansTwoMonths) return cardioMonthA ?? [];
+    const seen = new Set<string>();
+    const merged: CardioSesion[] = [];
+    for (const s of [...(cardioMonthA ?? []), ...(cardioMonthB ?? [])]) {
+      if (seen.has(s.id)) continue;
+      seen.add(s.id);
+      merged.push(s);
+    }
+    return merged;
+  }, [spansTwoMonths, cardioMonthA, cardioMonthB]);
+
+  const calendarDataReady =
+    !workoutsPendingA &&
+    !workoutsPendingB &&
+    !cardioPendingA &&
+    !cardioPendingB &&
+    !plannedPending;
   const deletePlan = useDeletePlannedRoutine();
   const deleteWorkout = useDeleteWorkout();
   const deleteCardioSession = useDeleteCardioSession();
@@ -153,17 +191,20 @@ export function WeekCalendar({
 
   const cardioByDay = useMemo(() => {
     const map = new Map<string, CardioSesion[]>();
+    const weekDateKeys = new Set(days.map((d) => format(d, "yyyy-MM-dd")));
+
     (monthCardioSessions ?? []).forEach((s) => {
       const key = format(new Date(s.fecha_inicio), "yyyy-MM-dd");
+      if (!weekDateKeys.has(key)) return;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(s);
     });
     return map;
-  }, [monthCardioSessions]);
+  }, [monthCardioSessions, days]);
 
   useEffect(() => {
     setExpandedDayKey(null);
-  }, [weekStart]);
+  }, [weekStartKey]);
 
   useEffect(() => {
     if (!editPlanned) return;
@@ -211,8 +252,8 @@ export function WeekCalendar({
       </div>
 
       {/* Week row */}
-      <div className="bg-transparent rounded-b-xl overflow-hidden px-2">
-        <div className="grid grid-cols-7">
+      <div className="bg-transparent rounded-b-xl overflow-hidden">
+        <div className="grid grid-cols-7 px-2">
           {days.map((day, colIndex) => {
             const today = isToday(day);
             const key = format(day, "yyyy-MM-dd");
@@ -304,9 +345,9 @@ export function WeekCalendar({
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-              className="bg-background"
+              className="w-full bg-background"
             >
-              <div className="px-4 py-3">
+              <div className="px-6 py-3">
                 <p className="text-xs font-medium text-muted-foreground mb-2">
                   {format(expandedDate, "d MMM yyyy", { locale: es })}
                 </p>
@@ -451,16 +492,21 @@ export function WeekCalendar({
                       Cardio realizado
                     </p>
                     <div className="space-y-1.5">
-                      {expandedCardio.map((s) => (
+                      {expandedCardio.map((s) => {
+                        const CardioIcon = resolveCardioSessionIcon(s);
+                        return (
                         <div
                           key={s.id}
                           className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-blue-500/65 bg-card py-2 pr-2 pl-3"
                         >
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium truncate">{s.titulo}</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {getCardioSessionLabel(s)}
-                            </p>
+                          <div className="min-w-0 flex-1 flex items-center gap-2.5">
+                            <CardioIcon className="h-4 w-4 shrink-0 text-blue-500" strokeWidth={1.75} />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{s.titulo}</p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {getCardioSessionLabel(s)}
+                              </p>
+                            </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             {onCardioClick && (
@@ -485,7 +531,8 @@ export function WeekCalendar({
                             </Button>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

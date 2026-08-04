@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import type { LucideIcon } from "lucide-react";
-import { Activity, Bike, CircleEllipsis, Footprints, Loader2, Ship, Waves } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCardioDisciplinas } from "@/hooks/useCardioSessions";
+import { iconForCardioDisciplineCodigo } from "@/lib/cardioIcons";
 import { cn } from "@/lib/utils";
 
 const ITEM_HEIGHT_PX = 48;
@@ -23,23 +23,6 @@ type Props = {
   /** Deshabilita «Continuar» mientras se crea la sesión en vivo. */
   isConfirmPending?: boolean;
 };
-
-function iconForDisciplineCodigo(codigo: string): LucideIcon {
-  switch (codigo) {
-    case "running":
-      return Activity;
-    case "cycling":
-      return Bike;
-    case "walking":
-      return Footprints;
-    case "rowing":
-      return Ship;
-    case "swimming":
-      return Waves;
-    default:
-      return CircleEllipsis;
-  }
-}
 
 export function CardioTypePickerDialog({ open, onOpenChange, onConfirm, onConfirmManual, isConfirmPending }: Props) {
   const { data: disciplinas, isLoading } = useCardioDisciplinas();
@@ -157,7 +140,7 @@ export function CardioTypePickerDialog({ open, onOpenChange, onConfirm, onConfir
         onOpenChange(next);
       }}
     >
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader className="space-y-2 text-center sm:text-center">
           <DialogTitle className="text-base font-semibold tracking-tight">Tipo de cardio</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -213,7 +196,7 @@ export function CardioTypePickerDialog({ open, onOpenChange, onConfirm, onConfir
               <div style={{ paddingTop: padY, paddingBottom: padY }}>
                 {Array.from({ length: WHEEL_COPIES * n }, (_, vi) => {
                   const d = list[vi % n];
-                  const Icon = iconForDisciplineCodigo(d.codigo);
+                  const Icon = iconForCardioDisciplineCodigo(d.codigo);
                   const isActive = vi === centerVirtualRow;
                   return (
                     <div

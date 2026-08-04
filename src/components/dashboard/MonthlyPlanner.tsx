@@ -56,6 +56,7 @@ import {
   resolveCalendarDayDisplay,
 } from "@/lib/calendarDayDisplay";
 import { pendingPlannedForDay } from "@/lib/plannedRoutineVisibility";
+import { resolveCardioSessionIcon } from "@/lib/cardioIcons";
 import { cn } from "@/lib/utils";
 
 type CardioSessionLabelData = {
@@ -232,10 +233,10 @@ export function MonthlyPlanner({
       </div>
 
       {/* Grid */}
-      <div className="bg-transparent rounded-b-xl overflow-hidden px-2">
+      <div className="bg-transparent rounded-b-xl overflow-hidden">
         {weeks.map((weekDays, weekIndex) => (
           <div key={weekIndex}>
-            <div className="grid grid-cols-7">
+            <div className="grid grid-cols-7 px-2">
               {weekDays.map((day, colIndex) => {
                 const i = weekIndex * 7 + colIndex;
                 const inMonth = isSameMonth(day, month);
@@ -350,9 +351,9 @@ export function MonthlyPlanner({
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-                      className="bg-background"
+                      className="w-full bg-background"
                     >
-                      <div className="px-4 py-3">
+                      <div className="px-6 py-3">
                         <p className="text-xs font-medium text-muted-foreground mb-2">
                           {format(expandedDate, "d MMM yyyy", { locale: es })}
                         </p>
@@ -500,16 +501,21 @@ export function MonthlyPlanner({
                               Cardio realizado
                             </p>
                             <div className="space-y-1.5">
-                              {expandedCardio.map((s) => (
+                              {expandedCardio.map((s) => {
+                                const CardioIcon = resolveCardioSessionIcon(s);
+                                return (
                                 <div
                                   key={s.id}
                                   className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-blue-500/65 bg-card py-2 pr-2 pl-3"
                                 >
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-medium truncate">{s.titulo}</p>
-                                    <p className="text-[11px] text-muted-foreground">
-                                      {getCardioSessionLabel(s)}
-                                    </p>
+                                  <div className="min-w-0 flex-1 flex items-center gap-2.5">
+                                    <CardioIcon className="h-4 w-4 shrink-0 text-blue-500" strokeWidth={1.75} />
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-medium truncate">{s.titulo}</p>
+                                      <p className="text-[11px] text-muted-foreground">
+                                        {getCardioSessionLabel(s)}
+                                      </p>
+                                    </div>
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
                                     {onCardioClick && (
@@ -534,7 +540,8 @@ export function MonthlyPlanner({
                                     </Button>
                                   </div>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         )}

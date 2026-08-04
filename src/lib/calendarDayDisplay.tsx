@@ -1,14 +1,15 @@
 import { format } from "date-fns";
 import type { ComponentType, SVGProps } from "react";
 import type { LucideIcon } from "lucide-react";
-import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import {
-  DEFAULT_ROUTINE_ICON_KEY,
+  resolveCardioSessionIcon,
+  type CardioSessionIconSource,
+} from "@/lib/cardioIcons";
+import {
   resolveRoutineIcon,
   resolveWorkoutIconKey,
 } from "@/lib/routineIcons";
 import type { ActividadWithDetails } from "@/types/workout";
-import type { CardioSesion } from "@/types/cardio";
 import type { PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import type { RutinaWithDetails } from "@/types/routine";
 import { cn } from "@/lib/utils";
@@ -19,7 +20,7 @@ export type CalendarDayDisplay =
   | { type: "number" }
   | { type: "loading" }
   | { type: "routine"; Icon: IconComponent }
-  | { type: "cardio"; Icon: typeof CardioWorkoutIcon };
+  | { type: "cardio"; Icon: IconComponent };
 
 export type CalendarDayActivityFlags = {
   isTrained: boolean;
@@ -96,7 +97,7 @@ export function getCalendarDayCircleClasses({
 export function resolveCalendarDayDisplay(
   dayWorkouts: ActividadWithDetails[],
   dayPlanned: PlannedRoutine[],
-  dayCardio: CardioSesion[],
+  dayCardio: CardioSessionIconSource[],
   routines?: RutinaWithDetails[],
   dataReady = true,
 ): CalendarDayDisplay {
@@ -116,7 +117,7 @@ export function resolveCalendarDayDisplay(
   }
 
   if (dayCardio.length > 0) {
-    return { type: "cardio", Icon: CardioWorkoutIcon };
+    return { type: "cardio", Icon: resolveCardioSessionIcon(dayCardio[0]) };
   }
 
   if (dayPlanned.length > 0) {
