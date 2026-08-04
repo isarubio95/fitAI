@@ -19,7 +19,7 @@ FitAI centraliza el ciclo completo de entrenamiento:
 - **UI System:** Tailwind CSS 4 + componentes Radix/shadcn + utilidades propias
 - **Animaciones / UX:** Framer Motion, Vaul (drawers)
 - **Backend BaaS:** Supabase (Auth, Postgres, Edge Functions)
-- **Mapas / GPS:** Leaflet + React Leaflet
+- **Mapas / GPS:** MapLibre GL + tiles vectoriales de OpenFreeMap (estilo oscuro propio)
 - **Testing:** Vitest + Testing Library (jsdom)
 - **PWA:** `vite-plugin-pwa`
 

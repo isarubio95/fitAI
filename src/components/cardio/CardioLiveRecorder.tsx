@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Bluetooth, Heart, Loader2, MapPin, Pause, Play, Square } from "lucide-react";
 import {
   AlertDialog,
@@ -15,7 +15,6 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LiveCardioMap } from "@/components/cardio/LiveCardioMap";
 import { useToast } from "@/hooks/use-toast";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useCardioGpsRecorder } from "@/hooks/useCardioGpsRecorder";
@@ -39,6 +38,11 @@ import {
   updateLiveCardio,
 } from "@/lib/liveSessionNotifications";
 import type { CardioDisciplineCode, CardioSportDetailInput, CardioTrackPointInput } from "@/types/cardio";
+
+/** MapLibre solo se descarga cuando la disciplina usa mapa GPS. */
+const LiveCardioMap = lazy(() =>
+  import("@/components/cardio/LiveCardioMap").then((m) => ({ default: m.LiveCardioMap })),
+);
 
 function formatDuration(totalSec: number) {
   const s = Math.max(0, Math.floor(totalSec));
@@ -487,7 +491,9 @@ export function CardioLiveRecorder() {
                   </Button>
                 </div>
               ) : (
-                <LiveCardioMap points={points} followUser className="h-full min-h-55 w-full" />
+                <Suspense fallback={<div className="h-full min-h-55 w-full bg-[#23292b]" />}>
+                  <LiveCardioMap points={points} followUser className="h-full min-h-55 w-full" />
+                </Suspense>
               )}
             </div>
           ) : (

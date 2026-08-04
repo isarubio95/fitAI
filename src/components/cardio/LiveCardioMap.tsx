@@ -1,14 +1,24 @@
-import { useEffect, useMemo, useRef } from "react";
-import { Circle, CircleMarker, MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  AttributionControl,
+  Map as MapLibreMap,
+  Marker,
+  setWorkerUrl,
+  type GeoJSONSource,
+} from "maplibre-gl";
+import type { Feature, FeatureCollection } from "geojson";
+import { LocateFixed } from "lucide-react";
+import "maplibre-gl/dist/maplibre-gl.css";
+/** Vite empaqueta el worker + shared chunk; sin esto el mapa queda en blanco (404 del worker). */
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { CardioGpsPoint } from "@/hooks/useCardioGpsRecorder";
+import { MAP_COLORS, loadStravaDarkMapStyle } from "@/lib/stravaDarkMapStyle";
+import { cn } from "@/lib/utils";
 
-/** Carto Voyager — aspecto limpio similar a Strava (calles + terreno suave). */
-const STRAVA_STYLE_TILE =
-  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-const STRAVA_ORANGE = "#FC4C02";
-const POSITION_BLUE = "#2D8CFF";
+setWorkerUrl(maplibreWorkerUrl);
+
+const DEFAULT_CENTER: [number, number] = [-3.7038, 40.4168];
+const FOLLOW_ZOOM = 16;
 
 type Props = {
   points: CardioGpsPoint[];
@@ -17,99 +27,223 @@ type Props = {
   followUser?: boolean;
 };
 
-function MapInvalidateSize() {
-  const map = useMap();
-  useEffect(() => {
-    const t = window.setTimeout(() => map.invalidateSize(), 80);
-    return () => window.clearTimeout(t);
-  }, [map]);
-  return null;
+function lineFeature(coordinates: [number, number][]): Feature {
+  return { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates } };
 }
 
-/** Sigue al usuario sin reencuadrar todo el trayecto (comportamiento tipo Strava live). */
-function MapFollowUser({
-  positions,
-  enabled,
-}: {
-  positions: L.LatLngExpression[];
-  enabled: boolean;
-}) {
-  const map = useMap();
-  const lastLenRef = useRef(0);
-  const initializedRef = useRef(false);
-
-  useEffect(() => {
-    if (!enabled || positions.length === 0) return;
-    const last = positions[positions.length - 1] as L.LatLngTuple;
-    const grew = positions.length > lastLenRef.current;
-    lastLenRef.current = positions.length;
-
-    if (!initializedRef.current) {
-      initializedRef.current = true;
-      map.setView(last, 16, { animate: false });
-      return;
-    }
-
-    if (grew) {
-      map.panTo(last, { animate: true, duration: 0.45 });
-    }
-  }, [map, positions, enabled]);
-
-  return null;
+function pointFeature(coordinates: [number, number] | null): FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: coordinates
+      ? [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates } }]
+      : [],
+  };
 }
 
-function CurrentPositionMarker({ lat, lng }: { lat: number; lng: number }) {
-  const icon = useMemo(
-    () =>
-      L.divIcon({
-        className: "live-cardio-pos-icon",
-        html: `<span class="live-cardio-pos-pulse"></span><span class="live-cardio-pos-dot"></span>`,
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
-      }),
-    [],
-  );
+function addRouteLayers(map: MapLibreMap) {
+  map.addSource("cardio-route", { type: "geojson", data: lineFeature([]) });
+  map.addSource("cardio-start", { type: "geojson", data: pointFeature(null) });
 
+  map.addLayer({
+    id: "cardio-route-casing",
+    type: "line",
+    source: "cardio-route",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": MAP_COLORS.routeCasing,
+      "line-blur": 0.6,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 4, 16, 8, 20, 12],
+    },
+  });
+
+  map.addLayer({
+    id: "cardio-route-line",
+    type: "line",
+    source: "cardio-route",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": MAP_COLORS.route,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 2.5, 16, 5, 20, 8],
+    },
+  });
+
+  map.addLayer({
+    id: "cardio-start-dot",
+    type: "circle",
+    source: "cardio-start",
+    paint: {
+      "circle-radius": 5.5,
+      "circle-color": MAP_COLORS.start,
+      "circle-stroke-width": 2,
+      "circle-stroke-color": "#ffffff",
+    },
+  });
+}
+
+function RecenterControl({ active, onRecenter }: { active: boolean; onRecenter: () => void }) {
   return (
-    <>
-      <Circle
-        center={[lat, lng]}
-        radius={22}
-        pathOptions={{
-          color: POSITION_BLUE,
-          weight: 1,
-          opacity: 0.3,
-          fillColor: POSITION_BLUE,
-          fillOpacity: 0.1,
-        }}
-      />
-      <Marker position={[lat, lng]} icon={icon} interactive={false} zIndexOffset={1000} />
-    </>
+    <button
+      type="button"
+      onClick={onRecenter}
+      aria-label="Centrar en mi posición"
+      className={cn(
+        "absolute right-3 bottom-3 z-10 flex h-11 w-11 items-center justify-center rounded-full",
+        "border border-white/15 bg-[#1a1f21]/90 shadow-lg backdrop-blur-sm",
+        "transition-colors active:scale-95",
+        active ? "text-[#2D8CFF]" : "text-white/85 hover:text-white",
+      )}
+    >
+      <LocateFixed className="h-5 w-5" strokeWidth={2.25} />
+    </button>
   );
 }
 
 export function LiveCardioMap({ points, className, followUser = true }: Props) {
-  const linePositions = useMemo(
-    (): L.LatLngExpression[] => points.map((p) => [p.lat, p.lng]),
-    [points],
-  );
-  const last = points.length > 0 ? points[points.length - 1] : null;
-  const start = points.length > 0 ? points[0] : null;
-  const center: [number, number] = last ? [last.lat, last.lng] : [40.4168, -3.7038];
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
+  const markerRef = useRef<Marker | null>(null);
+  const centeredOnceRef = useRef(false);
+  const [ready, setReady] = useState(false);
+  const [following, setFollowing] = useState(followUser);
+
+  const initialViewRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
+  if (initialViewRef.current === null) {
+    const last = points.length > 0 ? points[points.length - 1] : null;
+    initialViewRef.current = last
+      ? { center: [last.lng, last.lat], zoom: FOLLOW_ZOOM }
+      : { center: DEFAULT_CENTER, zoom: 12 };
+  }
+
+  useEffect(() => {
+    setFollowing(followUser);
+  }, [followUser]);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    let cancelled = false;
+
+    void loadStravaDarkMapStyle().then((style) => {
+      const container = containerRef.current;
+      if (cancelled || !container) return;
+
+      const map = new MapLibreMap({
+        container,
+        style,
+        center: initialViewRef.current!.center,
+        zoom: initialViewRef.current!.zoom,
+        maxZoom: 19,
+        attributionControl: false,
+        dragRotate: false,
+        pitchWithRotate: false,
+      });
+      mapRef.current = map;
+      map.touchZoomRotate.disableRotation();
+      map.addControl(
+        new AttributionControl({ compact: true }),
+        "bottom-left",
+      );
+
+      map.on("dragstart", () => setFollowing(false));
+      map.on("zoomstart", (e) => {
+        // Ignora el zoom programático de easeTo/jumpTo: solo gestos del usuario.
+        if ((e as { originalEvent?: Event }).originalEvent) setFollowing(false);
+      });
+      map.on("load", () => {
+        if (cancelled) return;
+        addRouteLayers(map);
+        setReady(true);
+        map.resize();
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      markerRef.current?.remove();
+      markerRef.current = null;
+      mapRef.current?.remove();
+      mapRef.current = null;
+      centeredOnceRef.current = false;
+      setReady(false);
+    };
+  }, []);
+
+  // El contenedor se monta dentro de paneles con transición: recalcula tamaño.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => mapRef.current?.resize());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const coordinates = points.map((p) => [p.lng, p.lat] as [number, number]);
+    (map.getSource("cardio-route") as GeoJSONSource | undefined)?.setData(
+      lineFeature(coordinates),
+    );
+    (map.getSource("cardio-start") as GeoJSONSource | undefined)?.setData(
+      pointFeature(coordinates.length > 1 ? coordinates[0] : null),
+    );
+  }, [points, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || points.length === 0) return;
+    const last = points[points.length - 1];
+    const target: [number, number] = [last.lng, last.lat];
+
+    if (markerRef.current) {
+      markerRef.current.setLngLat(target);
+    } else {
+      const element = document.createElement("div");
+      element.className = "live-cardio-pos";
+      element.innerHTML =
+        '<span class="live-cardio-pos-pulse"></span><span class="live-cardio-pos-dot"></span>';
+      markerRef.current = new Marker({ element }).setLngLat(target).addTo(map);
+    }
+  }, [points, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !following || points.length === 0) return;
+    const last = points[points.length - 1];
+    const target: [number, number] = [last.lng, last.lat];
+
+    if (!centeredOnceRef.current) {
+      centeredOnceRef.current = true;
+      map.jumpTo({ center: target, zoom: Math.max(map.getZoom(), FOLLOW_ZOOM) });
+      return;
+    }
+    map.easeTo({ center: target, duration: 450 });
+  }, [points, ready, following]);
+
+  const onRecenter = useCallback(() => {
+    setFollowing(true);
+    const map = mapRef.current;
+    const last = points.length > 0 ? points[points.length - 1] : null;
+    if (!map || !last) return;
+    centeredOnceRef.current = true;
+    map.easeTo({ center: [last.lng, last.lat], zoom: FOLLOW_ZOOM, duration: 500 });
+  }, [points]);
 
   return (
-    <div className={className}>
+    <div className={cn("relative overflow-hidden", className)}>
       <style>{`
-        .live-cardio-pos-icon {
-          background: transparent !important;
-          border: none !important;
+        .live-cardio-map-canvas { background: ${MAP_COLORS.land}; }
+        .live-cardio-map-canvas .maplibregl-canvas { outline: none; }
+        .live-cardio-pos {
+          position: relative;
+          width: 28px;
+          height: 28px;
         }
         .live-cardio-pos-pulse {
           position: absolute;
           inset: 0;
           border-radius: 9999px;
-          background: ${POSITION_BLUE};
-          opacity: 0.35;
+          background: ${MAP_COLORS.position};
+          opacity: 0.4;
           animation: live-cardio-pulse 1.6s ease-out infinite;
         }
         .live-cardio-pos-dot {
@@ -120,77 +254,38 @@ export function LiveCardioMap({ points, className, followUser = true }: Props) {
           height: 14px;
           margin: -7px 0 0 -7px;
           border-radius: 9999px;
-          background: ${POSITION_BLUE};
+          background: ${MAP_COLORS.position};
           border: 3px solid #fff;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+          box-shadow: 0 1px 6px rgba(0,0,0,0.55);
         }
         @keyframes live-cardio-pulse {
-          0% { transform: scale(0.45); opacity: 0.45; }
+          0% { transform: scale(0.45); opacity: 0.5; }
           70% { transform: scale(1.15); opacity: 0; }
           100% { transform: scale(1.15); opacity: 0; }
         }
-        .leaflet-container.live-cardio-map {
-          background: #e8eef2;
-          font: inherit;
+        .live-cardio-map-canvas .maplibregl-ctrl-bottom-left { margin: 0; }
+        .live-cardio-map-canvas .maplibregl-ctrl-attrib {
+          background: rgba(0, 0, 0, 0.4) !important;
+          color: rgba(255, 255, 255, 0.4);
+          font-size: 9px;
+          line-height: 1.3;
+          padding: 1px 5px;
+          border-radius: 0 6px 0 0;
+          box-shadow: none;
+        }
+        .live-cardio-map-canvas .maplibregl-ctrl-attrib a { color: inherit; text-decoration: none; }
+        .live-cardio-map-canvas .maplibregl-ctrl-attrib-button {
+          background-color: rgba(0, 0, 0, 0.4);
+          width: 20px;
+          height: 20px;
         }
       `}</style>
-      <MapContainer
-        center={center}
-        zoom={linePositions.length ? 16 : 13}
-        className="live-cardio-map h-full min-h-55 w-full z-0"
-        scrollWheelZoom
-        zoomControl={false}
-        attributionControl
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url={STRAVA_STYLE_TILE}
-          maxZoom={20}
-        />
-        <MapInvalidateSize />
-        <MapFollowUser positions={linePositions} enabled={followUser} />
-
-        {linePositions.length > 1 ? (
-          <>
-            {/* Contorno claro para contraste sobre el mapa (técnica Strava) */}
-            <Polyline
-              positions={linePositions}
-              pathOptions={{
-                color: "#ffffff",
-                weight: 8,
-                opacity: 0.95,
-                lineCap: "round",
-                lineJoin: "round",
-              }}
-            />
-            <Polyline
-              positions={linePositions}
-              pathOptions={{
-                color: STRAVA_ORANGE,
-                weight: 5,
-                opacity: 1,
-                lineCap: "round",
-                lineJoin: "round",
-              }}
-            />
-          </>
-        ) : null}
-
-        {start && points.length > 1 ? (
-          <CircleMarker
-            center={[start.lat, start.lng]}
-            radius={6}
-            pathOptions={{
-              color: "#ffffff",
-              weight: 2,
-              fillColor: "#22c55e",
-              fillOpacity: 1,
-            }}
-          />
-        ) : null}
-
-        {last ? <CurrentPositionMarker lat={last.lat} lng={last.lng} /> : null}
-      </MapContainer>
+      <div
+        ref={containerRef}
+        className="live-cardio-map-canvas h-full min-h-55 w-full"
+        style={{ background: MAP_COLORS.land }}
+      />
+      {points.length > 0 ? <RecenterControl active={following} onRecenter={onRecenter} /> : null}
     </div>
   );
 }

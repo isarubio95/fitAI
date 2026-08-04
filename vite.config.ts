@@ -68,4 +68,9 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
+  // MapLibre v6 resuelve el worker con una URL relativa; el prebundle de Vite
+  // la deja en 404. Lo excluimos y el componente llama a setWorkerUrl(?worker&url).
+  optimizeDeps: {
+    exclude: ["maplibre-gl"],
+  },
 }));
