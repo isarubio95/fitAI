@@ -180,6 +180,14 @@ export function CardioLiveRecorder() {
   }, [open, step, sessionLoading, showMap, controlsExpanded]);
 
   const onControlsSheetPointerDown = useCallback((e: ReactPointerEvent) => {
+    const target = e.target;
+    if (target instanceof Element) {
+      // No iniciar gesto de sheet sobre controles interactivos (Pausa, Conectar, etc.).
+      if (target.closest("button, a, input, textarea, select, label, [role='button'], [data-vaul-no-drag]")) {
+        sheetDragStartY.current = null;
+        return;
+      }
+    }
     sheetDragStartY.current = e.clientY;
   }, []);
 
@@ -558,15 +566,16 @@ export function CardioLiveRecorder() {
               overlayClassName="z-110 pointer-events-none bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none"
               {...controlsDrawerPillProps}
             >
+              <div
+                className="touch-pan-x"
+                onPointerDownCapture={onControlsSheetPointerDown}
+                onPointerMoveCapture={onControlsSheetPointerMove}
+                onPointerUpCapture={onControlsSheetPointerEnd}
+                onPointerCancelCapture={onControlsSheetPointerEnd}
+                onDoubleClick={() => setControlsExpanded((v) => !v)}
+              >
               <div className="shrink-0">
-                <DrawerHeader
-                  className="touch-none gap-0 px-0 pb-0 pt-2.5"
-                  onPointerDownCapture={onControlsSheetPointerDown}
-                  onPointerMoveCapture={onControlsSheetPointerMove}
-                  onPointerUpCapture={onControlsSheetPointerEnd}
-                  onPointerCancelCapture={onControlsSheetPointerEnd}
-                  onDoubleClick={() => setControlsExpanded((v) => !v)}
-                >
+                <DrawerHeader className="gap-0 px-0 pb-0 pt-2.5">
                   <DrawerTitle className="sr-only">{headerTitle} — controles de grabación</DrawerTitle>
                 </DrawerHeader>
                 <div
@@ -684,6 +693,7 @@ export function CardioLiveRecorder() {
                     </button>
                   </div>
                 </div>
+              </div>
               </div>
             </DrawerContent>
           </Drawer>
