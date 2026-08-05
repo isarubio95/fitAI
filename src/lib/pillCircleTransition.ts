@@ -67,26 +67,20 @@ export function pillCircleTransitionStyle(
 }
 
 /**
- * Same as {@link pillCircleTransitionStyle} but relative to a bottom sheet
- * that covers `heightRatio` of the viewport height (e.g. 0.92 for 92lvh)
- * and, from `md`, is centered with max-width 42rem (max-w-2xl).
+ * Circle reveal origin relative to an arbitrary sheet/panel rect
+ * (viewport coords), so clip-path percentages match that element's box.
  */
-export function pillCircleTransitionStyleForBottomSheet(
+export function pillCircleTransitionStyleForSheetRect(
   origin: PillCircleOrigin,
-  heightRatio = 0.92,
+  sheet: { left: number; top: number; width: number; height: number },
   phase: PillCirclePhase = "in",
 ): CSSProperties {
   if (phase === "settled") return {};
 
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 1;
-  const sheetH = vh * heightRatio;
-  const sheetTop = vh - sheetH;
-  const isMd = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
-  const sheetW = isMd ? Math.min(vw, 42 * 16) : vw;
-  const sheetLeft = isMd ? (vw - sheetW) / 2 : 0;
-  const pillX = `${Math.max(0, Math.min(100, ((origin.x - sheetLeft) / sheetW) * 100)).toFixed(2)}%`;
-  const pillY = `${Math.max(0, Math.min(100, ((origin.y - sheetTop) / sheetH) * 100)).toFixed(2)}%`;
+  const w = Math.max(1, sheet.width);
+  const h = Math.max(1, sheet.height);
+  const pillX = `${Math.max(0, Math.min(100, ((origin.x - sheet.left) / w) * 100)).toFixed(2)}%`;
+  const pillY = `${Math.max(0, Math.min(100, ((origin.y - sheet.top) / h) * 100)).toFixed(2)}%`;
 
   if (phase === "out") {
     return {
@@ -101,6 +95,32 @@ export function pillCircleTransitionStyleForBottomSheet(
     ["--circle-center-center-out" as string]: `circle(0% at ${pillX} ${pillY})`,
     ["--circle-bottom-right-in" as string]: `circle(150% at ${pillX} ${pillY})`,
   };
+}
+
+/**
+ * Same as {@link pillCircleTransitionStyle} but relative to a bottom sheet
+ * that covers `heightRatio` of the viewport height (e.g. 0.92 for 92lvh)
+ * and, from `md`, is centered with max-width 42rem (max-w-2xl).
+ * Pass `heightPx` when the sheet height is measured (auto-sized drawers).
+ */
+export function pillCircleTransitionStyleForBottomSheet(
+  origin: PillCircleOrigin,
+  heightRatio = 0.92,
+  phase: PillCirclePhase = "in",
+  heightPx?: number,
+): CSSProperties {
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 1;
+  const sheetH = heightPx != null && heightPx > 0 ? heightPx : vh * heightRatio;
+  const sheetTop = vh - sheetH;
+  const isMd = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+  const sheetW = isMd ? Math.min(vw, 42 * 16) : vw;
+  const sheetLeft = isMd ? (vw - sheetW) / 2 : 0;
+  return pillCircleTransitionStyleForSheetRect(
+    origin,
+    { left: sheetLeft, top: sheetTop, width: sheetW, height: sheetH },
+    phase,
+  );
 }
 
 export function pillCircleTransitionAttr(phase: PillCirclePhase): string | undefined {

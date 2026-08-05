@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Bluetooth, Heart, Loader2, MapPin, Pause, Play, Square } from "lucide-react";
 import {
   AlertDialog,
@@ -29,6 +29,7 @@ import {
   PILL_CIRCLE_DURATION_MS,
   pillCircleTransitionAttr,
   pillCircleTransitionStyle,
+  pillCircleTransitionStyleForBottomSheet,
   type PillCirclePhase,
 } from "@/lib/pillCircleTransition";
 import { Switch } from "@/components/ui/switch";
@@ -83,6 +84,8 @@ export function CardioLiveRecorder() {
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [pillCirclePhase, setPillCirclePhase] = useState<PillCirclePhase | null>(null);
   const pillCloseTimerRef = useRef<number | null>(null);
+  const controlsDrawerRef = useRef<HTMLDivElement | null>(null);
+  const [controlsDrawerHeightPx, setControlsDrawerHeightPx] = useState(0);
 
   const discipline = firstNested(sessionData?.cardio_disciplina);
   const code = discipline?.codigo ?? null;
@@ -131,6 +134,7 @@ export function CardioLiveRecorder() {
       setEsPublica(false);
       setConfirmDiscard(false);
       setPillCirclePhase(null);
+      setControlsDrawerHeightPx(0);
       if (pillCloseTimerRef.current != null) {
         window.clearTimeout(pillCloseTimerRef.current);
         pillCloseTimerRef.current = null;
@@ -149,6 +153,22 @@ export function CardioLiveRecorder() {
     }, PILL_CIRCLE_DURATION_MS);
     return () => window.clearTimeout(t);
   }, [pillCirclePhase]);
+
+  // El drawer de controles vive en un portal (fuera del full-screen), así que
+  // medimos su caja para el mismo círculo hacia la pill que el mapa/header.
+  useLayoutEffect(() => {
+    if (!open || step !== "recording") return;
+    const el = controlsDrawerRef.current;
+    if (!el) return;
+    const measure = () => {
+      const h = el.getBoundingClientRect().height;
+      if (h > 0) setControlsDrawerHeightPx(h);
+    };
+    measure();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, [open, step, sessionLoading, showMap]);
 
   useEffect(() => {
     return () => {
@@ -405,6 +425,26 @@ export function CardioLiveRecorder() {
         }
       : {};
 
+  // Misma animación en el drawer portaleado bajo el mapa (Vaul no hereda el clip del full-screen).
+  const controlsDrawerPillProps =
+    pillOrigin && pillCirclePhase
+      ? {
+          "data-open-from-pill": true as const,
+          "data-pill-circle": pillCirclePhase,
+          ...(pillCirclePhase !== "settled"
+            ? {
+                "transition-style": pillCircleTransitionAttr(pillCirclePhase),
+                style: pillCircleTransitionStyleForBottomSheet(
+                  pillOrigin,
+                  0.48,
+                  pillCirclePhase,
+                  controlsDrawerHeightPx > 0 ? controlsDrawerHeightPx : undefined,
+                ),
+              }
+            : { style: { clipPath: "none" } }),
+        }
+      : {};
+
   const loading = sessionLoading || !sessionData;
   const headerTitle = !loading
     ? discipline?.nombre?.trim() || sessionData.titulo || "Cardio"
@@ -466,9 +506,11 @@ export function CardioLiveRecorder() {
             }}
           >
             <DrawerContent
+              ref={controlsDrawerRef}
               side="bottom"
               className="z-110 mt-0 max-h-[85lvh] bg-card p-0"
               overlayClassName="z-110 pointer-events-none bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none"
+              {...controlsDrawerPillProps}
             >
               <DrawerHeader className="gap-0 px-0 pb-0 pt-2.5">
                 <DrawerTitle className="sr-only">{headerTitle} — controles de grabación</DrawerTitle>
