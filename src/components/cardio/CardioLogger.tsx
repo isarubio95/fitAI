@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Heart, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -174,6 +174,16 @@ export function CardioLogger() {
   const showRunningMetrics = disciplineCode === "running";
   const showCyclingMetrics = disciplineCode === "cycling";
   const showTrackGps = disciplineCode != null && disciplineCode !== "swimming";
+
+  const hrSummary = useMemo(() => {
+    const medias = bloques.map((b) => b.fc_media).filter((v): v is number => v != null && Number.isFinite(v) && v > 0);
+    const maxes = bloques.map((b) => b.fc_max).filter((v): v is number => v != null && Number.isFinite(v) && v > 0);
+    if (medias.length === 0 && maxes.length === 0) return null;
+    const fcMedia =
+      medias.length > 0 ? Math.round(medias.reduce((a, b) => a + b, 0) / medias.length) : null;
+    const fcMax = maxes.length > 0 ? Math.max(...maxes) : null;
+    return { fcMedia, fcMax };
+  }, [bloques]);
 
   useEffect(() => {
     if (!state.open) return;
@@ -576,6 +586,25 @@ export function CardioLogger() {
 
         <div className="min-h-0 flex-1 overflow-y-auto bg-card">
         <div className={cn("space-y-6 p-4", drawerSafeAreaBottom)}>
+          {hrSummary ? (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2.5 text-sm">
+              <span className="inline-flex items-center gap-1.5 font-medium text-rose-700 dark:text-rose-300">
+                <Heart className="h-4 w-4" />
+                Pulsaciones
+              </span>
+              {hrSummary.fcMedia != null ? (
+                <span className="tabular-nums text-muted-foreground">
+                  Media <span className="font-semibold text-foreground">{hrSummary.fcMedia}</span> bpm
+                </span>
+              ) : null}
+              {hrSummary.fcMax != null ? (
+                <span className="tabular-nums text-muted-foreground">
+                  Máx <span className="font-semibold text-foreground">{hrSummary.fcMax}</span> bpm
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 sm:col-span-1">
               <FormField id="cardio-titulo" label="Título">

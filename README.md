@@ -6,7 +6,7 @@ Aplicación web de entrenamiento orientada a registro de fuerza y cardio, planif
 
 FitAI centraliza el ciclo completo de entrenamiento:
 - **Planificación** de rutinas y hoja de ruta semanal.
-- **Ejecución** de entrenos de fuerza y cardio (incluye sesión cardio en vivo con GPS).
+- **Ejecución** de entrenos de fuerza y cardio (incluye sesión cardio en vivo con GPS y FC vía Bluetooth LE en Android).
 - **Seguimiento** de métricas históricas y evolución.
 - **Comunidad** y notificaciones in-app.
 - **Personalización** de tema/acento, perfil y preferencias.
@@ -206,6 +206,7 @@ Para acercar el proyecto a estándares de compañías grandes:
 6. **Performance budget:** métricas Lighthouse/Web Vitals y alertas por regresión.
 7. **Documentación viva:** runbooks, onboarding, incident response, ownership por módulo.
 8. **Feature flags:** despliegues graduales y rollback operativo.
+9. **Health Connect (Android):** importar FC post-entreno desde relojes que no emiten BLE — ver [`docs/health-connect-phase2.md`](docs/health-connect-phase2.md).
 
 ## 15) Troubleshooting
 
@@ -213,6 +214,7 @@ Para acercar el proyecto a estándares de compañías grandes:
 - **Error de Supabase env:** revisar `.env` y reiniciar dev server.
 - **Tipos de Supabase desactualizados:** regenerar `src/integrations/supabase/types.ts`.
 - **Problemas con mapas GPS:** validar permisos de geolocalización y contexto HTTPS en producción.
+- **Sensor FC no aparece:** en Android, comprobar Bluetooth activado y permisos `BLUETOOTH_SCAN` / `BLUETOOTH_CONNECT`; el dispositivo debe emitir el servicio GATT Heart Rate (`0x180D`).
 
 ## 16) Licencia
 

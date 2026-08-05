@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Loader2, MapPin, Pause, Play, Square } from "lucide-react";
+import { ArrowLeft, Bluetooth, Heart, Loader2, MapPin, Pause, Play, Square } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,8 +19,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useCardioGpsRecorder } from "@/hooks/useCardioGpsRecorder";
 import { useCardioSessionById, useDeleteCardioSession, useUpsertCardioSession } from "@/hooks/useCardioSessions";
+import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
+import { nearestHeartRate } from "@/lib/heartRateMetrics";
 import { cn } from "@/lib/utils";
 import {
   PILL_CIRCLE_DURATION_MS,
@@ -94,6 +96,27 @@ export function CardioLiveRecorder() {
     minDeltaM: 4,
   });
 
+  const hrRecording = open && step === "recording" && !paused;
+  const {
+    available: hrAvailable,
+    bpm,
+    connected: hrConnected,
+    connection: hrConnection,
+    deviceName: hrDeviceName,
+    error: hrError,
+    samples: hrSamples,
+    fcMedia,
+    fcMax,
+    zone: hrZone,
+    connecting: hrConnecting,
+    connect: connectHr,
+    reconnect: reconnectHr,
+    disconnect: disconnectHr,
+    clearSamples: clearHrSamples,
+  } = useHeartRateMonitor({
+    recording: hrRecording,
+    enabled: open,
+  });
   useEffect(() => {
     if (!open) {
       setStep("recording");
@@ -258,6 +281,25 @@ export function CardioLiveRecorder() {
     return { disciplina_codigo: "other" };
   };
 
+  const onHrConnectClick = () => {
+    if (!hrAvailable) {
+      toast({
+        title: "Solo en la app Android",
+        description: "La FC en vivo vía Bluetooth requiere la app nativa.",
+      });
+      return;
+    }
+    if (hrConnected) {
+      void disconnectHr();
+      return;
+    }
+    if (hrConnection === "disconnected" || hrDeviceName) {
+      void reconnectHr();
+      return;
+    }
+    void connectHr();
+  };
+
   const onSaveSummary = async () => {
     if (!sessionId || !sessionData?.fecha_inicio) return;
     const startedAt = new Date(sessionData.fecha_inicio);
@@ -265,17 +307,21 @@ export function CardioLiveRecorder() {
       summaryTitulo.trim() ||
       getDefaultCardioTitle(discipline?.nombre, Number.isNaN(startedAt.getTime()) ? undefined : startedAt);
 
-    const trackPoints: CardioTrackPointInput[] = points.map((p, idx) => ({
-      orden: idx,
-      lat: p.lat,
-      lng: p.lng,
-      elevacion_m: p.elevacion_m ?? null,
-      timestamp_utc: p.timestamp_utc,
-      velocidad_m_s: null,
-      fc: null,
-      cadencia: null,
-      potencia_w: null,
-    }));
+    const trackPoints: CardioTrackPointInput[] = points.map((p, idx) => {
+      const ts = p.timestamp_utc ? Date.parse(p.timestamp_utc) : NaN;
+      const fc = Number.isFinite(ts) ? nearestHeartRate(hrSamples, ts) : null;
+      return {
+        orden: idx,
+        lat: p.lat,
+        lng: p.lng,
+        elevacion_m: p.elevacion_m ?? null,
+        timestamp_utc: p.timestamp_utc,
+        velocidad_m_s: null,
+        fc,
+        cadencia: null,
+        potencia_w: null,
+      };
+    });
 
     const dur = elapsedSecFrozen ?? elapsedSec;
     const dist = distanceFrozenM ?? distanceM;
@@ -308,8 +354,8 @@ export function CardioLiveRecorder() {
               distancia_m: Math.round(dist * 10) / 10,
               duracion_seg: dur,
               elevacion_m: null,
-              fc_media: null,
-              fc_max: null,
+              fc_media: fcMedia,
+              fc_max: fcMax,
               calorias: null,
             },
           ],
@@ -317,6 +363,8 @@ export function CardioLiveRecorder() {
         },
       });
       clearDraft();
+      clearHrSamples();
+      void disconnectHr();
       void stopLiveCardio();
       closeLiveRecording();
       toast({ title: "Entrenamiento guardado" });
@@ -330,6 +378,8 @@ export function CardioLiveRecorder() {
     try {
       await deleteSession.mutateAsync(sessionId);
       clearDraft();
+      clearHrSamples();
+      void disconnectHr();
       void stopLiveCardio();
       setConfirmDiscard(false);
       closeLiveRecording();
@@ -421,6 +471,59 @@ export function CardioLiveRecorder() {
               </div>
             </div>
 
+            <div className="rounded-2xl border border-border bg-muted/30 p-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
+                    hrConnected ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  <Heart className={cn("h-5 w-5", hrConnected && bpm != null && "animate-pulse")} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pulsaciones</p>
+                  <p className="mt-0.5 font-mono text-2xl font-semibold tabular-nums">
+                    {hrConnected && bpm != null ? (
+                      <>
+                        {bpm}
+                        <span className="ml-1 text-sm font-medium text-muted-foreground">bpm</span>
+                      </>
+                    ) : hrConnecting ? (
+                      <span className="text-base font-medium text-muted-foreground">Conectando…</span>
+                    ) : hrConnection === "disconnected" ? (
+                      <span className="text-base font-medium text-amber-600 dark:text-amber-400">Sin señal</span>
+                    ) : (
+                      <span className="text-base font-medium text-muted-foreground">—</span>
+                    )}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {hrConnected && hrDeviceName
+                      ? `${hrDeviceName}${hrZone != null ? ` · Zona ${hrZone}` : ""}`
+                      : hrDeviceName
+                        ? hrDeviceName
+                        : "Sensor Bluetooth"}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={hrConnected ? "secondary" : "default"}
+                  className="shrink-0 rounded-full gap-1.5"
+                  disabled={hrConnecting}
+                  onClick={onHrConnectClick}
+                >
+                  {hrConnecting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Bluetooth className="h-3.5 w-3.5" />
+                  )}
+                  {hrConnected ? "Desconectar" : hrConnection === "disconnected" || hrDeviceName ? "Reconectar" : "Conectar"}
+                </Button>
+              </div>
+              {hrError ? <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{hrError}</p> : null}
+            </div>
+
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button
                 type="button"
@@ -450,6 +553,23 @@ export function CardioLiveRecorder() {
             <p className="mt-2 font-mono text-lg tabular-nums">
               {formatDuration(elapsedSec)} · {formatDistanceM(displayDistanceM)}
             </p>
+            {fcMedia != null || fcMax != null ? (
+              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm tabular-nums">
+                <span className="inline-flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
+                  <Heart className="h-3.5 w-3.5" />
+                  {fcMedia != null ? (
+                    <span>
+                      Media <span className="font-semibold">{fcMedia}</span> bpm
+                    </span>
+                  ) : null}
+                </span>
+                {fcMax != null ? (
+                  <span className="text-muted-foreground">
+                    Máx <span className="font-semibold text-foreground">{fcMax}</span> bpm
+                  </span>
+                ) : null}
+              </p>
+            ) : null}
             {showMap && points.length === 0 ? (
               <p className="mt-2 text-xs text-muted-foreground">Sin puntos GPS; se guardará solo tiempo y título.</p>
             ) : null}

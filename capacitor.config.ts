@@ -13,6 +13,14 @@ const config: CapacitorConfig = {
       smallIcon: 'ic_stat_notification',
       iconColor: '#22c55e',
     },
+    BluetoothLe: {
+      displayStrings: {
+        scanning: 'Buscando sensores…',
+        cancel: 'Cancelar',
+        availableDevices: 'Sensores de pulsaciones',
+        noDeviceFound: 'No se encontró ningún sensor',
+      },
+    },
   },
 };
 
