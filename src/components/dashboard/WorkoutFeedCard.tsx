@@ -66,7 +66,7 @@ export function WorkoutFeedCardBody({
         <button
           type="button"
           onClick={() => onSelectAuthor?.(author.id)}
-          className="-m-1 mb-4 flex w-full min-w-0 items-center gap-3 rounded-lg pt-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+          className="mb-4 flex w-full min-w-0 items-center gap-3 rounded-lg text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={`Ver perfil de ${author.username ?? "usuario"}`}
         >
           <CommunityAvatar
@@ -107,7 +107,7 @@ type WorkoutFeedCardProps = WorkoutFeedCardBodyProps & {
 export function WorkoutFeedCard({ className, ...bodyProps }: WorkoutFeedCardProps) {
   return (
     <Card className={cn(COMMUNITY_CARD_CLASS, className)}>
-      <CardContent className="space-y-4 px-6 py-4">
+      <CardContent className="space-y-4 px-6 pb-4 pt-6">
         <WorkoutFeedCardBody {...bodyProps} />
       </CardContent>
     </Card>

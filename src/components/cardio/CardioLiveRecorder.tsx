@@ -58,6 +58,9 @@ function formatDistanceM(m: number) {
   return `${Math.round(m)} m`;
 }
 
+/** Fallback de snaps (fracción de viewport) hasta medir alturas reales en px. */
+const CONTROLS_SNAP_FALLBACK: (number | string)[] = [0.38, 0.58];
+
 function firstNested<T>(value: T | T[] | null | undefined): T | null {
   if (value == null) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -90,6 +93,14 @@ export function CardioLiveRecorder() {
   const pillCloseTimerRef = useRef<number | null>(null);
   const controlsDrawerRef = useRef<HTMLDivElement | null>(null);
   const [controlsDrawerHeightPx, setControlsDrawerHeightPx] = useState(0);
+  /** Snap compacto (métricas + controles) vs expandido (+ pulsaciones + formulario). */
+  const compactSectionRef = useRef<HTMLDivElement | null>(null);
+  const expandedSectionRef = useRef<HTMLDivElement | null>(null);
+  /** Vaul exige snaps desde el primer paint + DrawerContent con h-full (transform). */
+  const [controlsSnapPoints, setControlsSnapPoints] = useState<(number | string)[]>(CONTROLS_SNAP_FALLBACK);
+  const [activeControlsSnap, setActiveControlsSnap] = useState<number | string | null>(CONTROLS_SNAP_FALLBACK[0]!);
+  const controlsSnapPointsRef = useRef<(number | string)[]>(CONTROLS_SNAP_FALLBACK);
+  const controlsExpandedIndexRef = useRef(0);
 
   const discipline = firstNested(sessionData?.cardio_disciplina);
   const code = discipline?.codigo ?? null;
@@ -139,6 +150,10 @@ export function CardioLiveRecorder() {
       setConfirmDiscard(false);
       setPillCirclePhase(null);
       setControlsDrawerHeightPx(0);
+      setControlsSnapPoints(CONTROLS_SNAP_FALLBACK);
+      setActiveControlsSnap(CONTROLS_SNAP_FALLBACK[0]!);
+      controlsSnapPointsRef.current = CONTROLS_SNAP_FALLBACK;
+      controlsExpandedIndexRef.current = 0;
       if (pillCloseTimerRef.current != null) {
         window.clearTimeout(pillCloseTimerRef.current);
         pillCloseTimerRef.current = null;
@@ -172,7 +187,49 @@ export function CardioLiveRecorder() {
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
     ro?.observe(el);
     return () => ro?.disconnect();
-  }, [open, step, sessionLoading, showMap]);
+  }, [open, step, sessionLoading, showMap, activeControlsSnap, controlsSnapPoints]);
+
+  // Alturas naturales del bloque compacto y del expandido → snap points en px.
+  // Vaul posiciona con translateY asumiendo sheet a altura de viewport (hace falta h-full).
+  useLayoutEffect(() => {
+    if (!open || step !== "recording" || sessionLoading) return;
+    const compactEl = compactSectionRef.current;
+    const expandedEl = expandedSectionRef.current;
+    if (!compactEl || !expandedEl) return;
+
+    const measureSnaps = () => {
+      const compactH = Math.ceil(compactEl.getBoundingClientRect().height);
+      const expandedExtraH = Math.ceil(expandedEl.getBoundingClientRect().height);
+      if (compactH <= 0 || expandedExtraH <= 0) return;
+
+      // Expanded usa margin-top negativo para solapar el safe-area del compacto.
+      const expandedMarginTop = Number.parseFloat(getComputedStyle(expandedEl).marginTop) || 0;
+      const expandedSnapH = Math.ceil(compactH + expandedExtraH + expandedMarginTop);
+      const next: (number | string)[] = [`${compactH}px`, `${Math.max(compactH + 1, expandedSnapH)}px`];
+
+      setControlsSnapPoints((prev) => {
+        if (prev.length === 2 && prev[0] === next[0] && prev[1] === next[1]) return prev;
+        return next;
+      });
+      controlsSnapPointsRef.current = next;
+
+      const preferExpanded = controlsExpandedIndexRef.current === 1;
+      const nextActive = preferExpanded ? next[1]! : next[0]!;
+      setActiveControlsSnap(nextActive);
+    };
+
+    measureSnaps();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measureSnaps) : null;
+    ro?.observe(compactEl);
+    ro?.observe(expandedEl);
+    return () => ro?.disconnect();
+  }, [open, step, sessionLoading, showMap, gpsError, hrError, hrConnected, hrConnecting, hrConnection]);
+
+  const onControlsSnapPointChange = useCallback((snap: number | string | null) => {
+    setActiveControlsSnap(snap);
+    const idx = snap == null ? 0 : controlsSnapPointsRef.current.indexOf(snap);
+    controlsExpandedIndexRef.current = idx === 1 ? 1 : 0;
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -414,6 +471,34 @@ export function CardioLiveRecorder() {
     }
   };
 
+  // Variables del círculo en el DOM sin tocar style.transform (snaps de Vaul).
+  useLayoutEffect(() => {
+    if (!open || step !== "recording") return;
+    const el = controlsDrawerRef.current;
+    if (!el || !pillOrigin || !pillCirclePhase) return;
+
+    if (pillCirclePhase === "settled") {
+      el.style.clipPath = "none";
+      // Reafirmar el snap activo por si un re-render borró el translate de Vaul.
+      const snap = controlsSnapPointsRef.current[controlsExpandedIndexRef.current] ?? controlsSnapPointsRef.current[0];
+      if (snap != null) {
+        setActiveControlsSnap(snap);
+      }
+      return;
+    }
+
+    const styles = pillCircleTransitionStyleForBottomSheet(
+      pillOrigin,
+      0.48,
+      pillCirclePhase,
+      controlsDrawerHeightPx > 0 ? controlsDrawerHeightPx : undefined,
+    );
+    for (const [key, value] of Object.entries(styles)) {
+      if (value == null) continue;
+      el.style.setProperty(key, String(value));
+    }
+  }, [open, step, pillOrigin, pillCirclePhase, controlsDrawerHeightPx]);
+
   if (!open || !sessionId) return null;
 
   const pillCircleProps =
@@ -430,22 +515,15 @@ export function CardioLiveRecorder() {
       : {};
 
   // Misma animación en el drawer portaleado bajo el mapa (Vaul no hereda el clip del full-screen).
+  // No pasamos `style` por React: sobrescribe el transform de los snap points de Vaul.
   const controlsDrawerPillProps =
     pillOrigin && pillCirclePhase
       ? {
           "data-open-from-pill": true as const,
           "data-pill-circle": pillCirclePhase,
           ...(pillCirclePhase !== "settled"
-            ? {
-                "transition-style": pillCircleTransitionAttr(pillCirclePhase),
-                style: pillCircleTransitionStyleForBottomSheet(
-                  pillOrigin,
-                  0.48,
-                  pillCirclePhase,
-                  controlsDrawerHeightPx > 0 ? controlsDrawerHeightPx : undefined,
-                ),
-              }
-            : { style: { clipPath: "none" } }),
+            ? { "transition-style": pillCircleTransitionAttr(pillCirclePhase) }
+            : {}),
         }
       : {};
 
@@ -507,6 +585,10 @@ export function CardioLiveRecorder() {
             modal={false}
             dismissible={false}
             handleOnly
+            snapPoints={controlsSnapPoints}
+            activeSnapPoint={activeControlsSnap}
+            setActiveSnapPoint={onControlsSnapPointChange}
+            fadeFromIndex={1}
             onOpenChange={(next) => {
               if (!next) requestClose();
             }}
@@ -514,29 +596,58 @@ export function CardioLiveRecorder() {
             <DrawerContent
               ref={controlsDrawerRef}
               side="bottom"
-              className="z-110 mt-0 max-h-[85lvh] bg-card p-0"
+              className="z-110 mt-0 h-full max-h-dvh overflow-hidden bg-card p-0"
               overlayClassName="z-110 pointer-events-none bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none"
               {...controlsDrawerPillProps}
             >
-              <DrawerHeader className="gap-0 px-0 pb-0 pt-2.5">
-                <DrawerTitle className="sr-only">{headerTitle} — controles de grabación</DrawerTitle>
-              </DrawerHeader>
-              <div className="shrink-0 space-y-4 bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                {showMap && gpsError && points.length > 0 ? (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">{gpsError}</p>
-                ) : null}
+              <div ref={compactSectionRef} className="shrink-0">
+                <DrawerHeader className="gap-0 px-0 pb-0 pt-2.5">
+                  <DrawerTitle className="sr-only">{headerTitle} — controles de grabación</DrawerTitle>
+                </DrawerHeader>
+                <div className="space-y-4 bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                  {showMap && gpsError && points.length > 0 ? (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">{gpsError}</p>
+                  ) : null}
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Tiempo</p>
-                    <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">{formatDuration(elapsedSec)}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Tiempo</p>
+                      <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">{formatDuration(elapsedSec)}</p>
+                    </div>
+                    <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Distancia</p>
+                      <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">{formatDistanceM(displayDistanceM)}</p>
+                    </div>
                   </div>
-                  <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Distancia</p>
-                    <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">{formatDistanceM(displayDistanceM)}</p>
+
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <Button
+                      type="button"
+                      size="lg"
+                      variant="secondary"
+                      className={cn("h-11 min-w-30 rounded-full gap-2 px-8 shadow-none", paused && "border-sky-500/50")}
+                      onClick={onPauseToggle}
+                    >
+                      {paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+                      {paused ? "Reanudar" : "Pausa"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="lg"
+                      className="h-11 min-w-30 rounded-full gap-2 px-8 shadow-none hover:shadow-none hover:translate-y-0 active:translate-y-0"
+                      onClick={onFinishRecording}
+                    >
+                      <Square className="h-4 w-4 fill-current" />
+                      Finalizar
+                    </Button>
                   </div>
                 </div>
+              </div>
 
+              <div
+                ref={expandedSectionRef}
+                className="shrink-0 space-y-4 bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 -mt-[max(1rem,env(safe-area-inset-bottom))]"
+              >
                 <div className="rounded-2xl border border-border bg-muted/30 p-3">
                   <div className="flex items-center gap-3">
                     <div
@@ -574,7 +685,7 @@ export function CardioLiveRecorder() {
                     <Button
                       type="button"
                       size="sm"
-                      variant={hrConnected ? "secondary" : "default"}
+                      variant="secondary"
                       className="shrink-0 rounded-full gap-1.5"
                       disabled={hrConnecting}
                       onClick={onHrConnectClick}
@@ -588,23 +699,6 @@ export function CardioLiveRecorder() {
                     </Button>
                   </div>
                   {hrError ? <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{hrError}</p> : null}
-                </div>
-
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <Button
-                    type="button"
-                    size="lg"
-                    variant="secondary"
-                    className={cn("min-w-30 rounded-full gap-2", paused && "border-sky-500/50")}
-                    onClick={onPauseToggle}
-                  >
-                    {paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-                    {paused ? "Reanudar" : "Pausa"}
-                  </Button>
-                  <Button type="button" size="lg" className="min-w-30 rounded-full gap-2 bg-sky-600 hover:bg-sky-700 text-white" onClick={onFinishRecording}>
-                    <Square className="h-4 w-4 fill-current" />
-                    Finalizar
-                  </Button>
                 </div>
 
                 <button type="button" className="block w-full text-center text-xs text-muted-foreground underline-offset-2 hover:underline" onClick={openManualEditor}>

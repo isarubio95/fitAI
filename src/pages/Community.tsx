@@ -86,7 +86,7 @@ export default function Community() {
               <button
                 type="button"
                 onClick={openProfile}
-                className="-m-1 flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <CommunityAvatar avatarUrl={p.avatar_url} username={p.username} className="h-10 w-10 shrink-0" />
                 <div className="min-w-0">
@@ -165,7 +165,7 @@ export default function Community() {
             <CardContent
               className={cn(
                 "px-6 pt-3",
-                showSearchPanel ? "pb-4" : hasMergedSecondBlock && "pb-8",
+                showSearchPanel ? "pb-4" : hasMergedSecondBlock && "pb-4",
               )}
             >
               {searchFields}
@@ -179,7 +179,7 @@ export default function Community() {
               </div>
             )}
             {!showSearchPanel && !loadingFeed && normalizedFeed.length > 0 && (
-              <CardContent className="space-y-4 px-6 pb-4 pt-0">
+              <CardContent className="space-y-4 px-6 pb-4 pt-6">
                 {renderFeedItemBody(normalizedFeed[0])}
               </CardContent>
             )}
