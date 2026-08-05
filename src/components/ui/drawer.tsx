@@ -119,6 +119,10 @@ const DrawerSideContext = React.createContext<DrawerSide | undefined>(undefined)
 /** Padding inferior con safe-area para contenido scrolleable o footers de drawers en móvil. */
 export const drawerSafeAreaBottom = "pb-[max(1rem,env(safe-area-inset-bottom,0px))]" as const;
 
+/** Radio estilo sheet iOS: curva abierta y pronunciada (~56px). */
+export const drawerSheetRadiusTop = "rounded-t-[1rem]" as const;
+export const drawerSheetRadiusBottom = "rounded-b-[1rem]" as const;
+
 /** true dentro de `DrawerContent` (p. ej. ExerciseCard sin bordes redondeados). */
 export const DrawerInContentContext = React.createContext(false);
 
@@ -153,9 +157,15 @@ const DrawerContent = React.forwardRef<
         "**:data-[slot=card]:rounded-none! **:data-drawer-section:rounded-none!",
         "[&_[data-slot=card]:first-child]:border-t-0!",
         side === "bottom" &&
-          "inset-x-0 bottom-0 mt-24 max-h-lvh flex-col rounded-t-2xl border-x-0 border-t border-b-0 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.35)] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
+          cn(
+            "inset-x-0 bottom-0 mt-24 max-h-lvh flex-col border-x-0 border-t border-b-0 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.35)] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
+            drawerSheetRadiusTop,
+          ),
         side === "top" &&
-          "inset-x-0 top-0 mb-24 max-h-lvh flex-col rounded-b-2xl border-x-0 border-b border-t-0 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.35)] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
+          cn(
+            "inset-x-0 top-0 mb-24 max-h-lvh flex-col border-x-0 border-b border-t-0 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.35)] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
+            drawerSheetRadiusBottom,
+          ),
         side === "left" &&
           "inset-y-0 left-0 h-lvh w-[92vw] max-w-md flex-col border-x-0 border-t-0 border-b-0 md:border-r",
         side === "right" &&

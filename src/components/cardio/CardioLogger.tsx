@@ -570,7 +570,7 @@ export function CardioLogger() {
     <Drawer open={state.open && !state.liveOpen} onOpenChange={setOpen}>
       <DrawerContent
         side="bottom"
-        className="flex h-[92lvh] max-h-[92lvh] min-h-0 flex-col overflow-hidden rounded-t-[20px] bg-card p-0"
+        className="flex h-[92lvh] max-h-[92lvh] min-h-0 flex-col overflow-hidden bg-card p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >

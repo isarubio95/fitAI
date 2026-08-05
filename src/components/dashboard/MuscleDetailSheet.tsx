@@ -21,7 +21,7 @@ export function MuscleDetailSheet({ open, onOpenChange, group, specificVolume }:
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         side="bottom"
-        className="h-auto max-h-[min(55dvh,26rem)] overflow-hidden rounded-t-[20px] p-0"
+        className="h-auto max-h-[min(55dvh,26rem)] overflow-hidden p-0"
       >
         <div className="flex flex-col">
           <DrawerHeader className="shrink-0 border-b border-border bg-card px-6 text-left">

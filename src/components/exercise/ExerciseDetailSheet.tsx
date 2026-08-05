@@ -4,6 +4,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   drawerSafeAreaBottom,
+  drawerSheetRadiusTop,
 } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -111,12 +112,12 @@ const ExerciseDetailSheet = ({
       <DrawerContent
         side="bottom"
         overlayClassName={overlayClassName}
-        className={cn("h-[85lvh] max-h-[85lvh] rounded-t-2xl bg-card p-0", className)}
+        className={cn("h-[85lvh] max-h-[85lvh] bg-card p-0", className)}
       >
         <ScrollArea className="h-full">
           <div className="flex flex-col">
             {/* Media */}
-            <div className="relative w-full aspect-video bg-muted flex items-center justify-center overflow-hidden rounded-t-2xl">
+            <div className={cn("relative w-full aspect-video bg-muted flex items-center justify-center overflow-hidden", drawerSheetRadiusTop)}>
               {mediaUrl ? (
                 <img
                   src={mediaUrl}

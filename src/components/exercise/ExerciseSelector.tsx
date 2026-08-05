@@ -443,7 +443,7 @@ export function ExerciseSelector({
           <DrawerContent
             side="bottom"
             overlayClassName="z-[55]"
-            className="z-[60] flex h-[min(90lvh,46rem)] max-h-[90lvh] flex-col overflow-hidden rounded-t-[20px] bg-card p-0"
+            className="z-[60] flex h-[min(90lvh,46rem)] max-h-[90lvh] flex-col overflow-hidden bg-card p-0"
           >
             <DrawerHeader className="shrink-0 border-b border-border bg-card px-6 text-left">
               <DrawerTitle className="text-lg">Agregar ejercicio</DrawerTitle>

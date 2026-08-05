@@ -413,7 +413,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
   return (
     <>
     <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
-      <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden rounded-t-[20px] p-0">
+      <DrawerContent side="bottom" className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden p-0">
         <div className="flex h-full min-h-0 flex-col overflow-hidden">
           <DrawerHeader className="sticky top-0 z-10 shrink-0 border-b border-border bg-card px-6 text-left">
             <div className="flex items-center justify-between">

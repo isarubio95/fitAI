@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -455,96 +456,115 @@ export function CardioLiveRecorder() {
             </div>
           )}
 
-          <div className="shrink-0 space-y-4 bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            {showMap && gpsError && points.length > 0 ? (
-              <p className="text-xs text-amber-600 dark:text-amber-400">{gpsError}</p>
-            ) : null}
+          <Drawer
+            open
+            modal={false}
+            dismissible={false}
+            handleOnly
+            onOpenChange={(next) => {
+              if (!next) requestClose();
+            }}
+          >
+            <DrawerContent
+              side="bottom"
+              className="z-110 mt-0 max-h-[85lvh] bg-card p-0"
+              overlayClassName="z-110 pointer-events-none bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none"
+            >
+              <DrawerHeader className="gap-0 px-0 pb-0 pt-2.5">
+                <DrawerTitle className="sr-only">{headerTitle} — controles de grabación</DrawerTitle>
+              </DrawerHeader>
+              <div className="shrink-0 space-y-4 bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                {showMap && gpsError && points.length > 0 ? (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">{gpsError}</p>
+                ) : null}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Tiempo</p>
-                <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">{formatDuration(elapsedSec)}</p>
-              </div>
-              <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Distancia</p>
-                <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">{formatDistanceM(displayDistanceM)}</p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-border bg-muted/30 p-3">
-              <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
-                    hrConnected ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  <Heart className={cn("h-5 w-5", hrConnected && bpm != null && "animate-pulse")} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Tiempo</p>
+                    <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">{formatDuration(elapsedSec)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Distancia</p>
+                    <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">{formatDistanceM(displayDistanceM)}</p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pulsaciones</p>
-                  <p className="mt-0.5 font-mono text-2xl font-semibold tabular-nums">
-                    {hrConnected && bpm != null ? (
-                      <>
-                        {bpm}
-                        <span className="ml-1 text-sm font-medium text-muted-foreground">bpm</span>
-                      </>
-                    ) : hrConnecting ? (
-                      <span className="text-base font-medium text-muted-foreground">Conectando…</span>
-                    ) : hrConnection === "disconnected" ? (
-                      <span className="text-base font-medium text-amber-600 dark:text-amber-400">Sin señal</span>
-                    ) : (
-                      <span className="text-base font-medium text-muted-foreground">—</span>
-                    )}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {hrConnected && hrDeviceName
-                      ? `${hrDeviceName}${hrZone != null ? ` · Zona ${hrZone}` : ""}`
-                      : hrDeviceName
-                        ? hrDeviceName
-                        : "Sensor Bluetooth"}
-                  </p>
+
+                <div className="rounded-2xl border border-border bg-muted/30 p-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
+                        hrConnected ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      <Heart className={cn("h-5 w-5", hrConnected && bpm != null && "animate-pulse")} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pulsaciones</p>
+                      <p className="mt-0.5 font-mono text-2xl font-semibold tabular-nums">
+                        {hrConnected && bpm != null ? (
+                          <>
+                            {bpm}
+                            <span className="ml-1 text-sm font-medium text-muted-foreground">bpm</span>
+                          </>
+                        ) : hrConnecting ? (
+                          <span className="text-base font-medium text-muted-foreground">Conectando…</span>
+                        ) : hrConnection === "disconnected" ? (
+                          <span className="text-base font-medium text-amber-600 dark:text-amber-400">Sin señal</span>
+                        ) : (
+                          <span className="text-base font-medium text-muted-foreground">—</span>
+                        )}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {hrConnected && hrDeviceName
+                          ? `${hrDeviceName}${hrZone != null ? ` · Zona ${hrZone}` : ""}`
+                          : hrDeviceName
+                            ? hrDeviceName
+                            : "Sensor Bluetooth"}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={hrConnected ? "secondary" : "default"}
+                      className="shrink-0 rounded-full gap-1.5"
+                      disabled={hrConnecting}
+                      onClick={onHrConnectClick}
+                    >
+                      {hrConnecting ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Bluetooth className="h-3.5 w-3.5" />
+                      )}
+                      {hrConnected ? "Desconectar" : hrConnection === "disconnected" || hrDeviceName ? "Reconectar" : "Conectar"}
+                    </Button>
+                  </div>
+                  {hrError ? <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{hrError}</p> : null}
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={hrConnected ? "secondary" : "default"}
-                  className="shrink-0 rounded-full gap-1.5"
-                  disabled={hrConnecting}
-                  onClick={onHrConnectClick}
-                >
-                  {hrConnecting ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Bluetooth className="h-3.5 w-3.5" />
-                  )}
-                  {hrConnected ? "Desconectar" : hrConnection === "disconnected" || hrDeviceName ? "Reconectar" : "Conectar"}
-                </Button>
+
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="secondary"
+                    className={cn("min-w-30 rounded-full gap-2", paused && "border-sky-500/50")}
+                    onClick={onPauseToggle}
+                  >
+                    {paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+                    {paused ? "Reanudar" : "Pausa"}
+                  </Button>
+                  <Button type="button" size="lg" className="min-w-30 rounded-full gap-2 bg-sky-600 hover:bg-sky-700 text-white" onClick={onFinishRecording}>
+                    <Square className="h-4 w-4 fill-current" />
+                    Finalizar
+                  </Button>
+                </div>
+
+                <button type="button" className="block w-full text-center text-xs text-muted-foreground underline-offset-2 hover:underline" onClick={openManualEditor}>
+                  Registrar o editar en formulario manual
+                </button>
               </div>
-              {hrError ? <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{hrError}</p> : null}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <Button
-                type="button"
-                size="lg"
-                variant="secondary"
-                className={cn("min-w-30 rounded-full gap-2", paused && "border-sky-500/50")}
-                onClick={onPauseToggle}
-              >
-                {paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-                {paused ? "Reanudar" : "Pausa"}
-              </Button>
-              <Button type="button" size="lg" className="min-w-30 rounded-full gap-2 bg-sky-600 hover:bg-sky-700 text-white" onClick={onFinishRecording}>
-                <Square className="h-4 w-4 fill-current" />
-                Finalizar
-              </Button>
-            </div>
-
-            <button type="button" className="block w-full text-center text-xs text-muted-foreground underline-offset-2 hover:underline" onClick={openManualEditor}>
-              Registrar o editar en formulario manual
-            </button>
-          </div>
+            </DrawerContent>
+          </Drawer>
         </>
       ) : (
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">

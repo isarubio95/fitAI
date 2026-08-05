@@ -382,6 +382,32 @@
 }
 
 /*
+ * Sheets bottom/top: curvatura tipo Apple (abierta, ~56px) + squircle donde el motor lo soporte.
+ * El radio base vive también en drawer.tsx (`drawerSheetRadiusTop/Bottom`).
+ */
+[data-vaul-drawer][data-vaul-drawer-direction="bottom"] {
+  border-top-left-radius: 1.5rem;
+  border-top-right-radius: 1.5rem;
+}
+
+[data-vaul-drawer][data-vaul-drawer-direction="top"] {
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+}
+
+@supports (corner-top-left-shape: squircle) {
+  [data-vaul-drawer][data-vaul-drawer-direction="bottom"] {
+    corner-top-left-shape: squircle;
+    corner-top-right-shape: squircle;
+  }
+
+  [data-vaul-drawer][data-vaul-drawer-direction="top"] {
+    corner-bottom-left-shape: squircle;
+    corner-bottom-right-shape: squircle;
+  }
+}
+
+/*
  * Drawers laterales (Vaul): el WebView de Android cancela el pointer al tocar
  * un hijo con overflow-y / touch-action:manipulation|auto, y el swipe de cierre
  * nunca llega a Vaul. pan-y deja el scroll vertical y cede el gesto horizontal.

@@ -391,7 +391,7 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         side="bottom"
-        className="flex h-[92lvh] max-h-[92lvh] flex-col overflow-hidden rounded-t-2xl bg-card p-0"
+        className="flex h-[92lvh] max-h-[92lvh] flex-col overflow-hidden bg-card p-0"
       >
         <DrawerHeader className="shrink-0 border-b border-border bg-card text-left">
           <DrawerTitle className={isLoading || !workout ? "sr-only" : undefined}>
