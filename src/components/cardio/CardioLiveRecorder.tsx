@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { ArrowLeft, Bluetooth, Heart, Loader2, MapPin, Pause, Play, Square } from "lucide-react";
 import {
   AlertDialog,
@@ -58,9 +58,6 @@ function formatDistanceM(m: number) {
   return `${Math.round(m)} m`;
 }
 
-/** Fallback de snaps (fracción de viewport) hasta medir alturas reales en px. */
-const CONTROLS_SNAP_FALLBACK: (number | string)[] = [0.38, 0.58];
-
 function firstNested<T>(value: T | T[] | null | undefined): T | null {
   if (value == null) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -93,14 +90,9 @@ export function CardioLiveRecorder() {
   const pillCloseTimerRef = useRef<number | null>(null);
   const controlsDrawerRef = useRef<HTMLDivElement | null>(null);
   const [controlsDrawerHeightPx, setControlsDrawerHeightPx] = useState(0);
-  /** Snap compacto (métricas + controles) vs expandido (+ pulsaciones + formulario). */
-  const compactSectionRef = useRef<HTMLDivElement | null>(null);
-  const expandedSectionRef = useRef<HTMLDivElement | null>(null);
-  /** Vaul exige snaps desde el primer paint + DrawerContent con h-full (transform). */
-  const [controlsSnapPoints, setControlsSnapPoints] = useState<(number | string)[]>(CONTROLS_SNAP_FALLBACK);
-  const [activeControlsSnap, setActiveControlsSnap] = useState<number | string | null>(CONTROLS_SNAP_FALLBACK[0]!);
-  const controlsSnapPointsRef = useRef<(number | string)[]>(CONTROLS_SNAP_FALLBACK);
-  const controlsExpandedIndexRef = useRef(0);
+  /** Compacto = métricas + botones; expandido = + pulsaciones + formulario. Altura = contenido. */
+  const [controlsExpanded, setControlsExpanded] = useState(false);
+  const sheetDragStartY = useRef<number | null>(null);
 
   const discipline = firstNested(sessionData?.cardio_disciplina);
   const code = discipline?.codigo ?? null;
@@ -150,10 +142,8 @@ export function CardioLiveRecorder() {
       setConfirmDiscard(false);
       setPillCirclePhase(null);
       setControlsDrawerHeightPx(0);
-      setControlsSnapPoints(CONTROLS_SNAP_FALLBACK);
-      setActiveControlsSnap(CONTROLS_SNAP_FALLBACK[0]!);
-      controlsSnapPointsRef.current = CONTROLS_SNAP_FALLBACK;
-      controlsExpandedIndexRef.current = 0;
+      setControlsExpanded(false);
+      sheetDragStartY.current = null;
       if (pillCloseTimerRef.current != null) {
         window.clearTimeout(pillCloseTimerRef.current);
         pillCloseTimerRef.current = null;
@@ -187,48 +177,26 @@ export function CardioLiveRecorder() {
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
     ro?.observe(el);
     return () => ro?.disconnect();
-  }, [open, step, sessionLoading, showMap, activeControlsSnap, controlsSnapPoints]);
+  }, [open, step, sessionLoading, showMap, controlsExpanded]);
 
-  // Alturas naturales del bloque compacto y del expandido → snap points en px.
-  // Vaul posiciona con translateY asumiendo sheet a altura de viewport (hace falta h-full).
-  useLayoutEffect(() => {
-    if (!open || step !== "recording" || sessionLoading) return;
-    const compactEl = compactSectionRef.current;
-    const expandedEl = expandedSectionRef.current;
-    if (!compactEl || !expandedEl) return;
+  const onControlsSheetPointerDown = useCallback((e: ReactPointerEvent) => {
+    sheetDragStartY.current = e.clientY;
+  }, []);
 
-    const measureSnaps = () => {
-      const compactH = Math.ceil(compactEl.getBoundingClientRect().height);
-      const expandedExtraH = Math.ceil(expandedEl.getBoundingClientRect().height);
-      if (compactH <= 0 || expandedExtraH <= 0) return;
+  const onControlsSheetPointerMove = useCallback((e: ReactPointerEvent) => {
+    if (sheetDragStartY.current == null) return;
+    const dy = sheetDragStartY.current - e.clientY; // >0 = hacia arriba
+    if (dy > 28) {
+      setControlsExpanded(true);
+      sheetDragStartY.current = null;
+    } else if (dy < -28) {
+      setControlsExpanded(false);
+      sheetDragStartY.current = null;
+    }
+  }, []);
 
-      // Expanded usa margin-top negativo para solapar el safe-area del compacto.
-      const expandedMarginTop = Number.parseFloat(getComputedStyle(expandedEl).marginTop) || 0;
-      const expandedSnapH = Math.ceil(compactH + expandedExtraH + expandedMarginTop);
-      const next: (number | string)[] = [`${compactH}px`, `${Math.max(compactH + 1, expandedSnapH)}px`];
-
-      setControlsSnapPoints((prev) => {
-        if (prev.length === 2 && prev[0] === next[0] && prev[1] === next[1]) return prev;
-        return next;
-      });
-      controlsSnapPointsRef.current = next;
-
-      const preferExpanded = controlsExpandedIndexRef.current === 1;
-      const nextActive = preferExpanded ? next[1]! : next[0]!;
-      setActiveControlsSnap(nextActive);
-    };
-
-    measureSnaps();
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measureSnaps) : null;
-    ro?.observe(compactEl);
-    ro?.observe(expandedEl);
-    return () => ro?.disconnect();
-  }, [open, step, sessionLoading, showMap, gpsError, hrError, hrConnected, hrConnecting, hrConnection]);
-
-  const onControlsSnapPointChange = useCallback((snap: number | string | null) => {
-    setActiveControlsSnap(snap);
-    const idx = snap == null ? 0 : controlsSnapPointsRef.current.indexOf(snap);
-    controlsExpandedIndexRef.current = idx === 1 ? 1 : 0;
+  const onControlsSheetPointerEnd = useCallback(() => {
+    sheetDragStartY.current = null;
   }, []);
 
   useEffect(() => {
@@ -471,7 +439,7 @@ export function CardioLiveRecorder() {
     }
   };
 
-  // Variables del círculo en el DOM sin tocar style.transform (snaps de Vaul).
+  // Variables del círculo en el DOM (drawer portaleado; no hereda el clip del full-screen).
   useLayoutEffect(() => {
     if (!open || step !== "recording") return;
     const el = controlsDrawerRef.current;
@@ -479,11 +447,6 @@ export function CardioLiveRecorder() {
 
     if (pillCirclePhase === "settled") {
       el.style.clipPath = "none";
-      // Reafirmar el snap activo por si un re-render borró el translate de Vaul.
-      const snap = controlsSnapPointsRef.current[controlsExpandedIndexRef.current] ?? controlsSnapPointsRef.current[0];
-      if (snap != null) {
-        setActiveControlsSnap(snap);
-      }
       return;
     }
 
@@ -514,8 +477,7 @@ export function CardioLiveRecorder() {
         }
       : {};
 
-  // Misma animación en el drawer portaleado bajo el mapa (Vaul no hereda el clip del full-screen).
-  // No pasamos `style` por React: sobrescribe el transform de los snap points de Vaul.
+  // Misma animación en el drawer portaleado bajo el mapa.
   const controlsDrawerPillProps =
     pillOrigin && pillCirclePhase
       ? {
@@ -585,10 +547,6 @@ export function CardioLiveRecorder() {
             modal={false}
             dismissible={false}
             handleOnly
-            snapPoints={controlsSnapPoints}
-            activeSnapPoint={activeControlsSnap}
-            setActiveSnapPoint={onControlsSnapPointChange}
-            fadeFromIndex={1}
             onOpenChange={(next) => {
               if (!next) requestClose();
             }}
@@ -596,15 +554,27 @@ export function CardioLiveRecorder() {
             <DrawerContent
               ref={controlsDrawerRef}
               side="bottom"
-              className="z-110 mt-0 h-full max-h-dvh overflow-hidden bg-card p-0"
+              className="z-110 mt-0 max-h-[85lvh] overflow-hidden bg-card p-0 transition-[height] duration-300 ease-out"
               overlayClassName="z-110 pointer-events-none bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none"
               {...controlsDrawerPillProps}
             >
-              <div ref={compactSectionRef} className="shrink-0">
-                <DrawerHeader className="gap-0 px-0 pb-0 pt-2.5">
+              <div className="shrink-0">
+                <DrawerHeader
+                  className="touch-none gap-0 px-0 pb-0 pt-2.5"
+                  onPointerDownCapture={onControlsSheetPointerDown}
+                  onPointerMoveCapture={onControlsSheetPointerMove}
+                  onPointerUpCapture={onControlsSheetPointerEnd}
+                  onPointerCancelCapture={onControlsSheetPointerEnd}
+                  onDoubleClick={() => setControlsExpanded((v) => !v)}
+                >
                   <DrawerTitle className="sr-only">{headerTitle} — controles de grabación</DrawerTitle>
                 </DrawerHeader>
-                <div className="space-y-4 bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                <div
+                  className={cn(
+                    "space-y-4 bg-card px-4",
+                    controlsExpanded ? "pb-4" : "pb-[max(1rem,env(safe-area-inset-bottom))]",
+                  )}
+                >
                   {showMap && gpsError && points.length > 0 ? (
                     <p className="text-xs text-amber-600 dark:text-amber-400">{gpsError}</p>
                   ) : null}
@@ -645,65 +615,75 @@ export function CardioLiveRecorder() {
               </div>
 
               <div
-                ref={expandedSectionRef}
-                className="shrink-0 space-y-4 bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 -mt-[max(1rem,env(safe-area-inset-bottom))]"
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-300 ease-out",
+                  controlsExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                )}
               >
-                <div className="rounded-2xl border border-border bg-muted/30 p-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
-                        hrConnected ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      <Heart className={cn("h-5 w-5", hrConnected && bpm != null && "animate-pulse")} />
+                <div className="min-h-0 overflow-hidden">
+                  <div className="space-y-4 bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                    <div className="rounded-2xl border border-border bg-muted/30 p-3">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            "flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
+                            hrConnected ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          <Heart className={cn("h-5 w-5", hrConnected && bpm != null && "animate-pulse")} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pulsaciones</p>
+                          <p className="mt-0.5 font-mono text-2xl font-semibold tabular-nums">
+                            {hrConnected && bpm != null ? (
+                              <>
+                                {bpm}
+                                <span className="ml-1 text-sm font-medium text-muted-foreground">bpm</span>
+                              </>
+                            ) : hrConnecting ? (
+                              <span className="text-base font-medium text-muted-foreground">Conectando…</span>
+                            ) : hrConnection === "disconnected" ? (
+                              <span className="text-base font-medium text-amber-600 dark:text-amber-400">Sin señal</span>
+                            ) : (
+                              <span className="text-base font-medium text-muted-foreground">—</span>
+                            )}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {hrConnected && hrDeviceName
+                              ? `${hrDeviceName}${hrZone != null ? ` · Zona ${hrZone}` : ""}`
+                              : hrDeviceName
+                                ? hrDeviceName
+                                : "Sensor Bluetooth"}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="shrink-0 rounded-full gap-1.5"
+                          disabled={hrConnecting}
+                          onClick={onHrConnectClick}
+                        >
+                          {hrConnecting ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Bluetooth className="h-3.5 w-3.5" />
+                          )}
+                          {hrConnected ? "Desconectar" : hrConnection === "disconnected" || hrDeviceName ? "Reconectar" : "Conectar"}
+                        </Button>
+                      </div>
+                      {hrError ? <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{hrError}</p> : null}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pulsaciones</p>
-                      <p className="mt-0.5 font-mono text-2xl font-semibold tabular-nums">
-                        {hrConnected && bpm != null ? (
-                          <>
-                            {bpm}
-                            <span className="ml-1 text-sm font-medium text-muted-foreground">bpm</span>
-                          </>
-                        ) : hrConnecting ? (
-                          <span className="text-base font-medium text-muted-foreground">Conectando…</span>
-                        ) : hrConnection === "disconnected" ? (
-                          <span className="text-base font-medium text-amber-600 dark:text-amber-400">Sin señal</span>
-                        ) : (
-                          <span className="text-base font-medium text-muted-foreground">—</span>
-                        )}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {hrConnected && hrDeviceName
-                          ? `${hrDeviceName}${hrZone != null ? ` · Zona ${hrZone}` : ""}`
-                          : hrDeviceName
-                            ? hrDeviceName
-                            : "Sensor Bluetooth"}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      className="shrink-0 rounded-full gap-1.5"
-                      disabled={hrConnecting}
-                      onClick={onHrConnectClick}
-                    >
-                      {hrConnecting ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Bluetooth className="h-3.5 w-3.5" />
-                      )}
-                      {hrConnected ? "Desconectar" : hrConnection === "disconnected" || hrDeviceName ? "Reconectar" : "Conectar"}
-                    </Button>
-                  </div>
-                  {hrError ? <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{hrError}</p> : null}
-                </div>
 
-                <button type="button" className="block w-full text-center text-xs text-muted-foreground underline-offset-2 hover:underline" onClick={openManualEditor}>
-                  Registrar o editar en formulario manual
-                </button>
+                    <button
+                      type="button"
+                      className="block w-full text-center text-xs text-muted-foreground underline-offset-2 hover:underline"
+                      onClick={openManualEditor}
+                    >
+                      Registrar o editar en formulario manual
+                    </button>
+                  </div>
+                </div>
               </div>
             </DrawerContent>
           </Drawer>
