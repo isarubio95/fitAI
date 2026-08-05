@@ -376,22 +376,35 @@ const Dashboard = () => {
                     }
                   }}
                 >
-                  {!plannedKnown ? (
-                    <>
-                      <Skeleton className="h-4 w-4 rounded-sm" />
-                      <Skeleton className="h-4 w-36" />
-                    </>
-                  ) : hasPlanned ? (
-                    <>
+                  {/* Reserva el ancho de "Editar plan" (el label más largo) para evitar
+                      CLS: el skeleton anterior usaba w-36 y al cargar el botón se encogía. */}
+                  <span className="grid [&>*]:col-start-1 [&>*]:row-start-1">
+                    <span
+                      className="invisible inline-flex items-center gap-2 pointer-events-none"
+                      aria-hidden
+                    >
                       <Pencil className="h-4 w-4" />
                       Editar plan
-                    </>
-                  ) : (
-                    <>
-                      <CalendarIcon className="h-4 w-4" />
-                      Crear plan
-                    </>
-                  )}
+                    </span>
+                    <span className="inline-flex items-center justify-center gap-2">
+                      {!plannedKnown ? (
+                        <>
+                          <Skeleton className="h-4 w-4 shrink-0 rounded-sm" />
+                          <Skeleton className="h-4 w-16" />
+                        </>
+                      ) : hasPlanned ? (
+                        <>
+                          <Pencil className="h-4 w-4" />
+                          Editar plan
+                        </>
+                      ) : (
+                        <>
+                          <CalendarIcon className="h-4 w-4" />
+                          Crear plan
+                        </>
+                      )}
+                    </span>
+                  </span>
                 </Button>
                 <Tabs value={calendarView} onValueChange={(v) => handleCalendarViewChange(v as "month" | "week")}>
                   <AnimatedTabsList value={calendarView} className={pillTabsListClass}>
