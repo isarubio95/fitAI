@@ -4,6 +4,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { checkAndAwardLogros } from "@/hooks/useLogros";
 import { notifyLogrosDesbloqueados } from "@/components/logros/logroToast";
 import type { CardioBlockInput, CardioSportDetailInput, CardioTrackInput } from "@/types/cardio";
+import {
+  MAX_TRACK_POINTS_DB,
+  TRACK_POINTS_INSERT_CHUNK,
+  prepareTrackPointsForStorage,
+} from "@/lib/cardioTrackPoints";
 import { endOfMonth, startOfMonth } from "date-fns";
 
 type CardioSessionInput = {
@@ -241,7 +246,8 @@ export function useUpsertCardioSession() {
         if (deleteTrackPointsError) throw deleteTrackPointsError;
 
         if (input.track.puntos.length > 0) {
-          const pointRows = input.track.puntos.map((p, idx) => ({
+          const prepared = prepareTrackPointsForStorage(input.track.puntos, MAX_TRACK_POINTS_DB);
+          const pointRows = prepared.map((p, idx) => ({
             cardio_track_id: trackId,
             orden: p.orden ?? idx,
             lat: p.lat,
@@ -253,8 +259,11 @@ export function useUpsertCardioSession() {
             cadencia: p.cadencia ?? null,
             potencia_w: p.potencia_w ?? null,
           }));
-          const { error: pointsError } = await supabase.from("cardio_track_point").insert(pointRows);
-          if (pointsError) throw pointsError;
+          for (let i = 0; i < pointRows.length; i += TRACK_POINTS_INSERT_CHUNK) {
+            const chunk = pointRows.slice(i, i + TRACK_POINTS_INSERT_CHUNK);
+            const { error: pointsError } = await supabase.from("cardio_track_point").insert(chunk);
+            if (pointsError) throw pointsError;
+          }
         }
       } else if (sessionId) {
         const { data: existingTrack } = await supabase

@@ -7,6 +7,10 @@ import {
   type GpsMotionSnapshot,
   type GpsMotionTrackerState,
 } from "@/lib/cardioGpsMotion";
+import {
+  MAX_TRACK_POINTS_DRAFT,
+  prepareTrackPointsForStorage,
+} from "@/lib/cardioTrackPoints";
 
 export const CARDIO_GPS_DRAFT_STORAGE_KEY = "gym-log-activeCardioDraft";
 
@@ -87,7 +91,11 @@ export function useCardioGpsRecorder({
         resetMotion();
         return;
       }
-      setPoints(parsed.points);
+      setPoints(
+        parsed.points.length > MAX_TRACK_POINTS_DRAFT
+          ? prepareTrackPointsForStorage(parsed.points, MAX_TRACK_POINTS_DRAFT)
+          : parsed.points,
+      );
       if (parsed.points.length > 0) setHasFix(true);
       const last = parsed.points[parsed.points.length - 1];
       if (last) {
@@ -104,7 +112,17 @@ export function useCardioGpsRecorder({
     if (!sessionId) return;
     const id = window.setTimeout(() => {
       try {
-        localStorage.setItem(CARDIO_GPS_DRAFT_STORAGE_KEY, JSON.stringify({ sessionId, points }));
+        const toStore =
+          points.length > MAX_TRACK_POINTS_DRAFT
+            ? prepareTrackPointsForStorage(points, MAX_TRACK_POINTS_DRAFT)
+            : points;
+        localStorage.setItem(
+          CARDIO_GPS_DRAFT_STORAGE_KEY,
+          JSON.stringify({ sessionId, points: toStore }),
+        );
+        if (toStore.length < points.length) {
+          setPoints(toStore);
+        }
       } catch {
         /* ignore */
       }
@@ -195,7 +213,11 @@ export function useCardioGpsRecorder({
           elevacion_m: altitude != null && Number.isFinite(altitude) ? altitude : null,
         };
         lastAcceptedRef.current = { t: now, lat, lng };
-        setPoints((prev) => [...prev, point]);
+        setPoints((prev) => {
+          const next = [...prev, point];
+          if (next.length <= MAX_TRACK_POINTS_DRAFT) return next;
+          return prepareTrackPointsForStorage(next, MAX_TRACK_POINTS_DRAFT);
+        });
       },
       (err) => {
         setHasFix(false);

@@ -20,6 +20,7 @@ import {
 import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
 import { elevationGainM } from "@/lib/cardioFormat";
 import { shouldAutoPause, shouldAutoResume, readCardioAutoPauseEnabled, writeCardioAutoPauseEnabled } from "@/lib/cardioGpsMotion";
+import { MAX_TRACK_POINTS_DB, prepareTrackPointsForStorage } from "@/lib/cardioTrackPoints";
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
 import { firstNested } from "@/lib/firstNested";
@@ -559,21 +560,24 @@ export function CardioLiveRecorder() {
 
     const { fcMedia: saveFcMedia, fcMax: saveFcMax } = summarizeHeartRate(saveHrSamples);
 
-    const trackPoints: CardioTrackPointInput[] = points.map((p, idx) => {
-      const ts = p.timestamp_utc ? Date.parse(p.timestamp_utc) : NaN;
-      const fc = Number.isFinite(ts) ? nearestHeartRate(saveHrSamples, ts) : null;
-      return {
-        orden: idx,
-        lat: p.lat,
-        lng: p.lng,
-        elevacion_m: p.elevacion_m ?? null,
-        timestamp_utc: p.timestamp_utc,
-        velocidad_m_s: null,
-        fc,
-        cadencia: null,
-        potencia_w: null,
-      };
-    });
+    const trackPoints: CardioTrackPointInput[] = prepareTrackPointsForStorage(
+      points.map((p, idx) => {
+        const ts = p.timestamp_utc ? Date.parse(p.timestamp_utc) : NaN;
+        const fc = Number.isFinite(ts) ? nearestHeartRate(saveHrSamples, ts) : null;
+        return {
+          orden: idx,
+          lat: p.lat,
+          lng: p.lng,
+          elevacion_m: p.elevacion_m ?? null,
+          timestamp_utc: p.timestamp_utc,
+          velocidad_m_s: null,
+          fc,
+          cadencia: null,
+          potencia_w: null,
+        };
+      }),
+      MAX_TRACK_POINTS_DB,
+    );
 
     const dur = elapsedSecFrozen ?? elapsedSec;
     const dist = distanceFrozenM ?? distanceM;
