@@ -3,7 +3,7 @@ export { type BodyMapZone } from "./bodyMapZones";
 export type MuscleLoadLevel = "none" | "light" | "moderate" | "high";
 
 export const LOAD_COLORS: Record<MuscleLoadLevel, string> = {
-  none: "hsl(var(--muted))",
+  none: "hsl(var(--muted-foreground) / 0.3)",
   light: "hsl(var(--primary) / 0.3)",
   moderate: "hsl(var(--primary) / 0.55)",
   high: "hsl(var(--primary) / 0.9)",

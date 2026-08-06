@@ -13,7 +13,8 @@ import { LOAD_COLORS, type MuscleLoadLevel } from "./bodyMapPaths";
 export type { MuscleLoadLevel };
 
 const FILL_COLOR: Record<MuscleLoadLevel, string> = {
-  none: "hsl(var(--muted-foreground) / 0.16)",
+  // Sin drop-shadow hace falta más luz: 0.16 quedaba demasiado oscuro.
+  none: "hsl(var(--muted-foreground) / 0.30)",
   light: "hsl(var(--primary) / 0.3)",
   moderate: "hsl(var(--primary) / 0.55)",
   high: "hsl(var(--primary) / 0.9)",
@@ -21,8 +22,6 @@ const FILL_COLOR: Record<MuscleLoadLevel, string> = {
 
 /** Mismo tono que `Skeleton` (`bg-muted`) */
 const SKELETON_FILL = "hsl(var(--muted))";
-
-const BODY_OUTLINE_FILTER = "drop-shadow(0 0 1px hsl(var(--foreground) / 0.55))";
 
 const BODY_MAP_SVG_CLASS = "max-w-[126px] sm:max-w-[140px]";
 
@@ -82,7 +81,6 @@ const BodyView = memo(function BodyView({
       <svg
         viewBox={viewBox}
         className={cn("h-auto w-full", svgSizeClass)}
-        style={{ filter: BODY_OUTLINE_FILTER }}
         role="img"
         aria-label={ariaLabel}
         aria-busy={isLoading}
@@ -95,10 +93,7 @@ const BodyView = memo(function BodyView({
               <path
                 key={`${viewKey}-${zone.group ?? "neutral"}-${i}`}
                 d={zone.d}
-                stroke="transparent"
-                strokeWidth={0}
-                strokeLinejoin="round"
-                strokeLinecap="round"
+                stroke="none"
                 className={cn(
                   isMuscle && isLoading && "animate-pulse",
                   !isLoading && "transition-colors duration-300",
