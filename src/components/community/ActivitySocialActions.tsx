@@ -104,13 +104,13 @@ export function ActivitySocialActions({
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex w-full items-center -mt-4">
         <Button
           type="button"
           variant="ghost"
           size="sm"
           className={cn(
-            "h-9 gap-1.5 px-2 text-muted-foreground",
+            "h-11 w-1/2 flex-1 gap-2 px-3 text-muted-foreground [&_svg]:size-[1.15rem]",
             liked && "text-rose-600 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-400",
           )}
           aria-pressed={liked}
@@ -118,8 +118,8 @@ export function ActivitySocialActions({
           disabled={!user || isTogglingLike}
           onClick={handleToggleLike}
         >
-          <Heart className={cn("h-4 w-4", liked && "fill-current")} />
-          <span className="tabular-nums text-xs font-medium">{likeCount}</span>
+          <Heart className={cn("h-[1.15rem] w-[1.15rem]", liked && "fill-current")} />
+          <span className="tabular-nums text-sm font-medium">{likeCount}</span>
         </Button>
 
         <Button
@@ -127,15 +127,15 @@ export function ActivitySocialActions({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-9 gap-1.5 px-2 text-muted-foreground",
+            "h-11 w-1/2 flex-1 gap-2 px-3 text-muted-foreground [&_svg]:size-[1.15rem]",
             commentsOpen && "text-foreground",
           )}
           aria-expanded={commentsOpen}
           aria-label={commentsOpen ? "Ocultar comentarios" : "Ver comentarios"}
           onClick={handleToggleComments}
         >
-          <MessageCircle className="h-4 w-4" />
-          <span className="tabular-nums text-xs font-medium">{displayCommentCount}</span>
+          <MessageCircle className="h-[1.15rem] w-[1.15rem]" />
+          <span className="tabular-nums text-sm font-medium">{displayCommentCount}</span>
         </Button>
       </div>
 
