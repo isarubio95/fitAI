@@ -22,12 +22,18 @@ import { LogroMedal } from "@/components/logros/LogroMedal";
 import { LogrosDrawer } from "@/components/logros/LogrosDrawer";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
-import { WorkoutFeedCard, type WorkoutFeedCardAuthor } from "@/components/dashboard/WorkoutFeedCard";
+import {
+  WorkoutFeedCard,
+  type WorkoutFeedCardAuthor,
+  type WorkoutFeedCardSocial,
+} from "@/components/dashboard/WorkoutFeedCard";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { buildAuthAvatarCandidates, useUserAvatar } from "@/hooks/useUserAvatar";
 import { useProfileAvatarUpload } from "@/hooks/useProfileAvatarUpload";
 import { useToast } from "@/hooks/use-toast";
+import { useActivityLikes } from "@/hooks/useActivityLikes";
+import { useActivityCommentCounts } from "@/hooks/useActivityComments";
 
 type ProfileDrawerContextValue = {
   open: boolean;
@@ -236,6 +242,22 @@ function ProfileDrawerSheet() {
   });
 
   const lastWorkouts = workoutsHistory.slice(0, 5);
+
+  const publicWorkoutIds = useMemo(
+    () => lastWorkouts.filter((w) => w.es_publica).map((w) => w.id),
+    [lastWorkouts],
+  );
+  const { likeCounts, likedIds, toggleLike, isToggling: isTogglingLike } =
+    useActivityLikes(publicWorkoutIds);
+  const { commentCounts } = useActivityCommentCounts(publicWorkoutIds);
+
+  const socialFor = (actividadId: string): WorkoutFeedCardSocial => ({
+    likeCount: likeCounts[actividadId] ?? 0,
+    liked: likedIds.has(actividadId),
+    commentCount: commentCounts[actividadId] ?? 0,
+    onToggleLike: () => toggleLike(actividadId),
+    isTogglingLike: isTogglingLike.has(actividadId),
+  });
 
   const displayAvatar = useUserAvatar(
     useMemo(() => {
@@ -460,6 +482,7 @@ function ProfileDrawerSheet() {
                     author={workoutAuthor}
                     onSelectAuthor={openAuthorProfile}
                     onSelectWorkout={setWorkoutDetailsId}
+                    social={w.es_publica ? socialFor(w.id) : null}
                   />
                 ))}
               </div>

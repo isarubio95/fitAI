@@ -50,6 +50,81 @@ export type Database = {
         }
         Relationships: []
       }
+      actividad_comentario: {
+        Row: {
+          actividad_id: string
+          created_at: string
+          id: string
+          texto: string
+          usuario_id: string
+        }
+        Insert: {
+          actividad_id: string
+          created_at?: string
+          id?: string
+          texto: string
+          usuario_id?: string
+        }
+        Update: {
+          actividad_id?: string
+          created_at?: string
+          id?: string
+          texto?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actividad_comentario_actividad_id_fkey"
+            columns: ["actividad_id"]
+            isOneToOne: false
+            referencedRelation: "actividad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actividad_comentario_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      actividad_like: {
+        Row: {
+          actividad_id: string
+          created_at: string
+          id: string
+          usuario_id: string
+        }
+        Insert: {
+          actividad_id: string
+          created_at?: string
+          id?: string
+          usuario_id?: string
+        }
+        Update: {
+          actividad_id?: string
+          created_at?: string
+          id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actividad_like_actividad_id_fkey"
+            columns: ["actividad_id"]
+            isOneToOne: false
+            referencedRelation: "actividad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actividad_like_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cardio_bloque: {
         Row: {
           calorias: number | null

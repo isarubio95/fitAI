@@ -5,6 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserSearch } from "@/hooks/useUserSearch";
 import { useFollows } from "@/hooks/useFollows";
 import { useCommunityFeed } from "@/hooks/useCommunityFeed";
+import { useActivityLikes } from "@/hooks/useActivityLikes";
+import { useActivityCommentCounts } from "@/hooks/useActivityComments";
 import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import {
@@ -12,6 +14,7 @@ import {
   COMMUNITY_CARD_CLASS,
   WorkoutFeedCard,
   WorkoutFeedCardBody,
+  type WorkoutFeedCardSocial,
 } from "@/components/dashboard/WorkoutFeedCard";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +48,22 @@ export default function Community() {
     const items = data?.pages.flatMap((page) => page.items) ?? [];
     return items.slice().sort((a, b) => new Date(b.workout.fecha).getTime() - new Date(a.workout.fecha).getTime());
   }, [data]);
+
+  const feedActividadIds = useMemo(
+    () => normalizedFeed.map((item) => item.workout.id),
+    [normalizedFeed],
+  );
+  const { likeCounts, likedIds, toggleLike, isToggling: isTogglingLike } =
+    useActivityLikes(feedActividadIds);
+  const { commentCounts } = useActivityCommentCounts(feedActividadIds);
+
+  const socialFor = (actividadId: string): WorkoutFeedCardSocial => ({
+    likeCount: likeCounts[actividadId] ?? 0,
+    liked: likedIds.has(actividadId),
+    commentCount: commentCounts[actividadId] ?? 0,
+    onToggleLike: () => toggleLike(actividadId),
+    isTogglingLike: isTogglingLike.has(actividadId),
+  });
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -154,6 +173,7 @@ export default function Community() {
       author={item.author}
       onSelectAuthor={openAuthorProfile}
       onSelectWorkout={setWorkoutDetailsId}
+      social={socialFor(item.workout.id)}
     />
   );
 
@@ -164,6 +184,7 @@ export default function Community() {
       author={item.author}
       onSelectAuthor={openAuthorProfile}
       onSelectWorkout={setWorkoutDetailsId}
+      social={socialFor(item.workout.id)}
     />
   );
 

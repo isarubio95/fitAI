@@ -1,5 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  ActivitySocialActions,
+  type ActivitySocialStatsProps,
+} from "@/components/community/ActivitySocialActions";
 import { WorkoutDetailsContent } from "@/components/dashboard/WorkoutDetailsSheet";
 import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
@@ -19,6 +23,12 @@ export type WorkoutFeedCardAuthor = {
   username?: string | null;
   avatar_url?: string | null;
 };
+
+/** Stats de like/comentario inyectados desde el padre (batch). */
+export type WorkoutFeedCardSocial = Omit<
+  ActivitySocialStatsProps,
+  "actividadId" | "workoutOwnerId" | "className"
+>;
 
 function initialsFromUsername(username?: string | null) {
   return username?.trim()?.[0]?.toUpperCase() || "U";
@@ -47,6 +57,7 @@ type WorkoutFeedCardBodyProps = {
   author?: WorkoutFeedCardAuthor;
   onSelectWorkout: (workoutId: string) => void;
   onSelectAuthor?: (authorId: string) => void;
+  social?: WorkoutFeedCardSocial | null;
 };
 
 /**
@@ -59,7 +70,11 @@ export function WorkoutFeedCardBody({
   author,
   onSelectWorkout,
   onSelectAuthor,
+  social,
 }: WorkoutFeedCardBodyProps) {
+  const showSocial = !!social && workout.es_publica;
+  const ownerId = author?.id ?? workout.usuario_id;
+
   return (
     <>
       {author ? (
@@ -95,6 +110,20 @@ export function WorkoutFeedCardBody({
           <WorkoutDetailsContent workout={workout} variant="compact" hideDate={!!author} />
         </Card>
       </button>
+
+      {showSocial ? (
+        <ActivitySocialActions
+          actividadId={workout.id}
+          workoutOwnerId={ownerId}
+          likeCount={social.likeCount}
+          liked={social.liked}
+          commentCount={social.commentCount}
+          onToggleLike={social.onToggleLike}
+          isTogglingLike={social.isTogglingLike}
+          defaultCommentsOpen={social.defaultCommentsOpen}
+          className="pt-1"
+        />
+      ) : null}
     </>
   );
 }

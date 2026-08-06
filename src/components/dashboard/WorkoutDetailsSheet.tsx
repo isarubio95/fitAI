@@ -12,6 +12,9 @@ import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import { MUSCLE_GROUPS, MUSCLE_GROUP_ICON_SRC } from "@/constants/muscleGroups";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
 import { useWorkoutById } from "@/hooks/useWorkouts";
+import { useActivityLikes } from "@/hooks/useActivityLikes";
+import { useActivityCommentCounts } from "@/hooks/useActivityComments";
+import { ActivitySocialActions } from "@/components/community/ActivitySocialActions";
 import {
   type ActividadWithDetails,
   type EjercicioWithDetails,
@@ -386,6 +389,13 @@ function ExerciseBlock({
 
 export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDetailsSheetProps) {
   const { data: workout, isLoading } = useWorkoutById(workoutId);
+  const socialIds = useMemo(
+    () => (workout?.es_publica && workout.id ? [workout.id] : []),
+    [workout?.es_publica, workout?.id],
+  );
+  const { likeCounts, likedIds, toggleLike, isToggling: isTogglingLike } =
+    useActivityLikes(socialIds);
+  const { commentCounts } = useActivityCommentCounts(socialIds);
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -415,8 +425,26 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
             isLoading={isLoading}
             hideHeader
             radarChartId={workout?.id ? `workout-radar-weight-${workout.id}` : undefined}
-            containerClassName="pb-[calc(5rem+env(safe-area-inset-bottom,0px))]"
+            containerClassName={
+              workout?.es_publica
+                ? undefined
+                : "pb-[calc(5rem+env(safe-area-inset-bottom,0px))]"
+            }
           />
+          {workout?.es_publica ? (
+            <div className="border-t border-border/40 px-6 py-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+              <ActivitySocialActions
+                actividadId={workout.id}
+                workoutOwnerId={workout.usuario_id}
+                likeCount={likeCounts[workout.id] ?? 0}
+                liked={likedIds.has(workout.id)}
+                commentCount={commentCounts[workout.id] ?? 0}
+                onToggleLike={() => toggleLike(workout.id)}
+                isTogglingLike={isTogglingLike.has(workout.id)}
+                defaultCommentsOpen
+              />
+            </div>
+          ) : null}
         </div>
       </DrawerContent>
     </Drawer>
