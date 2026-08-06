@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { UserPlus, UserCheck } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, UserPlus, UserCheck } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useUserSearch } from "@/hooks/useUserSearch";
@@ -25,18 +25,44 @@ export default function Community() {
   const { user } = useAuth();
   const [usernameQuery, setUsernameQuery] = useState("");
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const { data: searchResults = [], isLoading: searching } = useUserSearch(usernameQuery);
   const { followingIds, toggleFollow, isToggling } = useFollows();
-  const { data: feed, isLoading: loadingFeed } = useCommunityFeed();
+  const {
+    data,
+    isLoading: loadingFeed,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useCommunityFeed();
   const { openMyProfile, openUserProfile } = useProfileDrawer();
-
-  const normalizedFeed = useMemo(() => {
-    return (feed ?? []).slice().sort((a, b) => new Date(b.workout.fecha).getTime() - new Date(a.workout.fecha).getTime());
-  }, [feed]);
 
   const showSearchPanel = searching || usernameQuery.trim().length > 0;
   const communityCardClass = COMMUNITY_CARD_CLASS;
+
+  const normalizedFeed = useMemo(() => {
+    const items = data?.pages.flatMap((page) => page.items) ?? [];
+    return items.slice().sort((a, b) => new Date(b.workout.fecha).getTime() - new Date(a.workout.fecha).getTime());
+  }, [data]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasNextPage || showSearchPanel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { root: null, rootMargin: "300px 0px", threshold: 0 },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, normalizedFeed.length, showSearchPanel]);
 
   const openAuthorProfile = (authorId: string) => {
     if (authorId === user?.id) openMyProfile();
@@ -221,6 +247,12 @@ export default function Community() {
           {!showSearchPanel && !loadingFeed && normalizedFeed.length > 1 && (
             <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
               {normalizedFeed.slice(1).map((item) => renderFeedCard(item))}
+            </div>
+          )}
+
+          {!showSearchPanel && !loadingFeed && hasNextPage && (
+            <div ref={loadMoreRef} className="flex items-center justify-center py-4">
+              {isFetchingNextPage && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
             </div>
           )}
         </section>
