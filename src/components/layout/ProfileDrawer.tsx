@@ -114,7 +114,8 @@ export function ProfileDrawerTrigger() {
     <button
       type="button"
       onClick={openMyProfile}
-      className="flex items-center justify-center rounded-full pl-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      aria-label="Perfil"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Avatar className="h-6.5 w-6.5">
         {avatar.src && <AvatarImage src={avatar.src} alt="" onError={avatar.onError} />}

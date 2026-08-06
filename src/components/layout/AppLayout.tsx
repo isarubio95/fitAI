@@ -24,6 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import UsernameSetup from "@/pages/UsernameSetup";
 import { InAppNotificationsProvider } from "@/contexts/InAppNotificationsContext";
+import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
 import { useSafeAreaInsetsSync } from "@/hooks/useSafeAreaInsetsSync";
 import { useLogrosSync } from "@/hooks/useLogrosSync";
 
@@ -235,6 +236,7 @@ export function AppLayout() {
 
               <div className="flex shrink-0 items-center justify-end gap-1 max-md:gap-2">
                 <div id="header-actions-slot" className="flex items-center gap-2 max-md:gap-3" />
+                <InAppNotificationsBell />
                 <SettingsDrawer />
                 <ProfileDrawerTrigger />
               </div>

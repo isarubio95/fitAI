@@ -1,15 +1,12 @@
 import { useMemo, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { subYears, addYears } from "date-fns";
 import { useInAppNotificationsDismiss } from "@/contexts/InAppNotificationsContext";
-import { usePlannedRoutines } from "@/hooks/useWorkoutPlan";
 import { useMyFollowersReceived } from "@/hooks/useMyFollowersReceived";
 import type { InAppNotificationItem } from "@/types/inAppNotification";
 import { useAuth } from "@/hooks/useAuth";
 
 /**
- * `true`: muestra siempre las notificaciones de diseño (seguidor, plan) con datos de ejemplo.
+ * `true`: muestra siempre las notificaciones de diseño (seguidor) con datos de ejemplo.
  * Pon `false` cuando termines de maquetar o antes de desplegar.
  *
  * Si las descartas y quieres verlas otra vez: en localStorage quita del array de
@@ -62,9 +59,7 @@ function markFollowerToastShownOnce(userId: string, rowId: string) {
   rememberToastedFollowerId(userId, rowId);
 }
 
-function buildDesignPreviewInAppNotifications(
-  navigate: ReturnType<typeof useNavigate>,
-): InAppNotificationItem[] {
+function buildDesignPreviewInAppNotifications(): InAppNotificationItem[] {
   return [
     {
       id: "design-preview-new-follower",
@@ -74,17 +69,6 @@ function buildDesignPreviewInAppNotifications(
       seguidorId: "00000000-0000-4000-8000-000000000099",
       username: "ana_gym",
       avatarUrl: null,
-    },
-    {
-      id: "design-preview-plan",
-      kind: "action",
-      title: "Planifica tu semana",
-      body: "Crea un plan para asignar rutinas a cada día.",
-      dismissable: true,
-      accion: {
-        etiqueta: "Crear plan",
-        onClick: () => navigate("/", { state: { openPlanWizard: true } }),
-      },
     },
   ];
 }
@@ -96,15 +80,6 @@ function buildDesignPreviewInAppNotifications(
 export function useInAppNotifications() {
   const { user } = useAuth();
   const { dismissed, dismiss, dismissMany } = useInAppNotificationsDismiss();
-  const navigate = useNavigate();
-
-  const today = useMemo(() => new Date(), []);
-  const { data: allPlannedRoutines } = usePlannedRoutines(
-    subYears(today, 1),
-    addYears(today, 2),
-  );
-  const plannedKnown = allPlannedRoutines !== undefined;
-  const hasPlanned = plannedKnown ? allPlannedRoutines.length > 0 : false;
 
   const {
     data: followersReceived = [],
@@ -162,27 +137,11 @@ export function useInAppNotifications() {
 
   const built = useMemo((): InAppNotificationItem[] => {
     if (HARDCODE_ALL_IN_APP_NOTIFICATIONS_FOR_DESIGN) {
-      return buildDesignPreviewInAppNotifications(navigate);
+      return buildDesignPreviewInAppNotifications();
     }
 
-    const list: InAppNotificationItem[] = [...followerNotifications];
-
-    if (plannedKnown && !hasPlanned) {
-      list.push({
-        id: "plan-suggestion",
-        kind: "action",
-        title: "Planifica tu semana",
-        body: "Crea un plan para asignar rutinas a cada día.",
-        dismissable: true,
-        accion: {
-          etiqueta: "Crear plan",
-          onClick: () => navigate("/", { state: { openPlanWizard: true } }),
-        },
-      });
-    }
-
-    return list;
-  }, [followerNotifications, plannedKnown, hasPlanned, navigate]);
+    return [...followerNotifications];
+  }, [followerNotifications]);
 
   const items = useMemo(() => {
     return built.filter((n) => {
