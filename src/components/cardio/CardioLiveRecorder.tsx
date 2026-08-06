@@ -2,8 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { LiveMetricsBar } from "@/components/cardio/live/LiveMetricsBar";
 import { LiveRecordingSurface } from "@/components/cardio/live/LiveRecordingSurface";
 import { LiveControlsDrawer } from "@/components/cardio/live/LiveControlsDrawer";
+import { LiveStatsFullscreen } from "@/components/cardio/live/LiveStatsFullscreen";
 import { CardioLiveSummaryView } from "@/components/cardio/live/CardioLiveSummaryView";
 import { DiscardSessionDialog } from "@/components/cardio/live/DiscardSessionDialog";
+import { App } from "@capacitor/app";
 import { useToast } from "@/hooks/use-toast";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useCardioGpsRecorder } from "@/hooks/useCardioGpsRecorder";
@@ -80,6 +82,7 @@ export function CardioLiveRecorder() {
   const [controlsDrawerHeightPx, setControlsDrawerHeightPx] = useState(0);
   /** Compacto = métricas + botones; expandido = + pulsaciones + formulario. Altura = contenido. */
   const [controlsExpanded, setControlsExpanded] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const sheetDragStartY = useRef<number | null>(null);
   const [setupDisciplineId, setSetupDisciplineId] = useState<string | null>(null);
   /** Samples HC prefetchados al entrar en resumen (si no hubo BLE). */
@@ -163,6 +166,7 @@ export function CardioLiveRecorder() {
       setPillCirclePhase(null);
       setControlsDrawerHeightPx(0);
       setControlsExpanded(false);
+      setStatsOpen(false);
       sheetDragStartY.current = null;
       setSetupDisciplineId(null);
       setHcSamples([]);
@@ -445,6 +449,19 @@ export function CardioLiveRecorder() {
     resumeRecording,
   ]);
 
+  useEffect(() => {
+    if (!statsOpen) return;
+    let handle: { remove: () => Promise<void> } | undefined;
+    void App.addListener("backButton", () => {
+      setStatsOpen(false);
+    }).then((h) => {
+      handle = h;
+    });
+    return () => {
+      void handle?.remove();
+    };
+  }, [statsOpen]);
+
   const onFinishRecording = () => {
     // Leer el tramo de pausa en local antes de tocar el ref (si el updater
     // ve pauseStartedAt=null, Date.now()-null ≈ Date.now() y el tiempo cae a 0).
@@ -464,6 +481,7 @@ export function CardioLiveRecorder() {
     setElapsedSecFrozen(Math.max(0, Math.floor((Date.now() - startMs - pauseExtra) / 1000)));
     setDistanceFrozenM(distanceM);
     setElevationFrozenM(elevationGainM(points));
+    setStatsOpen(false);
     setStep("summary");
     void updateLiveCardio({
       sessionId: sessionId!,
@@ -753,15 +771,18 @@ export function CardioLiveRecorder() {
 
             {(isSetup || (open && !loadingSession)) ? (
               <>
-                <LiveMetricsBar
-                  bottomOffsetPx={Math.max(controlsDrawerHeightPx, 96) + 12}
-                  isSetup={isSetup}
-                  elapsedSec={elapsedSec}
-                  distanceM={displayDistanceM}
-                  elevationM={displayElevationM}
-                  showNoGpsBanner={showNoGpsBanner}
-                  noGpsBannerText={noGpsBannerText}
-                />
+                {!statsOpen ? (
+                  <LiveMetricsBar
+                    bottomOffsetPx={Math.max(controlsDrawerHeightPx, 96) + 12}
+                    isSetup={isSetup}
+                    elapsedSec={elapsedSec}
+                    distanceM={displayDistanceM}
+                    elevationM={displayElevationM}
+                    showNoGpsBanner={showNoGpsBanner}
+                    noGpsBannerText={noGpsBannerText}
+                    onOpenStats={() => setStatsOpen(true)}
+                  />
+                ) : null}
                 <LiveControlsDrawer
                   ref={controlsDrawerRef}
                   headerTitle={headerTitle}
@@ -806,6 +827,28 @@ export function CardioLiveRecorder() {
           </>
         )}
       </div>
+
+      {statsOpen && (isSetup || (open && !loadingSession)) ? (
+        <LiveStatsFullscreen
+          title={
+            isSetup
+              ? cardioDisciplinas?.find((d) => d.id === setupDisciplineId)?.nombre?.trim() ||
+                "Estadísticas"
+              : headerTitle
+          }
+          disciplineCode={isSetup ? setupDisciplineCodigo : code}
+          metrics={{
+            elapsedSec: isSetup ? 0 : elapsedSec,
+            distanceM: isSetup ? 0 : displayDistanceM,
+            elevationM: isSetup ? 0 : displayElevationM,
+            speedMps: gpsMotion.speedMps,
+            bpm,
+            fcMedia,
+            fcMax,
+          }}
+          onClose={() => setStatsOpen(false)}
+        />
+      ) : null}
 
       <DiscardSessionDialog
         open={confirmDiscard}

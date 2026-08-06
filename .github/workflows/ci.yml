@@ -33,6 +33,11 @@ jobs:
 
       - name: Test
         run: npm test
+        env:
+          # Placeholders so the Supabase client can init when hooks are imported in unit tests.
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-publishable-key
+          VITE_SUPABASE_PROJECT_ID: placeholder
 
       - name: Build
         run: npm run build

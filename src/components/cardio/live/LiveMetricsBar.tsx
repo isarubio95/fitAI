@@ -13,6 +13,7 @@ type Props = {
   elevationM: number;
   showNoGpsBanner: boolean;
   noGpsBannerText: string;
+  onOpenStats?: () => void;
 };
 
 export function LiveMetricsBar({
@@ -23,6 +24,7 @@ export function LiveMetricsBar({
   elevationM,
   showNoGpsBanner,
   noGpsBannerText,
+  onOpenStats,
 }: Props) {
   const metrics = [
     {
@@ -43,18 +45,19 @@ export function LiveMetricsBar({
   ] as const;
 
   return (
-    <div
-      className="pointer-events-none fixed inset-x-0 z-115 px-3"
-      style={{ bottom: `${bottomOffsetPx}px` }}
-    >
-      <div
+    <div className="fixed inset-x-0 z-115 px-3" style={{ bottom: `${bottomOffsetPx}px` }}>
+      <button
+        type="button"
+        aria-label="Ver estadísticas"
+        onClick={onOpenStats}
         className={cn(
-          "mx-auto flex max-w-lg flex-col overflow-hidden rounded-[1.75rem]",
+          "mx-auto flex w-full max-w-lg flex-col overflow-hidden rounded-[1.75rem] text-left",
           "border border-border/80 bg-card/95 shadow-lg backdrop-blur-xl",
+          "transition-transform active:scale-[0.98]",
         )}
       >
         {showNoGpsBanner ? (
-          <p className="border-b border-red-500/25 bg-red-500/15 px-3 py-1.5 text-center text-[11px] font-semibold tracking-wide text-red-600 dark:text-red-400">
+          <p className="pointer-events-none border-b border-red-500/25 bg-red-500/15 px-3 py-1.5 text-center text-[11px] font-semibold tracking-wide text-red-600 dark:text-red-400">
             {noGpsBannerText}
           </p>
         ) : null}
@@ -76,7 +79,7 @@ export function LiveMetricsBar({
             </div>
           ))}
         </div>
-      </div>
+      </button>
     </div>
   );
 }

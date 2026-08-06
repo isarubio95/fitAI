@@ -4,6 +4,7 @@
 
 - **Total de ejercicios:** 750
 - **Generado:** 2026-06-30
+- **Verificado contra BD:** 2026-08-06
 
 ## Resumen por grupo muscular
 
@@ -748,11 +749,11 @@
 | Plancha Lateral Inclinada | Fuerza | Banco Plano | 3/3 | duracion | Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
 | Pliegue completo con Bandas | Fuerza | Bandas | 3/3 | peso_reps | Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
 | Pliegue completo entre Poleas | Fuerza | Polea | 3/3 | peso_reps | Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
-| Puente Lateral | Fuerza | Ninguno | 3/3 | peso_reps | Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
+| Puente Lateral | Fuerza | Ninguno | 3/3 | duracion | Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
 | Puente Lateral con Abducción de Cadera | Fuerza | Ninguno | 3/3 | peso_reps | Glúteo Mayor, Glúteo Medio, Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
-| Puente Lateral con Mancuerna | Fuerza | Mancuernas | 2/3 | peso_reps | Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
-| Puente Lateral Declinado | Fuerza | Banco Plano | 3/3 | peso_reps | Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
-| Puente Lateral Declinado Aislada | Fuerza | Banco Plano | 3/3 | peso_reps | Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
+| Puente Lateral con Mancuerna | Fuerza | Mancuernas | 2/3 | duracion | Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
+| Puente Lateral Declinado | Fuerza | Banco Plano | 3/3 | duracion | Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
+| Puente Lateral Declinado Aislada | Fuerza | Banco Plano | 3/3 | duracion | Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
 | Pulse Up | Fuerza | Ninguno | 2/3 | peso_reps | Oblicuo Externo, Oblicuo Interno, Recto Abdominal, Recto Femoral, Vasto Intermedio, Vasto Lateral, Vasto Medial |
 | Roll Reverse Crunch | Fuerza | Otro | 3/3 | peso_reps | Glúteo Mayor, Glúteo Medio, Oblicuo Externo, Oblicuo Interno, Recto Abdominal |
 | Russian Twist | Fuerza | Ninguno | 3/3 | peso_reps | Oblicuo Externo, Oblicuo Interno, Transverso Abdominal |
