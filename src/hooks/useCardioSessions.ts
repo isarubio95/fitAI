@@ -42,6 +42,28 @@ export function useCardioDisciplinas() {
   });
 }
 
+/** Última disciplina de un cardio completado (para preselección rápida en setup). */
+export function useLastCardioDisciplineId() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["lastCardioDisciplineId", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cardio_sesion")
+        .select("cardio_disciplina_id")
+        .eq("usuario_id", user!.id)
+        .not("fecha_fin", "is", null)
+        .not("cardio_disciplina_id", "is", null)
+        .order("fecha_inicio", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.cardio_disciplina_id as string | null) ?? null;
+    },
+  });
+}
+
 export function useCardioSessions() {
   const { user } = useAuth();
   return useQuery({
@@ -256,6 +278,9 @@ export function useUpsertCardioSession() {
       qc.invalidateQueries({ queryKey: ["cardioDisciplinas"] });
       qc.invalidateQueries({ queryKey: ["activeCardioSession"] });
       qc.invalidateQueries({ queryKey: ["trainingLoad"] });
+      if (input.fecha_fin) {
+        qc.invalidateQueries({ queryKey: ["lastCardioDisciplineId"] });
+      }
 
       // Sesión completada: evaluar logros y celebrar los nuevos con un toast.
       if (input.fecha_fin && user?.id) {

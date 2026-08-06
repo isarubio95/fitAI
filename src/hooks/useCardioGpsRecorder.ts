@@ -30,6 +30,8 @@ type Options = {
   sessionId: string | null;
   /** Si es false, se detiene watchPosition y no se añaden puntos. */
   recording: boolean;
+  /** Escucha GPS sin grabar (p. ej. pantalla de setup antes de iniciar). */
+  preview?: boolean;
   minIntervalMs?: number;
   minDeltaM?: number;
   maxAccuracyM?: number;
@@ -38,6 +40,7 @@ type Options = {
 export function useCardioGpsRecorder({
   sessionId,
   recording,
+  preview = false,
   minIntervalMs = 4000,
   minDeltaM = 6,
   maxAccuracyM = 85,
@@ -45,6 +48,7 @@ export function useCardioGpsRecorder({
   const [points, setPoints] = useState<CardioGpsPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [denied, setDenied] = useState(false);
+  const [hasFix, setHasFix] = useState(false);
 
   const lastAcceptedRef = useRef<{ t: number; lat: number; lng: number } | null>(null);
   const watchIdRef = useRef<number | null>(null);
@@ -65,6 +69,7 @@ export function useCardioGpsRecorder({
         return;
       }
       setPoints(parsed.points);
+      if (parsed.points.length > 0) setHasFix(true);
       const last = parsed.points[parsed.points.length - 1];
       if (last) {
         const ts = Date.parse(last.timestamp_utc);
@@ -97,6 +102,7 @@ export function useCardioGpsRecorder({
     lastAcceptedRef.current = null;
     setError(null);
     setDenied(false);
+    setHasFix(false);
   }, []);
 
   useEffect(() => {
@@ -107,13 +113,18 @@ export function useCardioGpsRecorder({
       }
     };
 
-    if (!sessionId || !recording) {
+    const shouldWatch = preview || (Boolean(sessionId) && recording);
+    if (!shouldWatch) {
       clearWatch();
+      if (!preview && !recording) {
+        setHasFix(false);
+      }
       return;
     }
 
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setError("Tu navegador no permite geolocalización.");
+      setHasFix(false);
       return;
     }
 
@@ -123,6 +134,12 @@ export function useCardioGpsRecorder({
     const geo = navigator.geolocation;
     const wid = geo.watchPosition(
       (pos) => {
+        setHasFix(true);
+        setError(null);
+        setDenied(false);
+
+        if (!sessionId || !recording) return;
+
         const { latitude, longitude, altitude, accuracy } = pos.coords;
         if (accuracy != null && accuracy > maxAccuracyM) return;
         const now = Date.now();
@@ -144,6 +161,7 @@ export function useCardioGpsRecorder({
         setPoints((prev) => [...prev, point]);
       },
       (err) => {
+        setHasFix(false);
         if (err.code === 1) setDenied(true);
         setError(err.message || "Error de geolocalización");
       },
@@ -151,9 +169,9 @@ export function useCardioGpsRecorder({
     );
     watchIdRef.current = wid;
     return clearWatch;
-  }, [sessionId, recording, minIntervalMs, minDeltaM, maxAccuracyM]);
+  }, [sessionId, recording, preview, minIntervalMs, minDeltaM, maxAccuracyM]);
 
   const distanceM = totalPathLengthM(points);
 
-  return { points, distanceM, error, denied, clearDraft };
+  return { points, distanceM, error, denied, hasFix, clearDraft };
 }

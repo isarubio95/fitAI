@@ -1,10 +1,8 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { Home, BarChart3, LogOut, ClipboardList, Plus, Scale, Users } from "lucide-react";
+import { NavLink } from "react-router-dom";
+import { Home, BarChart3, LogOut, ClipboardList, Plus, Users } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
-import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ProfileDrawerTrigger } from "./ProfileDrawer";
@@ -12,11 +10,6 @@ import { SettingsDrawer } from "./SettingsDrawer";
 import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
-import { useStartCardioLiveSession, useCardioDisciplinas } from "@/hooks/useCardioSessions";
-import { useToast } from "@/hooks/use-toast";
-import { CardioTypePickerDialog } from "@/components/cardio/CardioTypePickerDialog";
-import { startLiveCardio } from "@/lib/liveSessionNotifications";
-import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,13 +26,8 @@ const navItems = [
 
 export function DesktopSidebar() {
   const { signOut } = useAuth();
-  const navigate = useNavigate();
   const { openNew } = useGlobalWorkoutDrawer();
-  const { openNewWithDiscipline, openLiveRecording } = useGlobalCardioDrawer();
-  const startCardioLive = useStartCardioLiveSession();
-  const { data: cardioDisciplinas } = useCardioDisciplinas();
-  const { toast } = useToast();
-  const [cardioTypeDialogOpen, setCardioTypeDialogOpen] = useState(false);
+  const { openLiveSetup } = useGlobalCardioDrawer();
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-white/50 dark:bg-card/50 backdrop-blur-2xl h-dvh sticky top-0">
@@ -65,58 +53,15 @@ export function DesktopSidebar() {
                 <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
               </div>
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-base" onClick={() => setCardioTypeDialogOpen(true)}>
+            <DropdownMenuItem className="text-base" onClick={() => openLiveSetup()}>
               <CardioWorkoutIcon className="h-5 w-5 mr-2 text-blue-500" />
               <div className="min-w-0">
                 <p className="font-medium">Entreno de Cardio</p>
                 <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>
               </div>
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-base" onClick={() => navigate("/evolution", { state: { tab: "measurements", action: "new" } })}>
-              <Scale className="h-5 w-5 mr-2 shrink-0 text-emerald-500" />
-              <div className="min-w-0">
-                <p className="font-medium">Medida</p>
-                <p className="text-xs text-muted-foreground">Registra peso, cintura, etc.</p>
-              </div>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <CardioTypePickerDialog
-          open={cardioTypeDialogOpen}
-          onOpenChange={setCardioTypeDialogOpen}
-          isConfirmPending={startCardioLive.isPending}
-          onConfirm={async (disciplineId) => {
-            const d = cardioDisciplinas?.find((x) => x.id === disciplineId);
-            const titulo = getDefaultCardioTitle(d?.nombre);
-            try {
-              const id = await startCardioLive.mutateAsync({
-                cardio_disciplina_id: disciplineId,
-                titulo,
-              });
-              void startLiveCardio({
-                sessionId: id,
-                title: titulo,
-                startedAtMs: Date.now(),
-                wantsLocation: cardioDisciplineUsesGpsMap(d?.codigo ?? null),
-              });
-              openLiveRecording(id);
-              setCardioTypeDialogOpen(false);
-            } catch (e: unknown) {
-              const msg =
-                e && typeof e === "object" && "message" in e && typeof (e as { message: string }).message === "string"
-                  ? (e as { message: string }).message
-                  : e instanceof Error
-                    ? e.message
-                    : "Inténtalo de nuevo.";
-              toast({ title: "No se pudo iniciar la sesión", description: msg, variant: "destructive" });
-            }
-          }}
-          onConfirmManual={(disciplineId) => {
-            openNewWithDiscipline(disciplineId);
-            setCardioTypeDialogOpen(false);
-          }}
-        />
 
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
@@ -158,4 +103,3 @@ export function DesktopSidebar() {
     </aside>
   );
 }
-

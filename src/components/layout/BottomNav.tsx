@@ -1,18 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Home, BarChart3, ClipboardList, Scale, Plus, Users } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
+import { Home, BarChart3, ClipboardList, Plus, Users } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
-import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
-import { useStartCardioLiveSession, useCardioDisciplinas } from "@/hooks/useCardioSessions";
-import { useToast } from "@/hooks/use-toast";
-import { CardioTypePickerDialog } from "@/components/cardio/CardioTypePickerDialog";
 import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
-import { startLiveCardio } from "@/lib/liveSessionNotifications";
-import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
@@ -24,14 +18,9 @@ const navItems = [
 
 export function BottomNav() {
   const location = useLocation();
-  const navigate = useNavigate();
   const { openNew } = useGlobalWorkoutDrawer();
-  const { openNewWithDiscipline, openLiveRecording } = useGlobalCardioDrawer();
-  const startCardioLive = useStartCardioLiveSession();
-  const { data: cardioDisciplinas } = useCardioDisciplinas();
-  const { toast } = useToast();
+  const { openLiveSetup } = useGlobalCardioDrawer();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [cardioTypeDialogOpen, setCardioTypeDialogOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
   useBackCloseLayer({
@@ -85,7 +74,7 @@ export function BottomNav() {
 
   return (
     <>
-      {/* Overlay que difumina la página cuando el menú Añadir está abierto */}
+      {/* Overlay que difumina la página cuando el menú Registrar está abierto */}
       <div
         aria-hidden
         className={cn(
@@ -118,7 +107,7 @@ export function BottomNav() {
         </button>
         <button
           className="flex w-full items-center gap-3.5 rounded-none px-4 py-3 text-left text-base transition-colors hover:bg-accent/30"
-          onClick={() => { setCardioTypeDialogOpen(true); setIsMenuOpen(false); }}
+          onClick={() => { openLiveSetup(); setIsMenuOpen(false); }}
         >
           <CardioWorkoutIcon className="h-6 w-6 text-blue-500" />
           <div className="min-w-0">
@@ -126,53 +115,7 @@ export function BottomNav() {
             <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>
           </div>
         </button>
-        <button
-          className="flex w-full items-center gap-3.5 rounded-none px-4 py-3 text-left text-base transition-colors hover:bg-accent/30"
-          onClick={() => { navigate("/evolution", { state: { tab: "measurements", action: "new" } }); setIsMenuOpen(false); }}
-        >
-          <Scale className="h-6 w-6 shrink-0 text-emerald-500" />
-          <div className="min-w-0">
-            <p className="font-medium">Medida</p>
-            <p className="text-xs text-muted-foreground">Registra peso, cintura, etc.</p>
-          </div>
-        </button>
       </div>
-
-      <CardioTypePickerDialog
-        open={cardioTypeDialogOpen}
-        onOpenChange={setCardioTypeDialogOpen}
-        isConfirmPending={startCardioLive.isPending}
-        onConfirm={async (disciplineId) => {
-          const d = cardioDisciplinas?.find((x) => x.id === disciplineId);
-          const titulo = getDefaultCardioTitle(d?.nombre);
-          try {
-            const id = await startCardioLive.mutateAsync({
-              cardio_disciplina_id: disciplineId,
-              titulo,
-            });
-            void startLiveCardio({
-              sessionId: id,
-              title: titulo,
-              startedAtMs: Date.now(),
-              wantsLocation: cardioDisciplineUsesGpsMap(d?.codigo ?? null),
-            });
-            openLiveRecording(id);
-            setCardioTypeDialogOpen(false);
-            } catch (e: unknown) {
-              const msg =
-                e && typeof e === "object" && "message" in e && typeof (e as { message: string }).message === "string"
-                  ? (e as { message: string }).message
-                  : e instanceof Error
-                    ? e.message
-                    : "Inténtalo de nuevo.";
-              toast({ title: "No se pudo iniciar la sesión", description: msg, variant: "destructive" });
-            }
-        }}
-        onConfirmManual={(disciplineId) => {
-          openNewWithDiscipline(disciplineId);
-          setCardioTypeDialogOpen(false);
-        }}
-      />
 
       {/* BARRA DE NAVEGACIÓN */}
       <div className="relative flex h-18 items-center justify-around overflow-hidden rounded-4xl border border-black/10 bg-white/70 px-2 pb-[calc(env(safe-area-inset-bottom)*0.55)] pt-1 shadow-[0_10px_35px_rgba(0,0,0,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-[hsl(222_47%_12%/0.88)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.06)] dark:ring-1 dark:ring-white/5">
@@ -197,7 +140,7 @@ export function BottomNav() {
                       isMenuOpen ? "text-primary" : "text-muted-foreground"
                     )}
                   >
-                    Añadir
+                    Registrar
                   </span>
                 </button>
               </div>

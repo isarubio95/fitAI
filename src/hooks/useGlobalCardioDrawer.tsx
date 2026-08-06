@@ -21,6 +21,8 @@ type GlobalCardioDrawerContextType = {
   openNewWithDiscipline: (disciplineId: string) => void;
   openEdit: (sessionId: string) => void;
   openFromTemplate: (title: string, disciplineId: string | null, blocks: CardioRoutineBlockInput[]) => void;
+  /** Abre el mapa en modo setup (sin sesión) para elegir disciplina. */
+  openLiveSetup: () => void;
   openLiveRecording: (sessionId: string, pillOrigin?: PillCircleOrigin) => void;
   closeLiveRecording: () => void;
   setOpen: (open: boolean) => void;
@@ -90,6 +92,20 @@ export function GlobalCardioDrawerProvider({ children }: { children: ReactNode }
     });
   }, []);
 
+  const openLiveSetup = useCallback(() => {
+    setState({
+      open: false,
+      sessionId: null,
+      liveOpen: true,
+      liveSessionId: null,
+      initialDisciplineId: undefined,
+      templateBlocks: undefined,
+      templateTitle: undefined,
+      templateDisciplineId: undefined,
+      pillOrigin: undefined,
+    });
+  }, []);
+
   const openLiveRecording = useCallback((sessionId: string, pillOrigin?: PillCircleOrigin) => {
     setState({
       open: false,
@@ -122,6 +138,7 @@ export function GlobalCardioDrawerProvider({ children }: { children: ReactNode }
         openNewWithDiscipline,
         openEdit,
         openFromTemplate,
+        openLiveSetup,
         openLiveRecording,
         closeLiveRecording,
         setOpen,
