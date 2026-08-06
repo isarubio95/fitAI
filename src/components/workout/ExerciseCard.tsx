@@ -24,6 +24,7 @@ import {
   formatRitmoSegKmLabel,
 } from "@/types/workout";
 import { ActiveWorkoutCheckbox } from "./ActiveWorkoutCheckbox";
+import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 
 interface ExerciseCardProps {
   exercise: ExerciseFormData;
@@ -35,7 +36,7 @@ interface ExerciseCardProps {
   onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number | null) => void;
   onAutoSaveSet?: (setIndex: number) => void;
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
-  dragHandleProps?: Record<string, any>;
+  dragHandleProps?: DraggableSyntheticListeners & Partial<DraggableAttributes>;
   onViewExerciseDetails?: (exercise: ExerciseFormData) => void;
 }
 

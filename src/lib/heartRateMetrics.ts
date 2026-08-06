@@ -38,6 +38,26 @@ export function summarizeHeartRate(samples: HeartRateSample[]): { fcMedia: numbe
 }
 
 /**
+ * Fusiona samples BLE + Health Connect. Si hay un sample BLE dentro de `maxDeltaMs`
+ * del instante HC, gana BLE (no se añade el de HC).
+ */
+export function mergeHeartRateSamples(
+  ble: HeartRateSample[],
+  healthConnect: HeartRateSample[],
+  maxDeltaMs = 15_000,
+): HeartRateSample[] {
+  if (ble.length === 0) return healthConnect.slice().sort((a, b) => a.t - b.t);
+  if (healthConnect.length === 0) return ble.slice().sort((a, b) => a.t - b.t);
+
+  const merged = ble.slice();
+  for (const hc of healthConnect) {
+    if (nearestHeartRate(ble, hc.t, maxDeltaMs) != null) continue;
+    merged.push(hc);
+  }
+  return merged.sort((a, b) => a.t - b.t);
+}
+
+/**
  * Asigna a cada timestamp el sample FC más cercano.
  * Si no hay samples o el más cercano está a más de `maxDeltaMs`, devuelve null.
  */

@@ -82,6 +82,14 @@ type CatalogItem = {
   usuario_id?: string | null;
   registro_series?: string | null;
   __source?: string;
+  imagen?: string | null;
+  gif_url?: string | null;
+  body_part?: string | string[] | null;
+  equipment?: string | null;
+  instructions?: string[] | null;
+  tipo?: string | null;
+  grupo_muscular?: string | null;
+  dificultad?: string | null;
 };
 
 function toggleMuscleGroup(list: string[], value: string) {
@@ -359,7 +367,7 @@ export function ExerciseSelector({
 
   const detailSheet = (
     <ExerciseDetailSheet
-      exercise={detailExercise as any}
+      exercise={detailExercise}
       open={!!detailExercise}
       onOpenChange={(next) => {
         if (!next) setDetailExercise(null);

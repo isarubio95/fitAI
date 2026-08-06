@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
 
@@ -36,6 +37,17 @@ type PredefinedRoutinesFilters = {
   enabled?: boolean;
 };
 
+type RutinaPlantilla = Tables<"rutina">;
+
+type RutinaEjercicioPlantillaJoin = Tables<"rutina_ejercicio"> & {
+  tipo_ejercicio: {
+    id: string;
+    nombre: string;
+    musculos_involucrados: string[] | null;
+    gif_url: string | null;
+  } | null;
+};
+
 function buildNivelOrFilter(nivel: string) {
   const n = nivel.trim().toLowerCase();
   if (n === "principiante") return "nivel.ilike.%principiante%,nivel.ilike.%bajo%,nivel.ilike.%baja%";
@@ -55,29 +67,26 @@ export function usePredefinedRoutines(filters?: PredefinedRoutinesFilters) {
     queryFn: async () => {
       if (!nivel || !duracion || !grupo) return [];
 
-      const { data: rutinas, error } = await (supabase
+      const { data: rutinas, error } = await supabase
         .from("rutina")
-        .select("*") as any)
+        .select("*")
         .eq("es_plantilla", true)
         .or(buildNivelOrFilter(nivel))
         .eq("grupo_muscular", grupo)
         .order("created_at", { ascending: false });
 
       // Duración: 60+ se interpreta como >= 60
-      // Nota: aplicamos esto como filtro adicional vía "post" porque estamos usando .select("*") typed loosely.
-      // (Podemos moverlo a la query cuando tipemos Database.rutina por completo.)
-      const rutinasFiltradasPorDuracion = (rutinas ?? []).filter((r: any) => {
-        const d = Number(r?.duracion_minutos ?? 0);
+      const rutinasFiltradasPorDuracion = ((rutinas ?? []) as RutinaPlantilla[]).filter((r) => {
+        const d = Number(r.duracion_minutos ?? 0);
         if (duracion === 60) return d >= 60;
         return d === duracion;
       });
 
-      // Reemplazamos para el resto del flujo
       const rutinasFinal = rutinasFiltradasPorDuracion;
       if (error) throw error;
-      if (!rutinasFinal?.length) return [];
+      if (!rutinasFinal.length) return [];
 
-      const rutinaIds = rutinasFinal.map((r: any) => r.id);
+      const rutinaIds = rutinasFinal.map((r) => r.id);
       const { data: ejercicios, error: ejError } = await supabase
         .from("rutina_ejercicio")
         .select("*, tipo_ejercicio(id, nombre, musculos_involucrados, gif_url)")
@@ -85,15 +94,30 @@ export function usePredefinedRoutines(filters?: PredefinedRoutinesFilters) {
         .order("orden");
       if (ejError) throw ejError;
 
-      return rutinasFinal.map((r: any) => ({
-        ...r,
-        nivel: (r as any).nivel,
-        duracion_minutos: (r as any).duracion_minutos,
-        grupo_muscular: (r as any).grupo_muscular,
-        ejercicios: (ejercicios || [])
-          .filter((ej) => ej.rutina_id === r.id)
-          .map((ej) => ({ ...ej, tipo_ejercicio: ej.tipo_ejercicio! })),
-      })) as PredefinedRoutine[];
+      const ejerciciosJoined = (ejercicios ?? []) as RutinaEjercicioPlantillaJoin[];
+
+      return rutinasFinal.map((r): PredefinedRoutine => ({
+        id: r.id,
+        nombre: r.nombre,
+        icono: r.icono,
+        descripcion: r.descripcion,
+        nivel: r.nivel,
+        duracion_minutos: r.duracion_minutos,
+        grupo_muscular: r.grupo_muscular,
+        ejercicios: ejerciciosJoined
+          .filter((ej) => ej.rutina_id === r.id && ej.tipo_ejercicio)
+          .map((ej) => ({
+            id: ej.id,
+            tipo_ejercicio_id: ej.tipo_ejercicio_id!,
+            series_objetivo: ej.series_objetivo,
+            repes_min: ej.repes_min,
+            repes_max: ej.repes_max,
+            rir: ej.rir,
+            orden: ej.orden,
+            descanso: ej.descanso,
+            tipo_ejercicio: ej.tipo_ejercicio!,
+          })),
+      }));
     },
   });
 }
@@ -160,8 +184,9 @@ export function useCloneRoutine() {
       queryClient.invalidateQueries({ queryKey: ["routines"] });
       toast({ title: "✅ Rutina guardada en tu perfil" });
     },
-    onError: (err: any) => {
-      toast({ title: "Error al clonar", description: err.message, variant: "destructive" });
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: "Error al clonar", description: message, variant: "destructive" });
     },
   });
 }

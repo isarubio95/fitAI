@@ -1,10 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "./useAuth";
-import type { RutinaWithDetails } from "@/types/routine";
+import type { RutinaWithDetails, RutinaEjercicioWithDetails } from "@/types/routine";
 import { migrateRoutineIconsFromLocalStorage } from "@/lib/routineIcons";
 
 let localIconMigrationDone = false;
+
+type RutinaEjercicioJoinRow = Tables<"rutina_ejercicio"> & {
+  tipo_ejercicio: Tables<"tipo_ejercicio"> | null;
+  usuario_ejercicio: Tables<"usuario_ejercicio"> | null;
+};
+
+function mapRutinaEjercicio(ej: RutinaEjercicioJoinRow): RutinaEjercicioWithDetails {
+  const tipo = ej.tipo_ejercicio ?? ej.usuario_ejercicio;
+  return {
+    ...ej,
+    tipo_ejercicio: tipo!,
+  };
+}
 
 export function useRoutines() {
   const { user } = useAuth();
@@ -17,9 +31,9 @@ export function useRoutines() {
         await migrateRoutineIconsFromLocalStorage(user.id, supabase);
       }
 
-      const { data: rutinas, error } = await (supabase
+      const { data: rutinas, error } = await supabase
         .from("rutina")
-        .select("*") as any)
+        .select("*")
         .eq("usuario_id", user!.id)
         .not("es_plantilla", "eq", true)
         .order("orden", { ascending: true, nullsFirst: false })
@@ -35,14 +49,13 @@ export function useRoutines() {
         .order("orden");
       if (ejError) throw ejError;
 
+      const ejerciciosJoined = (ejercicios ?? []) as RutinaEjercicioJoinRow[];
+
       return rutinas.map((r) => ({
         ...r,
-        ejercicios: (ejercicios || [])
+        ejercicios: ejerciciosJoined
           .filter((ej) => ej.rutina_id === r.id)
-          .map((ej) => ({
-            ...ej,
-            tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
-          })),
+          .map(mapRutinaEjercicio),
       }));
     },
   });
@@ -70,12 +83,11 @@ export function useRoutineById(id: string | null) {
         .order("orden");
       if (ejError) throw ejError;
 
+      const ejerciciosJoined = (ejercicios ?? []) as RutinaEjercicioJoinRow[];
+
       return {
         ...rutina,
-        ejercicios: (ejercicios || []).map((ej) => ({
-          ...ej,
-          tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
-        })),
+        ejercicios: ejerciciosJoined.map(mapRutinaEjercicio),
       };
     },
   });
@@ -100,7 +112,7 @@ export function useUpdateRoutineOrder() {
     mutationFn: async (items: { id: string; orden: number }[]) => {
       // Update each routine's orden in parallel
       const promises = items.map(({ id, orden }) =>
-        supabase.from("rutina").update({ orden } as any).eq("id", id)
+        supabase.from("rutina").update({ orden }).eq("id", id)
       );
       const results = await Promise.all(promises);
       const err = results.find((r) => r.error);

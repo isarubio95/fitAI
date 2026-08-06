@@ -48,8 +48,12 @@ export function useLastPerformance(opts: {
       if (ejError) throw ejError;
       if (!ejercicios?.length) return null;
 
-      const lastEj = ejercicios[0];
-      const fecha = (lastEj.actividad as any)?.fecha || "";
+      type EjercicioConActividad = {
+        id: string;
+        actividad: { fecha: string; fecha_fin: string | null } | null;
+      };
+      const lastEj = ejercicios[0] as EjercicioConActividad;
+      const fecha = lastEj.actividad?.fecha || "";
 
       const { data: series, error: sError } = await supabase
         .from("serie")

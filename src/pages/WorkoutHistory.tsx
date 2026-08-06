@@ -325,7 +325,19 @@ const WorkoutHistory = () => {
 
 export default WorkoutHistory;
 
-function WeeklyConsistencyTooltip({ active, payload }: any) {
+function WeeklyConsistencyTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{
+    value?: number | string;
+    payload?: {
+      name?: string;
+      workouts?: number;
+    };
+  }>;
+}) {
   if (!active || !payload?.length) return null;
   const data = payload[0]?.payload;
   if (!data) return null;

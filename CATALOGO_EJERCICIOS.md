@@ -1,4 +1,4 @@
-# CATÁLOGO DE EJERCICIOS — FitAI
+# CATÁLOGO DE EJERCICIOS — Track Gym
 
 > Catálogo completo del sistema (`tipo_ejercicio`). Fuente: base de datos Supabase.
 

@@ -3,6 +3,7 @@ import { parseHeartRate } from "@/lib/bleHeartRate";
 import {
   estimateMaxHeartRate,
   heartRateZone,
+  mergeHeartRateSamples,
   nearestHeartRate,
   sampleHeartRateSeries,
   summarizeHeartRate,
@@ -49,5 +50,27 @@ describe("heartRateMetrics", () => {
     expect(estimateMaxHeartRate(null)).toBe(190);
     expect(heartRateZone(95, 190)).toBe(1);
     expect(heartRateZone(162, 190)).toBe(4);
+  });
+
+  it("merges Health Connect samples where BLE is missing", () => {
+    const ble: HeartRateSample[] = [
+      { t: 1000, bpm: 120 },
+      { t: 5000, bpm: 140 },
+    ];
+    const hc: HeartRateSample[] = [
+      { t: 1100, bpm: 999 }, // cerca de BLE → se descarta
+      { t: 25_000, bpm: 155 },
+    ];
+    const merged = mergeHeartRateSamples(ble, hc);
+    expect(merged).toEqual([
+      { t: 1000, bpm: 120 },
+      { t: 5000, bpm: 140 },
+      { t: 25_000, bpm: 155 },
+    ]);
+  });
+
+  it("returns only Health Connect when BLE is empty", () => {
+    const hc: HeartRateSample[] = [{ t: 3000, bpm: 130 }];
+    expect(mergeHeartRateSamples([], hc)).toEqual(hc);
   });
 });

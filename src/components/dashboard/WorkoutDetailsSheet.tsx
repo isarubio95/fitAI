@@ -234,16 +234,16 @@ function RadarAngleTick(props: {
 
   // Más horizontal que vertical → etiqueta de lado (izq/der).
   const isSide = Math.abs(x - cx) > Math.abs(y - cy);
-  let dx = 0;
-  let dy = 0;
-
-  if (isSide) {
-    dx = x < cx ? RADAR.sideLabelNudgeXTowardCenter : -RADAR.sideLabelNudgeXTowardCenter;
-    dy = RADAR.sideLabelNudgeY;
-  } else {
-    // Arriba → subir; abajo → bajar (hacia afuera).
-    dy = y < cy ? -RADAR.verticalLabelNudgeOut : RADAR.verticalLabelNudgeOut;
-  }
+  const dx = isSide
+    ? x < cx
+      ? RADAR.sideLabelNudgeXTowardCenter
+      : -RADAR.sideLabelNudgeXTowardCenter
+    : 0;
+  const dy = isSide
+    ? RADAR.sideLabelNudgeY
+    : y < cy
+      ? -RADAR.verticalLabelNudgeOut
+      : RADAR.verticalLabelNudgeOut;
 
   return (
     <text

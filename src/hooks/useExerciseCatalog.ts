@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import type { RegistroSeries } from "@/types/workout";
 
@@ -9,6 +10,20 @@ export type ExerciseCatalogFilters = {
   grupos?: string[];
   equipments?: string[];
 };
+
+type TipoEjercicioRow = Tables<"tipo_ejercicio"> & {
+  body_part?: string[] | null;
+};
+
+type UsuarioEjercicioRow = Tables<"usuario_ejercicio"> & {
+  body_part?: string[] | null;
+};
+
+type CatalogItem = TipoEjercicioRow & { __source: "catalogo" };
+type UserItem = UsuarioEjercicioRow & { __source: "usuario" };
+export type ExerciseCatalogItem = CatalogItem | UserItem;
+
+const EMPTY_USUARIO_RESULT: { data: null; error: null } = { data: null, error: null };
 
 export function useExerciseCatalogInfinite(filters?: ExerciseCatalogFilters, pageSize = 30) {
   const { user } = useAuth();
@@ -53,14 +68,20 @@ export function useExerciseCatalogInfinite(filters?: ExerciseCatalogFilters, pag
 
       const [catRes, usrRes] = await Promise.all([
         queryCatalogo,
-        offset === 0 && user ? queryUsuario.eq("usuario_id", user.id) : Promise.resolve({ data: null, error: null } as any),
+        offset === 0 && user ? queryUsuario.eq("usuario_id", user.id) : Promise.resolve(EMPTY_USUARIO_RESULT),
       ]);
 
       if (catRes.error) throw catRes.error;
       if (usrRes?.error) throw usrRes.error;
 
-      const catalogo = (catRes.data ?? []).map((x: any) => ({ ...x, __source: "catalogo" as const }));
-      const usuario = (usrRes?.data ?? []).map((x: any) => ({ ...x, __source: "usuario" as const }));
+      const catalogo: CatalogItem[] = ((catRes.data ?? []) as TipoEjercicioRow[]).map((x) => ({
+        ...x,
+        __source: "catalogo" as const,
+      }));
+      const usuario: UserItem[] = ((usrRes?.data ?? []) as UsuarioEjercicioRow[]).map((x) => ({
+        ...x,
+        __source: "usuario" as const,
+      }));
 
       return {
         offset,
@@ -80,7 +101,7 @@ export function useExerciseCatalog(search?: string) {
   return useQuery({
     queryKey: ["exerciseCatalog", search, user?.id],
     staleTime: 5 * 60 * 1000, // 5 minutos: catálogo cambia poco
-    queryFn: async () => {
+    queryFn: async (): Promise<ExerciseCatalogItem[]> => {
       // Catálogo (FitCron/sistema)
       let queryCatalogo = supabase
         .from("tipo_ejercicio")
@@ -106,15 +127,19 @@ export function useExerciseCatalog(search?: string) {
       if (usrErr) throw usrErr;
 
       const userId = user?.id;
-      const merged = [
-        ...(usuario ?? []).map((x) => ({ ...(x as any), __source: "usuario" as const })),
-        ...(catalogo ?? []).map((x) => ({ ...(x as any), __source: "catalogo" as const })),
+      const merged: ExerciseCatalogItem[] = [
+        ...((usuario ?? []) as UsuarioEjercicioRow[]).map(
+          (x): UserItem => ({ ...x, __source: "usuario" as const }),
+        ),
+        ...((catalogo ?? []) as TipoEjercicioRow[]).map(
+          (x): CatalogItem => ({ ...x, __source: "catalogo" as const }),
+        ),
       ];
 
       // Sort: user exercises first, then system, then alphabetical within each group
       return merged.sort((a, b) => {
-        const aIsUser = (a as any).usuario_id === userId ? 0 : 1;
-        const bIsUser = (b as any).usuario_id === userId ? 0 : 1;
+        const aIsUser = a.__source === "usuario" && "usuario_id" in a && a.usuario_id === userId ? 0 : 1;
+        const bIsUser = b.__source === "usuario" && "usuario_id" in b && b.usuario_id === userId ? 0 : 1;
         if (aIsUser !== bIsUser) return aIsUser - bIsUser;
         return a.nombre.localeCompare(b.nombre);
       });
@@ -139,16 +164,17 @@ export function useCreateExercise() {
       musculos_involucrados?: string[];
       registro_series?: RegistroSeries;
     }) => {
+      const payload: TablesInsert<"usuario_ejercicio"> = {
+        nombre: nombre.trim(),
+        descripcion: descripcion?.trim() || null,
+        usuario_id,
+        musculos_involucrados:
+          musculos_involucrados?.length ? musculos_involucrados : null,
+        registro_series: registro_series ?? "peso_reps",
+      };
       const { data, error } = await supabase
         .from("usuario_ejercicio")
-        .insert({
-          nombre: nombre.trim(),
-          descripcion: descripcion?.trim() || null,
-          usuario_id,
-          musculos_involucrados:
-            musculos_involucrados?.length ? musculos_involucrados : null,
-          registro_series: registro_series ?? "peso_reps",
-        } as any)
+        .insert(payload)
         .select()
         .single();
       if (error) throw error;

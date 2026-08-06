@@ -1,10 +1,10 @@
-# FitAI (Gym Log)
+# Track Gym
 
 Aplicación web de entrenamiento orientada a registro de fuerza y cardio, planificación semanal, analítica de progreso y funcionalidades sociales, construida con React + TypeScript + Supabase.
 
 ## 1) Visión de Producto
 
-FitAI centraliza el ciclo completo de entrenamiento:
+Track Gym centraliza el ciclo completo de entrenamiento:
 - **Planificación** de rutinas y hoja de ruta semanal.
 - **Ejecución** de entrenos de fuerza y cardio (incluye sesión cardio en vivo con GPS y FC vía Bluetooth LE en Android).
 - **Seguimiento** de métricas históricas y evolución.
@@ -205,7 +205,7 @@ Para acercar el proyecto a estándares de compañías grandes:
 6. **Performance budget:** métricas Lighthouse/Web Vitals y alertas por regresión.
 7. **Documentación viva:** runbooks, onboarding, incident response, ownership por módulo.
 8. **Feature flags:** despliegues graduales y rollback operativo.
-9. **Health Connect (Android):** importar FC post-entreno desde relojes que no emiten BLE — ver [`docs/health-connect-phase2.md`](docs/health-connect-phase2.md).
+9. **Health Connect (Android):** importar FC automáticamente al guardar cardio si no hubo BLE — ver [`docs/health-connect-phase2.md`](docs/health-connect-phase2.md).
 
 ## 15) Troubleshooting
 
@@ -217,4 +217,4 @@ Para acercar el proyecto a estándares de compañías grandes:
 
 ## 16) Licencia
 
-Proyecto bajo **AGPL-3.0** (ver `package.json`).
+Proyecto propietario. Todos los derechos reservados (ver `LICENSE` y `package.json`).

@@ -4,4 +4,6 @@
     <string name="title_activity_main">Track Gym</string>
     <string name="package_name">com.fitai.app</string>
     <string name="custom_url_scheme">com.fitai.app</string>
+    <!-- Health Connect muestra esta URL al tocar «Política de privacidad» en el diálogo de permisos. -->
+    <string name="health_connect_privacy_policy_url">file:///android_asset/public/privacypolicy.html</string>
 </resources>

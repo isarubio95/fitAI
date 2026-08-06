@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 
-const LAST_UPDATED = "20 de junio de 2026";
+const LAST_UPDATED = "6 de agosto de 2026";
 
 export default function PrivacyPolicy() {
   const { user } = useAuth();
@@ -57,7 +57,9 @@ export default function PrivacyPolicy() {
                 <li>
                   <strong className="text-foreground">Datos de cardio y ubicación:</strong> si utilizas
                   funciones de cardio en vivo, podemos registrar rutas GPS, distancia, ritmo y duración de la
-                  sesión.
+                  sesión. En Android, si concedes permiso a Health Connect, podemos leer tu frecuencia
+                  cardíaca del intervalo del entrenamiento para asociarla a esa sesión (no usamos Health
+                  Connect para streaming en vivo; la FC en vivo opcional es por Bluetooth).
                 </li>
                 <li>
                   <strong className="text-foreground">Datos de uso:</strong> información técnica básica sobre

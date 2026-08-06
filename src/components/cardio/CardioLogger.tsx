@@ -1,16 +1,23 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Heart, Loader2, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Heart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { useToast } from "@/hooks/use-toast";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useCardioDisciplinas, useCardioSessionById, useUpsertCardioSession } from "@/hooks/useCardioSessions";
+import { BlocksEditor } from "@/components/cardio/logger/BlocksEditor";
+import { CyclingDistanceDurationFields } from "@/components/cardio/logger/CyclingDistanceDurationFields";
+import { CyclingMetricsSection } from "@/components/cardio/logger/CyclingMetricsSection";
+import { FormField } from "@/components/cardio/logger/FormField";
+import { emptyBlock } from "@/components/cardio/logger/emptyBlock";
+import { PublishCommunitySwitch } from "@/components/cardio/logger/PublishCommunitySwitch";
+import { RunningMetricsSection } from "@/components/cardio/logger/RunningMetricsSection";
+import { TrackJsonSection } from "@/components/cardio/logger/TrackJsonSection";
+import { durationPartsFromSeconds, secondsFromDurationParts, toDatetimeLocalValue } from "@/lib/cardioDatetime";
+import { firstNested } from "@/lib/firstNested";
 import { cn } from "@/lib/utils";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
-import { Switch } from "@/components/ui/switch";
 import type { CardioBlockInput, CardioDisciplineCode, CardioSportDetailInput, CardioTrackInput, CardioTrackPointInput } from "@/types/cardio";
 
 type NestedOneOrMany<T> = T | T[] | null | undefined;
@@ -44,8 +51,6 @@ type CardioTrackRow = {
   cardio_track_point?: CardioTrackPointRow[] | null;
 };
 
-const sectionCardClass = cn("space-y-4 rounded-xl border border-border/60 bg-secondary/40 p-4");
-
 type CardioFormSnapshot = {
   titulo: string;
   disciplinaId: string | null;
@@ -72,55 +77,6 @@ type CardioFormSnapshot = {
 
 function snapshotKey(s: CardioFormSnapshot) {
   return JSON.stringify(s);
-}
-
-function FormField({ id, label, className, children }: { id?: string; label: string; className?: string; children: ReactNode }) {
-  return (
-    <div className={cn("space-y-1.5", className)}>
-      <Label htmlFor={id}>{label}</Label>
-      {children}
-    </div>
-  );
-}
-
-function emptyBlock(): CardioBlockInput {
-  return {
-    tipo_bloque: "work",
-    distancia_m: null,
-    duracion_seg: null,
-    elevacion_m: null,
-    fc_media: null,
-    fc_max: null,
-    calorias: null,
-  };
-}
-
-function durationPartsFromSeconds(total: number) {
-  const s = Math.max(0, Math.floor(total));
-  return {
-    h: Math.floor(s / 3600),
-    m: Math.floor((s % 3600) / 60),
-    sec: s % 60,
-  };
-}
-
-/** Devuelve segundos totales, o null si los valores no son válidos. */
-function secondsFromDurationParts(h: string, m: string, s: string): number | null {
-  const hours = h.trim() === "" ? 0 : Number(h);
-  const mins = m.trim() === "" ? 0 : Number(m);
-  const secs = s.trim() === "" ? 0 : Number(s);
-  if ([hours, mins, secs].some((n) => Number.isNaN(n) || n < 0 || !Number.isFinite(n))) return null;
-  if (!Number.isInteger(hours) || !Number.isInteger(mins) || !Number.isInteger(secs)) return null;
-  if (mins > 59 || secs > 59) return null;
-  return hours * 3600 + mins * 60 + secs;
-}
-
-function toDatetimeLocalValue(iso: string) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso.slice(0, 16);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
 export function CardioLogger() {
@@ -187,8 +143,6 @@ export function CardioLogger() {
 
   useEffect(() => {
     if (!state.open) return;
-    const first = <T,>(value: NestedOneOrMany<T>): T | null => (Array.isArray(value) ? (value[0] ?? null) : (value ?? null));
-
     if (state.sessionId) {
       if (!sessionData) return;
       const nextTitulo = sessionData.titulo ?? "";
@@ -197,9 +151,9 @@ export function CardioLogger() {
       const nextFechaFin = toDatetimeLocalValue(sessionData.fecha_fin ?? "");
       const nextComentarios = sessionData.comentarios ?? "";
       const nextEsPublica = !!sessionData.es_publica;
-      const running = first(sessionData.cardio_sesion_running as NestedOneOrMany<CardioRunningRow>);
-      const cycling = first(sessionData.cardio_sesion_cycling as NestedOneOrMany<CardioCyclingRow>);
-      const track = first(sessionData.cardio_track as NestedOneOrMany<CardioTrackRow>);
+      const running = firstNested(sessionData.cardio_sesion_running as NestedOneOrMany<CardioRunningRow>);
+      const cycling = firstNested(sessionData.cardio_sesion_cycling as NestedOneOrMany<CardioCyclingRow>);
+      const track = firstNested(sessionData.cardio_track as NestedOneOrMany<CardioTrackRow>);
       const points = track?.cardio_track_point ?? [];
       const sessionBlocks = sessionData.cardio_bloque ?? [];
       const totalDistM =
@@ -628,21 +582,7 @@ export function CardioLogger() {
                 />
               </FormField>
             </div>
-            <div className="col-span-2 flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5">
-              <div className="min-w-0 space-y-0.5">
-                <p className="text-sm font-medium">Publicar en comunidad</p>
-                <p className="text-[12px] text-muted-foreground">
-                  {esPublica
-                    ? "Este entreno se verá en el feed público."
-                    : "Este entreno se mantendrá privado."}
-                </p>
-              </div>
-              <Switch
-                checked={esPublica}
-                onCheckedChange={setEsPublica}
-                aria-label="Publicar en comunidad"
-              />
-            </div>
+            <PublishCommunitySwitch esPublica={esPublica} onCheckedChange={setEsPublica} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -659,77 +599,16 @@ export function CardioLogger() {
               </FormField>
             </div>
             {showCyclingMetrics ? (
-              <>
-                <div className="col-span-2 sm:col-span-1">
-                  <FormField id="cyc-distancia" label="Distancia (km)">
-                    <Input
-                      id="cyc-distancia"
-                      className="h-12"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="0.001"
-                      value={distanciaKm}
-                      onChange={(e) => setDistanciaKm(e.target.value)}
-                      placeholder="Obligatorio"
-                      required
-                    />
-                  </FormField>
-                </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <FormField label="Duración">
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="space-y-1">
-                        <Input
-                          id="cyc-dur-h"
-                          className="h-12"
-                          type="number"
-                          inputMode="numeric"
-                          min={0}
-                          step={1}
-                          value={durHoras}
-                          onChange={(e) => setDurHoras(e.target.value)}
-                          placeholder="0"
-                          aria-label="Horas"
-                        />
-                        <p className="text-center text-[11px] text-muted-foreground">h</p>
-                      </div>
-                      <div className="space-y-1">
-                        <Input
-                          id="cyc-dur-m"
-                          className="h-12"
-                          type="number"
-                          inputMode="numeric"
-                          min={0}
-                          max={59}
-                          step={1}
-                          value={durMinutos}
-                          onChange={(e) => setDurMinutos(e.target.value)}
-                          placeholder="0"
-                          aria-label="Minutos"
-                        />
-                        <p className="text-center text-[11px] text-muted-foreground">min</p>
-                      </div>
-                      <div className="space-y-1">
-                        <Input
-                          id="cyc-dur-s"
-                          className="h-12"
-                          type="number"
-                          inputMode="numeric"
-                          min={0}
-                          max={59}
-                          step={1}
-                          value={durSegundos}
-                          onChange={(e) => setDurSegundos(e.target.value)}
-                          placeholder="0"
-                          aria-label="Segundos"
-                        />
-                        <p className="text-center text-[11px] text-muted-foreground">s</p>
-                      </div>
-                    </div>
-                  </FormField>
-                </div>
-              </>
+              <CyclingDistanceDurationFields
+                distanciaKm={distanciaKm}
+                onDistanciaKmChange={setDistanciaKm}
+                durHoras={durHoras}
+                onDurHorasChange={setDurHoras}
+                durMinutos={durMinutos}
+                onDurMinutosChange={setDurMinutos}
+                durSegundos={durSegundos}
+                onDurSegundosChange={setDurSegundos}
+              />
             ) : (
               <div className="col-span-2 sm:col-span-1">
                 <FormField id="cardio-fin" label="Fin (opcional)">
@@ -747,218 +626,44 @@ export function CardioLogger() {
           </div>
 
           {showRunningMetrics ? (
-            <div className={sectionCardClass}>
-              <p className="text-sm font-semibold">Métricas opcionales</p>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField id="run-ritmo" label="Ritmo medio (seg/km)">
-                  <Input
-                    id="run-ritmo"
-                    className="h-12"
-                    type="number"
-                    inputMode="decimal"
-                    value={runningRitmo}
-                    onChange={(e) => setRunningRitmo(e.target.value)}
-                    placeholder="Opcional"
-                  />
-                </FormField>
-                <FormField id="run-cadencia" label="Cadencia media (pasos/min)">
-                  <Input
-                    id="run-cadencia"
-                    className="h-12"
-                    type="number"
-                    inputMode="decimal"
-                    value={runningCadencia}
-                    onChange={(e) => setRunningCadencia(e.target.value)}
-                    placeholder="Opcional"
-                  />
-                </FormField>
-                <FormField id="run-desnivel" label="Desnivel positivo (m)">
-                  <Input
-                    id="run-desnivel"
-                    className="h-12"
-                    type="number"
-                    inputMode="decimal"
-                    value={runningDesnivel}
-                    onChange={(e) => setRunningDesnivel(e.target.value)}
-                    placeholder="Opcional"
-                  />
-                </FormField>
-                <FormField id="run-zancada" label="Zancada media (cm)">
-                  <Input
-                    id="run-zancada"
-                    className="h-12"
-                    type="number"
-                    inputMode="decimal"
-                    value={runningZancada}
-                    onChange={(e) => setRunningZancada(e.target.value)}
-                    placeholder="Opcional"
-                  />
-                </FormField>
-              </div>
-            </div>
+            <RunningMetricsSection
+              ritmo={runningRitmo}
+              onRitmoChange={setRunningRitmo}
+              cadencia={runningCadencia}
+              onCadenciaChange={setRunningCadencia}
+              desnivel={runningDesnivel}
+              onDesnivelChange={setRunningDesnivel}
+              zancada={runningZancada}
+              onZancadaChange={setRunningZancada}
+            />
           ) : null}
 
           {showCyclingMetrics ? (
-            <div className={sectionCardClass}>
-              <p className="text-sm font-semibold">Métricas opcionales</p>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField id="cyc-pot" label="Potencia media (W)">
-                  <Input
-                    id="cyc-pot"
-                    className="h-12"
-                    type="number"
-                    inputMode="decimal"
-                    value={cyclingPotenciaMedia}
-                    onChange={(e) => setCyclingPotenciaMedia(e.target.value)}
-                    placeholder="Opcional"
-                  />
-                </FormField>
-                <FormField id="cyc-np" label="Potencia normalizada (W)">
-                  <Input
-                    id="cyc-np"
-                    className="h-12"
-                    type="number"
-                    inputMode="decimal"
-                    value={cyclingPotenciaNp}
-                    onChange={(e) => setCyclingPotenciaNp(e.target.value)}
-                    placeholder="Opcional"
-                  />
-                </FormField>
-                <FormField id="cyc-cad" label="Cadencia media (rpm)">
-                  <Input
-                    id="cyc-cad"
-                    className="h-12"
-                    type="number"
-                    inputMode="decimal"
-                    value={cyclingCadencia}
-                    onChange={(e) => setCyclingCadencia(e.target.value)}
-                    placeholder="Opcional"
-                  />
-                </FormField>
-                <FormField id="cyc-desnivel" label="Desnivel positivo (m)">
-                  <Input
-                    id="cyc-desnivel"
-                    className="h-12"
-                    type="number"
-                    inputMode="decimal"
-                    value={cyclingDesnivel}
-                    onChange={(e) => setCyclingDesnivel(e.target.value)}
-                    placeholder="Opcional"
-                  />
-                </FormField>
-                <FormField id="cyc-bici" label="Tipo de bici" className="sm:col-span-2">
-                  <Input
-                    id="cyc-bici"
-                    className="h-12"
-                    value={cyclingTipoBici}
-                    onChange={(e) => setCyclingTipoBici(e.target.value)}
-                    placeholder="Ruta, MTB, rodillo..."
-                  />
-                </FormField>
-              </div>
-            </div>
+            <CyclingMetricsSection
+              potenciaMedia={cyclingPotenciaMedia}
+              onPotenciaMediaChange={setCyclingPotenciaMedia}
+              potenciaNp={cyclingPotenciaNp}
+              onPotenciaNpChange={setCyclingPotenciaNp}
+              cadencia={cyclingCadencia}
+              onCadenciaChange={setCyclingCadencia}
+              desnivel={cyclingDesnivel}
+              onDesnivelChange={setCyclingDesnivel}
+              tipoBici={cyclingTipoBici}
+              onTipoBiciChange={setCyclingTipoBici}
+            />
           ) : null}
 
           {showTrackGps ? (
-            <div className={sectionCardClass}>
-              <FormField id="cardio-track" label="Track GPS (JSON de puntos, opcional)">
-                <Textarea
-                  id="cardio-track"
-                  value={trackJson}
-                  onChange={(e) => setTrackJson(e.target.value)}
-                  placeholder='[{"lat":40.42,"lng":-3.70,"timestamp_utc":"2026-01-01T10:00:00Z"}]'
-                  className="min-h-28 font-mono text-xs"
-                />
-              </FormField>
-            </div>
+            <TrackJsonSection trackJson={trackJson} onTrackJsonChange={setTrackJson} />
           ) : null}
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold">Segmentos / bloques</p>
-              <Button type="button" variant="outline" size="sm" onClick={() => setBloques((p) => [...p, emptyBlock()])}>
-                <Plus className="mr-1 h-4 w-4" /> Añadir bloque
-              </Button>
-            </div>
-            {bloques.map((bloque, idx) => (
-              <div key={idx} className={sectionCardClass}>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <FormField id={`bloque-${idx}-tipo`} label="Tipo">
-                    <Input
-                      id={`bloque-${idx}-tipo`}
-                      className="h-12"
-                      value={bloque.tipo_bloque}
-                      onChange={(e) => updateBlock(idx, { tipo_bloque: e.target.value })}
-                      placeholder="work, descanso…"
-                    />
-                  </FormField>
-                  {!showCyclingMetrics ? (
-                    <>
-                      <FormField id={`bloque-${idx}-dist`} label="Distancia (m)">
-                        <Input
-                          id={`bloque-${idx}-dist`}
-                          className="h-12"
-                          type="number"
-                          value={bloque.distancia_m ?? ""}
-                          onChange={(e) => updateBlock(idx, { distancia_m: e.target.value ? Number(e.target.value) : null })}
-                          placeholder="Opcional"
-                        />
-                      </FormField>
-                      <FormField id={`bloque-${idx}-dur`} label="Duración (s)">
-                        <Input
-                          id={`bloque-${idx}-dur`}
-                          className="h-12"
-                          type="number"
-                          value={bloque.duracion_seg ?? ""}
-                          onChange={(e) => updateBlock(idx, { duracion_seg: e.target.value ? Number(e.target.value) : null })}
-                          placeholder="Opcional"
-                        />
-                      </FormField>
-                    </>
-                  ) : null}
-                  <FormField id={`bloque-${idx}-fcm`} label="FC media">
-                    <Input
-                      id={`bloque-${idx}-fcm`}
-                      className="h-12"
-                      type="number"
-                      value={bloque.fc_media ?? ""}
-                      onChange={(e) => updateBlock(idx, { fc_media: e.target.value ? Number(e.target.value) : null })}
-                      placeholder="Opcional"
-                    />
-                  </FormField>
-                  <FormField id={`bloque-${idx}-fcmx`} label="FC max">
-                    <Input
-                      id={`bloque-${idx}-fcmx`}
-                      className="h-12"
-                      type="number"
-                      value={bloque.fc_max ?? ""}
-                      onChange={(e) => updateBlock(idx, { fc_max: e.target.value ? Number(e.target.value) : null })}
-                      placeholder="Opcional"
-                    />
-                  </FormField>
-                  <FormField id={`bloque-${idx}-kcal`} label="Calorías (kcal)">
-                    <Input
-                      id={`bloque-${idx}-kcal`}
-                      className="h-12"
-                      type="number"
-                      value={bloque.calorias ?? ""}
-                      onChange={(e) => updateBlock(idx, { calorias: e.target.value ? Number(e.target.value) : null })}
-                      placeholder="Opcional"
-                    />
-                  </FormField>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setBloques((prev) => prev.filter((_, i) => i !== idx))}
-                  disabled={bloques.length === 1}
-                >
-                  <Trash2 className="mr-1 h-4 w-4" /> Eliminar bloque
-                </Button>
-              </div>
-            ))}
-          </div>
+          <BlocksEditor
+            bloques={bloques}
+            showCyclingMetrics={showCyclingMetrics}
+            onAddBlock={() => setBloques((p) => [...p, emptyBlock()])}
+            onRemoveBlock={(idx) => setBloques((prev) => prev.filter((_, i) => i !== idx))}
+            onUpdateBlock={updateBlock}
+          />
         </div>
         </div>
       </DrawerContent>

@@ -56,14 +56,12 @@ function clampOffset(
   let nx = next.x;
   let ny = next.y;
   let dx = nx - prev.x;
-  let dy = ny - prev.y;
 
   if (rect.left + dx < EDGE_PX) nx += EDGE_PX - (rect.left + dx);
   dx = nx - prev.x;
   if (rect.right + dx > vw - EDGE_PX) nx -= rect.right + dx - (vw - EDGE_PX);
 
-  dx = nx - prev.x;
-  dy = ny - prev.y;
+  let dy = ny - prev.y;
   if (rect.top + dy < minTop) ny += minTop - (rect.top + dy);
   dy = ny - prev.y;
   if (rect.bottom + dy > maxBottom) ny -= rect.bottom + dy - maxBottom;

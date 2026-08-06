@@ -45,16 +45,26 @@ export function useMuscleStatistics() {
       const actIds = actividades.map((a) => a.id);
 
       // Fetch exercises from finalized workouts only
-      const { data: ejercicios, error: ejErr } = await supabase
+      const { data: ejerciciosRaw, error: ejErr } = await supabase
         .from("ejercicio")
         .select("id, tipo_ejercicio:tipo_ejercicio_id(musculos_involucrados, grupo_muscular)")
         .in("actividad_id", actIds);
 
       if (ejErr) throw ejErr;
-      if (!ejercicios?.length) {
+      if (!ejerciciosRaw?.length) {
         return buildResult(mainGroupCounts, subGroupCounts);
       }
 
+      type TipoEjercicioMuscleFields = {
+        musculos_involucrados: string[] | null;
+        grupo_muscular: string | null;
+      };
+      type EjercicioMuscleRow = {
+        id: string;
+        tipo_ejercicio: TipoEjercicioMuscleFields | null;
+      };
+
+      const ejercicios = ejerciciosRaw as EjercicioMuscleRow[];
       const ejercicioIds = ejercicios.map((e) => e.id);
 
       // Fetch completed sets — batch in chunks of 200 to avoid URI limits
@@ -80,7 +90,7 @@ export function useMuscleStatistics() {
       for (const ej of ejercicios) {
         const sets = setCountMap[ej.id] || 0;
         if (sets === 0) continue;
-        const bodyParts: string[] = (ej.tipo_ejercicio as any)?.musculos_involucrados || [];
+        const bodyParts: string[] = ej.tipo_ejercicio?.musculos_involucrados || [];
         let hasMappedGroup = false;
         for (const muscle of bodyParts) {
           const group = resolveMainMuscleGroup(muscle);
@@ -94,7 +104,7 @@ export function useMuscleStatistics() {
         }
 
         if (!hasMappedGroup) {
-          const fallbackGroup = resolveMainMuscleGroup((ej.tipo_ejercicio as any)?.grupo_muscular ?? null);
+          const fallbackGroup = resolveMainMuscleGroup(ej.tipo_ejercicio?.grupo_muscular ?? null);
           if (fallbackGroup) {
             mainGroupCounts[fallbackGroup] += sets;
           }

@@ -13,7 +13,8 @@ const {
   mockOnAuthStateChange: vi.fn(),
   mockUnsubscribe: vi.fn(),
 }));
-let authListener: ((event: string, session: any) => void) | null = null;
+import type { Session } from "@supabase/supabase-js";
+let authListener: ((event: string, session: Session | null) => void) | null = null;
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {

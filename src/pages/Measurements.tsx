@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useLayoutActionSlot } from "@/hooks/useLayoutActionSlot";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useMeasurements, type Medida } from "@/hooks/useMeasurements";
+import { useMeasurements, type Medida, type MedidaInsert } from "@/hooks/useMeasurements";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,7 +88,7 @@ const Measurements = () => {
 
   const handleSubmit = async () => {
     try {
-      const payload: any = {
+      const payload: Omit<MedidaInsert, "usuario_id"> = {
         fecha: format(formDate, "yyyy-MM-dd"),
         notas: formValues.notas || null,
       };

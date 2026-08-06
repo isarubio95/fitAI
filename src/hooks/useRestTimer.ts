@@ -112,36 +112,34 @@ export function parseMSS(value: string): number | null {
   return null;
 }
 
-// Singleton audio context to reuse
-let beepAudio: HTMLAudioElement | null = null;
 function playBeep() {
   try {
-    if (!beepAudio) {
-      // Generate a short beep using a data URI (440Hz sine wave, ~0.3s)
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 880;
-      gain.gain.value = 0.3;
-      osc.start();
-      osc.stop(ctx.currentTime + 0.3);
-      // Second beep
-      setTimeout(() => {
-        try {
-          const ctx2 = new AudioContext();
-          const osc2 = ctx2.createOscillator();
-          const gain2 = ctx2.createGain();
-          osc2.connect(gain2);
-          gain2.connect(ctx2.destination);
-          osc2.frequency.value = 880;
-          gain2.gain.value = 0.3;
-          osc2.start();
-          osc2.stop(ctx2.currentTime + 0.3);
-        } catch {}
-      }, 400);
-    }
+    // Generate a short beep (440Hz sine wave, ~0.3s)
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.value = 0.3;
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+    // Second beep
+    setTimeout(() => {
+      try {
+        const ctx2 = new AudioContext();
+        const osc2 = ctx2.createOscillator();
+        const gain2 = ctx2.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx2.destination);
+        osc2.frequency.value = 880;
+        gain2.gain.value = 0.3;
+        osc2.start();
+        osc2.stop(ctx2.currentTime + 0.3);
+      } catch {
+        // Secondary beep unavailable
+      }
+    }, 400);
   } catch {
     // Audio not available
   }

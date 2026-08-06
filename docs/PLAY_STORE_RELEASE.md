@@ -1,4 +1,4 @@
-# FitAI - Publicacion en Google Play
+# Track Gym - Publicacion en Google Play
 
 ## 1) Requisitos locales
 
@@ -57,3 +57,13 @@ Despues, abre una terminal nueva y vuelve a ejecutar el comando.
 - Incrementar `versionCode` en cada release.
 - Mantener `versionName` semantico (ej. `0.1.1`, `0.2.0`).
 - Probar login, rutas principales y flujos con red lenta antes de publicar.
+
+## 6) Health Connect (FC post-entreno)
+
+La app lee **frecuencia cardiaca** desde Health Connect al guardar cardio live si no hubo sensor BLE.
+
+En Play Console:
+
+1. Declara el permiso / uso de datos de salud (Heart rate) en Data safety y, si aplica, en la seccion de Health Connect.
+2. Usa la URL de politica de privacidad de la ficha (la app tambien incluye `public/privacypolicy.html` para el dialogo nativo de Health Connect).
+3. En pruebas: conceder permiso en Ajustes de la app → «Conectar Health Connect»; el reloj debe sincronizar FC con Health Connect antes o justo despues del entreno.

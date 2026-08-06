@@ -256,8 +256,6 @@ export type Database = {
           cardio_disciplina_id: string | null
           comentarios: string | null
           created_at: string
-          /** Legacy; omitida en muchas BDs (solo cardio_disciplina_id). */
-          deporte?: string | null
           es_publica: boolean
           fecha_fin: string | null
           fecha_inicio: string
@@ -527,42 +525,42 @@ export type Database = {
       }
       logro: {
         Row: {
-          categoria: string
-          codigo: string
+          categoria: string | null
+          codigo: string | null
           created_at: string
           descripcion: string
           icono: string
           id: string
           meta: number
-          nivel: string
+          nivel: string | null
           nombre: string
           orden: number
           tipo: string
           xp_recompensa: number
         }
         Insert: {
-          categoria: string
-          codigo: string
+          categoria?: string | null
+          codigo?: string | null
           created_at?: string
           descripcion: string
           icono: string
           id?: string
           meta?: number
-          nivel: string
+          nivel?: string | null
           nombre: string
           orden?: number
           tipo: string
           xp_recompensa?: number
         }
         Update: {
-          categoria?: string
-          codigo?: string
+          categoria?: string | null
+          codigo?: string | null
           created_at?: string
           descripcion?: string
           icono?: string
           id?: string
           meta?: number
-          nivel?: string
+          nivel?: string | null
           nombre?: string
           orden?: number
           tipo?: string
@@ -908,7 +906,6 @@ export type Database = {
       }
       tipo_ejercicio: {
         Row: {
-          musculos_involucrados: string[] | null
           created_at: string
           dificultad: string | null
           equipment: string | null
@@ -917,12 +914,12 @@ export type Database = {
           id: string
           imagen: string | null
           instructions: string[] | null
+          musculos_involucrados: string[] | null
           nombre: string
           registro_series: string
           tipo: string | null
         }
         Insert: {
-          musculos_involucrados?: string[] | null
           created_at?: string
           dificultad?: string | null
           equipment?: string | null
@@ -931,12 +928,12 @@ export type Database = {
           id?: string
           imagen?: string | null
           instructions?: string[] | null
+          musculos_involucrados?: string[] | null
           nombre: string
           registro_series?: string
           tipo?: string | null
         }
         Update: {
-          musculos_involucrados?: string[] | null
           created_at?: string
           dificultad?: string | null
           equipment?: string | null
@@ -945,6 +942,7 @@ export type Database = {
           id?: string
           imagen?: string | null
           instructions?: string[] | null
+          musculos_involucrados?: string[] | null
           nombre?: string
           registro_series?: string
           tipo?: string | null
@@ -953,52 +951,52 @@ export type Database = {
       }
       usuario_ejercicio: {
         Row: {
-          id: string
-          usuario_id: string
-          nombre: string
-          descripcion: string | null
-          imagen: string | null
           created_at: string
-          gif_url: string | null
-          musculos_involucrados: string[] | null
-          equipment: string | null
-          instructions: string[] | null
-          tipo: string | null
-          grupo_muscular: string | null
+          descripcion: string | null
           dificultad: string | null
+          equipment: string | null
+          gif_url: string | null
+          grupo_muscular: string | null
+          id: string
+          imagen: string | null
+          instructions: string[] | null
+          musculos_involucrados: string[] | null
+          nombre: string
           registro_series: string
+          tipo: string | null
+          usuario_id: string
         }
         Insert: {
-          id?: string
-          usuario_id: string
-          nombre: string
-          descripcion?: string | null
-          imagen?: string | null
           created_at?: string
-          gif_url?: string | null
-          musculos_involucrados?: string[] | null
-          equipment?: string | null
-          instructions?: string[] | null
-          tipo?: string | null
-          grupo_muscular?: string | null
+          descripcion?: string | null
           dificultad?: string | null
+          equipment?: string | null
+          gif_url?: string | null
+          grupo_muscular?: string | null
+          id?: string
+          imagen?: string | null
+          instructions?: string[] | null
+          musculos_involucrados?: string[] | null
+          nombre: string
           registro_series?: string
+          tipo?: string | null
+          usuario_id?: string
         }
         Update: {
-          id?: string
-          usuario_id?: string
-          nombre?: string
-          descripcion?: string | null
-          imagen?: string | null
           created_at?: string
-          gif_url?: string | null
-          musculos_involucrados?: string[] | null
-          equipment?: string | null
-          instructions?: string[] | null
-          tipo?: string | null
-          grupo_muscular?: string | null
+          descripcion?: string | null
           dificultad?: string | null
+          equipment?: string | null
+          gif_url?: string | null
+          grupo_muscular?: string | null
+          id?: string
+          imagen?: string | null
+          instructions?: string[] | null
+          musculos_involucrados?: string[] | null
+          nombre?: string
           registro_series?: string
+          tipo?: string | null
+          usuario_id?: string
         }
         Relationships: []
       }

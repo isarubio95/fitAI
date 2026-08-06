@@ -1,4 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createGpsMotionTrackerState,
+  haversineM,
+  reduceGpsMotion,
+  toMotionSnapshot,
+  type GpsMotionSnapshot,
+  type GpsMotionTrackerState,
+} from "@/lib/cardioGpsMotion";
 
 export const CARDIO_GPS_DRAFT_STORAGE_KEY = "gym-log-activeCardioDraft";
 
@@ -9,22 +17,21 @@ export type CardioGpsPoint = {
   elevacion_m?: number | null;
 };
 
-export function haversineM(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
-  const R = 6371000;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.atan2(Math.sqrt(s), Math.sqrt(Math.max(0, 1 - s)));
-}
+export { haversineM };
 
 function totalPathLengthM(points: CardioGpsPoint[]): number {
   let t = 0;
   for (let i = 1; i < points.length; i++) t += haversineM(points[i - 1], points[i]);
   return t;
 }
+
+const EMPTY_MOTION: GpsMotionSnapshot = {
+  speedMps: null,
+  isStationary: false,
+  isMoving: false,
+  stationaryMs: 0,
+  movingMs: 0,
+};
 
 type Options = {
   sessionId: string | null;
@@ -49,23 +56,35 @@ export function useCardioGpsRecorder({
   const [error, setError] = useState<string | null>(null);
   const [denied, setDenied] = useState(false);
   const [hasFix, setHasFix] = useState(false);
+  const [motion, setMotion] = useState<GpsMotionSnapshot>(EMPTY_MOTION);
 
   const lastAcceptedRef = useRef<{ t: number; lat: number; lng: number } | null>(null);
   const watchIdRef = useRef<number | null>(null);
+  const motionTrackerRef = useRef<GpsMotionTrackerState>(createGpsMotionTrackerState());
+
+  const resetMotion = useCallback(() => {
+    motionTrackerRef.current = createGpsMotionTrackerState();
+    setMotion(EMPTY_MOTION);
+  }, []);
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      resetMotion();
+      return;
+    }
     try {
       const raw = localStorage.getItem(CARDIO_GPS_DRAFT_STORAGE_KEY);
       if (!raw) {
         setPoints([]);
         lastAcceptedRef.current = null;
+        resetMotion();
         return;
       }
       const parsed = JSON.parse(raw) as { sessionId?: string; points?: CardioGpsPoint[] };
       if (parsed.sessionId !== sessionId || !Array.isArray(parsed.points)) {
         setPoints([]);
         lastAcceptedRef.current = null;
+        resetMotion();
         return;
       }
       setPoints(parsed.points);
@@ -75,10 +94,11 @@ export function useCardioGpsRecorder({
         const ts = Date.parse(last.timestamp_utc);
         if (!Number.isNaN(ts)) lastAcceptedRef.current = { t: ts, lat: last.lat, lng: last.lng };
       }
+      resetMotion();
     } catch {
       /* ignore */
     }
-  }, [sessionId]);
+  }, [sessionId, resetMotion]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -103,7 +123,8 @@ export function useCardioGpsRecorder({
     setError(null);
     setDenied(false);
     setHasFix(false);
-  }, []);
+    resetMotion();
+  }, [resetMotion]);
 
   useEffect(() => {
     const clearWatch = () => {
@@ -118,6 +139,7 @@ export function useCardioGpsRecorder({
       clearWatch();
       if (!preview && !recording) {
         setHasFix(false);
+        resetMotion();
       }
       return;
     }
@@ -138,13 +160,28 @@ export function useCardioGpsRecorder({
         setError(null);
         setDenied(false);
 
-        if (!sessionId || !recording) return;
-
-        const { latitude, longitude, altitude, accuracy } = pos.coords;
-        if (accuracy != null && accuracy > maxAccuracyM) return;
+        const { latitude, longitude, altitude, accuracy, speed } = pos.coords;
         const now = Date.now();
         const lat = latitude;
         const lng = longitude;
+
+        // Motion también en preview (p. ej. autopausa / reanudación).
+        motionTrackerRef.current = reduceGpsMotion(
+          motionTrackerRef.current,
+          {
+            lat,
+            lng,
+            t: now,
+            accuracy,
+            deviceSpeedMps: speed,
+          },
+          { maxAccuracyM },
+        );
+        setMotion(toMotionSnapshot(motionTrackerRef.current, now));
+
+        if (!sessionId || !recording) return;
+
+        if (accuracy != null && accuracy > maxAccuracyM) return;
         const last = lastAcceptedRef.current;
         if (last) {
           const dt = now - last.t;
@@ -164,14 +201,27 @@ export function useCardioGpsRecorder({
         setHasFix(false);
         if (err.code === 1) setDenied(true);
         setError(err.message || "Error de geolocalización");
+        resetMotion();
       },
       { enableHighAccuracy: true, maximumAge: 4000, timeout: 25000 },
     );
     watchIdRef.current = wid;
     return clearWatch;
-  }, [sessionId, recording, preview, minIntervalMs, minDeltaM, maxAccuracyM]);
+  }, [sessionId, recording, preview, minIntervalMs, minDeltaM, maxAccuracyM, resetMotion]);
+
+  // Refresca stationaryMs/movingMs aunque el GPS no emita (umbrales por reloj).
+  useEffect(() => {
+    const shouldWatch = preview || (Boolean(sessionId) && recording);
+    if (!shouldWatch) return;
+    const id = window.setInterval(() => {
+      const tracker = motionTrackerRef.current;
+      if (tracker.stationarySince == null && tracker.movingSince == null) return;
+      setMotion(toMotionSnapshot(tracker, Date.now()));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [sessionId, recording, preview]);
 
   const distanceM = totalPathLengthM(points);
 
-  return { points, distanceM, error, denied, hasFix, clearDraft };
+  return { points, distanceM, error, denied, hasFix, motion, clearDraft };
 }

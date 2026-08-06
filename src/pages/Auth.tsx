@@ -86,8 +86,9 @@ const Auth = () => {
           description: "Si este email no está registrado, te hemos enviado un enlace. Si ya tienes cuenta, por favor inicia sesión.",
         });
       }
-    } catch (error: any) {
-      const translated = translateAuthError(error.message ?? "", isLogin);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "";
+      const translated = translateAuthError(message, isLogin);
       toast({ title: translated.title, description: translated.description, variant: "destructive" });
     } finally {
       setSubmitting(false);

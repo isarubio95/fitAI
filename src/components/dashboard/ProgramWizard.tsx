@@ -206,8 +206,12 @@ export function ProgramWizard({
       });
       onOpenChange(false);
       reset();
-    } catch (e: any) {
-      toast({ title: "Error al planificar", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({
+        title: "Error al planificar",
+        description: e instanceof Error ? e.message : "Error desconocido",
+        variant: "destructive",
+      });
     }
   };
 

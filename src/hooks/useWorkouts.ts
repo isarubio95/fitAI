@@ -2,9 +2,32 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
-import { type ActividadWithDetails, type EjercicioWithDetails, setHasWork } from "@/types/workout";
+import {
+  type Actividad,
+  type ActividadWithDetails,
+  type Ejercicio,
+  type EjercicioWithDetails,
+  type Serie,
+  type TipoEjercicio,
+  type UsuarioEjercicio,
+  setHasWork,
+} from "@/types/workout";
 import { useRemoveWorkoutXP } from "@/hooks/useGamification";
 import { useToast } from "@/hooks/use-toast";
+
+type EjercicioJoinRow = Ejercicio & {
+  tipo_ejercicio: TipoEjercicio | null;
+  usuario_ejercicio: UsuarioEjercicio | null;
+};
+
+function mapEjercicioWithSeries(ej: EjercicioJoinRow, series: Serie[]): EjercicioWithDetails {
+  const tipo = ej.tipo_ejercicio ?? ej.usuario_ejercicio;
+  return {
+    ...ej,
+    tipo_ejercicio: tipo!,
+    series: series.filter((s) => s.ejercicio_id === ej.id),
+  };
+}
 
 export function useMonthWorkoutDates(month: Date) {
   const { user } = useAuth();
@@ -46,7 +69,7 @@ export function useMonthWorkouts(month: Date) {
       if (error) throw error;
       if (!actividades?.length) return [];
 
-      return hydrateActividadesWithDetails(actividades as Array<Record<string, unknown>>);
+      return hydrateActividadesWithDetails(actividades);
     },
   });
 }
@@ -80,27 +103,24 @@ export function useWorkoutsForDate(date: Date | undefined) {
         .in("actividad_id", actIds);
       if (ejError) throw ejError;
 
-      const ejercicioIds = (ejercicios || []).map((e) => e.id);
-      let series: any[] = [];
+      const ejerciciosJoined = (ejercicios ?? []) as EjercicioJoinRow[];
+      const ejercicioIds = ejerciciosJoined.map((e) => e.id);
+      let series: Serie[] = [];
       if (ejercicioIds.length > 0) {
         const { data, error: sError } = await supabase
           .from("serie")
           .select("*")
           .in("ejercicio_id", ejercicioIds);
         if (sError) throw sError;
-        series = data || [];
+        series = data ?? [];
       }
 
-      return actividades.map((act) => {
-        const actEjercicios = (ejercicios || [])
+      return actividades.map((act) => ({
+        ...act,
+        ejercicios: ejerciciosJoined
           .filter((ej) => ej.actividad_id === act.id)
-          .map((ej) => ({
-            ...ej,
-            tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
-            series: series.filter((s) => s.ejercicio_id === ej.id),
-          }));
-        return { ...act, ejercicios: actEjercicios };
-      });
+          .map((ej) => mapEjercicioWithSeries(ej, series)),
+      }));
     },
   });
 }
@@ -126,8 +146,9 @@ export function useWorkoutById(id: string | null) {
         .order("created_at", { ascending: true });
       if (ejError) throw ejError;
 
-      const ejercicioIds = (ejercicios || []).map((e) => e.id);
-      let series: any[] = [];
+      const ejerciciosJoined = (ejercicios ?? []) as EjercicioJoinRow[];
+      const ejercicioIds = ejerciciosJoined.map((e) => e.id);
+      let series: Serie[] = [];
       if (ejercicioIds.length > 0) {
         const { data, error: sError } = await supabase
           .from("serie")
@@ -136,16 +157,13 @@ export function useWorkoutById(id: string | null) {
           .order("created_at", { ascending: true })
           .order("numero_serie", { ascending: true });
         if (sError) throw sError;
-        series = data || [];
+        series = data ?? [];
       }
 
-      const ejerciciosWithDetails: EjercicioWithDetails[] = (ejercicios || []).map((ej) => ({
-        ...ej,
-        tipo_ejercicio: (ej as any).tipo_ejercicio ?? (ej as any).usuario_ejercicio,
-        series: series.filter((s) => s.ejercicio_id === ej.id),
-      }));
-
-      return { ...actividad, ejercicios: ejerciciosWithDetails };
+      return {
+        ...actividad,
+        ejercicios: ejerciciosJoined.map((ej) => mapEjercicioWithSeries(ej, series)),
+      };
     },
   });
 }
@@ -153,8 +171,8 @@ export function useWorkoutById(id: string | null) {
 const ACTIVIDAD_IDS_CHUNK = 80;
 const EJERCICIO_IDS_CHUNK = 200;
 
-async function fetchEjerciciosForActividades(actIds: string[]) {
-  const ejercicios: Array<Record<string, unknown> & { id: string; actividad_id: string }> = [];
+async function fetchEjerciciosForActividades(actIds: string[]): Promise<EjercicioJoinRow[]> {
+  const ejercicios: EjercicioJoinRow[] = [];
   for (let i = 0; i < actIds.length; i += ACTIVIDAD_IDS_CHUNK) {
     const chunk = actIds.slice(i, i + ACTIVIDAD_IDS_CHUNK);
     const { data, error } = await supabase
@@ -162,13 +180,13 @@ async function fetchEjerciciosForActividades(actIds: string[]) {
       .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
       .in("actividad_id", chunk);
     if (error) throw error;
-    if (data?.length) ejercicios.push(...(data as typeof ejercicios));
+    if (data?.length) ejercicios.push(...(data as EjercicioJoinRow[]));
   }
   return ejercicios;
 }
 
-async function fetchSeriesForEjercicios(ejercicioIds: string[]) {
-  const series: Array<Record<string, unknown>> = [];
+async function fetchSeriesForEjercicios(ejercicioIds: string[]): Promise<Serie[]> {
+  const series: Serie[] = [];
   for (let i = 0; i < ejercicioIds.length; i += EJERCICIO_IDS_CHUNK) {
     const chunk = ejercicioIds.slice(i, i + EJERCICIO_IDS_CHUNK);
     const { data, error } = await supabase.from("serie").select("*").in("ejercicio_id", chunk);
@@ -179,28 +197,23 @@ async function fetchSeriesForEjercicios(ejercicioIds: string[]) {
 }
 
 export async function hydrateActividadesWithDetails(
-  actividades: Array<Record<string, unknown>>,
+  actividades: Actividad[],
 ): Promise<ActividadWithDetails[]> {
   if (!actividades.length) return [];
 
-  const actIds = actividades.map((a) => a.id as string);
+  const actIds = actividades.map((a) => a.id);
   const ejercicios = await fetchEjerciciosForActividades(actIds);
 
   const ejercicioIds = ejercicios.map((e) => e.id);
   const series =
     ejercicioIds.length > 0 ? await fetchSeriesForEjercicios(ejercicioIds) : [];
 
-  return actividades.map((act) => {
-    const actEjercicios = (ejercicios || [])
+  return actividades.map((act) => ({
+    ...act,
+    ejercicios: ejercicios
       .filter((ej) => ej.actividad_id === act.id)
-      .map((ej) => ({
-        ...ej,
-        tipo_ejercicio: (ej as { tipo_ejercicio?: unknown; usuario_ejercicio?: unknown }).tipo_ejercicio
-          ?? (ej as { usuario_ejercicio?: unknown }).usuario_ejercicio,
-        series: series.filter((s) => s.ejercicio_id === ej.id),
-      }));
-    return { ...act, ejercicios: actEjercicios } as ActividadWithDetails;
-  });
+      .map((ej) => mapEjercicioWithSeries(ej, series)),
+  }));
 }
 
 export function useWorkoutHistory(profileUserId?: string) {
@@ -220,7 +233,7 @@ export function useWorkoutHistory(profileUserId?: string) {
       if (error) throw error;
       if (!actividades?.length) return [];
 
-      return hydrateActividadesWithDetails(actividades as Array<Record<string, unknown>>);
+      return hydrateActividadesWithDetails(actividades);
     },
   });
 }
@@ -253,7 +266,7 @@ export function useDeleteWorkout() {
           .from("serie")
           .select("id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km")
           .in("ejercicio_id", oldIds);
-        const seriesCompletadas = (series ?? []).filter((s) => setHasWork(s as any)).length;
+        const seriesCompletadas = (series ?? []).filter((s) => setHasWork(s)).length;
         if (seriesCompletadas > 0) await removeXP(workoutId, seriesCompletadas);
       }
       if (oldIds.length) {

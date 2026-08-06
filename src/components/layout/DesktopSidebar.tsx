@@ -49,14 +49,14 @@ export function DesktopSidebar() {
             <DropdownMenuItem className="text-base" onClick={() => openNew()}>
               <GymWorkoutIcon className="h-5 w-5 mr-2 text-primary" />
               <div className="min-w-0">
-                <p className="font-medium">Entreno de Gimnasio</p>
+                <p className="font-medium">Fuerza</p>
                 <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
               </div>
             </DropdownMenuItem>
             <DropdownMenuItem className="text-base" onClick={() => openLiveSetup()}>
               <CardioWorkoutIcon className="h-5 w-5 mr-2 text-blue-500" />
               <div className="min-w-0">
-                <p className="font-medium">Entreno de Cardio</p>
+                <p className="font-medium">Cardio</p>
                 <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>
               </div>
             </DropdownMenuItem>

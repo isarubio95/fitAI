@@ -101,7 +101,7 @@ export function BottomNav() {
         >
           <GymWorkoutIcon className="h-6 w-6 text-primary" />
           <div className="min-w-0">
-            <p className="font-medium">Entreno de Gimnasio</p>
+            <p className="font-medium">Fuerza</p>
             <p className="text-xs text-muted-foreground">Registra una sesión de gym</p>
           </div>
         </button>
@@ -111,7 +111,7 @@ export function BottomNav() {
         >
           <CardioWorkoutIcon className="h-6 w-6 text-blue-500" />
           <div className="min-w-0">
-            <p className="font-medium">Entreno de Cardio</p>
+            <p className="font-medium">Cardio</p>
             <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>
           </div>
         </button>

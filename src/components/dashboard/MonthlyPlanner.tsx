@@ -130,7 +130,8 @@ export function MonthlyPlanner({
 
   const workoutsByDay = useMemo(() => {
     const map = new Map<string, ActividadWithDetails[]>();
-    workouts.forEach((w) => {
+    const list = Array.isArray(workouts) ? workouts : [];
+    list.forEach((w) => {
       const key = format(new Date(w.fecha), "yyyy-MM-dd");
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(w);
@@ -150,7 +151,8 @@ export function MonthlyPlanner({
 
   const cardioByDay = useMemo(() => {
     const map = new Map<string, CardioSesion[]>();
-    cardioSessions.forEach((s) => {
+    const sessions = Array.isArray(cardioSessions) ? cardioSessions : [];
+    sessions.forEach((s) => {
       const key = format(new Date(s.fecha_inicio), "yyyy-MM-dd");
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(s);

@@ -9,6 +9,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DraggableSyntheticListeners,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -390,8 +391,12 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
       queryClient.invalidateQueries({ queryKey: ["routines"] });
       queryClient.invalidateQueries({ queryKey: ["routine"] });
       onOpenChange(false);
-    } catch (error: any) {
-      toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({
+        title: "Error al guardar",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -611,7 +616,7 @@ function ExerciseRow({
   onLinkSuperset: (index: number) => void;
   onBreakSuperset: (index: number) => void;
   isInSuperset: boolean;
-  dragHandleProps?: Record<string, any>;
+  dragHandleProps?: DraggableSyntheticListeners;
   onViewExerciseInfo: (ej: RoutineExerciseFormData) => void;
 }) {
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);

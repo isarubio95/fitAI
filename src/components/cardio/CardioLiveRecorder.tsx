@@ -1,21 +1,9 @@
-import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Bluetooth, Heart, Loader2, MapPin, Pause, Play, Square } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { CardioDisciplineIsland } from "@/components/cardio/CardioDisciplineIsland";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { LiveMetricsBar } from "@/components/cardio/live/LiveMetricsBar";
+import { LiveRecordingSurface } from "@/components/cardio/live/LiveRecordingSurface";
+import { LiveControlsDrawer } from "@/components/cardio/live/LiveControlsDrawer";
+import { CardioLiveSummaryView } from "@/components/cardio/live/CardioLiveSummaryView";
+import { DiscardSessionDialog } from "@/components/cardio/live/DiscardSessionDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useCardioGpsRecorder } from "@/hooks/useCardioGpsRecorder";
@@ -28,10 +16,17 @@ import {
   useUpsertCardioSession,
 } from "@/hooks/useCardioSessions";
 import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
+import { elevationGainM } from "@/lib/cardioFormat";
+import { shouldAutoPause, shouldAutoResume, readCardioAutoPauseEnabled, writeCardioAutoPauseEnabled } from "@/lib/cardioGpsMotion";
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
-import { nearestHeartRate } from "@/lib/heartRateMetrics";
-import { cn } from "@/lib/utils";
+import { firstNested } from "@/lib/firstNested";
+import { nearestHeartRate, summarizeHeartRate, type HeartRateSample } from "@/lib/heartRateMetrics";
+import {
+  appendHealthConnectFuente,
+  hasHrPermission,
+  readHeartRateSamples,
+} from "@/lib/healthConnectHr";
 import {
   PILL_CIRCLE_DURATION_MS,
   pillCircleTransitionAttr,
@@ -39,7 +34,6 @@ import {
   pillCircleTransitionStyleForBottomSheet,
   type PillCirclePhase,
 } from "@/lib/pillCircleTransition";
-import { Switch } from "@/components/ui/switch";
 import {
   formatDistanceLabel,
   startLiveCardio,
@@ -47,50 +41,6 @@ import {
   updateLiveCardio,
 } from "@/lib/liveSessionNotifications";
 import type { CardioDisciplineCode, CardioSportDetailInput, CardioTrackPointInput } from "@/types/cardio";
-
-/** MapLibre solo se descarga cuando la disciplina usa mapa GPS. */
-const LiveCardioMap = lazy(() =>
-  import("@/components/cardio/LiveCardioMap").then((m) => ({ default: m.LiveCardioMap })),
-);
-
-function formatDuration(totalSec: number) {
-  const s = Math.max(0, Math.floor(totalSec));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const r = s % 60;
-  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
-  return `${m}:${r.toString().padStart(2, "0")}`;
-}
-
-function formatDistanceM(m: number) {
-  if (m >= 1000) return `${(m / 1000).toFixed(2)} km`;
-  return `${Math.round(m)} m`;
-}
-
-function formatElevationM(m: number) {
-  return `${Math.round(m)} m`;
-}
-
-/** Ganancia positiva acumulada; ignora saltos pequeños (ruido GPS de altitud). */
-function elevationGainM(points: { elevacion_m?: number | null }[], minStepM = 1.5): number {
-  let gain = 0;
-  let prev: number | null = null;
-  for (const p of points) {
-    const e = p.elevacion_m;
-    if (e == null || !Number.isFinite(e)) continue;
-    if (prev != null) {
-      const d = e - prev;
-      if (d >= minStepM) gain += d;
-    }
-    prev = e;
-  }
-  return gain;
-}
-
-function firstNested<T>(value: T | T[] | null | undefined): T | null {
-  if (value == null) return null;
-  return Array.isArray(value) ? (value[0] ?? null) : value;
-}
 
 export function CardioLiveRecorder() {
   const { state, closeLiveRecording, openEdit, openLiveRecording } = useGlobalCardioDrawer();
@@ -110,6 +60,9 @@ export function CardioLiveRecorder() {
 
   const [step, setStep] = useState<"recording" | "summary">("recording");
   const [paused, setPaused] = useState(false);
+  /** Origen de la pausa actual; null si no está en pausa. */
+  const [pauseSource, setPauseSource] = useState<"manual" | "auto" | null>(null);
+  const [autoPauseEnabled, setAutoPauseEnabled] = useState(true);
   const [pausedMsAccum, setPausedMsAccum] = useState(0);
   const pauseStartedAt = useRef<number | null>(null);
   const [tick, setTick] = useState(0);
@@ -129,6 +82,22 @@ export function CardioLiveRecorder() {
   const [controlsExpanded, setControlsExpanded] = useState(false);
   const sheetDragStartY = useRef<number | null>(null);
   const [setupDisciplineId, setSetupDisciplineId] = useState<string | null>(null);
+  /** Samples HC prefetchados al entrar en resumen (si no hubo BLE). */
+  const [hcSamples, setHcSamples] = useState<HeartRateSample[]>([]);
+  const hcPrefetchGen = useRef(0);
+
+  useEffect(() => {
+    setAutoPauseEnabled(readCardioAutoPauseEnabled());
+  }, []);
+
+  const onAutoPauseEnabledChange = useCallback((enabled: boolean) => {
+    setAutoPauseEnabled(enabled);
+    writeCardioAutoPauseEnabled(enabled);
+    // Si se desactiva con una autopausa en curso, exige reanudación manual.
+    if (!enabled) {
+      setPauseSource((src) => (src === "auto" ? "manual" : src));
+    }
+  }, []);
 
   const discipline = firstNested(sessionData?.cardio_disciplina);
   const code = discipline?.codigo ?? null;
@@ -139,15 +108,22 @@ export function CardioLiveRecorder() {
   const gpsRecording = open && step === "recording" && cardioDisciplineUsesGpsMap(code) && !paused;
   const gpsPreview =
     isSetup || (open && step === "recording" && cardioDisciplineUsesGpsMap(code));
-  const { points, distanceM, error: gpsError, denied: gpsDenied, hasFix: gpsHasFix, clearDraft } =
-    useCardioGpsRecorder({
-      sessionId: open ? sessionId : null,
-      recording: gpsRecording,
-      preview: gpsPreview,
-      // Muestreo más denso para que el trazado crezca de forma fluida al caminar/correr
-      minIntervalMs: 2000,
-      minDeltaM: 4,
-    });
+  const {
+    points,
+    distanceM,
+    error: gpsError,
+    denied: gpsDenied,
+    hasFix: gpsHasFix,
+    motion: gpsMotion,
+    clearDraft,
+  } = useCardioGpsRecorder({
+    sessionId: open ? sessionId : null,
+    recording: gpsRecording,
+    preview: gpsPreview,
+    // Muestreo más denso para que el trazado crezca de forma fluida al caminar/correr
+    minIntervalMs: 2000,
+    minDeltaM: 4,
+  });
 
   const hrRecording = open && step === "recording" && !paused;
   const {
@@ -174,6 +150,7 @@ export function CardioLiveRecorder() {
     if (!liveOpen) {
       setStep("recording");
       setPaused(false);
+      setPauseSource(null);
       setPausedMsAccum(0);
       pauseStartedAt.current = null;
       setElapsedSecFrozen(null);
@@ -188,6 +165,8 @@ export function CardioLiveRecorder() {
       setControlsExpanded(false);
       sheetDragStartY.current = null;
       setSetupDisciplineId(null);
+      setHcSamples([]);
+      hcPrefetchGen.current += 1;
       if (pillCloseTimerRef.current != null) {
         window.clearTimeout(pillCloseTimerRef.current);
         pillCloseTimerRef.current = null;
@@ -206,6 +185,33 @@ export function CardioLiveRecorder() {
     }, PILL_CIRCLE_DURATION_MS);
     return () => window.clearTimeout(t);
   }, [pillCirclePhase]);
+
+  // Prefetch FC desde Health Connect al entrar en resumen si no hubo BLE.
+  useEffect(() => {
+    if (step !== "summary" || !sessionData?.fecha_inicio) return;
+    if (hrSamples.length > 0) {
+      setHcSamples([]);
+      return;
+    }
+
+    const startMs = Date.parse(sessionData.fecha_inicio);
+    if (!Number.isFinite(startMs)) return;
+    const endMs = Date.now();
+    const gen = ++hcPrefetchGen.current;
+
+    void (async () => {
+      const permitted = await hasHrPermission();
+      if (!permitted || gen !== hcPrefetchGen.current) return;
+      const samples = await readHeartRateSamples(startMs, endMs);
+      if (gen !== hcPrefetchGen.current) return;
+      setHcSamples(samples);
+    })();
+  }, [step, sessionData?.fecha_inicio, hrSamples.length]);
+
+  const { fcMedia: displayFcMedia, fcMax: displayFcMax } = useMemo(
+    () => (hrSamples.length > 0 ? { fcMedia, fcMax } : summarizeHeartRate(hcSamples)),
+    [hrSamples.length, fcMedia, fcMax, hcSamples],
+  );
 
   // El drawer de controles vive en un portal (fuera del full-screen), así que
   // medimos su caja para el mismo círculo hacia la pill que el mapa/header.
@@ -364,19 +370,80 @@ export function CardioLiveRecorder() {
     code,
   ]);
 
+  const resumeRecording = useCallback(() => {
+    if (pauseStartedAt.current != null) {
+      const pauseSegmentMs = Date.now() - pauseStartedAt.current;
+      pauseStartedAt.current = null;
+      setPausedMsAccum((a) => a + pauseSegmentMs);
+    }
+    setPauseSource(null);
+    setPaused(false);
+  }, []);
+
+  const pauseRecording = useCallback((source: "manual" | "auto") => {
+    pauseStartedAt.current = Date.now();
+    setPauseSource(source);
+    setPaused(true);
+  }, []);
+
   const onPauseToggle = () => {
     if (paused) {
-      if (pauseStartedAt.current != null) {
-        const pauseSegmentMs = Date.now() - pauseStartedAt.current;
-        pauseStartedAt.current = null;
-        setPausedMsAccum((a) => a + pauseSegmentMs);
-      }
-      setPaused(false);
+      resumeRecording();
     } else {
-      pauseStartedAt.current = Date.now();
-      setPaused(true);
+      pauseRecording("manual");
     }
   };
+
+  // Autopausa / reanudación por GPS (solo disciplinas con mapa).
+  useEffect(() => {
+    if (!autoPauseEnabled) return;
+    if (!open || step !== "recording" || !cardioDisciplineUsesGpsMap(code)) return;
+    if (!sessionData?.fecha_inicio) return;
+    const startedAtMs = new Date(sessionData.fecha_inicio).getTime();
+    if (!Number.isFinite(startedAtMs)) return;
+    const now = Date.now();
+
+    if (
+      !paused &&
+      shouldAutoPause({
+        hasFix: gpsHasFix,
+        isStationary: gpsMotion.isStationary,
+        stationaryMs: gpsMotion.stationaryMs,
+        recordingStartedAtMs: startedAtMs,
+        now,
+      })
+    ) {
+      pauseRecording("auto");
+      return;
+    }
+
+    if (
+      paused &&
+      shouldAutoResume({
+        hasFix: gpsHasFix,
+        isMoving: gpsMotion.isMoving,
+        movingMs: gpsMotion.movingMs,
+        pauseSource,
+      })
+    ) {
+      resumeRecording();
+    }
+  }, [
+    autoPauseEnabled,
+    open,
+    step,
+    code,
+    sessionData?.fecha_inicio,
+    paused,
+    pauseSource,
+    gpsHasFix,
+    gpsMotion.isStationary,
+    gpsMotion.stationaryMs,
+    gpsMotion.isMoving,
+    gpsMotion.movingMs,
+    pauseRecording,
+    resumeRecording,
+  ]);
 
   const onFinishRecording = () => {
     // Leer el tramo de pausa en local antes de tocar el ref (si el updater
@@ -388,6 +455,7 @@ export function CardioLiveRecorder() {
     setPausedMsAccum(pauseExtra);
     // Seguir en pausa para que "Volver" no reanude el cronómetro.
     pauseStartedAt.current = Date.now();
+    setPauseSource(null);
     setPaused(true);
 
     const startMs = sessionData?.fecha_inicio
@@ -449,9 +517,33 @@ export function CardioLiveRecorder() {
       summaryTitulo.trim() ||
       getDefaultCardioTitle(discipline?.nombre, Number.isNaN(startedAt.getTime()) ? undefined : startedAt);
 
+    const startMs = Date.parse(sessionData.fecha_inicio);
+    const endMs = Date.now();
+    let saveHrSamples = hrSamples;
+    let importedFromHc = false;
+
+    if (saveHrSamples.length === 0 && Number.isFinite(startMs)) {
+      try {
+        const permitted = await hasHrPermission();
+        if (permitted) {
+          const fresh = await readHeartRateSamples(startMs, endMs);
+          const resolved = fresh.length > 0 ? fresh : hcSamples;
+          if (resolved.length > 0) {
+            saveHrSamples = resolved;
+            importedFromHc = true;
+            setHcSamples(resolved);
+          }
+        }
+      } catch {
+        // No bloquear el guardado si Health Connect falla.
+      }
+    }
+
+    const { fcMedia: saveFcMedia, fcMax: saveFcMax } = summarizeHeartRate(saveHrSamples);
+
     const trackPoints: CardioTrackPointInput[] = points.map((p, idx) => {
       const ts = p.timestamp_utc ? Date.parse(p.timestamp_utc) : NaN;
-      const fc = Number.isFinite(ts) ? nearestHeartRate(hrSamples, ts) : null;
+      const fc = Number.isFinite(ts) ? nearestHeartRate(saveHrSamples, ts) : null;
       return {
         orden: idx,
         lat: p.lat,
@@ -472,7 +564,7 @@ export function CardioLiveRecorder() {
     const track =
       cardioDisciplineUsesGpsMap(code) && trackPoints.length > 0
         ? {
-            fuente: "gps-web",
+            fuente: importedFromHc ? appendHealthConnectFuente("gps-web") : "gps-web",
             distancia_total_m: Math.round(dist * 10) / 10,
             duracion_total_seg: dur,
             elevacion_positiva_m: Math.round(elevGain * 10) / 10,
@@ -497,8 +589,8 @@ export function CardioLiveRecorder() {
               distancia_m: Math.round(dist * 10) / 10,
               duracion_seg: dur,
               elevacion_m: Math.round(elevGain * 10) / 10,
-              fc_media: fcMedia,
-              fc_max: fcMax,
+              fc_media: saveFcMedia,
+              fc_max: saveFcMax,
               calorias: null,
             },
           ],
@@ -507,10 +599,24 @@ export function CardioLiveRecorder() {
       });
       clearDraft();
       clearHrSamples();
+      setHcSamples([]);
       void disconnectHr();
       void stopLiveCardio();
       closeLiveRecording();
-      toast({ title: "Entrenamiento guardado" });
+      if (importedFromHc) {
+        toast({
+          title: "Entrenamiento guardado",
+          description: "FC importada desde Health Connect.",
+        });
+      } else if (hrSamples.length === 0 && saveFcMedia == null) {
+        toast({
+          title: "Entrenamiento guardado",
+          description:
+            "Sin FC: el reloj puede tardar en sincronizar con Health Connect, o no hay permiso.",
+        });
+      } else {
+        toast({ title: "Entrenamiento guardado" });
+      }
     } catch {
       toast({ title: "No se pudo guardar", variant: "destructive" });
     }
@@ -561,6 +667,7 @@ export function CardioLiveRecorder() {
   const recordingMap = open && cardioDisciplineUsesGpsMap(code);
   /** Mapa visible en setup y mientras hay sesión GPS (evita remount al iniciar). */
   const showGpsSurface = isSetup || recordingMap || (open && loadingSession && step === "recording");
+  const summary = step === "summary" && open && !loadingSession;
 
   const pillCircleProps =
     open && pillOrigin && pillCirclePhase
@@ -606,379 +713,106 @@ export function CardioLiveRecorder() {
 
   return (
     <>
-    <div className="fixed inset-0 z-100 flex flex-col bg-card text-card-foreground" {...pillCircleProps}>
-      {step === "summary" && open && !loadingSession ? (
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <div className="rounded-2xl border border-border bg-muted/30 p-4">
-            <p className="text-xs font-medium text-muted-foreground">Resumen</p>
-            <p className="mt-2 font-mono text-lg tabular-nums">
-              {formatDuration(elapsedSec)} · {formatDistanceM(displayDistanceM)} · ↑{formatElevationM(displayElevationM)}
-            </p>
-            {fcMedia != null || fcMax != null ? (
-              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm tabular-nums">
-                <span className="inline-flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
-                  <Heart className="h-3.5 w-3.5" />
-                  {fcMedia != null ? (
-                    <span>
-                      Media <span className="font-semibold">{fcMedia}</span> bpm
-                    </span>
-                  ) : null}
-                </span>
-                {fcMax != null ? (
-                  <span className="text-muted-foreground">
-                    Máx <span className="font-semibold text-foreground">{fcMax}</span> bpm
-                  </span>
-                ) : null}
-              </p>
-            ) : null}
-            {recordingMap && points.length === 0 ? (
-              <p className="mt-2 text-xs text-muted-foreground">Sin puntos GPS; se guardará solo tiempo y título.</p>
-            ) : null}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="cardio-live-titulo">Título</Label>
-            <Input id="cardio-live-titulo" value={summaryTitulo} onChange={(e) => setSummaryTitulo(e.target.value)} className="h-12 rounded-xl" placeholder="Ej. Ciclismo de tarde" />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="cardio-live-comentarios">Comentarios (opcional)</Label>
-            <Textarea
-              id="cardio-live-comentarios"
-              value={summaryComentarios}
-              onChange={(e) => setSummaryComentarios(e.target.value)}
-              className="min-h-22 rounded-xl resize-none"
-              placeholder="Sensaciones, clima…"
-            />
-          </div>
-
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5">
-            <div className="min-w-0 space-y-0.5">
-              <p className="text-sm font-medium">Publicar en comunidad</p>
-              <p className="text-[12px] text-muted-foreground">
-                {esPublica
-                  ? "Este entreno se verá en el feed público."
-                  : "Este entreno se mantendrá privado."}
-              </p>
-            </div>
-            <Switch
-              checked={esPublica}
-              onCheckedChange={setEsPublica}
-              aria-label="Publicar en comunidad"
-            />
-          </div>
-
-          <div className="mt-auto flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              className="rounded-xl font-semibold shadow-none hover:shadow-none hover:translate-y-0 active:translate-y-0"
-              disabled={upsert.isPending || deleteSession.isPending}
-              onClick={() => void onSaveSummary()}
-            >
-              {upsert.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Guardar entrenamiento
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-xl text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
-              disabled={deleteSession.isPending || upsert.isPending}
-              onClick={() => setConfirmDiscard(true)}
-            >
-              Descartar
-            </Button>
-            <Button type="button" variant="outline" className="rounded-xl" onClick={() => setStep("recording")}>
-              Volver
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <>
-          {showGpsSurface ? (
-            <div className="relative min-h-0 flex-1 w-full bg-muted/30">
-              {showGpsErrorUi ? (
-                <div className="flex h-full min-h-50 flex-col items-center justify-center gap-3 p-6 text-center">
-                  <MapPin className="h-10 w-10 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    {gpsDenied
-                      ? "Permiso de ubicación denegado. Puedes seguir con el cronómetro o abrir el formulario manual."
-                      : gpsError || "No se pudo obtener el GPS."}
-                  </p>
-                  <Button type="button" variant="secondary" className="rounded-xl" onClick={openManualEditor}>
-                    Formulario manual
-                  </Button>
-                </div>
-              ) : (
-                <Suspense fallback={<div className="h-full min-h-dvh w-full bg-[#23292b]" />}>
-                  <LiveCardioMap points={mapPoints} followUser className="h-full min-h-dvh w-full" />
-                </Suspense>
-              )}
-              {isSetup ? (
-                <CardioDisciplineIsland
-                  selectedId={setupDisciplineId}
-                  preferredId={lastDisciplineId ?? null}
-                  onSelect={onSelectSetupDiscipline}
-                />
-              ) : null}
-              {loadingSession ? (
-                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-card/30">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <div className="flex min-h-[28vh] flex-1 flex-col items-center justify-center gap-2 border-b border-border bg-muted/20 p-6">
-              {loadingSession ? (
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              ) : (
-                <p className="text-center text-sm text-muted-foreground">
-                  Modo interior: cronómetro y finalizar. Puedes editar detalles al terminar.
-                </p>
-              )}
-            </div>
-          )}
-
-          {(isSetup || (open && !loadingSession)) ? (
+      <div className="fixed inset-0 z-100 flex flex-col bg-card text-card-foreground" {...pillCircleProps}>
+        {summary ? (
+          <CardioLiveSummaryView
+            elapsedSec={elapsedSec}
+            distanceM={displayDistanceM}
+            elevationM={displayElevationM}
+            fcMedia={displayFcMedia}
+            fcMax={displayFcMax}
+            recordingMap={recordingMap}
+            pointsCount={points.length}
+            titulo={summaryTitulo}
+            comentarios={summaryComentarios}
+            esPublica={esPublica}
+            saving={upsert.isPending}
+            discarding={deleteSession.isPending}
+            onTituloChange={setSummaryTitulo}
+            onComentariosChange={setSummaryComentarios}
+            onEsPublicaChange={setEsPublica}
+            onSave={() => void onSaveSummary()}
+            onDiscard={() => setConfirmDiscard(true)}
+            onBack={() => setStep("recording")}
+          />
+        ) : (
           <>
-          <div
-            className="pointer-events-none fixed inset-x-0 z-115 px-3"
-            style={{
-              bottom: `${Math.max(controlsDrawerHeightPx, 96) + 12}px`,
-            }}
-          >
-            <div
-              className={cn(
-                "mx-auto flex max-w-lg flex-col overflow-hidden rounded-[1.75rem]",
-                "border border-border/80 bg-card/95 shadow-lg backdrop-blur-xl",
-              )}
-            >
-              {showNoGpsBanner ? (
-                <p className="border-b border-red-500/25 bg-red-500/15 px-3 py-1.5 text-center text-[11px] font-semibold tracking-wide text-red-600 dark:text-red-400">
-                  {noGpsBannerText}
-                </p>
-              ) : null}
-              <div className="flex items-stretch gap-1 p-1.5">
-                {(
-                  [
-                    {
-                      key: "time",
-                      label: "Tiempo",
-                      value: formatDuration(isSetup ? 0 : elapsedSec),
-                    },
-                    {
-                      key: "distance",
-                      label: "Distancia",
-                      value: formatDistanceM(isSetup ? 0 : displayDistanceM),
-                    },
-                    {
-                      key: "elevation",
-                      label: "Elevación",
-                      value: formatElevationM(isSetup ? 0 : displayElevationM),
-                    },
-                  ] as const
-                ).map((metric, index) => (
-                  <div
-                    key={metric.key}
-                    className={cn(
-                      "min-w-0 flex-1 px-2 py-2 text-center",
-                      index > 0 && "border-l border-border/60",
-                    )}
-                  >
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      {metric.label}
-                    </p>
-                    <p className="mt-0.5 truncate font-mono text-lg font-semibold tabular-nums sm:text-xl">
-                      {metric.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+            <LiveRecordingSurface
+              showGpsSurface={showGpsSurface}
+              showGpsErrorUi={showGpsErrorUi}
+              gpsDenied={gpsDenied}
+              gpsError={gpsError}
+              mapPoints={mapPoints}
+              loadingSession={loadingSession}
+              isSetup={isSetup}
+              setupDisciplineId={setupDisciplineId}
+              lastDisciplineId={lastDisciplineId ?? null}
+              onSelectDiscipline={onSelectSetupDiscipline}
+              onOpenManual={openManualEditor}
+            />
 
-          <Drawer
-            open
-            modal={false}
-            dismissible={false}
-            handleOnly
-            onOpenChange={(next) => {
-              if (!next) requestClose();
-            }}
-          >
-            <DrawerContent
-              ref={controlsDrawerRef}
-              side="bottom"
-              className="z-110 mt-0 max-h-[85lvh] overflow-hidden bg-card p-0 transition-[height] duration-300 ease-out"
-              overlayClassName="z-110 pointer-events-none bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none"
-              {...controlsDrawerPillProps}
-            >
-              <div
-                className="touch-pan-x"
-                onPointerDownCapture={onControlsSheetPointerDown}
-                onPointerMoveCapture={onControlsSheetPointerMove}
-                onPointerUpCapture={onControlsSheetPointerEnd}
-                onPointerCancelCapture={onControlsSheetPointerEnd}
-                onDoubleClick={() => setControlsExpanded((v) => !v)}
-              >
-              <div className="shrink-0">
-                <DrawerHeader className="gap-0 px-0 pb-0 pt-2.5">
-                  <DrawerTitle className="sr-only">{headerTitle} — controles de grabación</DrawerTitle>
-                </DrawerHeader>
-                <div
-                  className={cn(
-                    "space-y-4 bg-card px-4",
-                    controlsExpanded ? "pb-4" : "pb-[max(1rem,env(safe-area-inset-bottom))]",
-                  )}
-                >
-                  <div className="flex flex-wrap items-center justify-center gap-3">
-                    {isSetup ? (
-                      <Button
-                        type="button"
-                        size="lg"
-                        className="h-14 w-14 rounded-full p-0 shadow-none hover:shadow-none hover:translate-y-0 active:translate-y-0"
-                        disabled={!setupDisciplineId || startCardioLive.isPending}
-                        onClick={() => void onStartFromIsland()}
-                        aria-label="Iniciar entrenamiento"
-                      >
-                        {startCardioLive.isPending ? (
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                        ) : (
-                          <Play className="h-6 w-6 fill-current" />
-                        )}
-                      </Button>
-                    ) : (
-                      <>
-                        <Button
-                          type="button"
-                          size="lg"
-                          variant="secondary"
-                          className={cn("h-11 min-w-30 rounded-full gap-2 px-8 shadow-none", paused && "border-sky-500/50")}
-                          onClick={onPauseToggle}
-                        >
-                          {paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-                          {paused ? "Reanudar" : "Pausa"}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="lg"
-                          className="h-11 min-w-30 rounded-full gap-2 px-8 shadow-none hover:shadow-none hover:translate-y-0 active:translate-y-0"
-                          onClick={onFinishRecording}
-                        >
-                          <Square className="h-4 w-4 fill-current" />
-                          Finalizar
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className={cn(
-                  "grid transition-[grid-template-rows] duration-300 ease-out",
-                  controlsExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-                )}
-              >
-                <div className="min-h-0 overflow-hidden">
-                  <div className="space-y-4 bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                    <div className="rounded-2xl border border-border bg-muted/30 p-3">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
-                            hrConnected ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" : "bg-muted text-muted-foreground",
-                          )}
-                        >
-                          <Heart className={cn("h-5 w-5", hrConnected && bpm != null && "animate-pulse")} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pulsaciones</p>
-                          <p className="mt-0.5 font-mono text-2xl font-semibold tabular-nums">
-                            {hrConnected && bpm != null ? (
-                              <>
-                                {bpm}
-                                <span className="ml-1 text-sm font-medium text-muted-foreground">bpm</span>
-                              </>
-                            ) : hrConnecting ? (
-                              <span className="text-base font-medium text-muted-foreground">Conectando…</span>
-                            ) : hrConnection === "disconnected" ? (
-                              <span className="text-base font-medium text-amber-600 dark:text-amber-400">Sin señal</span>
-                            ) : (
-                              <span className="text-base font-medium text-muted-foreground">—</span>
-                            )}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {hrConnected && hrDeviceName
-                              ? `${hrDeviceName}${hrZone != null ? ` · Zona ${hrZone}` : ""}`
-                              : hrDeviceName
-                                ? hrDeviceName
-                                : "Sensor Bluetooth"}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          className="shrink-0 rounded-full gap-1.5"
-                          disabled={hrConnecting}
-                          onClick={onHrConnectClick}
-                        >
-                          {hrConnecting ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Bluetooth className="h-3.5 w-3.5" />
-                          )}
-                          {hrConnected ? "Desconectar" : hrConnection === "disconnected" || hrDeviceName ? "Reconectar" : "Conectar"}
-                        </Button>
-                      </div>
-                      {hrError ? <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{hrError}</p> : null}
-                    </div>
-
-                    {!isSetup ? (
-                      <button
-                        type="button"
-                        className="block w-full text-center text-xs text-muted-foreground underline-offset-2 hover:underline"
-                        onClick={openManualEditor}
-                      >
-                        Registrar o editar en formulario manual
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-              </div>
-            </DrawerContent>
-          </Drawer>
+            {(isSetup || (open && !loadingSession)) ? (
+              <>
+                <LiveMetricsBar
+                  bottomOffsetPx={Math.max(controlsDrawerHeightPx, 96) + 12}
+                  isSetup={isSetup}
+                  elapsedSec={elapsedSec}
+                  distanceM={displayDistanceM}
+                  elevationM={displayElevationM}
+                  showNoGpsBanner={showNoGpsBanner}
+                  noGpsBannerText={noGpsBannerText}
+                />
+                <LiveControlsDrawer
+                  ref={controlsDrawerRef}
+                  headerTitle={headerTitle}
+                  isSetup={isSetup}
+                  paused={paused}
+                  pauseSource={pauseSource}
+                  showAutoPauseToggle={
+                    isSetup
+                      ? cardioDisciplineUsesGpsMap(setupDisciplineCodigo)
+                      : cardioDisciplineUsesGpsMap(code)
+                  }
+                  autoPauseEnabled={autoPauseEnabled}
+                  onAutoPauseEnabledChange={onAutoPauseEnabledChange}
+                  controlsExpanded={controlsExpanded}
+                  setupDisciplineId={setupDisciplineId}
+                  startPending={startCardioLive.isPending}
+                  drawerPillProps={controlsDrawerPillProps}
+                  hr={{
+                    bpm,
+                    connected: hrConnected,
+                    connection: hrConnection,
+                    deviceName: hrDeviceName,
+                    zone: hrZone,
+                    connecting: hrConnecting,
+                    error: hrError,
+                    onConnectClick: onHrConnectClick,
+                  }}
+                  onOpenChange={(next) => {
+                    if (!next) requestClose();
+                  }}
+                  onPointerDown={onControlsSheetPointerDown}
+                  onPointerMove={onControlsSheetPointerMove}
+                  onPointerUp={onControlsSheetPointerEnd}
+                  onToggleExpanded={() => setControlsExpanded((v) => !v)}
+                  onStart={() => void onStartFromIsland()}
+                  onPauseToggle={onPauseToggle}
+                  onFinish={onFinishRecording}
+                  onOpenManual={openManualEditor}
+                />
+              </>
+            ) : null}
           </>
-          ) : null}
-        </>
-      )}
-    </div>
+        )}
+      </div>
 
-    <AlertDialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
-      {/* Por encima del full-screen del grabador (z-100); el portal default es z-50. */}
-      <AlertDialogContent className="z-110" overlayClassName="z-110">
-        <AlertDialogHeader>
-          <AlertDialogTitle>¿Descartar este entrenamiento?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Se eliminará la sesión y no se podrá recuperar. Esta acción no se puede deshacer.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleteSession.isPending}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={deleteSession.isPending}
-            onClick={(e) => {
-              e.preventDefault();
-              void onDiscardSession();
-            }}
-          >
-            {deleteSession.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Descartar
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      <DiscardSessionDialog
+        open={confirmDiscard}
+        pending={deleteSession.isPending}
+        onOpenChange={setConfirmDiscard}
+        onConfirm={() => void onDiscardSession()}
+      />
     </>
   );
 }

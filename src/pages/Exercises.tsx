@@ -48,10 +48,18 @@ import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import { EXERCISE_SYNONYMS } from "@/constants/exerciseSynonyms";
-import type { RegistroSeries } from "@/types/workout";
+import type { RegistroSeries, TipoEjercicio } from "@/types/workout";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
 
 type DifficultyLevel = 1 | 2 | 3;
+
+/** Fila unificada del catálogo sistema + ejercicios de usuario. */
+type CatalogExercise = TipoEjercicio & {
+  usuario_id?: string;
+  __source?: "catalogo" | "usuario";
+  body_part?: string | string[] | null;
+  descripcion?: string | null;
+};
 
 type ExerciseFilters = {
   q: string;
@@ -289,7 +297,7 @@ const Exercises = () => {
   const [newBodyParts, setNewBodyParts] = useState<string[]>([]);
   const [newRegistroSeries, setNewRegistroSeries] = useState<RegistroSeries>("peso_reps");
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [selectedExercise, setSelectedExercise] = useState<any>(null);
+  const [selectedExercise, setSelectedExercise] = useState<CatalogExercise | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const mobileActionsSlot = useLayoutActionSlot("section-pills-actions-slot", null);
   const desktopCreateSlot = useLayoutActionSlot(null, "desktop-floating-create-slot");
@@ -299,27 +307,27 @@ const Exercises = () => {
   const difficultyLoadingTimerRef = useRef<number | null>(null);
 
   // Flatten: ejercicios de usuario (solo primera página) + páginas del catálogo
-  const exercises = useMemo(() => {
+  const exercises = useMemo((): CatalogExercise[] => {
     const pages = data?.pages ?? [];
-    const usuario = pages[0]?.usuario ?? [];
-    const catalogo = pages.flatMap((p) => p.catalogo ?? []);
+    const usuario = (pages[0]?.usuario ?? []) as CatalogExercise[];
+    const catalogo = pages.flatMap((p) => (p.catalogo ?? []) as CatalogExercise[]);
     return [...usuario, ...catalogo];
   }, [data]);
 
   const tipoOptions = useMemo(
-    () => uniqNonEmpty(exercises.map((x: any) => x.tipo)).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
+    () => uniqNonEmpty(exercises.map((x) => x.tipo)).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
     [exercises],
   );
   const grupoOptions = useMemo(
     () =>
-      uniqNonEmpty(exercises.map((x: any) => x.grupo_muscular)).sort((a, b) =>
+      uniqNonEmpty(exercises.map((x) => x.grupo_muscular)).sort((a, b) =>
         a.localeCompare(b, undefined, { sensitivity: "base" }),
       ),
     [exercises],
   );
   const equipmentOptions = useMemo(
     () =>
-      uniqNonEmpty(exercises.flatMap((x: any) => splitEquipmentUnits(x.equipment))).sort((a, b) =>
+      uniqNonEmpty(exercises.flatMap((x) => splitEquipmentUnits(x.equipment))).sort((a, b) =>
         a.localeCompare(b, undefined, { sensitivity: "base" }),
       ),
     [exercises],
@@ -340,7 +348,7 @@ const Exercises = () => {
     const qCompact = normalizeSearchKey(filters.q);
     const qTokens = q.split(" ").filter(Boolean);
 
-    return sortedExercises.filter((ex: any) => {
+    return sortedExercises.filter((ex) => {
       // Multi-select exact match filters
       if (filters.tipos.length && !filters.tipos.includes(String(ex.tipo ?? "").trim())) return false;
       if (filters.grupos.length && !filters.grupos.includes(String(ex.grupo_muscular ?? "").trim())) return false;
@@ -476,8 +484,12 @@ const Exercises = () => {
       setNewDesc("");
       setNewBodyParts([]);
       setNewRegistroSeries("peso_reps");
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({
+        title: "Error",
+        description: e instanceof Error ? e.message : "Error desconocido",
+        variant: "destructive",
+      });
     }
   };
 
@@ -486,8 +498,12 @@ const Exercises = () => {
     try {
       await deleteExercise.mutateAsync(deleteId);
       toast({ title: "Ejercicio eliminado" });
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({
+        title: "Error",
+        description: e instanceof Error ? e.message : "Error desconocido",
+        variant: "destructive",
+      });
     }
     setDeleteId(null);
   };
@@ -910,7 +926,7 @@ const Exercises = () => {
               <Skeleton key={i} className="h-24 w-full rounded-none border-0 bg-card md:rounded-3xl" />
             ))
           : filteredExercises.map((ex) => {
-              const isOwn = (ex as any).usuario_id === user?.id;
+              const isOwn = ex.usuario_id === user?.id;
               const IconComponent = getExerciseIcon(ex as { musculos_involucrados?: string[] | null });
               return (
                 <Card
@@ -942,27 +958,27 @@ const Exercises = () => {
                             Personal
                           </Badge>
                         )}
-                        {(ex as any).tipo && (
+                        {ex.tipo && (
                           <Badge variant="outline" className="text-[11px]">
                             <Dumbbell className="mr-1 h-3 w-3" />
-                            {(ex as any).tipo}
+                            {ex.tipo}
                           </Badge>
                         )}
-                        {(ex as any).grupo_muscular && (
+                        {ex.grupo_muscular && (
                           <Badge variant="outline" className="text-[11px]">
                             <Layers className="mr-1 h-3 w-3" />
-                            {(ex as any).grupo_muscular}
+                            {ex.grupo_muscular}
                           </Badge>
                         )}
-                        {difficultyToLevel((ex as any).dificultad) && (
+                        {difficultyToLevel(ex.dificultad) && (
                           <Badge variant="outline" className="text-[11px]">
-                            <DifficultyBars level={difficultyToLevel((ex as any).dificultad)!} />
+                            <DifficultyBars level={difficultyToLevel(ex.dificultad)!} />
                           </Badge>
                         )}
-                        {(ex as any).equipment && (
+                        {ex.equipment && (
                           <Badge variant="outline" className="text-[11px]">
                             <Wrench className="mr-1 h-3 w-3" />
-                            {(ex as any).equipment}
+                            {ex.equipment}
                           </Badge>
                         )}
                       </div>

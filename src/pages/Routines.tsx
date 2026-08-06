@@ -170,7 +170,7 @@ const Routines = () => {
         });
         break;
       case "custom":
-        sorted.sort((a, b) => ((a as any).orden ?? 0) - ((b as any).orden ?? 0));
+        sorted.sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
         break;
     }
     return sorted;
@@ -181,7 +181,7 @@ const Routines = () => {
     setSortDir(dir);
     if (mode === "custom" && routines) {
       const ordered = [...routines].sort(
-        (a, b) => ((a as any).orden ?? 0) - ((b as any).orden ?? 0)
+        (a, b) => (a.orden ?? 0) - (b.orden ?? 0)
       );
       setCustomOrder(ordered);
     } else {
@@ -235,8 +235,12 @@ const Routines = () => {
     try {
       await deleteRoutine.mutateAsync(deleteId);
       toast({ title: "Rutina eliminada" });
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({
+        title: "Error",
+        description: e instanceof Error ? e.message : "Error desconocido",
+        variant: "destructive",
+      });
     }
     setDeleteId(null);
   };
@@ -245,12 +249,12 @@ const Routines = () => {
     const exercises: ExerciseFormData[] = routine.ejercicios
       .sort((a, b) => a.orden - b.orden)
       .map((ej) => {
-        const registro_series = normalizeRegistroSeries((ej as any).registro_series);
-        const durObj = (ej as any).duracion_objetivo_seg as number | null | undefined;
-        const ritmoObj = (ej as any).ritmo_objetivo_seg_km as number | null | undefined;
+        const registro_series = normalizeRegistroSeries(ej.registro_series);
+        const durObj = ej.duracion_objetivo_seg;
+        const ritmoObj = ej.ritmo_objetivo_seg_km;
         return {
           tipo_ejercicio_id: ej.tipo_ejercicio_id ?? undefined,
-          usuario_ejercicio_id: (ej as any).usuario_ejercicio_id ?? undefined,
+          usuario_ejercicio_id: ej.usuario_ejercicio_id ?? undefined,
           nombre: ej.tipo_ejercicio.nombre,
           registro_series,
           repRange:
@@ -261,9 +265,9 @@ const Routines = () => {
                   ? `${durObj} s`
                   : "Tiempo"
                 : `${ej.repes_min}-${ej.repes_max}`,
-          targetRir: (ej as any).rir ?? 1,
-          descanso: (ej as any).descanso ?? 120,
-          superset_id: (ej as any).superset_id ?? null,
+          targetRir: ej.rir ?? 1,
+          descanso: ej.descanso ?? 120,
+          superset_id: ej.superset_id ?? null,
           sets: Array.from({ length: ej.series_objetivo }, () =>
             defaultSetForMode(registro_series, durObj ?? null, ritmoObj ?? null)
           ),

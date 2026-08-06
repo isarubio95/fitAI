@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FileUp, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 type ParsedRow = {
   nombre_ejercicio: string;
@@ -188,20 +189,7 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
           .single();
         if (errRutina) throw errRutina;
 
-        const inserts: {
-          rutina_id: string;
-          tipo_ejercicio_id: string;
-          series_objetivo: number;
-          repes_min: number;
-          repes_max: number;
-          rir: number;
-          orden: number;
-          descanso: number | null;
-          superset_id: string | null;
-          registro_series: string;
-          duracion_objetivo_seg: null;
-          ritmo_objetivo_seg_km: null;
-        }[] = [];
+        const inserts: TablesInsert<"rutina_ejercicio">[] = [];
         for (let i = 0; i < parsed.rows.length; i++) {
           const row = parsed.rows[i];
           const tipoId = findTipoEjercicioId(row.nombre_ejercicio)!;
@@ -221,7 +209,7 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
           });
         }
 
-        const { error: errEj } = await supabase.from("rutina_ejercicio").insert(inserts as any);
+        const { error: errEj } = await supabase.from("rutina_ejercicio").insert(inserts);
         if (errEj) throw errEj;
 
         queryClient.invalidateQueries({ queryKey: ["routines"] });
@@ -230,8 +218,12 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
           description: `"${parsed.nombre}" creada con ${inserts.length} ejercicios.`,
         });
         onOpenChange(false);
-      } catch (e: any) {
-        toast({ title: "Error al importar", description: e.message ?? "Revisa el CSV e intenta de nuevo.", variant: "destructive" });
+      } catch (e: unknown) {
+        toast({
+          title: "Error al importar",
+          description: e instanceof Error ? e.message : "Revisa el CSV e intenta de nuevo.",
+          variant: "destructive",
+        });
       } finally {
         setImporting(false);
       }

@@ -75,9 +75,10 @@ export default function UsernameSetup() {
 
       // Refresca el guard para que AppLayout muestre el resto de la app.
       queryClient.invalidateQueries({ queryKey: ["profileSetup", user.id] });
-    } catch (err: any) {
-      setError(err?.message ?? "Error guardando el nombre de usuario.");
-      toast({ title: "Error", description: err?.message ?? "No se pudo guardar el usuario.", variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error guardando el nombre de usuario.";
+      setError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
