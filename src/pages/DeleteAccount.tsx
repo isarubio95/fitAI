@@ -93,7 +93,7 @@ export default function DeleteAccount() {
                 <li>Historial de entrenamientos de fuerza, series y rutinas.</li>
                 <li>Sesiones de cardio, rutas GPS y rutinas de cardio.</li>
                 <li>Medidas corporales, logros, seguidores y actividad en comunidad.</li>
-                <li>Ejercicios personalizados y planes generados por IA.</li>
+                <li>Ejercicios personalizados.</li>
               </ul>
             </section>
 

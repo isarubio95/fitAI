@@ -47,7 +47,7 @@ export function useFollows() {
           .insert({
             seguidor_id: user.id,
             seguido_id: targetId,
-          } as any);
+          });
         if (error) throw error;
       }
     },

@@ -47,7 +47,7 @@ La app funciona como SPA con un `AppLayout` común y páginas por dominio:
 - Cliente tipado en `src/integrations/supabase/client.ts`
 - Tipos de DB generados en `src/integrations/supabase/types.ts`
 - Edge Function relevante:
-  - `supabase/functions/generate-custom-routine/index.ts` (generación de planes con Gemini + validaciones + control de premium)
+  - `supabase/functions/delete-account/index.ts` (borrado de cuenta)
 
 ### Flujo de datos
 
@@ -80,7 +80,7 @@ La app funciona como SPA con un `AppLayout` común y páginas por dominio:
 ├─ supabase/
 │  ├─ config.toml
 │  └─ functions/
-│     └─ generate-custom-routine/
+│     └─ delete-account/
 ├─ .env.example
 ├─ vite.config.ts
 ├─ vitest.config.ts
@@ -166,11 +166,10 @@ Servidor dev por defecto en `http://localhost:8080` (ver `vite.config.ts`).
 
 - Autenticación y sesión gestionadas por Supabase.
 - Cliente usa `persistSession` y `autoRefreshToken`.
-- Edge Function `generate-custom-routine`:
-  - valida payload de entrada,
-  - valida usuario/premium,
-  - consume proveedor IA,
-  - persiste resultados en Supabase.
+- Edge Function `delete-account`:
+  - autentica usuario,
+  - elimina datos asociados vía `delete_user_data`,
+  - borra la cuenta de Auth.
 
 > Recomendación: documentar explícitamente políticas RLS por tabla en un documento dedicado de seguridad.
 

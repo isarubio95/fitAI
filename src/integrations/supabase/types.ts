@@ -35,7 +35,7 @@ export type Database = {
           icono?: string | null
           id?: string
           titulo: string
-          usuario_id: string
+          usuario_id?: string
         }
         Update: {
           comentarios?: string | null
@@ -470,6 +470,7 @@ export type Database = {
           registro_series: string
           rep_range: string | null
           rir_objetivo: number | null
+          superset_id: string | null
           tipo_ejercicio_id: string | null
           usuario_ejercicio_id: string | null
           usuario_id: string
@@ -482,9 +483,10 @@ export type Database = {
           registro_series?: string
           rep_range?: string | null
           rir_objetivo?: number | null
+          superset_id?: string | null
           tipo_ejercicio_id?: string | null
           usuario_ejercicio_id?: string | null
-          usuario_id: string
+          usuario_id?: string
         }
         Update: {
           actividad_id?: string
@@ -494,6 +496,7 @@ export type Database = {
           registro_series?: string
           rep_range?: string | null
           rir_objetivo?: number | null
+          superset_id?: string | null
           tipo_ejercicio_id?: string | null
           usuario_ejercicio_id?: string | null
           usuario_id?: string
@@ -596,7 +599,7 @@ export type Database = {
           pecho?: number | null
           peso?: number | null
           pierna?: number | null
-          usuario_id: string
+          usuario_id?: string
         }
         Update: {
           brazo?: number | null
@@ -620,7 +623,6 @@ export type Database = {
           avatar_url: string | null
           comunidad_publica_actividad: boolean
           created_at: string
-          es_premium: boolean
           id: string
           nivel: number
           racha_actual: number
@@ -633,7 +635,6 @@ export type Database = {
           avatar_url?: string | null
           comunidad_publica_actividad?: boolean
           created_at?: string
-          es_premium?: boolean
           id?: string
           nivel?: number
           racha_actual?: number
@@ -646,7 +647,6 @@ export type Database = {
           avatar_url?: string | null
           comunidad_publica_actividad?: boolean
           created_at?: string
-          es_premium?: boolean
           id?: string
           nivel?: number
           racha_actual?: number
@@ -654,30 +654,6 @@ export type Database = {
           ultima_actividad_fecha?: string | null
           username?: string | null
           xp_total?: number
-        }
-        Relationships: []
-      }
-      plan_generado_ia: {
-        Row: {
-          created_at: string
-          id: string
-          prompt: string
-          respuesta: Json
-          usuario_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          prompt: string
-          respuesta: Json
-          usuario_id?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          prompt?: string
-          respuesta?: Json
-          usuario_id?: string
         }
         Relationships: []
       }
@@ -692,7 +668,8 @@ export type Database = {
           id: string
           nivel: string | null
           nombre: string
-          usuario_id: string
+          orden: number | null
+          usuario_id: string | null
         }
         Insert: {
           created_at?: string
@@ -704,7 +681,8 @@ export type Database = {
           id?: string
           nivel?: string | null
           nombre: string
-          usuario_id: string
+          orden?: number | null
+          usuario_id?: string | null
         }
         Update: {
           created_at?: string
@@ -716,7 +694,8 @@ export type Database = {
           id?: string
           nivel?: string | null
           nombre?: string
-          usuario_id?: string
+          orden?: number | null
+          usuario_id?: string | null
         }
         Relationships: []
       }
@@ -811,7 +790,7 @@ export type Database = {
           fecha_programada: string
           id?: string
           rutina_id: string
-          usuario_id: string
+          usuario_id?: string
         }
         Update: {
           actividad_id?: string | null
@@ -823,55 +802,97 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "rutina_programada_rutina_id_fkey"
-            columns: ["rutina_id"]
-            isOneToOne: false
-            referencedRelation: "rutina"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "rutina_programada_actividad_id_fkey"
             columns: ["actividad_id"]
             isOneToOne: false
             referencedRelation: "actividad"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "rutina_programada_rutina_id_fkey"
+            columns: ["rutina_id"]
+            isOneToOne: false
+            referencedRelation: "rutina"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seguimiento: {
+        Row: {
+          created_at: string
+          id: string
+          seguido_id: string
+          seguidor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          seguido_id: string
+          seguidor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          seguido_id?: string
+          seguidor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seguimiento_seguido_id_fkey"
+            columns: ["seguido_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seguimiento_seguidor_id_fkey"
+            columns: ["seguidor_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
+            referencedColumns: ["id"]
+          },
         ]
       }
       serie: {
         Row: {
-          completed: boolean
+          completed: boolean | null
           created_at: string
+          descanso: number | null
           duracion_seg: number | null
           ejercicio_id: string
           id: string
           numero_serie: number
           peso_kg: number
           repeticiones: number
+          rir: number | null
           ritmo_seg_km: number | null
           usuario_id: string
         }
         Insert: {
-          completed?: boolean
+          completed?: boolean | null
           created_at?: string
+          descanso?: number | null
           duracion_seg?: number | null
           ejercicio_id: string
           id?: string
           numero_serie?: number
           peso_kg?: number
           repeticiones?: number
+          rir?: number | null
           ritmo_seg_km?: number | null
-          usuario_id: string
+          usuario_id?: string
         }
         Update: {
-          completed?: boolean
+          completed?: boolean | null
           created_at?: string
+          descanso?: number | null
           duracion_seg?: number | null
           ejercicio_id?: string
           id?: string
           numero_serie?: number
           peso_kg?: number
           repeticiones?: number
+          rir?: number | null
           ritmo_seg_km?: number | null
           usuario_id?: string
         }
@@ -1008,6 +1029,13 @@ export type Database = {
             referencedRelation: "logro"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "usuario_logro_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -1015,7 +1043,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_user_data: { Args: { p_user_id: string }; Returns: undefined }
+      gym_normalize_tipo_nombre: { Args: { p_nombre: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

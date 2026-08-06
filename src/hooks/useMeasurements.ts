@@ -1,24 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
-export interface Medida {
-  id: string;
-  usuario_id: string;
-  fecha: string;
-  peso: number | null;
-  grasa: number | null;
-  cintura: number | null;
-  pecho: number | null;
-  brazo: number | null;
-  pierna: number | null;
-  notas: string | null;
-  foto_frontal: string | null;
-  foto_espalda: string | null;
-  created_at: string;
-}
-
-export type MedidaInsert = Omit<Medida, "id" | "created_at">;
+export type Medida = Tables<"medidas">;
+export type MedidaInsert = Omit<TablesInsert<"medidas">, "id" | "created_at">;
 
 export function useMeasurements() {
   const { user } = useAuth();
@@ -29,19 +15,19 @@ export function useMeasurements() {
     queryKey,
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("medidas")
         .select("*")
         .eq("usuario_id", user!.id)
         .order("fecha", { ascending: false });
       if (error) throw error;
-      return (data as Medida[]) ?? [];
+      return data ?? [];
     },
   });
 
   const addMutation = useMutation({
     mutationFn: async (medida: Omit<MedidaInsert, "usuario_id">) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("medidas")
         .insert({ ...medida, usuario_id: user!.id });
       if (error) throw error;
@@ -51,7 +37,7 @@ export function useMeasurements() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("medidas")
         .delete()
         .eq("id", id);

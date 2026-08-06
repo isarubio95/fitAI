@@ -24,8 +24,7 @@ export function useMyFollowersReceived() {
     refetchInterval: 45_000,
     refetchOnWindowFocus: true,
     queryFn: async (): Promise<FollowerReceivedRow[]> => {
-      const sb = supabase as any;
-      const { data: rows, error } = await sb
+      const { data: rows, error } = await supabase
         .from("seguimiento")
         .select("id, seguidor_id, created_at")
         .eq("seguido_id", user!.id)
@@ -33,25 +32,17 @@ export function useMyFollowersReceived() {
         .limit(40);
 
       if (error) throw error;
-      const list = (rows ?? []) as { id: string; seguidor_id: string; created_at: string }[];
+      const list = rows ?? [];
       const ids = [...new Set(list.map((r) => r.seguidor_id))];
       if (ids.length === 0) return [];
 
-      const { data: profiles, error: pErr } = await sb
+      const { data: profiles, error: pErr } = await supabase
         .from("perfil")
         .select("id, username, avatar_url")
         .in("id", ids);
       if (pErr) throw pErr;
 
-      const profileById = new Map(
-        (
-          (profiles ?? []) as {
-            id: string;
-            username: string | null;
-            avatar_url: string | null;
-          }[]
-        ).map((p) => [p.id, p]),
-      );
+      const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
       return list.map((r) => {
         const p = profileById.get(r.seguidor_id);

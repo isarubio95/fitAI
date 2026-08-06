@@ -61,13 +61,13 @@ export default function UsernameSetup() {
         .eq("username", normalized)
         .maybeSingle();
 
-      if (existing && (existing as any).id !== user.id) {
+      if (existing && existing.id !== user.id) {
         setError("Ese nombre de usuario ya está en uso.");
         setIsSaving(false);
         return;
       }
 
-      const { error: upErr } = await (supabase as any)
+      const { error: upErr } = await supabase
         .from("perfil")
         .upsert({ id: user.id, username: normalized }, { onConflict: "id" });
 

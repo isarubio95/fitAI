@@ -18,7 +18,6 @@ import WorkoutHistory from "./pages/WorkoutHistory";
 import Evolution from "./pages/Evolution";
 import CardioRoutines from "./pages/CardioRoutines";
 import NotFound from "./pages/NotFound";
-import AdminImport from "./pages/AdminImport";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DeleteAccount from "./pages/DeleteAccount";
 
@@ -51,7 +50,6 @@ const App = () => {
                     <Route path="/cardio-routines" element={<CardioRoutines />} />
                     <Route path="/logros" element={<Navigate to="/" replace />} />
                   </Route>
-                  <Route path="/admin-import" element={<AdminImport />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

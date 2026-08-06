@@ -92,13 +92,13 @@ export function ProfileDrawerTrigger() {
     queryKey: ["profile-avatar", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("perfil")
         .select("avatar_url")
         .eq("id", user!.id)
         .maybeSingle();
       if (error) throw error;
-      return (data?.avatar_url as string | null) ?? null;
+      return data?.avatar_url ?? null;
     },
   });
 
@@ -185,13 +185,13 @@ function ProfileDrawerSheet() {
     queryKey: ["perfil-drawer", profileUserId],
     enabled: open && !!profileUserId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("perfil")
         .select("username, avatar_url")
         .eq("id", profileUserId)
         .maybeSingle();
       if (error) throw error;
-      return data as { username: string | null; avatar_url: string | null } | null;
+      return data;
     },
   });
 
@@ -199,10 +199,9 @@ function ProfileDrawerSheet() {
     queryKey: ["follow-counts", profileUserId],
     enabled: open && !!profileUserId,
     queryFn: async () => {
-      const sb = supabase as any;
       const [followersRes, followingRes] = await Promise.all([
-        sb.from("seguimiento").select("seguido_id").eq("seguido_id", profileUserId),
-        sb.from("seguimiento").select("seguidor_id").eq("seguidor_id", profileUserId),
+        supabase.from("seguimiento").select("seguido_id").eq("seguido_id", profileUserId),
+        supabase.from("seguimiento").select("seguidor_id").eq("seguidor_id", profileUserId),
       ]);
       if (followersRes.error) throw followersRes.error;
       if (followingRes.error) throw followingRes.error;
@@ -217,23 +216,21 @@ function ProfileDrawerSheet() {
     queryKey: ["follow-users", profileUserId, followListMode],
     enabled: open && !!profileUserId && !!followListMode,
     queryFn: async (): Promise<{ id: string; username: string | null; avatar_url: string | null }[]> => {
-      const sb = supabase as any;
       const isFollowers = followListMode === "seguidores";
-      const { data: relData, error: relErr } = await sb
-        .from("seguimiento")
-        .select(isFollowers ? "seguidor_id" : "seguido_id")
-        .eq(isFollowers ? "seguido_id" : "seguidor_id", profileUserId);
+      const { data: relData, error: relErr } = isFollowers
+        ? await supabase.from("seguimiento").select("seguidor_id").eq("seguido_id", profileUserId)
+        : await supabase.from("seguimiento").select("seguido_id").eq("seguidor_id", profileUserId);
       if (relErr) throw relErr;
-      const ids: string[] = (relData ?? [])
-        .map((row: any) => (isFollowers ? row.seguidor_id : row.seguido_id))
-        .filter(Boolean);
+      const ids = (relData ?? [])
+        .map((row) => ("seguidor_id" in row ? row.seguidor_id : row.seguido_id))
+        .filter((id): id is string => Boolean(id));
       if (ids.length === 0) return [];
-      const { data: usersData, error: usersErr } = await sb
+      const { data: usersData, error: usersErr } = await supabase
         .from("perfil")
         .select("id, username, avatar_url")
         .in("id", ids);
       if (usersErr) throw usersErr;
-      return (usersData ?? []) as { id: string; username: string | null; avatar_url: string | null }[];
+      return usersData ?? [];
     },
   });
 
