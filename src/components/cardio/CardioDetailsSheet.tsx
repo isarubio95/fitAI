@@ -41,7 +41,7 @@ type CardioDetailsSheetProps = {
 
 function StatBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-muted/40 px-3 py-3 text-center">
+    <div className="shrink-0 rounded-xl bg-muted/40 px-3 py-3 text-left">
       <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 font-mono text-base font-semibold tabular-nums">{value}</p>
     </div>
@@ -106,7 +106,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2 px-6 sm:grid-cols-3">
+              <div className="flex flex-wrap items-start gap-2 px-6">
                 <StatBlock label="Tiempo" value={formatCardioDuration(metrics.durationSec)} />
                 <StatBlock
                   label="Distancia"
@@ -137,7 +137,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
               </div>
 
               {(metrics.fcMedia != null || metrics.fcMax != null) && (
-                <p className="flex items-center justify-center gap-2 px-6 text-sm tabular-nums text-muted-foreground">
+                <p className="flex items-center gap-2 px-6 text-sm tabular-nums text-muted-foreground">
                   <Heart className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                   {metrics.fcMedia != null ? (
                     <span>
@@ -238,7 +238,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
               ) : null}
 
               {session.comentarios?.trim() ? (
-                <div className="mx-6 rounded-xl bg-muted/30 p-3 text-center">
+                <div className="mx-6 rounded-xl bg-muted/30 p-3 text-left">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Notas
                   </p>

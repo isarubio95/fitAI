@@ -39,9 +39,9 @@ type CardioFeedCardBodyProps = {
 
 function MetricCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 text-center">
+    <div className="shrink-0 text-left">
       <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="truncate font-mono text-sm font-semibold tabular-nums">{value}</p>
+      <p className="font-mono text-sm font-semibold tabular-nums">{value}</p>
     </div>
   );
 }
@@ -83,7 +83,7 @@ export function CardioFeedCompactContent({
         {!hideDate ? <CardioStartMetaRow session={session} /> : null}
       </div>
 
-      <div className="grid grid-cols-3 gap-3 px-6">
+      <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-6">
         <MetricCell label="Tiempo" value={formatCardioDuration(metrics.durationSec)} />
         <MetricCell
           label="Distancia"
@@ -102,7 +102,7 @@ export function CardioFeedCompactContent({
       </div>
 
       {metrics.fcMedia != null || metrics.fcMax != null ? (
-        <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-6 text-xs tabular-nums text-muted-foreground">
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 px-6 text-xs tabular-nums text-muted-foreground">
           <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400">
             <Heart className="h-3 w-3" />
             {metrics.fcMedia != null ? (
