@@ -34,6 +34,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Tooltip,
+  type BaseTickContentProps,
   type TooltipContentProps,
 } from "recharts";
 import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
@@ -220,41 +221,41 @@ function RadarWeightTooltip({ active, payload }: TooltipContentProps<ValueType, 
 }
 
 /** Tick del eje angular: las etiquetas laterales se acercan al centro y suben. */
-function RadarAngleTick(props: {
-  payload?: { value?: string };
-  x?: number;
-  y?: number;
-  cx?: number;
-  cy?: number;
-  textAnchor?: string;
-  fill?: string;
-}) {
-  const { payload, x = 0, y = 0, cx = 0, cy = 0, textAnchor = "middle", fill } = props;
-  if (!payload?.value) return null;
+function RadarAngleTick(props: BaseTickContentProps) {
+  const { payload, x, y, textAnchor, fill } = props;
+  const label = payload?.value != null ? String(payload.value) : "";
+  if (!label) return null;
+
+  const xNum = Number(x) || 0;
+  const yNum = Number(y) || 0;
+  // PolarAngleAxis pasa cx/cy en runtime aunque no formen parte del tipo público.
+  const polar = props as BaseTickContentProps & { cx?: number | string; cy?: number | string };
+  const cx = Number(polar.cx) || 0;
+  const cy = Number(polar.cy) || 0;
 
   // Más horizontal que vertical → etiqueta de lado (izq/der).
-  const isSide = Math.abs(x - cx) > Math.abs(y - cy);
+  const isSide = Math.abs(xNum - cx) > Math.abs(yNum - cy);
   const dx = isSide
-    ? x < cx
+    ? xNum < cx
       ? RADAR.sideLabelNudgeXTowardCenter
       : -RADAR.sideLabelNudgeXTowardCenter
     : 0;
   const dy = isSide
     ? RADAR.sideLabelNudgeY
-    : y < cy
+    : yNum < cy
       ? -RADAR.verticalLabelNudgeOut
       : RADAR.verticalLabelNudgeOut;
 
   return (
     <text
-      x={x + dx}
-      y={y + dy}
+      x={xNum + dx}
+      y={yNum + dy}
       textAnchor={textAnchor}
       dominantBaseline="central"
       fill={fill ?? "hsl(var(--muted-foreground))"}
       fontSize={RADAR.tickFontSize}
     >
-      {payload.value}
+      {label}
     </text>
   );
 }
