@@ -78,26 +78,38 @@ export function WorkoutFeedCardBody({
   return (
     <>
       {author ? (
-        <button
-          type="button"
-          onClick={() => onSelectAuthor?.(author.id)}
-          className="mb-4 flex w-full min-w-0 items-center gap-3 rounded-lg text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label={`Ver perfil de ${author.username ?? "usuario"}`}
-        >
-          <CommunityAvatar
-            avatarUrl={author.avatar_url}
-            username={author.username}
-            className="h-9 w-9 shrink-0"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{author.username}</p>
+        <div className="mb-4 flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => onSelectAuthor?.(author.id)}
+            className="shrink-0 self-start rounded-full outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`Ver perfil de ${author.username ?? "usuario"}`}
+          >
+            <CommunityAvatar
+              avatarUrl={author.avatar_url}
+              username={author.username}
+              className="h-9 w-9"
+            />
+          </button>
+          {/* -mt-0.5: la caja tipográfica deja aire sobre el glifo; sin esto el username parece más bajo que el avatar */}
+          <div className="-mt-0.5 flex min-w-0 flex-1 flex-col gap-1.5">
+            <button
+              type="button"
+              onClick={() => onSelectAuthor?.(author.id)}
+              className="block w-full truncate text-left text-sm font-semibold leading-none outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {author.username}
+            </button>
             {workout.fecha ? (
-              <time dateTime={workout.fecha} className="block text-xs text-muted-foreground">
+              <time
+                dateTime={workout.fecha}
+                className="block text-xs leading-none text-muted-foreground"
+              >
                 {formatActivityRelativeDate(workout.fecha)}
               </time>
             ) : null}
           </div>
-        </button>
+        </div>
       ) : null}
 
       <button
