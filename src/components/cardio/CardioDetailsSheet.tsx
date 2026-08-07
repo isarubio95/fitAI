@@ -83,16 +83,12 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
             <>
               <div className="min-w-0 space-y-1">
                 <DrawerTitle className="text-lg leading-tight">{session.titulo}</DrawerTitle>
-                {session.fecha_inicio ? (
-                  <DrawerDescription className="mt-0">
-                    <time dateTime={session.fecha_inicio}>
-                      {formatActivityAbsoluteDate(session.fecha_inicio)}
-                    </time>
-                  </DrawerDescription>
-                ) : (
-                  <DrawerDescription className="sr-only">Detalle de cardio</DrawerDescription>
-                )}
-                <CardioStartMetaRow session={session} />
+                <DrawerDescription className={session.fecha_inicio ? "mt-0 sr-only" : "sr-only"}>
+                  {session.fecha_inicio
+                    ? formatActivityAbsoluteDate(session.fecha_inicio)
+                    : "Detalle de cardio"}
+                </DrawerDescription>
+                <CardioStartMetaRow session={session} dateTime={session.fecha_inicio} />
               </div>
             </>
           )}

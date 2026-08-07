@@ -12,7 +12,6 @@ import {
   type WorkoutFeedCardAuthor,
 } from "@/components/dashboard/WorkoutFeedCard";
 import { CardioStartMetaRow } from "@/components/cardio/CardioStartMetaRow";
-import { formatActivityAbsoluteDate } from "@/lib/formatActivityRelativeDate";
 import {
   computeCardioSessionMetrics,
   extractCardioTrackPointsForFeed,
@@ -85,13 +84,10 @@ export function CardioFeedCompactContent({
     <CardContent className="space-y-3 p-0">
       <div className="min-w-0 space-y-1 px-6">
         <p className="truncate text-base font-semibold leading-tight">{session.titulo}</p>
-        {!hideDate && session.fecha_inicio ? (
-          <time dateTime={session.fecha_inicio} className="block text-xs text-muted-foreground">
-            {formatActivityAbsoluteDate(session.fecha_inicio)}
-          </time>
+        {/* Si no hay autor: fecha (+ icono alineado si no hay ciudad) / icono + ubicación. */}
+        {!hideDate ? (
+          <CardioStartMetaRow session={session} dateTime={session.fecha_inicio} />
         ) : null}
-        {/* Si no hay autor, el momento va aquí y debajo icono + ubicación. */}
-        {!hideDate ? <CardioStartMetaRow session={session} /> : null}
       </div>
 
       <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-6">
@@ -186,15 +182,7 @@ export function CardioFeedCardBody({
             >
               {author.username}
             </button>
-            {session.fecha_inicio ? (
-              <time
-                dateTime={session.fecha_inicio}
-                className="block text-xs leading-none text-muted-foreground"
-              >
-                {formatActivityAbsoluteDate(session.fecha_inicio)}
-              </time>
-            ) : null}
-            <CardioStartMetaRow session={session} />
+            <CardioStartMetaRow session={session} dateTime={session.fecha_inicio} />
           </div>
         </div>
       ) : null}
