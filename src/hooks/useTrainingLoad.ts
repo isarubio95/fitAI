@@ -306,7 +306,7 @@ export function useTrainingLoad() {
           const isFirstBlock =
             blocks.find((x) => x.cardio_sesion_id === b.cardio_sesion_id) === b;
 
-          let impulse = 0;
+          let impulse: number;
           if (samples.length > 0) {
             if (!isFirstBlock) continue;
             impulse = cardioBlockImpulse(
