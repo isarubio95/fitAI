@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AnimatedTabsList, pillTabsListClass, pillTabsTriggerClass, Tabs, TabsTrigger } from "@/components/ui/tabs";
+import { AnimatedTabsList, pillTabsListClass, pillTabsTriggerClass, Tabs, TabsTrigger, underlineTabsListClass, underlineTabsTriggerClass } from "@/components/ui/tabs";
 import { useMuscleVolume, type TimePeriod } from "@/hooks/useMuscleVolume";
 import { useMuscleFatigue } from "@/hooks/useMuscleFatigue";
 import { MuscleDetailSheet } from "./MuscleDetailSheet";
 import { MuscleBodyMap, MuscleMapLegend } from "./MuscleBodyMap";
 import { FATIGUE_COLORS, getHeatLevel, heatLevelToLoad } from "./bodyMapPaths";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
+import { cn } from "@/lib/utils";
 
 const HEATMAP_PERIOD_STORAGE_KEY = "gym-log.dashboard.heatmap-period";
 const HEATMAP_MODE_STORAGE_KEY = "gym-log.dashboard.heatmap-mode";
@@ -295,18 +296,26 @@ export function BodyHeatmap() {
             </Tabs>
           </div>
           {mode === "volume" && (
-            <div className="flex justify-end">
-              <Tabs value={period} onValueChange={handlePeriodChange}>
-                <AnimatedTabsList value={period} className={pillTabsListClass}>
-                  <TabsTrigger value="month" className={pillTabsTriggerClass}>
-                    Mes
-                  </TabsTrigger>
-                  <TabsTrigger value="week" className={pillTabsTriggerClass}>
-                    Semana
-                  </TabsTrigger>
-                </AnimatedTabsList>
-              </Tabs>
-            </div>
+            <Tabs value={period} onValueChange={handlePeriodChange} className="w-full">
+              <AnimatedTabsList
+                value={period}
+                variant="underline"
+                className={cn(underlineTabsListClass, "w-full gap-0")}
+              >
+                <TabsTrigger
+                  value="month"
+                  className={cn(underlineTabsTriggerClass, "flex-1 justify-center")}
+                >
+                  Mes
+                </TabsTrigger>
+                <TabsTrigger
+                  value="week"
+                  className={cn(underlineTabsTriggerClass, "flex-1 justify-center")}
+                >
+                  Semana
+                </TabsTrigger>
+              </AnimatedTabsList>
+            </Tabs>
           )}
         </CardHeader>
 

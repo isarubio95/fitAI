@@ -10,6 +10,13 @@ export const pillTabsListClass = "h-9 shrink-0 rounded-full p-1";
 export const pillTabsTriggerClass =
   "touch-pill relative z-10 inline-flex items-center justify-center rounded-full px-5 text-sm outline-none focus:outline-none focus-visible:outline-none data-[state=active]:bg-transparent data-[state=active]:shadow-none";
 
+/** Texto con subrayado bajo el activo (periodos, filtros secundarios). */
+export const underlineTabsListClass =
+  "h-auto shrink-0 gap-4 rounded-none bg-transparent p-0 text-muted-foreground";
+
+export const underlineTabsTriggerClass =
+  "relative z-10 h-auto rounded-none border-0 bg-transparent px-0 pb-1.5 pt-0 text-sm font-medium shadow-none outline-none focus:outline-none focus-visible:outline-none data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=inactive]:text-muted-foreground";
+
 const Tabs = TabsPrimitive.Root;
 
 const TabsList = React.forwardRef<
@@ -29,12 +36,14 @@ TabsList.displayName = TabsPrimitive.List.displayName;
 
 interface AnimatedTabsListProps extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> {
   value: string;
+  /** `pill` = fondo deslizante; `underline` = barra bajo el activo. */
+  variant?: "pill" | "underline";
 }
 
 const AnimatedTabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   AnimatedTabsListProps
->(({ className, value, children, ...props }, ref) => {
+>(({ className, value, variant = "pill", children, ...props }, ref) => {
   const listRef = React.useRef<React.ElementRef<typeof TabsPrimitive.List>>(null);
   const [indicator, setIndicator] = React.useState({ left: 0, width: 0 });
 
@@ -45,11 +54,28 @@ const AnimatedTabsList = React.forwardRef<
     const activeEl = list.querySelector<HTMLElement>('[data-state="active"]');
     if (!activeEl) return;
 
+    if (variant === "underline") {
+      // Ancho intermedio: más que el texto, menos que el trigger completo.
+      const listRect = list.getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(activeEl);
+      const textRect = range.getBoundingClientRect();
+      const textWidth = Math.max(textRect.width, 1);
+      const tabWidth = activeEl.offsetWidth;
+      const width = Math.min(tabWidth * 0.58, Math.max(textWidth * 2.35, 52));
+      const textCenter = textRect.left - listRect.left + textWidth / 2;
+      setIndicator({
+        left: textCenter - width / 2,
+        width,
+      });
+      return;
+    }
+
     setIndicator({
       left: activeEl.offsetLeft,
       width: activeEl.offsetWidth,
     });
-  }, []);
+  }, [variant]);
 
   React.useLayoutEffect(() => {
     updateIndicator();
@@ -86,17 +112,28 @@ const AnimatedTabsList = React.forwardRef<
       )}
       {...props}
     >
-      {indicator.width > 0 && (
-        <motion.span
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-1 top-1 rounded-full bg-background shadow-xs"
-          animate={{
-            left: indicator.left,
-            width: indicator.width,
-          }}
-          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-        />
-      )}
+      {indicator.width > 0 &&
+        (variant === "underline" ? (
+          <motion.span
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-foreground"
+            animate={{
+              left: indicator.left,
+              width: indicator.width,
+            }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          />
+        ) : (
+          <motion.span
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-1 top-1 rounded-full bg-background shadow-xs"
+            animate={{
+              left: indicator.left,
+              width: indicator.width,
+            }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          />
+        ))}
       {children}
     </TabsPrimitive.List>
   );

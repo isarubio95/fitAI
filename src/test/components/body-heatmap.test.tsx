@@ -32,6 +32,8 @@ vi.mock("@/components/ui/card", () => ({
 vi.mock("@/components/ui/tabs", () => ({
   pillTabsListClass: "",
   pillTabsTriggerClass: "",
+  underlineTabsListClass: "",
+  underlineTabsTriggerClass: "",
   Tabs: ({
     value,
     onValueChange,
