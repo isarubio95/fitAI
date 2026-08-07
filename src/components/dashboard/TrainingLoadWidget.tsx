@@ -400,7 +400,7 @@ export function TrainingLoadWidget() {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                width={44}
+                width={30}
                 tickCount={6}
                 tickFormatter={(v) => {
                   const n = Math.round(v as number);
