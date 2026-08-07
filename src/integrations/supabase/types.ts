@@ -280,6 +280,92 @@ export type Database = {
         }
         Relationships: []
       }
+      cardio_ruta: {
+        Row: {
+          cardio_disciplina_id: string | null
+          created_at: string
+          descripcion: string | null
+          distancia_total_m: number | null
+          elevacion_positiva_m: number | null
+          id: string
+          nombre: string
+          origen_cardio_sesion_id: string | null
+          usuario_id: string
+        }
+        Insert: {
+          cardio_disciplina_id?: string | null
+          created_at?: string
+          descripcion?: string | null
+          distancia_total_m?: number | null
+          elevacion_positiva_m?: number | null
+          id?: string
+          nombre: string
+          origen_cardio_sesion_id?: string | null
+          usuario_id?: string
+        }
+        Update: {
+          cardio_disciplina_id?: string | null
+          created_at?: string
+          descripcion?: string | null
+          distancia_total_m?: number | null
+          elevacion_positiva_m?: number | null
+          id?: string
+          nombre?: string
+          origen_cardio_sesion_id?: string | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cardio_ruta_cardio_disciplina_id_fkey"
+            columns: ["cardio_disciplina_id"]
+            isOneToOne: false
+            referencedRelation: "cardio_disciplina"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cardio_ruta_origen_cardio_sesion_id_fkey"
+            columns: ["origen_cardio_sesion_id"]
+            isOneToOne: false
+            referencedRelation: "cardio_sesion"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cardio_ruta_punto: {
+        Row: {
+          cardio_ruta_id: string
+          elevacion_m: number | null
+          id: string
+          lat: number
+          lng: number
+          orden: number
+        }
+        Insert: {
+          cardio_ruta_id: string
+          elevacion_m?: number | null
+          id?: string
+          lat: number
+          lng: number
+          orden: number
+        }
+        Update: {
+          cardio_ruta_id?: string
+          elevacion_m?: number | null
+          id?: string
+          lat?: number
+          lng?: number
+          orden?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cardio_ruta_punto_cardio_ruta_id_fkey"
+            columns: ["cardio_ruta_id"]
+            isOneToOne: false
+            referencedRelation: "cardio_ruta"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cardio_rutina: {
         Row: {
           cardio_disciplina_id: string | null

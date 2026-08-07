@@ -5,6 +5,7 @@ import { LiveControlsDrawer } from "@/components/cardio/live/LiveControlsDrawer"
 import { LiveStatsFullscreen } from "@/components/cardio/live/LiveStatsFullscreen";
 import { CardioLiveSummaryView } from "@/components/cardio/live/CardioLiveSummaryView";
 import { DiscardSessionDialog } from "@/components/cardio/live/DiscardSessionDialog";
+import { SavedRoutesPickerSheet } from "@/components/cardio/SavedRoutesPickerSheet";
 import { App } from "@capacitor/app";
 import { useToast } from "@/hooks/use-toast";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
@@ -21,6 +22,7 @@ import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
 import { elevationGainM } from "@/lib/cardioFormat";
 import { shouldAutoPause, shouldAutoResume, readCardioAutoPauseEnabled, writeCardioAutoPauseEnabled } from "@/lib/cardioGpsMotion";
 import { MAX_TRACK_POINTS_DB, prepareTrackPointsForStorage } from "@/lib/cardioTrackPoints";
+import { computeRouteProgress } from "@/lib/cardioRouteProgress";
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
 import { firstNested } from "@/lib/firstNested";
@@ -43,7 +45,7 @@ import {
   stopLiveCardio,
   updateLiveCardio,
 } from "@/lib/liveSessionNotifications";
-import type { CardioDisciplineCode, CardioSportDetailInput, CardioTrackPointInput } from "@/types/cardio";
+import type { CardioDisciplineCode, CardioSportDetailInput, CardioTrackPointInput, SelectedCardioRoute } from "@/types/cardio";
 
 export function CardioLiveRecorder() {
   const { state, closeLiveRecording, openEdit, openLiveRecording } = useGlobalCardioDrawer();
@@ -89,6 +91,8 @@ export function CardioLiveRecorder() {
   /** Samples HC prefetchados al entrar en resumen (si no hubo BLE). */
   const [hcSamples, setHcSamples] = useState<HeartRateSample[]>([]);
   const hcPrefetchGen = useRef(0);
+  const [selectedRoute, setSelectedRoute] = useState<SelectedCardioRoute | null>(null);
+  const [routesPickerOpen, setRoutesPickerOpen] = useState(false);
 
   useEffect(() => {
     setAutoPauseEnabled(readCardioAutoPauseEnabled());
@@ -170,6 +174,8 @@ export function CardioLiveRecorder() {
       setStatsOpen(false);
       sheetDragStartY.current = null;
       setSetupDisciplineId(null);
+      setSelectedRoute(null);
+      setRoutesPickerOpen(false);
       setHcSamples([]);
       hcPrefetchGen.current += 1;
       if (pillCloseTimerRef.current != null) {
@@ -342,6 +348,16 @@ export function CardioLiveRecorder() {
   const elevationGainLive = useMemo(() => elevationGainM(points), [points]);
   const displayElevationM =
     step === "summary" && elevationFrozenM != null ? elevationFrozenM : elevationGainLive;
+
+  const routeProgress = useMemo(() => {
+    if (!selectedRoute?.points?.length) return null;
+    const last = points.length > 0 ? points[points.length - 1] : null;
+    return computeRouteProgress(selectedRoute.points, last);
+  }, [selectedRoute, points]);
+
+  const showRoutePickerBtn =
+    isSetup &&
+    (setupDisciplineId == null || cardioDisciplineUsesGpsMap(setupDisciplineCodigo));
 
   const cardioTitle = useMemo(() => {
     return (discipline?.nombre?.trim() || sessionData?.titulo?.trim() || "Cardio") as string;
@@ -765,6 +781,7 @@ export function CardioLiveRecorder() {
               gpsDenied={gpsDenied}
               gpsError={gpsError}
               mapPoints={mapPoints}
+              referencePoints={selectedRoute?.points}
               loadingSession={loadingSession}
               isSetup={isSetup}
               setupDisciplineId={setupDisciplineId}
@@ -785,6 +802,14 @@ export function CardioLiveRecorder() {
                     showNoGpsBanner={showNoGpsBanner}
                     noGpsBannerText={noGpsBannerText}
                     onOpenStats={() => setStatsOpen(true)}
+                    routePercent={
+                      selectedRoute && routeProgress && !isSetup ? routeProgress.percent : null
+                    }
+                    routeRemainingM={
+                      selectedRoute && routeProgress && !isSetup
+                        ? routeProgress.remainingM
+                        : null
+                    }
                   />
                 ) : null}
                 <LiveControlsDrawer
@@ -814,6 +839,10 @@ export function CardioLiveRecorder() {
                     error: hrError,
                     onConnectClick: onHrConnectClick,
                   }}
+                  showRoutePicker={showRoutePickerBtn}
+                  selectedRouteName={selectedRoute?.nombre ?? null}
+                  onOpenRoutePicker={() => setRoutesPickerOpen(true)}
+                  onClearSelectedRoute={() => setSelectedRoute(null)}
                   onOpenChange={(next) => {
                     if (!next) requestClose();
                   }}
@@ -831,6 +860,14 @@ export function CardioLiveRecorder() {
           </>
         )}
       </div>
+
+      <SavedRoutesPickerSheet
+        open={routesPickerOpen}
+        onOpenChange={setRoutesPickerOpen}
+        selectedRouteId={selectedRoute?.id ?? null}
+        onSelect={setSelectedRoute}
+        onClear={() => setSelectedRoute(null)}
+      />
 
       {statsOpen && (isSetup || (open && !loadingSession)) ? (
         <LiveStatsFullscreen

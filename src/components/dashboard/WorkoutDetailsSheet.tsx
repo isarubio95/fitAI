@@ -1,17 +1,25 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer } from "@/components/ui/chart";
-import { Check, Trophy } from "lucide-react";
+import { Check, ListPlus, Trophy } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import { MUSCLE_GROUPS, MUSCLE_GROUP_ICON_SRC } from "@/constants/muscleGroups";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
 import { useWorkoutById } from "@/hooks/useWorkouts";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { RoutineForm } from "@/components/routine/RoutineForm";
+import { actividadToRoutineFormSnapshot } from "@/lib/workoutToRoutine";
+import type { RoutineFormSnapshot } from "@/types/routine";
 import {
   type ActividadWithDetails,
   type EjercicioWithDetails,
@@ -386,41 +394,108 @@ function ExerciseBlock({
 }
 
 export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDetailsSheetProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const { data: workout, isLoading } = useWorkoutById(workoutId);
+  const [routineFormOpen, setRoutineFormOpen] = useState(false);
+  const [routinePrefill, setRoutinePrefill] = useState<RoutineFormSnapshot | null>(null);
+
+  const isForeign = !!workout && !!user && workout.usuario_id !== user.id;
+
+  const { data: authorUsername } = useQuery({
+    queryKey: ["perfil-username", workout?.usuario_id],
+    enabled: open && isForeign && !!workout?.usuario_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("perfil")
+        .select("username")
+        .eq("id", workout!.usuario_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.username ?? null;
+    },
+    staleTime: 60_000,
+  });
+
+  const canSaveAsRoutine = useMemo(() => {
+    if (!isForeign || !workout) return false;
+    return actividadToRoutineFormSnapshot(workout) != null;
+  }, [isForeign, workout]);
+
+  const onSaveAsRoutine = () => {
+    if (!workout) return;
+    const snapshot = actividadToRoutineFormSnapshot(workout, {
+      savedFromUsername: authorUsername,
+    });
+    if (!snapshot) {
+      toast({
+        title: "No se puede guardar",
+        description: "Este entreno no tiene ejercicios del catálogo con series registradas.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setRoutinePrefill(snapshot);
+    setRoutineFormOpen(true);
+  };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent
-        side="bottom"
-        className="flex h-[92lvh] max-h-[92lvh] flex-col overflow-hidden bg-card p-0"
-      >
-        <DrawerHeader className="shrink-0 border-b border-border bg-card text-left">
-          <DrawerTitle className={isLoading || !workout ? "sr-only" : undefined}>
-            {workout?.titulo ?? "Detalle del entrenamiento"}
-          </DrawerTitle>
-          {isLoading || !workout ? (
-            <>
-              <Skeleton className="h-5 w-2/3" aria-hidden />
-              <Skeleton className="mt-2 h-4 w-1/3" aria-hidden />
-            </>
-          ) : (
-            <DrawerDescription>
-              {workout.fecha ? format(new Date(workout.fecha), "d MMM yyyy", { locale: es }) : ""}
-            </DrawerDescription>
-          )}
-        </DrawerHeader>
+    <>
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent
+          side="bottom"
+          className="flex h-[92lvh] max-h-[92lvh] flex-col overflow-hidden bg-card p-0"
+        >
+          <DrawerHeader className="shrink-0 border-b border-border bg-card text-left">
+            <DrawerTitle className={isLoading || !workout ? "sr-only" : undefined}>
+              {workout?.titulo ?? "Detalle del entrenamiento"}
+            </DrawerTitle>
+            {isLoading || !workout ? (
+              <>
+                <Skeleton className="h-5 w-2/3" aria-hidden />
+                <Skeleton className="mt-2 h-4 w-1/3" aria-hidden />
+              </>
+            ) : (
+              <DrawerDescription>
+                {workout.fecha ? format(new Date(workout.fecha), "d MMM yyyy", { locale: es }) : ""}
+              </DrawerDescription>
+            )}
+          </DrawerHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-card">
-          <WorkoutDetailsContent
-            workout={workout}
-            isLoading={isLoading}
-            hideHeader
-            radarChartId={workout?.id ? `workout-radar-weight-${workout.id}` : undefined}
-            containerClassName="pb-[calc(5rem+env(safe-area-inset-bottom,0px))]"
-          />
-        </div>
-      </DrawerContent>
-    </Drawer>
+          <div className="min-h-0 flex-1 overflow-y-auto bg-card">
+            <WorkoutDetailsContent
+              workout={workout}
+              isLoading={isLoading}
+              hideHeader
+              radarChartId={workout?.id ? `workout-radar-weight-${workout.id}` : undefined}
+              containerClassName={
+                canSaveAsRoutine
+                  ? "pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]"
+                  : "pb-[calc(5rem+env(safe-area-inset-bottom,0px))]"
+              }
+            />
+          </div>
+
+          {canSaveAsRoutine ? (
+            <div className="shrink-0 border-t border-border bg-card px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <Button type="button" className="w-full" variant="secondary" onClick={onSaveAsRoutine}>
+                <ListPlus className="h-4 w-4" />
+                Guardar como rutina
+              </Button>
+            </div>
+          ) : null}
+        </DrawerContent>
+      </Drawer>
+
+      <RoutineForm
+        open={routineFormOpen}
+        onOpenChange={(next) => {
+          setRoutineFormOpen(next);
+          if (!next) setRoutinePrefill(null);
+        }}
+        prefillSnapshot={routinePrefill}
+      />
+    </>
   );
 }
 

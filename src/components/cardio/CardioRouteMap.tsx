@@ -116,7 +116,10 @@ function fitRoute(map: MapLibreMap, coordinates: [number, number][]) {
 export function CardioRouteMap({ points, className, interactive = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const paintedRef = useRef(false);
   const [ready, setReady] = useState(false);
+  /** Estilo + primer paint (tiles); el skeleton con reflejo se quita al pintar. */
+  const [painted, setPainted] = useState(false);
 
   const initialViewRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
   if (initialViewRef.current === null) {
@@ -161,7 +164,9 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
       cancelled = true;
       mapRef.current?.remove();
       mapRef.current = null;
+      paintedRef.current = false;
       setReady(false);
+      setPainted(false);
     };
     // interactive fijo al montar
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -187,10 +192,26 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
       pointFeature(coordinates.length > 1 ? coordinates[coordinates.length - 1] : null),
     );
     fitRoute(map, coordinates);
+
+    if (paintedRef.current) return;
+    let cancelled = false;
+    const reveal = () => {
+      if (cancelled || paintedRef.current) return;
+      paintedRef.current = true;
+      setPainted(true);
+    };
+    map.once("idle", reveal);
+    // Si los tiles fallan o idle no llega, no dejar el skeleton eterno.
+    const fallback = window.setTimeout(reveal, 2500);
+    return () => {
+      cancelled = true;
+      map.off("idle", reveal);
+      window.clearTimeout(fallback);
+    };
   }, [points, ready]);
 
   return (
-    <div className={cn("relative overflow-hidden", className)}>
+    <div className={cn("relative overflow-hidden", className)} aria-busy={!painted}>
       <style>{`
         .cardio-route-map-canvas { background: ${MAP_COLORS.land}; }
         .cardio-route-map-canvas .maplibregl-canvas { outline: none; }
@@ -240,6 +261,12 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
         className="cardio-route-map-canvas h-full min-h-40 w-full"
         style={{ background: MAP_COLORS.land }}
       />
+      {!painted ? (
+        <div
+          className="map-route-skeleton absolute inset-0 z-10 transition-opacity duration-300"
+          aria-hidden
+        />
+      ) : null}
     </div>
   );
 }

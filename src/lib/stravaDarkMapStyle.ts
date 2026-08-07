@@ -20,6 +20,9 @@ export const MAP_COLORS = {
   labelHalo: "rgba(0,0,0,0.75)",
   route: "#FC4C02",
   routeCasing: "rgba(0,0,0,0.45)",
+  /** Polilínea fantasma de ruta objetivo (tipo Strava). */
+  referenceRoute: "rgba(252, 76, 2, 0.45)",
+  referenceRouteCasing: "rgba(0,0,0,0.25)",
   start: "#22c55e",
   position: "#2D8CFF",
 } as const;

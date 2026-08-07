@@ -128,7 +128,7 @@ export function CardioFeedCompactContent({
 
       {hasRoute ? (
         <div className="overflow-hidden">
-          <Suspense fallback={<div className="h-56 w-full animate-pulse bg-muted/40" />}>
+          <Suspense fallback={<div className="map-route-skeleton relative h-56 w-full" aria-hidden />}>
             <CardioRouteMap points={mapPoints} interactive={false} className="h-56 w-full" />
           </Suspense>
         </div>

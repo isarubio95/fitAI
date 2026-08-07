@@ -7,6 +7,20 @@ export type CardioSesionRunning = Tables<"cardio_sesion_running">;
 export type CardioSesionCycling = Tables<"cardio_sesion_cycling">;
 export type CardioTrack = Tables<"cardio_track">;
 export type CardioTrackPoint = Tables<"cardio_track_point">;
+export type CardioRuta = Tables<"cardio_ruta">;
+export type CardioRutaPunto = Tables<"cardio_ruta_punto">;
+
+export type CardioRutaWithPoints = CardioRuta & {
+  cardio_ruta_punto?: CardioRutaPunto[] | null;
+};
+
+export type SelectedCardioRoute = {
+  id: string;
+  nombre: string;
+  distancia_total_m: number | null;
+  elevacion_positiva_m: number | null;
+  points: Array<{ lat: number; lng: number; elevacion_m?: number | null }>;
+};
 
 export type CardioDisciplineCode = "running" | "cycling" | "walking" | "rowing" | "swimming" | "other";
 

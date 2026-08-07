@@ -1,5 +1,5 @@
-import { Suspense, lazy, useMemo } from "react";
-import { Heart } from "lucide-react";
+import { Suspense, lazy, useMemo, useState } from "react";
+import { Heart, MapPinned } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -9,7 +9,13 @@ import {
   drawerSafeAreaBottom,
 } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { useCardioSessionById } from "@/hooks/useCardioSessions";
+import {
+  defaultRouteNameFromSession,
+  useSaveCardioRouteFromSession,
+} from "@/hooks/useSavedCardioRoutes";
+import { useToast } from "@/hooks/use-toast";
 import { firstNested } from "@/lib/firstNested";
 import {
   computeCardioSessionMetrics,
@@ -50,6 +56,9 @@ function StatBlock({ label, value }: { label: string; value: string }) {
 
 export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDetailsSheetProps) {
   const { data: session, isLoading } = useCardioSessionById(open ? sessionId : null);
+  const saveRoute = useSaveCardioRouteFromSession();
+  const { toast } = useToast();
+  const [savingRoute, setSavingRoute] = useState(false);
 
   const metrics = useMemo(
     () => (session ? computeCardioSessionMetrics(session) : null),
@@ -63,6 +72,26 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
   const Icon = session ? resolveCardioSessionIcon(session) : null;
   const running = session ? firstNested(session.cardio_sesion_running) : null;
   const cycling = session ? firstNested(session.cardio_sesion_cycling) : null;
+
+  const onSaveRoute = async () => {
+    if (!session || !hasRoute) return;
+    setSavingRoute(true);
+    try {
+      await saveRoute.mutateAsync({
+        session,
+        nombre: defaultRouteNameFromSession(session),
+      });
+      toast({ title: "Ruta guardada", description: "La encontrarás junto al Play al iniciar cardio." });
+    } catch (err) {
+      toast({
+        title: "No se pudo guardar la ruta",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
+    } finally {
+      setSavingRoute(false);
+    }
+  };
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -101,7 +130,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
               <Skeleton className="h-20 w-full rounded-xl" />
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className={cn("space-y-4", hasRoute && "pb-16")}>
               <div className="flex flex-wrap items-start gap-2 px-6">
                 <StatBlock label="Tiempo" value={formatCardioDuration(metrics.durationSec)} />
                 <StatBlock
@@ -150,7 +179,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
 
               {hasRoute ? (
                 <div className="overflow-hidden">
-                  <Suspense fallback={<div className="h-64 w-full animate-pulse bg-muted/40" />}>
+                  <Suspense fallback={<div className="map-route-skeleton relative h-64 w-full" aria-hidden />}>
                     <CardioRouteMap points={mapPoints} interactive className="h-64 w-full" />
                   </Suspense>
                 </div>
@@ -244,6 +273,21 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
             </div>
           )}
         </div>
+
+        {hasRoute && session ? (
+          <div className="shrink-0 border-t border-border bg-card px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <Button
+              type="button"
+              className="w-full"
+              variant="secondary"
+              disabled={savingRoute || saveRoute.isPending}
+              onClick={() => void onSaveRoute()}
+            >
+              <MapPinned className="h-4 w-4" />
+              {savingRoute || saveRoute.isPending ? "Guardando…" : "Guardar ruta"}
+            </Button>
+          </div>
+        ) : null}
       </DrawerContent>
     </Drawer>
   );

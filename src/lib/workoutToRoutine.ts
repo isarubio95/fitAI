@@ -1,5 +1,5 @@
 import type { RoutineExerciseFormData, RoutineFormSnapshot } from "@/types/routine";
-import type { ExerciseFormData } from "@/types/workout";
+import type { ActividadWithDetails, ExerciseFormData } from "@/types/workout";
 import { normalizeRegistroSeries, serieCountsAsRecorded } from "@/types/workout";
 import {
   DEFAULT_ROUTINE_ICON_KEY,
@@ -72,7 +72,7 @@ export function exercisesToRoutineExercises(exercises: ExerciseFormData[]): Rout
             : null,
       } satisfies RoutineExerciseFormData;
     })
-    .filter((ej): ej is RoutineExerciseFormData => ej !== null)
+    .filter((ej): ej is NonNullable<typeof ej> => ej !== null)
     .map((ej, index) => ({ ...ej, orden: index }));
 }
 
@@ -100,4 +100,51 @@ export function workoutSnapshotToRoutineFormSnapshot(
     icono: snapshot.icono,
     ejercicios: exercisesToRoutineExercises(snapshot.exercises),
   };
+}
+
+/**
+ * Convierte una actividad (p. ej. del feed) a ejercicios de formulario.
+ * Solo incluye ejercicios del catálogo (`tipo_ejercicio_id`): los personalizados
+ * ajenos no se pueden referenciar por FK en la rutina del usuario actual.
+ */
+export function actividadToExerciseFormData(actividad: ActividadWithDetails): ExerciseFormData[] {
+  return actividad.ejercicios
+    .filter((ej) => !!ej.tipo_ejercicio_id)
+    .map((ej) => ({
+      tipo_ejercicio_id: ej.tipo_ejercicio_id!,
+      nombre: ej.tipo_ejercicio?.nombre ?? "Ejercicio",
+      registro_series: normalizeRegistroSeries(ej.registro_series),
+      repRange: ej.rep_range ?? undefined,
+      targetRir: ej.rir_objetivo,
+      descanso: ej.descanso ?? 120,
+      superset_id: ej.superset_id,
+      sets: (ej.series ?? []).map((s) => ({
+        repeticiones: Number(s.repeticiones) || 0,
+        peso_kg: Number(s.peso_kg) || 0,
+        duracion_seg: s.duracion_seg,
+        ritmo_seg_km: s.ritmo_seg_km,
+        rir: s.rir,
+        completed: true,
+      })),
+    }));
+}
+
+/** Prefill del formulario de rutina a partir de un entrenamiento público ajeno. */
+export function actividadToRoutineFormSnapshot(
+  actividad: ActividadWithDetails,
+  options?: { savedFromUsername?: string | null },
+): RoutineFormSnapshot | null {
+  const snapshot = buildWorkoutRoutineSnapshot(
+    actividad.titulo,
+    actividad.icono ?? undefined,
+    actividadToExerciseFormData(actividad),
+  );
+  if (!snapshot) return null;
+
+  const form = workoutSnapshotToRoutineFormSnapshot(snapshot);
+  const username = options?.savedFromUsername?.trim().replace(/^@/, "");
+  if (username) {
+    form.descripcion = `Guardada de @${username}`;
+  }
+  return form;
 }

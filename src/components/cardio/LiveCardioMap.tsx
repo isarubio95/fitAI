@@ -25,6 +25,8 @@ type Props = {
   className?: string;
   /** Si true, la cámara sigue el último punto (grabación en vivo). */
   followUser?: boolean;
+  /** Ruta objetivo (fantasma) debajo del track live. */
+  referencePoints?: Array<{ lat: number; lng: number }>;
 };
 
 function lineFeature(coordinates: [number, number][]): Feature {
@@ -41,8 +43,33 @@ function pointFeature(coordinates: [number, number] | null): FeatureCollection {
 }
 
 function addRouteLayers(map: MapLibreMap) {
+  map.addSource("cardio-reference-route", { type: "geojson", data: lineFeature([]) });
   map.addSource("cardio-route", { type: "geojson", data: lineFeature([]) });
   map.addSource("cardio-start", { type: "geojson", data: pointFeature(null) });
+
+  map.addLayer({
+    id: "cardio-reference-route-casing",
+    type: "line",
+    source: "cardio-reference-route",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": MAP_COLORS.referenceRouteCasing,
+      "line-blur": 0.4,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 5, 16, 9, 20, 13],
+    },
+  });
+
+  map.addLayer({
+    id: "cardio-reference-route-line",
+    type: "line",
+    source: "cardio-reference-route",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": MAP_COLORS.referenceRoute,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 3, 16, 6, 20, 9],
+      "line-dasharray": [1.5, 1.25],
+    },
+  });
 
   map.addLayer({
     id: "cardio-route-casing",
@@ -98,7 +125,7 @@ function RecenterControl({ active, onRecenter }: { active: boolean; onRecenter: 
   );
 }
 
-export function LiveCardioMap({ points, className, followUser = true }: Props) {
+export function LiveCardioMap({ points, className, followUser = true, referencePoints }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
@@ -187,6 +214,36 @@ export function LiveCardioMap({ points, className, followUser = true }: Props) {
       pointFeature(coordinates.length > 1 ? coordinates[0] : null),
     );
   }, [points, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const coordinates = (referencePoints ?? []).map((p) => [p.lng, p.lat] as [number, number]);
+    (map.getSource("cardio-reference-route") as GeoJSONSource | undefined)?.setData(
+      lineFeature(coordinates),
+    );
+
+    // En setup (sin track live) encuadra la ruta objetivo.
+    if (points.length === 0 && coordinates.length >= 2) {
+      let minLng = coordinates[0][0];
+      let maxLng = coordinates[0][0];
+      let minLat = coordinates[0][1];
+      let maxLat = coordinates[0][1];
+      for (const [lng, lat] of coordinates) {
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+      }
+      map.fitBounds(
+        [
+          [minLng, minLat],
+          [maxLng, maxLat],
+        ],
+        { padding: 48, maxZoom: 16, duration: 600 },
+      );
+    }
+  }, [referencePoints, points.length, ready]);
 
   useEffect(() => {
     const map = mapRef.current;

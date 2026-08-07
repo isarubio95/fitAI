@@ -14,6 +14,7 @@ type Props = {
   gpsDenied: boolean;
   gpsError: string | null;
   mapPoints: CardioGpsPoint[];
+  referencePoints?: Array<{ lat: number; lng: number }>;
   loadingSession: boolean;
   isSetup: boolean;
   setupDisciplineId: string | null;
@@ -29,6 +30,7 @@ export function LiveRecordingSurface({
   gpsDenied,
   gpsError,
   mapPoints,
+  referencePoints,
   loadingSession,
   isSetup,
   setupDisciplineId,
@@ -66,7 +68,12 @@ export function LiveRecordingSurface({
         </div>
       ) : (
         <Suspense fallback={<div className="h-full min-h-dvh w-full bg-[#23292b]" />}>
-          <LiveCardioMap points={mapPoints} followUser className="h-full min-h-dvh w-full" />
+          <LiveCardioMap
+            points={mapPoints}
+            referencePoints={referencePoints}
+            followUser
+            className="h-full min-h-dvh w-full"
+          />
         </Suspense>
       )}
       {isSetup ? (

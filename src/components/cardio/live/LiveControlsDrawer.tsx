@@ -1,5 +1,5 @@
 import { forwardRef, type PointerEvent as ReactPointerEvent } from "react";
-import { Loader2, Pause, Play, Square } from "lucide-react";
+import { Loader2, Pause, Play, Route, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Switch } from "@/components/ui/switch";
@@ -31,6 +31,11 @@ type Props = {
   startPending: boolean;
   drawerPillProps: Record<string, unknown>;
   hr: HrProps;
+  /** Mostrar botón de rutas (setup + disciplina GPS). */
+  showRoutePicker?: boolean;
+  selectedRouteName?: string | null;
+  onOpenRoutePicker?: () => void;
+  onClearSelectedRoute?: () => void;
   onOpenChange: (open: boolean) => void;
   onPointerDown: (e: ReactPointerEvent) => void;
   onPointerMove: (e: ReactPointerEvent) => void;
@@ -56,6 +61,10 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
     startPending,
     drawerPillProps,
     hr,
+    showRoutePicker = false,
+    selectedRouteName = null,
+    onOpenRoutePicker,
+    onClearSelectedRoute,
     onOpenChange,
     onPointerDown,
     onPointerMove,
@@ -91,16 +100,40 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
             </DrawerHeader>
             <div
               className={cn(
-                "space-y-4 bg-card px-4",
+                "space-y-3 bg-card px-4",
                 controlsExpanded ? "pb-4" : "pb-[max(1rem,env(safe-area-inset-bottom))]",
               )}
             >
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                {isSetup ? (
+              {isSetup && selectedRouteName ? (
+                <div className="flex items-center justify-center gap-2">
+                  <span className="inline-flex max-w-[min(100%,16rem)] items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                    <Route className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{selectedRouteName}</span>
+                    {onClearSelectedRoute ? (
+                      <button
+                        type="button"
+                        className="ml-0.5 rounded-full p-0.5 hover:bg-primary/15"
+                        aria-label="Quitar ruta"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onClearSelectedRoute();
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    ) : null}
+                  </span>
+                </div>
+              ) : null}
+
+              {isSetup ? (
+                <div className="flex w-full items-center justify-around">
+                  {/* Reserva para un futuro control a la izquierda */}
+                  <div className="h-12 w-12 shrink-0" aria-hidden />
                   <Button
                     type="button"
                     size="lg"
-                    className="h-14 w-14 rounded-full p-0 shadow-none hover:shadow-none hover:translate-y-0 active:translate-y-0"
+                    className="h-14 w-14 shrink-0 rounded-full p-0 shadow-none hover:shadow-none hover:translate-y-0 active:translate-y-0"
                     disabled={!setupDisciplineId || startPending}
                     onClick={onStart}
                     aria-label="Iniciar entrenamiento"
@@ -111,38 +144,55 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
                       <Play className="h-6 w-6 fill-current" />
                     )}
                   </Button>
-                ) : (
-                  <>
+                  {showRoutePicker ? (
                     <Button
                       type="button"
                       size="lg"
                       variant="secondary"
                       className={cn(
-                        "h-11 min-w-30 rounded-full gap-2 px-8 shadow-none",
-                        paused && "border-sky-500/50",
-                        paused && pauseSource === "auto" && "min-w-40",
+                        "h-12 w-12 shrink-0 rounded-full p-0 shadow-none",
+                        selectedRouteName && "border-primary/40 text-primary",
                       )}
-                      onClick={onPauseToggle}
+                      onClick={onOpenRoutePicker}
+                      aria-label="Elegir ruta guardada"
                     >
-                      {paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-                      {paused
-                        ? pauseSource === "auto"
-                          ? "Pausa automática"
-                          : "Reanudar"
-                        : "Pausa"}
+                      <Route className="h-5 w-5" />
                     </Button>
-                    <Button
-                      type="button"
-                      size="lg"
-                      className="h-11 min-w-30 rounded-full gap-2 px-8 shadow-none hover:shadow-none hover:translate-y-0 active:translate-y-0"
-                      onClick={onFinish}
-                    >
-                      <Square className="h-4 w-4 fill-current" />
-                      Finalizar
-                    </Button>
-                  </>
-                )}
-              </div>
+                  ) : (
+                    <div className="h-12 w-12 shrink-0" aria-hidden />
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="secondary"
+                    className={cn(
+                      "h-11 min-w-30 rounded-full gap-2 px-8 shadow-none",
+                      paused && "border-sky-500/50",
+                      paused && pauseSource === "auto" && "min-w-40",
+                    )}
+                    onClick={onPauseToggle}
+                  >
+                    {paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+                    {paused
+                      ? pauseSource === "auto"
+                        ? "Pausa automática"
+                        : "Reanudar"
+                      : "Pausa"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="h-11 min-w-30 rounded-full gap-2 px-8 shadow-none hover:shadow-none hover:translate-y-0 active:translate-y-0"
+                    onClick={onFinish}
+                  >
+                    <Square className="h-4 w-4 fill-current" />
+                    Finalizar
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 

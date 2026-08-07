@@ -14,6 +14,9 @@ type Props = {
   showNoGpsBanner: boolean;
   noGpsBannerText: string;
   onOpenStats?: () => void;
+  /** Progreso sobre ruta objetivo (solo si hay ruta seleccionada). */
+  routePercent?: number | null;
+  routeRemainingM?: number | null;
 };
 
 export function LiveMetricsBar({
@@ -25,24 +28,45 @@ export function LiveMetricsBar({
   showNoGpsBanner,
   noGpsBannerText,
   onOpenStats,
+  routePercent = null,
+  routeRemainingM = null,
 }: Props) {
-  const metrics = [
-    {
-      key: "time",
-      label: "Tiempo",
-      value: formatCardioDuration(isSetup ? 0 : elapsedSec),
-    },
-    {
-      key: "distance",
-      label: "Distancia",
-      value: formatCardioDistanceM(isSetup ? 0 : distanceM),
-    },
-    {
-      key: "elevation",
-      label: "Elevación",
-      value: formatCardioElevationM(isSetup ? 0 : elevationM),
-    },
-  ] as const;
+  const showRouteProgress = routePercent != null && routeRemainingM != null;
+  const metrics = showRouteProgress
+    ? ([
+        {
+          key: "time",
+          label: "Tiempo",
+          value: formatCardioDuration(isSetup ? 0 : elapsedSec),
+        },
+        {
+          key: "routePct",
+          label: "% ruta",
+          value: `${Math.round(routePercent)}%`,
+        },
+        {
+          key: "routeLeft",
+          label: "Restante",
+          value: formatCardioDistanceM(routeRemainingM),
+        },
+      ] as const)
+    : ([
+        {
+          key: "time",
+          label: "Tiempo",
+          value: formatCardioDuration(isSetup ? 0 : elapsedSec),
+        },
+        {
+          key: "distance",
+          label: "Distancia",
+          value: formatCardioDistanceM(isSetup ? 0 : distanceM),
+        },
+        {
+          key: "elevation",
+          label: "Elevación",
+          value: formatCardioElevationM(isSetup ? 0 : elevationM),
+        },
+      ] as const);
 
   return (
     <div className="fixed inset-x-0 z-115 px-3" style={{ bottom: `${bottomOffsetPx}px` }}>
