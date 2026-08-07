@@ -42,7 +42,7 @@ type CardioDetailsSheetProps = {
 
 function StatBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-muted/40 px-3 py-3">
+    <div className="rounded-xl bg-muted/40 px-3 py-3 text-center">
       <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 font-mono text-base font-semibold tabular-nums">{value}</p>
     </div>
