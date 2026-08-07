@@ -5,52 +5,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { chunkIds, fetchAllPages } from "@/lib/supabaseBatch";
 import { setHasWork } from "@/types/workout";
+import {
+  banisterSeries,
+  cardioBlockImpulse,
+  combineStrengthSessionLoad,
+  edwardsTrimpFromAvgHr,
+  edwardsTrimpFromSamples,
+  resolveMaxHeartRate,
+  resolveRestingHeartRate,
+  strengthSetMechanicalImpulse,
+  type PhysioProfile,
+} from "@/lib/trainingLoad";
+import type { HeartRateSample } from "@/lib/heartRateMetrics";
 
 const LOOKBACK_DAYS = 400;
-const DEFAULT_BODYWEIGHT_SET_LOAD = 20;
-const CARDIO_PER_MINUTE_FACTOR = 8;
-const FATIGUE_DECAY_FACTOR = 0.94;
-const FATIGUE_DAILY_GAIN = 16;
-const FATIGUE_MAX_DAILY_RATIO = 2.5;
-
-function alphaForDays(days: number) {
-  return 2 / (days + 1);
-}
-
-function computeEma(values: number[], periodDays: number): number[] {
-  if (!values.length) return [];
-  const alpha = alphaForDays(periodDays);
-  const out: number[] = [values[0]];
-  for (let i = 1; i < values.length; i++) {
-    out.push(alpha * values[i] + (1 - alpha) * out[i - 1]);
-  }
-  return out;
-}
-
-function percentile(values: number[], p: number): number {
-  if (!values.length) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const clamped = Math.max(0, Math.min(1, p));
-  const idx = (sorted.length - 1) * clamped;
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  if (lo === hi) return sorted[lo];
-  const weight = idx - lo;
-  return sorted[lo] * (1 - weight) + sorted[hi] * weight;
-}
 
 export interface TrainingLoadPoint {
   date: string;
   load: number;
-  fatigueScore: number;
-  fatigueTrend: number;
+  loadStrength: number;
+  loadCardio: number;
+  fitness: number;
+  fatigue: number;
+  form: number;
 }
 
 export interface TrainingLoadData {
   points: TrainingLoadPoint[];
   totals: {
-    fatigueScore: number;
-    fatigueTrend: number;
+    fitness: number;
+    fatigue: number;
+    form: number;
   };
 }
 
@@ -70,10 +55,44 @@ export function useTrainingLoad() {
       const fromIso = bounds.start.toISOString();
       const toIso = bounds.end.toISOString();
 
-      const actividades = await fetchAllPages<{ id: string; fecha: string }>((from, to) =>
+      const [perfilRes, medidasRes] = await Promise.all([
+        supabase
+          .from("perfil")
+          .select("fecha_nacimiento, fc_max, fc_reposo, ftp_w")
+          .eq("id", user!.id)
+          .maybeSingle(),
+        supabase
+          .from("medidas")
+          .select("peso")
+          .eq("usuario_id", user!.id)
+          .not("peso", "is", null)
+          .order("fecha", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      if (perfilRes.error) throw perfilRes.error;
+      if (medidasRes.error) throw medidasRes.error;
+
+      const profile = (perfilRes.data ?? null) as PhysioProfile | null;
+      const maxHr = resolveMaxHeartRate(profile);
+      const restingHr = resolveRestingHeartRate(profile);
+      const ftpW = profile?.ftp_w ?? null;
+      const bodyWeightKg = medidasRes.data?.peso != null ? Number(medidasRes.data.peso) : null;
+
+      const loadStrengthByDay: Record<string, number> = {};
+      const loadCardioByDay: Record<string, number> = {};
+
+      const actividades = await fetchAllPages<{
+        id: string;
+        fecha: string;
+        fecha_fin: string | null;
+        fc_media: number | null;
+        fc_max: number | null;
+      }>((from, to) =>
         supabase
           .from("actividad")
-          .select("id, fecha")
+          .select("id, fecha, fecha_fin, fc_media, fc_max")
           .eq("usuario_id", user!.id)
           .not("fecha_fin", "is", null)
           .gte("fecha", fromIso)
@@ -83,9 +102,6 @@ export function useTrainingLoad() {
       );
 
       const activityIds = actividades.map((a) => a.id);
-      const activityDateById = new Map(actividades.map((a) => [a.id, a.fecha]));
-
-      const loadByDay: Record<string, number> = {};
 
       if (activityIds.length > 0) {
         const ejercicios: { id: string; actividad_id: string }[] = [];
@@ -100,6 +116,7 @@ export function useTrainingLoad() {
 
         const exerciseIds = ejercicios.map((e) => e.id);
         const activityByExerciseId = new Map(ejercicios.map((e) => [e.id, e.actividad_id]));
+        const mechanicalByActivity = new Map<string, number>();
 
         if (exerciseIds.length > 0) {
           const series: {
@@ -108,6 +125,7 @@ export function useTrainingLoad() {
             peso_kg: number | null;
             duracion_seg: number | null;
             ritmo_seg_km: number | null;
+            rir: number | null;
             completed: boolean | null;
           }[] = [];
           for (const chunk of chunkIds(exerciseIds)) {
@@ -117,11 +135,12 @@ export function useTrainingLoad() {
               peso_kg: number | null;
               duracion_seg: number | null;
               ritmo_seg_km: number | null;
+              rir: number | null;
               completed: boolean | null;
             }>((from, to) =>
               supabase
                 .from("serie")
-                .select("ejercicio_id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km, completed")
+                .select("ejercicio_id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km, rir, completed")
                 .in("ejercicio_id", chunk)
                 .range(from, to),
             );
@@ -129,19 +148,60 @@ export function useTrainingLoad() {
           }
 
           for (const s of series) {
-            const exerciseId = s.ejercicio_id;
-            const activityId = activityByExerciseId.get(exerciseId);
-            const activityDate = activityId ? activityDateById.get(activityId) : null;
-            if (!activityDate) continue;
             if (!setHasWork(s)) continue;
-
-            const dateKey = format(new Date(activityDate), "yyyy-MM-dd");
-            const reps = Number(s.repeticiones ?? 0);
-            const weight = Number(s.peso_kg ?? 0);
-            const hasWeightReps = reps > 0 && weight > 0;
-            const setLoad = hasWeightReps ? reps * weight : DEFAULT_BODYWEIGHT_SET_LOAD;
-            loadByDay[dateKey] = (loadByDay[dateKey] ?? 0) + setLoad;
+            const activityId = activityByExerciseId.get(s.ejercicio_id);
+            if (!activityId) continue;
+            const impulse = strengthSetMechanicalImpulse(
+              {
+                repeticiones: s.repeticiones,
+                peso_kg: s.peso_kg,
+                duracion_seg: s.duracion_seg,
+                rir: s.rir,
+              },
+              bodyWeightKg,
+            );
+            mechanicalByActivity.set(activityId, (mechanicalByActivity.get(activityId) ?? 0) + impulse);
           }
+        }
+
+        const hrSamplesByActivity = new Map<string, HeartRateSample[]>();
+        const activitiesWithHr = actividades.filter((a) => a.fc_media != null || a.fc_max != null);
+        if (activitiesWithHr.length > 0) {
+          for (const chunk of chunkIds(activitiesWithHr.map((a) => a.id))) {
+            const { data, error } = await supabase
+              .from("actividad_fc_sample")
+              .select("actividad_id, t_epoch_ms, bpm")
+              .in("actividad_id", chunk);
+            if (error) throw error;
+            for (const row of data ?? []) {
+              const list = hrSamplesByActivity.get(row.actividad_id) ?? [];
+              list.push({ t: Number(row.t_epoch_ms), bpm: row.bpm });
+              hrSamplesByActivity.set(row.actividad_id, list);
+            }
+          }
+        }
+
+        for (const activity of actividades) {
+          const mechanical = mechanicalByActivity.get(activity.id) ?? 0;
+          const dateKey = format(new Date(activity.fecha), "yyyy-MM-dd");
+          let hrTrimp = 0;
+          const samples = hrSamplesByActivity.get(activity.id) ?? [];
+          const startMs = Date.parse(activity.fecha);
+          const endMs = activity.fecha_fin ? Date.parse(activity.fecha_fin) : NaN;
+          const durationSec =
+            Number.isFinite(startMs) && Number.isFinite(endMs) && endMs > startMs
+              ? (endMs - startMs) / 1000
+              : 0;
+
+          if (samples.length > 0) {
+            hrTrimp = edwardsTrimpFromSamples(samples, maxHr, durationSec || undefined);
+          } else if (activity.fc_media != null && activity.fc_media > 0 && durationSec > 0) {
+            hrTrimp = edwardsTrimpFromAvgHr(durationSec, activity.fc_media, maxHr);
+          }
+
+          const sessionLoad = combineStrengthSessionLoad(mechanical, hrTrimp);
+          if (sessionLoad <= 0) continue;
+          loadStrengthByDay[dateKey] = (loadStrengthByDay[dateKey] ?? 0) + sessionLoad;
         }
       }
 
@@ -160,62 +220,154 @@ export function useTrainingLoad() {
       const sessionIds = sessions.map((s) => s.id);
       if (sessionIds.length > 0) {
         const sessionDateById = new Map(sessions.map((s) => [s.id, s.fecha_inicio]));
-        const blocks: { cardio_sesion_id: string; duracion_seg: number | null }[] = [];
+        const blocks: {
+          cardio_sesion_id: string;
+          duracion_seg: number | null;
+          fc_media: number | null;
+          fc_max: number | null;
+        }[] = [];
         for (const chunk of chunkIds(sessionIds)) {
           const { data, error: blkErr } = await supabase
             .from("cardio_bloque")
-            .select("cardio_sesion_id, duracion_seg")
+            .select("cardio_sesion_id, duracion_seg, fc_media, fc_max")
             .in("cardio_sesion_id", chunk);
           if (blkErr) throw blkErr;
           if (data?.length) blocks.push(...data);
         }
 
+        const cyclingBySession = new Map<
+          string,
+          { potencia_media_w: number | null; potencia_normalizada_w: number | null }
+        >();
+        for (const chunk of chunkIds(sessionIds)) {
+          const { data, error } = await supabase
+            .from("cardio_sesion_cycling")
+            .select("cardio_sesion_id, potencia_media_w, potencia_normalizada_w")
+            .in("cardio_sesion_id", chunk);
+          if (error) throw error;
+          for (const row of data ?? []) {
+            cyclingBySession.set(row.cardio_sesion_id, {
+              potencia_media_w: row.potencia_media_w,
+              potencia_normalizada_w: row.potencia_normalizada_w,
+            });
+          }
+        }
+
+        const trackFcBySession = new Map<string, HeartRateSample[]>();
+        const tracks: { id: string; cardio_sesion_id: string }[] = [];
+        for (const chunk of chunkIds(sessionIds)) {
+          const { data, error } = await supabase
+            .from("cardio_track")
+            .select("id, cardio_sesion_id")
+            .in("cardio_sesion_id", chunk);
+          if (error) throw error;
+          if (data?.length) tracks.push(...data);
+        }
+
+        if (tracks.length > 0) {
+          const trackSession = new Map(tracks.map((t) => [t.id, t.cardio_sesion_id]));
+          for (const chunk of chunkIds(tracks.map((t) => t.id))) {
+            const { data, error } = await supabase
+              .from("cardio_track_point")
+              .select("cardio_track_id, timestamp_utc, fc")
+              .in("cardio_track_id", chunk)
+              .not("fc", "is", null);
+            if (error) throw error;
+            for (const row of data ?? []) {
+              if (row.fc == null) continue;
+              const sessionId = trackSession.get(row.cardio_track_id);
+              if (!sessionId) continue;
+              const t = row.timestamp_utc ? Date.parse(row.timestamp_utc) : NaN;
+              if (!Number.isFinite(t)) continue;
+              const list = trackFcBySession.get(sessionId) ?? [];
+              list.push({ t, bpm: row.fc });
+              trackFcBySession.set(sessionId, list);
+            }
+          }
+        }
+
+        const durationBySession = new Map<string, number>();
+        for (const b of blocks) {
+          durationBySession.set(
+            b.cardio_sesion_id,
+            (durationBySession.get(b.cardio_sesion_id) ?? 0) + Number(b.duracion_seg ?? 0),
+          );
+        }
+
         for (const b of blocks) {
           const sessionDate = sessionDateById.get(b.cardio_sesion_id);
           if (!sessionDate) continue;
-          const minutes = Number(b.duracion_seg ?? 0) / 60;
-          if (minutes <= 0) continue;
-          const cardioLoad = minutes * CARDIO_PER_MINUTE_FACTOR;
           const dateKey = format(new Date(sessionDate), "yyyy-MM-dd");
-          loadByDay[dateKey] = (loadByDay[dateKey] ?? 0) + cardioLoad;
+          const samples = trackFcBySession.get(b.cardio_sesion_id) ?? [];
+          const cycling = cyclingBySession.get(b.cardio_sesion_id);
+          const sessionDuration = durationBySession.get(b.cardio_sesion_id) ?? Number(b.duracion_seg ?? 0);
+
+          // Si hay samples de track, TRIMP a nivel sesión una sola vez vía el primer bloque.
+          const isFirstBlock =
+            blocks.find((x) => x.cardio_sesion_id === b.cardio_sesion_id) === b;
+
+          let impulse = 0;
+          if (samples.length > 0) {
+            if (!isFirstBlock) continue;
+            impulse = cardioBlockImpulse(
+              { duracion_seg: sessionDuration, fc_media: b.fc_media },
+              {
+                maxHr,
+                restingHr,
+                ftpW,
+                samples,
+                cycling: cycling
+                  ? { ...cycling, duracion_seg: sessionDuration }
+                  : null,
+              },
+            );
+          } else {
+            impulse = cardioBlockImpulse(
+              {
+                duracion_seg: b.duracion_seg,
+                fc_media: b.fc_media,
+                fc_max: b.fc_max,
+              },
+              {
+                maxHr,
+                restingHr,
+                ftpW,
+                cycling: cycling
+                  ? { ...cycling, duracion_seg: Number(b.duracion_seg ?? 0) }
+                  : null,
+              },
+            );
+          }
+
+          if (impulse <= 0) continue;
+          loadCardioByDay[dateKey] = (loadCardioByDay[dateKey] ?? 0) + impulse;
         }
       }
 
       const dayKeys = eachDayOfInterval({ start: bounds.start, end: bounds.end }).map((d) =>
-        format(d, "yyyy-MM-dd")
+        format(d, "yyyy-MM-dd"),
       );
-      const loads = dayKeys.map((k) => loadByDay[k] ?? 0);
-      const activeLoads = loads.filter((value) => value > 0);
-      const normalizationLoad = Math.max(percentile(activeLoads, 0.6), 1);
+      const loads = dayKeys.map((k) => (loadStrengthByDay[k] ?? 0) + (loadCardioByDay[k] ?? 0));
+      const series = banisterSeries(loads);
 
-      const fatigueRaw: number[] = [];
-      for (let i = 0; i < loads.length; i++) {
-        const normalized = Math.min(loads[i] / normalizationLoad, FATIGUE_MAX_DAILY_RATIO);
-        const dailyImpulse = normalized * FATIGUE_DAILY_GAIN;
-        const prev = i === 0 ? 0 : fatigueRaw[i - 1];
-        fatigueRaw.push(Math.max(0, prev * FATIGUE_DECAY_FACTOR + dailyImpulse));
-      }
-      const fatigueTrend = computeEma(fatigueRaw, 5);
-
-      const points: TrainingLoadPoint[] = dayKeys.map((date, idx) => {
-        const load = loads[idx];
-        return {
-          date,
-          load,
-          fatigueScore: fatigueRaw[idx] ?? 0,
-          fatigueTrend: fatigueTrend[idx] ?? 0,
-        };
-      });
+      const points: TrainingLoadPoint[] = dayKeys.map((date, idx) => ({
+        date,
+        load: loads[idx] ?? 0,
+        loadStrength: loadStrengthByDay[date] ?? 0,
+        loadCardio: loadCardioByDay[date] ?? 0,
+        fitness: series[idx]?.fitness ?? 0,
+        fatigue: series[idx]?.fatigue ?? 0,
+        form: series[idx]?.form ?? 0,
+      }));
 
       const lastPoint = points[points.length - 1];
-      const fatigueScore = lastPoint?.fatigueScore ?? 0;
-      const fatigueTrendValue = lastPoint?.fatigueTrend ?? 0;
 
       return {
         points,
         totals: {
-          fatigueScore,
-          fatigueTrend: fatigueTrendValue,
+          fitness: lastPoint?.fitness ?? 0,
+          fatigue: lastPoint?.fatigue ?? 0,
+          form: lastPoint?.form ?? 0,
         },
       };
     },

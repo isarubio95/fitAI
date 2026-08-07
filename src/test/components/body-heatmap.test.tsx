@@ -3,12 +3,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import type { MouseEvent, ReactNode, Ref } from "react";
 
-const { mockUseMuscleVolume } = vi.hoisted(() => ({
+const { mockUseMuscleVolume, mockUseMuscleFatigue } = vi.hoisted(() => ({
   mockUseMuscleVolume: vi.fn(),
+  mockUseMuscleFatigue: vi.fn(),
 }));
 
 vi.mock("@/hooks/useMuscleVolume", () => ({
   useMuscleVolume: mockUseMuscleVolume,
+}));
+
+vi.mock("@/hooks/useMuscleFatigue", () => ({
+  useMuscleFatigue: mockUseMuscleFatigue,
+}));
+
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: () => ({ user: { id: "u1" } }),
 }));
 
 vi.mock("@/components/ui/card", () => ({
@@ -84,6 +93,14 @@ describe("BodyHeatmap", () => {
     Object.defineProperty(window.navigator, "onLine", {
       configurable: true,
       value: true,
+    });
+    mockUseMuscleFatigue.mockReturnValue({
+      data: {
+        groupFatigue: {},
+        daysToBaseline: {},
+        maxGroupFatigue: 0,
+      },
+      isLoading: false,
     });
   });
 

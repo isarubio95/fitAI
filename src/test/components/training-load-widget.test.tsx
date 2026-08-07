@@ -12,12 +12,12 @@ vi.mock("@/hooks/useTrainingLoad", () => ({
 
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: ReactNode }) => <svg>{children}</svg>,
-  AreaChart: ({ children }: { children: ReactNode }) => <g>{children}</g>,
+  LineChart: ({ children }: { children: ReactNode }) => <g>{children}</g>,
   CartesianGrid: () => null,
   XAxis: () => null,
   YAxis: () => null,
   Tooltip: () => null,
-  Area: () => null,
+  Line: () => null,
 }));
 
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
@@ -43,27 +43,53 @@ describe("TrainingLoadWidget", () => {
     mockUseTrainingLoad.mockReturnValue({
       data: {
         points: [
-          { date: "2026-04-01", load: 100, fatigueScore: 40, fatigueTrend: 38 },
-          { date: "2026-04-02", load: 120, fatigueScore: 45, fatigueTrend: 41 },
+          {
+            date: "2026-04-01",
+            load: 100,
+            loadStrength: 60,
+            loadCardio: 40,
+            fitness: 40,
+            fatigue: 45,
+            form: -5,
+          },
+          {
+            date: "2026-04-02",
+            load: 120,
+            loadStrength: 70,
+            loadCardio: 50,
+            fitness: 42,
+            fatigue: 50,
+            form: -8,
+          },
         ],
-        totals: { fatigueScore: 45, fatigueTrend: 41 },
+        totals: { fitness: 42, fatigue: 50, form: -8 },
       },
       isLoading: false,
       isFetching: false,
     });
 
     render(<TrainingLoadWidget />);
-    expect(screen.getByText("Fatiga hoy")).toBeInTheDocument();
-    expect(screen.getByText("45")).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes("Cambio del periodo:"))).toBeInTheDocument();
+    expect(screen.getAllByText("Fitness").length).toBeGreaterThan(0);
+    expect(screen.getByText("42")).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes("Cambio forma:"))).toBeInTheDocument();
   });
 
   it("usa caché local cuando no hay respuesta de red", () => {
     localStorage.setItem(
-      "gym-log.training-load.data.v1",
+      "gym-log.training-load.data.v2",
       JSON.stringify({
-        points: [{ date: "2026-03-01", load: 80, fatigueScore: 30, fatigueTrend: 29 }],
-        totals: { fatigueScore: 30, fatigueTrend: 29 },
+        points: [
+          {
+            date: "2026-03-01",
+            load: 80,
+            loadStrength: 80,
+            loadCardio: 0,
+            fitness: 30,
+            fatigue: 28,
+            form: 2,
+          },
+        ],
+        totals: { fitness: 30, fatigue: 28, form: 2 },
       }),
     );
     mockUseTrainingLoad.mockReturnValue({
@@ -76,4 +102,3 @@ describe("TrainingLoadWidget", () => {
     expect(screen.getByText("30")).toBeInTheDocument();
   });
 });
-

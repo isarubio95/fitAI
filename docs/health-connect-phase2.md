@@ -34,5 +34,10 @@ Las apps del fabricante no se enlazan con Track Gym: escriben en Health Connect;
 - Cardio manual (`CardioLogger`).
 - HRV, sueño, pasos, calorías del fabricante como fuente primaria.
 - Companion Wear OS.
-- Fuerza con FC en vivo.
 - iOS / HealthKit.
+
+## Fuerza (implementado)
+
+Al finalizar un entrenamiento de fuerza activo, Track Gym también fusiona BLE + Health Connect
+en la ventana `[fecha, fecha_fin]` y persiste `actividad.fc_media` / `fc_max` + `actividad_fc_sample`.
+El panel BLE aparece en el logger cuando hay Bluetooth disponible (Android).

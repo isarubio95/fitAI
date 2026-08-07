@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { ColorThemeSelector } from "@/components/ColorThemeSelector";
 import { HealthConnectHrSettings } from "@/components/layout/HealthConnectHrSettings";
+import { PhysiologySettings } from "@/components/layout/PhysiologySettings";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -114,6 +115,8 @@ export function SettingsDrawer() {
               />
             </div>
           </div>
+
+          <PhysiologySettings />
 
           <HealthConnectHrSettings />
         </div>

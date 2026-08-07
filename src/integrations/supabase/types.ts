@@ -19,6 +19,8 @@ export type Database = {
           comentarios: string | null
           created_at: string
           es_publica: boolean
+          fc_max: number | null
+          fc_media: number | null
           fecha: string
           fecha_fin: string | null
           icono: string | null
@@ -30,6 +32,8 @@ export type Database = {
           comentarios?: string | null
           created_at?: string
           es_publica?: boolean
+          fc_max?: number | null
+          fc_media?: number | null
           fecha?: string
           fecha_fin?: string | null
           icono?: string | null
@@ -41,6 +45,8 @@ export type Database = {
           comentarios?: string | null
           created_at?: string
           es_publica?: boolean
+          fc_max?: number | null
+          fc_media?: number | null
           fecha?: string
           fecha_fin?: string | null
           icono?: string | null
@@ -49,6 +55,38 @@ export type Database = {
           usuario_id?: string
         }
         Relationships: []
+      }
+      actividad_fc_sample: {
+        Row: {
+          actividad_id: string
+          bpm: number
+          created_at: string
+          id: string
+          t_epoch_ms: number
+        }
+        Insert: {
+          actividad_id: string
+          bpm: number
+          created_at?: string
+          id?: string
+          t_epoch_ms: number
+        }
+        Update: {
+          actividad_id?: string
+          bpm?: number
+          created_at?: string
+          id?: string
+          t_epoch_ms?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actividad_fc_sample_actividad_id_fkey"
+            columns: ["actividad_id"]
+            isOneToOne: false
+            referencedRelation: "actividad"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       actividad_comentario: {
         Row: {
@@ -857,6 +895,10 @@ export type Database = {
           avatar_url: string | null
           comunidad_publica_actividad: boolean
           created_at: string
+          fc_max: number | null
+          fc_reposo: number | null
+          fecha_nacimiento: string | null
+          ftp_w: number | null
           id: string
           nivel: number
           racha_actual: number
@@ -869,6 +911,10 @@ export type Database = {
           avatar_url?: string | null
           comunidad_publica_actividad?: boolean
           created_at?: string
+          fc_max?: number | null
+          fc_reposo?: number | null
+          fecha_nacimiento?: string | null
+          ftp_w?: number | null
           id?: string
           nivel?: number
           racha_actual?: number
@@ -881,6 +927,10 @@ export type Database = {
           avatar_url?: string | null
           comunidad_publica_actividad?: boolean
           created_at?: string
+          fc_max?: number | null
+          fc_reposo?: number | null
+          fecha_nacimiento?: string | null
+          ftp_w?: number | null
           id?: string
           nivel?: number
           racha_actual?: number

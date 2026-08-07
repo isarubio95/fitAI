@@ -18,7 +18,10 @@ import {
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Flag, Check } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
+import { HeartRatePanel } from "@/components/cardio/live/HeartRatePanel";
 import { useToast } from "@/hooks/use-toast";
+import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
+import { persistActividadHeartRate } from "@/lib/persistActividadHeartRate";
 import { PostWorkoutModal } from "./PostWorkoutModal";
 import { useRestTimerContext } from "./RestTimerProvider";
 import { cn } from "@/lib/utils";
@@ -137,6 +140,10 @@ export function WorkoutLogger() {
   const isEditingCompletedWorkout = isEdit && !isActiveWorkout && !loadingWorkout;
   const showFloatingActionBar = isActiveWorkout || isEditingCompletedWorkout;
   const showFinishButton = isActiveWorkout ? exercises.length > 0 : isEditingCompletedWorkout;
+  const hrMonitor = useHeartRateMonitor({
+    recording: open && isActiveWorkout && !isPaused,
+    enabled: open && isActiveWorkout,
+  });
   const hasRecordedWork = countRecordedSets(exercises) > 0;
   const hasUnsavedChanges = useMemo(() => {
     if (!isEditingCompletedWorkout || editBaseline === null) return false;
@@ -919,6 +926,7 @@ export function WorkoutLogger() {
     queryClient.invalidateQueries({ queryKey: ["exercise-history"] });
     queryClient.invalidateQueries({ queryKey: ["trainingLoad"] });
     queryClient.invalidateQueries({ queryKey: ["muscleVolume"] });
+    queryClient.invalidateQueries({ queryKey: ["muscleFatigue"] });
     queryClient.invalidateQueries({ queryKey: ["muscleStatistics"] });
     if (workoutId) queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
     if (fecha) {
@@ -1045,17 +1053,31 @@ export function WorkoutLogger() {
         }
 
         if (isActiveWorkout) {
+          const endIso = new Date().toISOString();
           const { error } = await supabase
             .from("actividad")
             .update({
               titulo: resolvedTitulo,
               fecha: new Date(fecha).toISOString(),
-              fecha_fin: new Date().toISOString(),
+              fecha_fin: endIso,
               icono: workoutIcon,
               es_publica: false,
             })
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
+
+          try {
+            await persistActividadHeartRate({
+              actividadId: effectiveWorkoutId,
+              bleSamples: hrMonitor.samples,
+              startIso: existingWorkout?.fecha ?? new Date(fecha).toISOString(),
+              endIso,
+            });
+          } catch {
+            // FC opcional: no bloquear el fin del entreno
+          }
+          void hrMonitor.disconnect();
+          hrMonitor.clearSamples();
 
           await finalizeLinkedPlannedRoutine();
 
@@ -1136,12 +1158,14 @@ export function WorkoutLogger() {
   };
 
   const handleCreate = async (ejerciciosLimpios: ExerciseFormData[], workoutTitle: string) => {
+    const endIso = new Date().toISOString();
+    const startIso = new Date(fecha).toISOString();
     const { data: actividad, error: actError } = await supabase
       .from("actividad")
       .insert({
         titulo: workoutTitle,
-        fecha: new Date(fecha).toISOString(),
-        fecha_fin: new Date().toISOString(),
+        fecha: startIso,
+        fecha_fin: endIso,
         usuario_id: user!.id,
         es_publica: false,
         icono: workoutIcon,
@@ -1149,6 +1173,17 @@ export function WorkoutLogger() {
       .select("id")
       .single();
     if (actError) throw actError;
+
+    try {
+      await persistActividadHeartRate({
+        actividadId: actividad.id,
+        bleSamples: hrMonitor.samples,
+        startIso,
+        endIso,
+      });
+    } catch {
+      // opcional
+    }
 
     const baseCreatedAt = Date.now();
     const ejercicioInserts = ejerciciosLimpios.map((ex, i) => ({
@@ -1368,6 +1403,25 @@ export function WorkoutLogger() {
                   esPublica={esPublica}
                   onEsPublicaChange={setEsPublica}
                 />
+
+                {isActiveWorkout && hrMonitor.available && (
+                  <div className="px-4 pt-1">
+                    <HeartRatePanel
+                      bpm={hrMonitor.bpm}
+                      connected={hrMonitor.connected}
+                      connection={hrMonitor.connection}
+                      deviceName={hrMonitor.deviceName}
+                      zone={hrMonitor.zone}
+                      connecting={hrMonitor.connecting}
+                      error={hrMonitor.error}
+                      onConnectClick={() => {
+                        if (hrMonitor.connected) void hrMonitor.disconnect();
+                        else if (hrMonitor.device) void hrMonitor.reconnect();
+                        else void hrMonitor.connect();
+                      }}
+                    />
+                  </div>
+                )}
 
                 <WorkoutExerciseList
                   exercises={exercises}
