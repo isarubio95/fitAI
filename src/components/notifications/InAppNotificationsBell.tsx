@@ -21,9 +21,8 @@ function NotificationRow({
   if (isNewFollowerNotification(item)) {
     return (
       <div
-        data-drawer-section
         className={cn(
-          "rounded-none border border-primary/20 bg-primary/8 px-3 py-3 text-left dark:border-primary/25 dark:bg-primary/5",
+          "rounded-xl border border-primary/20 bg-primary/8 px-3 py-3 text-left dark:border-primary/25 dark:bg-primary/5",
         )}
       >
         <NewFollowerNotificationContent
@@ -50,9 +49,8 @@ function NotificationRow({
 
   return (
     <div
-      data-drawer-section
       className={cn(
-        "rounded-none border border-border/60 bg-muted/30 px-3 py-3 text-left",
+        "rounded-xl border border-border/60 bg-muted/30 px-3 py-3 text-left",
         item.kind === "action" &&
           "border-primary/20 bg-primary/8 dark:border-primary/25 dark:bg-primary/5",
       )}

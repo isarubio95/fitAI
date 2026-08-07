@@ -19,7 +19,7 @@ type Props = {
   compact?: boolean;
   onAfterOpenProfile?: () => void;
   className?: string;
-  /** P. ej. botón descartar a la derecha del botón Seguir. */
+  /** P. ej. botón descartar en la esquina superior derecha. */
   trailing?: ReactNode;
 };
 
@@ -53,6 +53,7 @@ export function NewFollowerNotificationContent({
           aria-hidden
         />
         <p className="min-w-0 flex-1 text-sm font-semibold leading-tight">Nuevo seguidor</p>
+        {trailing ? <div className="-mr-1 -mt-0.5 flex shrink-0">{trailing}</div> : null}
       </div>
 
       <div className="flex min-w-0 items-center gap-2">
@@ -71,8 +72,11 @@ export function NewFollowerNotificationContent({
         <Button
           type="button"
           size="sm"
-          variant="default"
-          className="h-9 shrink-0 self-center gap-1.5 px-3"
+          variant={isFollowing ? "secondary" : "default"}
+          className={cn(
+            "h-9 shrink-0 self-center gap-1.5 px-3",
+            isFollowing && "bg-border hover:bg-border/80 dark:hover:bg-border/90",
+          )}
           disabled={isToggling.has(seguidorId)}
           onClick={(e) => {
             e.preventDefault();
@@ -94,7 +98,6 @@ export function NewFollowerNotificationContent({
             </span>
           )}
         </Button>
-        {trailing ? <div className="flex shrink-0 self-center">{trailing}</div> : null}
       </div>
     </div>
   );

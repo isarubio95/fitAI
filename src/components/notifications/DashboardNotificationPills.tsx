@@ -12,7 +12,7 @@ function Pill({ item, onDismiss }: { item: InAppNotificationItem; onDismiss: (id
     return (
       <div
         className={cn(
-          "flex min-w-0 flex-1 flex-col gap-0 rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2.5 sm:max-w-sm sm:flex-initial dark:border-primary/42 dark:bg-primary/8",
+          "flex min-w-0 flex-1 flex-col gap-0 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2.5 sm:max-w-sm sm:flex-initial dark:border-primary/42 dark:bg-primary/8",
         )}
       >
         <NewFollowerNotificationContent
@@ -41,7 +41,7 @@ function Pill({ item, onDismiss }: { item: InAppNotificationItem; onDismiss: (id
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-1 flex-col gap-2 rounded-2xl border px-3 py-2.5 sm:max-w-sm sm:flex-initial",
+        "flex min-w-0 flex-1 flex-col gap-2 rounded-xl border px-3 py-2.5 sm:max-w-sm sm:flex-initial",
         item.kind === "action"
           ? "border-primary/20 bg-primary/10 dark:border-primary/42 dark:bg-primary/8"
           : "border-border/60 bg-muted/40",
