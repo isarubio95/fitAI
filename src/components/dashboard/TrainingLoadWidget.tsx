@@ -5,6 +5,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -12,7 +13,7 @@ import {
   type TooltipContentProps,
 } from "recharts";
 import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
-import { Info } from "lucide-react";
+import { Flame, Info, Scale, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -30,6 +31,77 @@ function formatSigned(value: number) {
   const rounded = Math.round(value);
   if (rounded > 0) return `+${rounded}`;
   return `${rounded}`;
+}
+
+function clampPct(value: number) {
+  return Math.max(0, Math.min(100, value));
+}
+
+/** Barra horizontal 0→100% sobre un fondo muted. */
+function LoadBar({
+  pct,
+  barClassName,
+  "aria-label": ariaLabel,
+}: {
+  pct: number;
+  barClassName: string;
+  "aria-label": string;
+}) {
+  return (
+    <div
+      className="h-2.5 w-full overflow-hidden rounded-full bg-muted"
+      role="progressbar"
+      aria-valuenow={Math.round(pct)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={ariaLabel}
+    >
+      <div
+        className={cn("h-full rounded-full transition-[width] duration-300", barClassName)}
+        style={{ width: `${clampPct(pct)}%` }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Barra bipolar centrada en 0: izquierda = Forma negativa (más fatiga),
+ * derecha = Forma positiva (más fresco).
+ */
+function FormBalanceBar({
+  form,
+  scale,
+  barClassName,
+}: {
+  form: number;
+  scale: number;
+  barClassName: string;
+}) {
+  const half = Math.max(scale, 1);
+  const pctOfHalf = clampPct((Math.abs(form) / half) * 100);
+  return (
+    <div
+      className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted"
+      role="meter"
+      aria-valuenow={Math.round(form)}
+      aria-valuemin={-Math.round(half)}
+      aria-valuemax={Math.round(half)}
+      aria-label="Forma (Fitness menos Fatiga)"
+    >
+      <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border" />
+      {form < 0 ? (
+        <div
+          className={cn("absolute inset-y-0 right-1/2 rounded-l-full transition-[width] duration-300", barClassName)}
+          style={{ width: `${pctOfHalf / 2}%` }}
+        />
+      ) : form > 0 ? (
+        <div
+          className={cn("absolute inset-y-0 left-1/2 rounded-r-full transition-[width] duration-300", barClassName)}
+          style={{ width: `${pctOfHalf / 2}%` }}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 const RANGE_OPTIONS = [
@@ -129,6 +201,24 @@ export function TrainingLoadWidget() {
     () => (chartData.length < 2 ? 0 : chartData[chartData.length - 1].form - chartData[0].form),
     [chartData],
   );
+  /** Misma escala para Fitness y Fatiga → se ve de dónde sale la diferencia. */
+  const compareScale = Math.max(totals.fitness, totals.fatigue, 1);
+  const formScale = Math.max(Math.abs(totals.form), compareScale * 0.35, 25);
+  const fitnessPct = (totals.fitness / compareScale) * 100;
+  const fatiguePct = (totals.fatigue / compareScale) * 100;
+  const yDomain = useMemo((): [number, number] => {
+    if (!chartData.length) return [0, 25];
+    let min = 0;
+    let max = 0;
+    for (const row of chartData) {
+      min = Math.min(min, row.fitness, row.fatigue, row.form);
+      max = Math.max(max, row.fitness, row.fatigue, row.form);
+    }
+    const pad = Math.max((max - min) * 0.08, 5);
+    const niceMin = Math.floor((min - (min < 0 ? pad : 0)) / 25) * 25;
+    const niceMax = Math.ceil((max + pad) / 25) * 25;
+    return [Math.min(niceMin, 0), Math.max(niceMax, 25)];
+  }, [chartData]);
 
   if (isLoading && !resolvedData) {
     return (
@@ -202,33 +292,84 @@ export function TrainingLoadWidget() {
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div className="rounded-lg bg-muted/40 px-2 py-2">
-            <p className="text-[11px] text-muted-foreground">Fitness</p>
-            {showDynamicSkeleton ? (
-              <Skeleton className="mx-auto h-5 w-16" />
-            ) : (
-              <p className="text-sm font-semibold text-sky-500">{formatNumber(totals.fitness)}</p>
-            )}
-          </div>
-          <div className="rounded-lg bg-muted/40 px-2 py-2">
-            <p className="text-[11px] text-muted-foreground">Fatiga</p>
-            {showDynamicSkeleton ? (
-              <Skeleton className="mx-auto h-5 w-16" />
-            ) : (
-              <p className="text-sm font-semibold text-amber-500">{formatNumber(totals.fatigue)}</p>
-            )}
-          </div>
-          <div className="rounded-lg bg-muted/40 px-2 py-2">
-            <p className="text-[11px] text-muted-foreground">Forma</p>
-            {showDynamicSkeleton ? (
-              <Skeleton className="mx-auto h-5 w-16" />
-            ) : (
-              <p className={`text-sm font-semibold ${formClass}`}>
-                {formatSigned(totals.form)} · {formLabel}
-              </p>
-            )}
-          </div>
+        <div className="space-y-3 rounded-xl bg-muted/40 p-3">
+          {showDynamicSkeleton ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                    <TrendingUp className="h-3.5 w-3.5 text-sky-500" aria-hidden />
+                    Fitness
+                  </p>
+                  <p className="text-sm font-semibold tabular-nums text-sky-500">
+                    {formatNumber(totals.fitness)}
+                  </p>
+                </div>
+                <LoadBar pct={fitnessPct} barClassName="bg-sky-500" aria-label="Fitness" />
+                <p className="text-[10px] text-muted-foreground">Adaptación a largo plazo (~42 días)</p>
+              </div>
+
+              <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground">
+                <span className="h-px flex-1 bg-border" />
+                <span aria-hidden>−</span>
+                <span className="h-px flex-1 bg-border" />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                    <Flame className="h-3.5 w-3.5 text-amber-500" aria-hidden />
+                    Fatiga
+                  </p>
+                  <p className="text-sm font-semibold tabular-nums text-amber-500">
+                    {formatNumber(totals.fatigue)}
+                  </p>
+                </div>
+                <LoadBar pct={fatiguePct} barClassName="bg-amber-500" aria-label="Fatiga" />
+                <p className="text-[10px] text-muted-foreground">Cansancio reciente (~7 días)</p>
+              </div>
+
+              <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground">
+                <span className="h-px flex-1 bg-border" />
+                <span aria-hidden>=</span>
+                <span className="h-px flex-1 bg-border" />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                    <Scale className="h-3.5 w-3.5 text-accent-foreground" aria-hidden />
+                    Forma
+                  </p>
+                  <p className={cn("text-sm font-semibold tabular-nums", formClass)}>
+                    {formatSigned(totals.form)}
+                    <span className="ml-1.5 font-medium">· {formLabel}</span>
+                  </p>
+                </div>
+                <FormBalanceBar
+                  form={totals.form}
+                  scale={formScale}
+                  barClassName={
+                    totals.form >= 0 ? "bg-emerald-500" : "bg-amber-500"
+                  }
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Forma = Fitness − Fatiga
+                  {totals.form < 0
+                    ? " · más fatiga que forma acumulada"
+                    : totals.form > 0
+                      ? " · más fresco que fatigado"
+                      : " · en equilibrio"}
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </CardHeader>
 
@@ -237,7 +378,7 @@ export function TrainingLoadWidget() {
           <Skeleton className="h-[180px] w-full" />
         ) : (
           <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={chartData} margin={{ top: 8, right: 10, left: -10, bottom: 0 }}>
+            <LineChart data={chartData} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid
                 stroke="hsl(var(--border))"
                 strokeOpacity={0.45}
@@ -254,12 +395,20 @@ export function TrainingLoadWidget() {
                 tickFormatter={(d) => formatXAxisTickLabel(d, selectedRangeDays)}
               />
               <YAxis
+                domain={yDomain}
+                allowDataOverflow={false}
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                width={36}
-                tickFormatter={(v) => `${Math.round(v as number)}`}
+                width={44}
+                tickCount={6}
+                tickFormatter={(v) => {
+                  const n = Math.round(v as number);
+                  // Evitar que el "-" se confunda / se recorte en ticks negativos.
+                  return n < 0 ? `−${Math.abs(n)}` : `${n}`;
+                }}
               />
+              <ReferenceLine y={0} stroke="hsl(var(--border))" strokeOpacity={0.9} />
               <Tooltip content={TrainingLoadTooltip} />
               <Line
                 type="monotone"

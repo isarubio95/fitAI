@@ -18,6 +18,7 @@ vi.mock("recharts", () => ({
   YAxis: () => null,
   Tooltip: () => null,
   Line: () => null,
+  ReferenceLine: () => null,
 }));
 
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
