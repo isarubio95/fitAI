@@ -36,18 +36,18 @@ export function CardioStartMetaRow({ session, className }: Props) {
   return (
     <p
       className={cn(
-        "flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground",
+        "flex min-w-0 items-center gap-1.5 text-xs leading-none text-muted-foreground",
         className,
       )}
     >
       <Icon
-        className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+        className="h-3 w-3 shrink-0 text-muted-foreground"
         aria-hidden
         strokeWidth={1.75}
       />
       <span className="sr-only">{disciplina}</span>
       {locationLabel ? (
-        <span className="truncate">{locationLabel}</span>
+        <span className="truncate leading-none">{locationLabel}</span>
       ) : null}
     </p>
   );

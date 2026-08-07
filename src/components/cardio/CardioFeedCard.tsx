@@ -153,7 +153,7 @@ export function CardioFeedCardBody({
           <button
             type="button"
             onClick={() => onSelectAuthor?.(author.id)}
-            className="shrink-0 rounded-full outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+            className="shrink-0 self-start rounded-full outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={`Ver perfil de ${author.username ?? "usuario"}`}
           >
             <CommunityAvatar
@@ -162,7 +162,8 @@ export function CardioFeedCardBody({
               className="h-9 w-9"
             />
           </button>
-          <div className="min-w-0 flex-1 space-y-1">
+          {/* -mt-0.5: la caja tipográfica deja aire sobre el glifo; sin esto el username parece más bajo que el avatar */}
+          <div className="-mt-0.5 flex min-w-0 flex-1 flex-col gap-1.5">
             <button
               type="button"
               onClick={() => onSelectAuthor?.(author.id)}
@@ -171,11 +172,14 @@ export function CardioFeedCardBody({
               {author.username}
             </button>
             {session.fecha_inicio ? (
-              <time dateTime={session.fecha_inicio} className="block text-xs leading-none text-muted-foreground">
+              <time
+                dateTime={session.fecha_inicio}
+                className="block text-xs leading-none text-muted-foreground"
+              >
                 {formatActivityAbsoluteDate(session.fecha_inicio)}
               </time>
             ) : null}
-            <CardioStartMetaRow session={session} className="leading-none" />
+            <CardioStartMetaRow session={session} />
           </div>
         </div>
       ) : null}
