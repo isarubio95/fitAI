@@ -22,7 +22,7 @@ import { LogroMedal } from "@/components/logros/LogroMedal";
 import { LogrosDrawer } from "@/components/logros/LogrosDrawer";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
-import { CardioFeedCard } from "@/components/cardio/CardioFeedCard";
+import { CardioFeedCard, type CardioFeedCardSocial } from "@/components/cardio/CardioFeedCard";
 import { CardioDetailsSheet } from "@/components/cardio/CardioDetailsSheet";
 import {
   WorkoutFeedCard,
@@ -36,6 +36,8 @@ import { useProfileAvatarUpload } from "@/hooks/useProfileAvatarUpload";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityLikes } from "@/hooks/useActivityLikes";
 import { useActivityCommentCounts } from "@/hooks/useActivityComments";
+import { useCardioSessionLikes } from "@/hooks/useCardioSessionLikes";
+import { useCardioSessionCommentCounts } from "@/hooks/useCardioSessionComments";
 
 type ProfileDrawerContextValue = {
   open: boolean;
@@ -258,9 +260,23 @@ function ProfileDrawerSheet() {
     }
     return ids;
   }, [lastWorkouts]);
+  const publicCardioIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const w of lastWorkouts) {
+      if (w.type === "cardio" && w.session.es_publica) ids.push(w.session.id);
+    }
+    return ids;
+  }, [lastWorkouts]);
   const { likeCounts, likedIds, toggleLike, isToggling: isTogglingLike } =
     useActivityLikes(publicWorkoutIds);
   const { commentCounts } = useActivityCommentCounts(publicWorkoutIds);
+  const {
+    likeCounts: cardioLikeCounts,
+    likedIds: cardioLikedIds,
+    toggleLike: toggleCardioLike,
+    isToggling: isTogglingCardioLike,
+  } = useCardioSessionLikes(publicCardioIds);
+  const { commentCounts: cardioCommentCounts } = useCardioSessionCommentCounts(publicCardioIds);
 
   const socialFor = (actividadId: string): WorkoutFeedCardSocial => ({
     likeCount: likeCounts[actividadId] ?? 0,
@@ -268,6 +284,14 @@ function ProfileDrawerSheet() {
     commentCount: commentCounts[actividadId] ?? 0,
     onToggleLike: () => toggleLike(actividadId),
     isTogglingLike: isTogglingLike.has(actividadId),
+  });
+
+  const cardioSocialFor = (sessionId: string): CardioFeedCardSocial => ({
+    likeCount: cardioLikeCounts[sessionId] ?? 0,
+    liked: cardioLikedIds.has(sessionId),
+    commentCount: cardioCommentCounts[sessionId] ?? 0,
+    onToggleLike: () => toggleCardioLike(sessionId),
+    isTogglingLike: isTogglingCardioLike.has(sessionId),
   });
 
   const displayAvatar = useUserAvatar(
@@ -503,6 +527,7 @@ function ProfileDrawerSheet() {
                       author={workoutAuthor}
                       onSelectAuthor={openAuthorProfile}
                       onSelectSession={setCardioDetailsId}
+                      social={item.session.es_publica ? cardioSocialFor(item.session.id) : null}
                     />
                   ),
                 )}

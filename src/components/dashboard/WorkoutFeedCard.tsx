@@ -27,7 +27,7 @@ export type WorkoutFeedCardAuthor = {
 /** Stats de like/comentario inyectados desde el padre (batch). */
 export type WorkoutFeedCardSocial = Omit<
   ActivitySocialStatsProps,
-  "actividadId" | "workoutOwnerId" | "className"
+  "kind" | "targetId" | "ownerId" | "className"
 >;
 
 function initialsFromUsername(username?: string | null) {
@@ -125,8 +125,9 @@ export function WorkoutFeedCardBody({
 
       {showSocial ? (
         <ActivitySocialActions
-          actividadId={workout.id}
-          workoutOwnerId={ownerId}
+          kind="gym"
+          targetId={workout.id}
+          ownerId={ownerId}
           likeCount={social.likeCount}
           liked={social.liked}
           commentCount={social.commentCount}

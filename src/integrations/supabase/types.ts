@@ -125,6 +125,81 @@ export type Database = {
           },
         ]
       }
+      cardio_sesion_comentario: {
+        Row: {
+          cardio_sesion_id: string
+          created_at: string
+          id: string
+          texto: string
+          usuario_id: string
+        }
+        Insert: {
+          cardio_sesion_id: string
+          created_at?: string
+          id?: string
+          texto: string
+          usuario_id?: string
+        }
+        Update: {
+          cardio_sesion_id?: string
+          created_at?: string
+          id?: string
+          texto?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cardio_sesion_comentario_cardio_sesion_id_fkey"
+            columns: ["cardio_sesion_id"]
+            isOneToOne: false
+            referencedRelation: "cardio_sesion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cardio_sesion_comentario_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cardio_sesion_like: {
+        Row: {
+          cardio_sesion_id: string
+          created_at: string
+          id: string
+          usuario_id: string
+        }
+        Insert: {
+          cardio_sesion_id: string
+          created_at?: string
+          id?: string
+          usuario_id?: string
+        }
+        Update: {
+          cardio_sesion_id?: string
+          created_at?: string
+          id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cardio_sesion_like_cardio_sesion_id_fkey"
+            columns: ["cardio_sesion_id"]
+            isOneToOne: false
+            referencedRelation: "cardio_sesion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cardio_sesion_like_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cardio_bloque: {
         Row: {
           calorias: number | null

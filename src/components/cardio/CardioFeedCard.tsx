@@ -2,6 +2,10 @@ import { Suspense, lazy, useMemo } from "react";
 import { Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  ActivitySocialActions,
+  type ActivitySocialStatsProps,
+} from "@/components/community/ActivitySocialActions";
+import {
   COMMUNITY_CARD_CLASS,
   CommunityAvatar,
   WORKOUT_COMPACT_CARD_CLASS,
@@ -35,7 +39,14 @@ type CardioFeedCardBodyProps = {
   author?: WorkoutFeedCardAuthor;
   onSelectSession: (sessionId: string) => void;
   onSelectAuthor?: (authorId: string) => void;
+  social?: CardioFeedCardSocial | null;
 };
+
+/** Stats de like/comentario inyectados desde el padre (batch). */
+export type CardioFeedCardSocial = Omit<
+  ActivitySocialStatsProps,
+  "kind" | "targetId" | "ownerId" | "className"
+>;
 
 function MetricCell({ label, value }: { label: string; value: string }) {
   return (
@@ -145,7 +156,11 @@ export function CardioFeedCardBody({
   author,
   onSelectSession,
   onSelectAuthor,
+  social,
 }: CardioFeedCardBodyProps) {
+  const showSocial = !!social && session.es_publica;
+  const ownerId = author?.id ?? session.usuario_id;
+
   return (
     <>
       {author ? (
@@ -194,6 +209,23 @@ export function CardioFeedCardBody({
           <CardioFeedCompactContent session={session} hideDate={!!author} />
         </Card>
       </button>
+
+      {showSocial ? (
+        <div className="px-6">
+          <ActivitySocialActions
+            kind="cardio"
+            targetId={session.id}
+            ownerId={ownerId}
+            likeCount={social.likeCount}
+            liked={social.liked}
+            commentCount={social.commentCount}
+            onToggleLike={social.onToggleLike}
+            isTogglingLike={social.isTogglingLike}
+            defaultCommentsOpen={social.defaultCommentsOpen}
+            className="pt-1"
+          />
+        </div>
+      ) : null}
     </>
   );
 }

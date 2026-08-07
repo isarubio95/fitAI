@@ -7,11 +7,14 @@ import { useFollows } from "@/hooks/useFollows";
 import { useCommunityFeed, type CommunityFeedItem } from "@/hooks/useCommunityFeed";
 import { useActivityLikes } from "@/hooks/useActivityLikes";
 import { useActivityCommentCounts } from "@/hooks/useActivityComments";
+import { useCardioSessionLikes } from "@/hooks/useCardioSessionLikes";
+import { useCardioSessionCommentCounts } from "@/hooks/useCardioSessionComments";
 import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import {
   CardioFeedCard,
   CardioFeedCardBody,
+  type CardioFeedCardSocial,
 } from "@/components/cardio/CardioFeedCard";
 import { CardioDetailsSheet } from "@/components/cardio/CardioDetailsSheet";
 import {
@@ -66,9 +69,21 @@ export default function Community() {
       normalizedFeed.filter((item) => item.type === "gym").map((item) => item.workout.id),
     [normalizedFeed],
   );
+  const feedCardioIds = useMemo(
+    () =>
+      normalizedFeed.filter((item) => item.type === "cardio").map((item) => item.session.id),
+    [normalizedFeed],
+  );
   const { likeCounts, likedIds, toggleLike, isToggling: isTogglingLike } =
     useActivityLikes(feedActividadIds);
   const { commentCounts } = useActivityCommentCounts(feedActividadIds);
+  const {
+    likeCounts: cardioLikeCounts,
+    likedIds: cardioLikedIds,
+    toggleLike: toggleCardioLike,
+    isToggling: isTogglingCardioLike,
+  } = useCardioSessionLikes(feedCardioIds);
+  const { commentCounts: cardioCommentCounts } = useCardioSessionCommentCounts(feedCardioIds);
 
   const socialFor = (actividadId: string): WorkoutFeedCardSocial => ({
     likeCount: likeCounts[actividadId] ?? 0,
@@ -76,6 +91,14 @@ export default function Community() {
     commentCount: commentCounts[actividadId] ?? 0,
     onToggleLike: () => toggleLike(actividadId),
     isTogglingLike: isTogglingLike.has(actividadId),
+  });
+
+  const cardioSocialFor = (sessionId: string): CardioFeedCardSocial => ({
+    likeCount: cardioLikeCounts[sessionId] ?? 0,
+    liked: cardioLikedIds.has(sessionId),
+    commentCount: cardioCommentCounts[sessionId] ?? 0,
+    onToggleLike: () => toggleCardioLike(sessionId),
+    isTogglingLike: isTogglingCardioLike.has(sessionId),
   });
 
   useEffect(() => {
@@ -195,6 +218,7 @@ export default function Community() {
         author={item.author}
         onSelectAuthor={openAuthorProfile}
         onSelectSession={setCardioDetailsId}
+        social={cardioSocialFor(item.session.id)}
       />
     );
 
@@ -215,6 +239,7 @@ export default function Community() {
         author={item.author}
         onSelectAuthor={openAuthorProfile}
         onSelectSession={setCardioDetailsId}
+        social={cardioSocialFor(item.session.id)}
       />
     );
 

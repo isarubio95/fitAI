@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useActivityComments } from "@/hooks/useActivityComments";
+import { useCardioSessionComments } from "@/hooks/useCardioSessionComments";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
 import {
   ACTIVITY_COMMENT_MAX_LENGTH,
@@ -29,9 +30,12 @@ function CommentAuthorAvatar({
   );
 }
 
+export type ActivitySocialKind = "gym" | "cardio";
+
 export type ActivitySocialStatsProps = {
-  actividadId: string;
-  workoutOwnerId: string;
+  kind: ActivitySocialKind;
+  targetId: string;
+  ownerId: string;
   likeCount: number;
   liked: boolean;
   commentCount: number;
@@ -43,8 +47,9 @@ export type ActivitySocialStatsProps = {
 };
 
 export function ActivitySocialActions({
-  actividadId,
-  workoutOwnerId,
+  kind,
+  targetId,
+  ownerId,
   likeCount,
   liked,
   commentCount,
@@ -58,10 +63,14 @@ export function ActivitySocialActions({
   const [draft, setDraft] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const { comments, isLoading, addComment, removeComment, isAdding } = useActivityComments(
-    actividadId,
-    commentsOpen,
+  const gymComments = useActivityComments(kind === "gym" ? targetId : null, commentsOpen && kind === "gym");
+  const cardioComments = useCardioSessionComments(
+    kind === "cardio" ? targetId : null,
+    commentsOpen && kind === "cardio",
   );
+
+  const { comments, isLoading, addComment, removeComment, isAdding } =
+    kind === "cardio" ? cardioComments : gymComments;
 
   const displayCommentCount = commentsOpen && comments.length > 0 ? comments.length : commentCount;
 
@@ -96,7 +105,7 @@ export function ActivitySocialActions({
   };
 
   const canDelete = (commentUserId: string) =>
-    !!user && (user.id === commentUserId || user.id === workoutOwnerId);
+    !!user && (user.id === commentUserId || user.id === ownerId);
 
   return (
     <div
