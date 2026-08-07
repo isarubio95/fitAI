@@ -276,22 +276,6 @@ export function TrainingLoadWidget() {
             </PopoverContent>
           </Popover>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {RANGE_OPTIONS.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              className={cn(
-                filterPillBase,
-                "h-7 px-3 py-0 text-xs",
-                range === option.key ? filterPillActive : filterPillInactive,
-              )}
-              onClick={() => setRange(option.key)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
         <div className="space-y-3 rounded-xl bg-muted/40 p-3">
           {showDynamicSkeleton ? (
             <div className="space-y-3">
@@ -374,6 +358,22 @@ export function TrainingLoadWidget() {
       </CardHeader>
 
       <CardContent className="space-y-4 px-6 pt-0">
+        <div className="flex flex-wrap justify-around">
+          {RANGE_OPTIONS.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              className={cn(
+                filterPillBase,
+                "h-7 px-3 py-0 text-xs",
+                range === option.key ? filterPillActive : filterPillInactive,
+              )}
+              onClick={() => setRange(option.key)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
         {showDynamicSkeleton ? (
           <Skeleton className="h-[180px] w-full" />
         ) : (
