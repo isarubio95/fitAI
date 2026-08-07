@@ -25,10 +25,9 @@ import {
   formatSpeedKmh,
 } from "@/lib/cardioFormat";
 import { resolveCardioSessionIcon } from "@/lib/cardioIcons";
-import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
+import { formatActivityAbsoluteDate } from "@/lib/formatActivityRelativeDate";
+import { CardioStartMetaRow } from "@/components/cardio/CardioStartMetaRow";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
 const CardioRouteMap = lazy(() =>
   import("@/components/cardio/CardioRouteMap").then((m) => ({ default: m.CardioRouteMap })),
@@ -65,20 +64,15 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
   const running = session ? firstNested(session.cardio_sesion_running) : null;
   const cycling = session ? firstNested(session.cardio_sesion_cycling) : null;
 
-  const absoluteDate =
-    session?.fecha_inicio != null
-      ? format(new Date(session.fecha_inicio), "d MMM yyyy · HH:mm", { locale: es })
-      : null;
-
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         className={cn(
-          "flex max-h-[92dvh] flex-col gap-0 overflow-hidden bg-background p-0",
+          "flex max-h-[92dvh] flex-col gap-0 overflow-hidden bg-card p-0",
           drawerSafeAreaBottom,
         )}
       >
-        <DrawerHeader className="shrink-0 border-b border-border/40 px-6 pb-3 pt-4 text-left">
+        <DrawerHeader className="shrink-0 border-b border-border bg-card px-6 pb-3 pt-4 text-left">
           {isLoading || !session || !metrics || !Icon ? (
             <>
               <DrawerTitle>Cardio</DrawerTitle>
@@ -87,33 +81,24 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
             </>
           ) : (
             <>
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted/60">
-                  <Icon className="h-5 w-5" aria-hidden />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <DrawerTitle className="text-lg leading-tight">{session.titulo}</DrawerTitle>
-                  <DrawerDescription className="mt-1">
-                    {metrics.disciplinaNombre ?? "Cardio"}
-                    {session.fecha_inicio ? (
-                      <>
-                        {" · "}
-                        <time dateTime={session.fecha_inicio}>
-                          {formatActivityRelativeDate(session.fecha_inicio)}
-                        </time>
-                      </>
-                    ) : null}
+              <div className="min-w-0 space-y-1">
+                <DrawerTitle className="text-lg leading-tight">{session.titulo}</DrawerTitle>
+                {session.fecha_inicio ? (
+                  <DrawerDescription className="mt-0">
+                    <time dateTime={session.fecha_inicio}>
+                      {formatActivityAbsoluteDate(session.fecha_inicio)}
+                    </time>
                   </DrawerDescription>
-                  {absoluteDate ? (
-                    <p className="mt-0.5 text-xs text-muted-foreground">{absoluteDate}</p>
-                  ) : null}
-                </div>
+                ) : (
+                  <DrawerDescription className="sr-only">Detalle de cardio</DrawerDescription>
+                )}
+                <CardioStartMetaRow session={session} />
               </div>
             </>
           )}
         </DrawerHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-card py-4">
           {isLoading || !session || !metrics ? (
             <div className="space-y-3 px-6">
               <Skeleton className="h-48 w-full rounded-xl" />
@@ -121,26 +106,6 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
             </div>
           ) : (
             <div className="space-y-4">
-              {hasRoute ? (
-                <div className="overflow-hidden">
-                  <Suspense fallback={<div className="h-64 w-full animate-pulse bg-muted/40" />}>
-                    <CardioRouteMap points={mapPoints} interactive className="h-64 w-full" />
-                  </Suspense>
-                </div>
-              ) : (
-                <div className="mx-6 flex items-center gap-4 rounded-2xl bg-muted/30 px-4 py-6">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-background/80 shadow-sm">
-                    {Icon ? <Icon className="h-8 w-8" aria-hidden /> : null}
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground">Sin recorrido GPS</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Métricas de la sesión (estilo indoor / sin mapa).
-                    </p>
-                  </div>
-                </div>
-              )}
-
               <div className="grid grid-cols-2 gap-2 px-6 sm:grid-cols-3">
                 <StatBlock label="Tiempo" value={formatCardioDuration(metrics.durationSec)} />
                 <StatBlock
@@ -172,7 +137,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
               </div>
 
               {(metrics.fcMedia != null || metrics.fcMax != null) && (
-                <p className="flex items-center gap-2 px-6 text-sm tabular-nums text-muted-foreground">
+                <p className="flex items-center justify-center gap-2 px-6 text-sm tabular-nums text-muted-foreground">
                   <Heart className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                   {metrics.fcMedia != null ? (
                     <span>
@@ -185,6 +150,26 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
                     </span>
                   ) : null}
                 </p>
+              )}
+
+              {hasRoute ? (
+                <div className="overflow-hidden">
+                  <Suspense fallback={<div className="h-64 w-full animate-pulse bg-muted/40" />}>
+                    <CardioRouteMap points={mapPoints} interactive className="h-64 w-full" />
+                  </Suspense>
+                </div>
+              ) : (
+                <div className="mx-6 flex items-center gap-4 rounded-2xl bg-muted/30 px-4 py-6">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-background/80 shadow-sm">
+                    {Icon ? <Icon className="h-8 w-8" aria-hidden /> : null}
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Sin recorrido GPS</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Métricas de la sesión (estilo indoor / sin mapa).
+                    </p>
+                  </div>
+                </div>
               )}
 
               {running ? (
@@ -253,7 +238,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
               ) : null}
 
               {session.comentarios?.trim() ? (
-                <div className="mx-6 rounded-xl bg-muted/30 p-3">
+                <div className="mx-6 rounded-xl bg-muted/30 p-3 text-center">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Notas
                   </p>

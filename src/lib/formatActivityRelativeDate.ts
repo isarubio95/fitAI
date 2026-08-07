@@ -1,4 +1,11 @@
-import { differenceInCalendarDays, differenceInCalendarMonths, differenceInCalendarYears, startOfDay } from "date-fns";
+import {
+  differenceInCalendarDays,
+  differenceInCalendarMonths,
+  differenceInCalendarYears,
+  format,
+  startOfDay,
+} from "date-fns";
+import { es } from "date-fns/locale";
 
 function toValidDate(value: string | Date): Date | null {
   const date = value instanceof Date ? value : new Date(value);
@@ -36,6 +43,13 @@ export function formatActivityRelativeDate(
 
   const years = differenceInCalendarYears(today, target);
   return years === 1 ? "Hace un año" : `Hace ${years} años`;
+}
+
+/** P. ej. `lunes 12 de julio, 20:50` */
+export function formatActivityAbsoluteDate(dateInput: string | Date): string {
+  const date = toValidDate(dateInput);
+  if (!date) return "";
+  return format(date, "EEEE d 'de' MMMM, HH:mm", { locale: es });
 }
 
 function weeksLabel(days: number): string {

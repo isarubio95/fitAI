@@ -7,7 +7,8 @@ import {
   WORKOUT_COMPACT_CARD_CLASS,
   type WorkoutFeedCardAuthor,
 } from "@/components/dashboard/WorkoutFeedCard";
-import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
+import { CardioStartMetaRow } from "@/components/cardio/CardioStartMetaRow";
+import { formatActivityAbsoluteDate } from "@/lib/formatActivityRelativeDate";
 import {
   computeCardioSessionMetrics,
   extractCardioTrackPointsForFeed,
@@ -71,46 +72,16 @@ export function CardioFeedCompactContent({
 
   return (
     <CardContent className="space-y-3 p-0">
-      <div className="flex items-start gap-3 px-6">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted/60 text-foreground">
-          <Icon className="h-5 w-5" aria-hidden />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-semibold leading-tight">{session.titulo}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {metrics.disciplinaNombre ?? "Cardio"}
-            {!hideDate && session.fecha_inicio ? (
-              <>
-                {" · "}
-                <time dateTime={session.fecha_inicio}>
-                  {formatActivityRelativeDate(session.fecha_inicio)}
-                </time>
-              </>
-            ) : null}
-          </p>
-        </div>
+      <div className="min-w-0 space-y-1 px-6">
+        <p className="truncate text-base font-semibold leading-tight">{session.titulo}</p>
+        {!hideDate && session.fecha_inicio ? (
+          <time dateTime={session.fecha_inicio} className="block text-xs text-muted-foreground">
+            {formatActivityAbsoluteDate(session.fecha_inicio)}
+          </time>
+        ) : null}
+        {/* Si no hay autor, el momento va aquí y debajo icono + ubicación. */}
+        {!hideDate ? <CardioStartMetaRow session={session} /> : null}
       </div>
-
-      {hasRoute ? (
-        <div className="overflow-hidden">
-          <Suspense fallback={<div className="h-56 w-full animate-pulse bg-muted/40" />}>
-            <CardioRouteMap points={mapPoints} interactive={false} className="h-56 w-full" />
-          </Suspense>
-        </div>
-      ) : (
-        <div className="mx-6 flex items-center gap-4 rounded-xl bg-muted/30 px-4 py-5">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-background/80 text-foreground shadow-sm">
-            <Icon className="h-7 w-7" aria-hidden />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-muted-foreground">Sin recorrido GPS</p>
-            <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
-              {formatCardioDuration(metrics.durationSec)}
-              {metrics.distanceM > 0 ? ` · ${formatCardioDistanceM(metrics.distanceM)}` : null}
-            </p>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-3 gap-3 px-6">
         <MetricCell label="Tiempo" value={formatCardioDuration(metrics.durationSec)} />
@@ -131,7 +102,7 @@ export function CardioFeedCompactContent({
       </div>
 
       {metrics.fcMedia != null || metrics.fcMax != null ? (
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 px-6 text-xs tabular-nums text-muted-foreground">
+        <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-6 text-xs tabular-nums text-muted-foreground">
           <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400">
             <Heart className="h-3 w-3" />
             {metrics.fcMedia != null ? (
@@ -147,6 +118,24 @@ export function CardioFeedCompactContent({
           ) : null}
         </p>
       ) : null}
+
+      {hasRoute ? (
+        <div className="overflow-hidden">
+          <Suspense fallback={<div className="h-56 w-full animate-pulse bg-muted/40" />}>
+            <CardioRouteMap points={mapPoints} interactive={false} className="h-56 w-full" />
+          </Suspense>
+        </div>
+      ) : (
+        <div className="mx-6 flex items-center gap-4 rounded-xl bg-muted/30 px-4 py-5">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-background/80 text-foreground shadow-sm">
+            <Icon className="h-7 w-7" aria-hidden />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-muted-foreground">Sin recorrido GPS</p>
+            <p className="mt-1 text-sm text-muted-foreground">Sesión sin mapa de ruta.</p>
+          </div>
+        </div>
+      )}
     </CardContent>
   );
 }
@@ -160,26 +149,31 @@ export function CardioFeedCardBody({
   return (
     <>
       {author ? (
-        <button
-          type="button"
-          onClick={() => onSelectAuthor?.(author.id)}
-          className="mb-4 flex w-full min-w-0 items-center gap-3 rounded-lg px-6 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label={`Ver perfil de ${author.username ?? "usuario"}`}
-        >
-          <CommunityAvatar
-            avatarUrl={author.avatar_url}
-            username={author.username}
-            className="h-9 w-9 shrink-0"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{author.username}</p>
-            {session.fecha_inicio ? (
-              <time dateTime={session.fecha_inicio} className="block text-xs text-muted-foreground">
-                {formatActivityRelativeDate(session.fecha_inicio)}
-              </time>
-            ) : null}
+        <div className="mb-4 space-y-0.5 px-6">
+          <button
+            type="button"
+            onClick={() => onSelectAuthor?.(author.id)}
+            className="flex w-full min-w-0 items-center gap-3 rounded-lg text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`Ver perfil de ${author.username ?? "usuario"}`}
+          >
+            <CommunityAvatar
+              avatarUrl={author.avatar_url}
+              username={author.username}
+              className="h-9 w-9 shrink-0"
+            />
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <p className="truncate text-sm font-semibold">{author.username}</p>
+              {session.fecha_inicio ? (
+                <time dateTime={session.fecha_inicio} className="block text-xs text-muted-foreground">
+                  {formatActivityAbsoluteDate(session.fecha_inicio)}
+                </time>
+              ) : null}
+            </div>
+          </button>
+          <div className="pl-12">
+            <CardioStartMetaRow session={session} />
           </div>
-        </button>
+        </div>
       ) : null}
 
       <button

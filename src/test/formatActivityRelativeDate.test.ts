@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
+import {
+  formatActivityAbsoluteDate,
+  formatActivityRelativeDate,
+} from "@/lib/formatActivityRelativeDate";
 
 describe("formatActivityRelativeDate", () => {
   const now = new Date(2026, 5, 27, 12, 0, 0);
@@ -28,5 +31,17 @@ describe("formatActivityRelativeDate", () => {
 
   it("acepta fechas inválidas", () => {
     expect(formatActivityRelativeDate("invalid")).toBe("");
+  });
+});
+
+describe("formatActivityAbsoluteDate", () => {
+  it("formatea día, mes y hora en español", () => {
+    // lunes 13 de julio de 2026, 20:50 (hora local)
+    const date = new Date(2026, 6, 13, 20, 50, 0);
+    expect(formatActivityAbsoluteDate(date)).toBe("lunes 13 de julio, 20:50");
+  });
+
+  it("acepta fechas inválidas", () => {
+    expect(formatActivityAbsoluteDate("invalid")).toBe("");
   });
 });
