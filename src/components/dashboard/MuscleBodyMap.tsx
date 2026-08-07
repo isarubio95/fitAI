@@ -8,17 +8,9 @@ import {
   FRONT_ZONES,
   type BodyMapZone,
 } from "./bodyMapZones";
-import { LOAD_COLORS, type MuscleLoadLevel } from "./bodyMapPaths";
+import { FATIGUE_COLORS, LOAD_COLORS, type MuscleLoadLevel } from "./bodyMapPaths";
 
 export type { MuscleLoadLevel };
-
-const FILL_COLOR: Record<MuscleLoadLevel, string> = {
-  // Sin drop-shadow hace falta más luz: 0.16 quedaba demasiado oscuro.
-  none: "hsl(var(--muted-foreground) / 0.30)",
-  light: "hsl(var(--primary) / 0.3)",
-  moderate: "hsl(var(--primary) / 0.55)",
-  high: "hsl(var(--primary) / 0.9)",
-};
 
 /** Mismo tono que `Skeleton` (`bg-muted`) */
 const SKELETON_FILL = "hsl(var(--muted))";
@@ -27,6 +19,8 @@ const BODY_MAP_SVG_CLASS = "max-w-[126px] sm:max-w-[140px]";
 
 export interface MuscleBodyMapProps {
   getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
+  /** Paleta de relleno; por defecto volumen (primary). */
+  colors?: Record<MuscleLoadLevel, string>;
   isLoading?: boolean;
   onZoneClick?: (group: MainMuscleGroup) => void;
   onZoneHover?: (group: MainMuscleGroup, event: React.MouseEvent<SVGPathElement>) => void;
@@ -37,11 +31,12 @@ export interface MuscleBodyMapProps {
 function zoneFillColor(
   zone: BodyMapZone,
   getLevel: (group: MainMuscleGroup) => MuscleLoadLevel,
+  colors: Record<MuscleLoadLevel, string>,
   isLoading: boolean,
 ): string {
   if (isLoading && zone.group) return SKELETON_FILL;
-  if (!zone.group) return FILL_COLOR.none;
-  return FILL_COLOR[getLevel(zone.group)];
+  if (!zone.group) return colors.none;
+  return colors[getLevel(zone.group)];
 }
 
 interface BodyViewProps {
@@ -51,6 +46,7 @@ interface BodyViewProps {
   ariaLabel: string;
   svgSizeClass: string;
   getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
+  colors: Record<MuscleLoadLevel, string>;
   isLoading: boolean;
   onZoneClick?: (group: MainMuscleGroup) => void;
   onZoneHover?: (group: MainMuscleGroup, event: MouseEvent<SVGPathElement>) => void;
@@ -64,6 +60,7 @@ const BodyView = memo(function BodyView({
   ariaLabel,
   svgSizeClass,
   getLevel,
+  colors,
   isLoading,
   onZoneClick,
   onZoneHover,
@@ -99,7 +96,7 @@ const BodyView = memo(function BodyView({
                   !isLoading && "transition-colors duration-300",
                   isMuscle && interactive && "cursor-pointer hover:brightness-[0.97] dark:hover:brightness-110",
                 )}
-                style={{ fill: zoneFillColor(zone, getLevel, isLoading) }}
+                style={{ fill: zoneFillColor(zone, getLevel, colors, isLoading) }}
                 onClick={isMuscle && interactive && onZoneClick ? () => onZoneClick(zone.group!) : undefined}
                 onMouseMove={
                   isMuscle && interactive && onZoneHover ? (e) => onZoneHover(zone.group!, e) : undefined
@@ -116,6 +113,7 @@ const BodyView = memo(function BodyView({
 
 export function MuscleBodyMap({
   getLevel,
+  colors = LOAD_COLORS,
   isLoading = false,
   onZoneClick,
   onZoneHover,
@@ -139,6 +137,7 @@ export function MuscleBodyMap({
           ariaLabel="Vista frontal del cuerpo"
           svgSizeClass={BODY_MAP_SVG_CLASS}
           getLevel={getLevel}
+          colors={colors}
           isLoading={isLoading}
           onZoneClick={onZoneClick}
           onZoneHover={onZoneHover}
@@ -153,6 +152,7 @@ export function MuscleBodyMap({
           ariaLabel="Vista trasera del cuerpo"
           svgSizeClass={BODY_MAP_SVG_CLASS}
           getLevel={getLevel}
+          colors={colors}
           isLoading={isLoading}
           onZoneClick={onZoneClick}
           onZoneHover={onZoneHover}
@@ -166,16 +166,27 @@ export function MuscleBodyMap({
 export function MuscleMapLegend({
   period,
   className,
+  variant = "volume",
 }: {
   period: "week" | "month";
   className?: string;
+  variant?: "volume" | "fatigue";
 }) {
-  const items: { level: MuscleLoadLevel; label: string }[] = [
-    { level: "none", label: "Sin carga" },
-    { level: "light", label: period === "week" ? "1–2 series" : "1–9 series" },
-    { level: "moderate", label: period === "week" ? "3–4 series" : "10–18 series" },
-    { level: "high", label: period === "week" ? "5+ series" : "19+ series" },
-  ];
+  const palette = variant === "fatigue" ? FATIGUE_COLORS : LOAD_COLORS;
+  const items: { level: MuscleLoadLevel; label: string }[] =
+    variant === "fatigue"
+      ? [
+          { level: "none", label: "Recuperado" },
+          { level: "light", label: "Ligera" },
+          { level: "moderate", label: "Moderada" },
+          { level: "high", label: "Alta" },
+        ]
+      : [
+          { level: "none", label: "Sin carga" },
+          { level: "light", label: period === "week" ? "1–2 series" : "1–9 series" },
+          { level: "moderate", label: period === "week" ? "3–4 series" : "10–18 series" },
+          { level: "high", label: period === "week" ? "5+ series" : "19+ series" },
+        ];
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -187,7 +198,7 @@ export function MuscleMapLegend({
           >
             <span
               className="inline-block h-3 w-3 shrink-0 rounded-sm border border-border/50"
-              style={{ backgroundColor: LOAD_COLORS[level] }}
+              style={{ backgroundColor: palette[level] }}
             />
             {label}
           </span>

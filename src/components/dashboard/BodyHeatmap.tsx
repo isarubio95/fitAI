@@ -5,7 +5,7 @@ import { useMuscleVolume, type TimePeriod } from "@/hooks/useMuscleVolume";
 import { useMuscleFatigue } from "@/hooks/useMuscleFatigue";
 import { MuscleDetailSheet } from "./MuscleDetailSheet";
 import { MuscleBodyMap, MuscleMapLegend } from "./MuscleBodyMap";
-import { getHeatLevel, heatLevelToLoad } from "./bodyMapPaths";
+import { FATIGUE_COLORS, getHeatLevel, heatLevelToLoad } from "./bodyMapPaths";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 
 const HEATMAP_PERIOD_STORAGE_KEY = "gym-log.dashboard.heatmap-period";
@@ -318,12 +318,13 @@ export function BodyHeatmap() {
               </p>
             )}
             {mode === "fatigue" && (
-              <p className="text-center text-xs text-muted-foreground">
+              <p className="text-center text-xs text-muted-foreground mb-3.5">
                 Fatiga local por grupo (decay ~4 días). Más intenso = más recuperación pendiente.
               </p>
             )}
             <MuscleBodyMap
               getLevel={getLevelForGroup}
+              colors={mode === "fatigue" ? FATIGUE_COLORS : undefined}
               isLoading={isMapLoading}
               onZoneClick={setSelectedGroup}
               onZoneHover={handleMouseMove}
@@ -353,7 +354,10 @@ export function BodyHeatmap() {
               </div>
             )}
 
-            {mode === "volume" && <MuscleMapLegend period={period} />}
+            <MuscleMapLegend
+              period={period}
+              variant={mode === "fatigue" ? "fatigue" : "volume"}
+            />
           </div>
         </CardContent>
       </Card>

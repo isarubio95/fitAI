@@ -2,11 +2,20 @@ export { type BodyMapZone } from "./bodyMapZones";
 
 export type MuscleLoadLevel = "none" | "light" | "moderate" | "high";
 
+/** Volumen: escala primary (azul/marca). */
 export const LOAD_COLORS: Record<MuscleLoadLevel, string> = {
   none: "hsl(var(--muted-foreground) / 0.3)",
   light: "hsl(var(--primary) / 0.3)",
   moderate: "hsl(var(--primary) / 0.55)",
   high: "hsl(var(--primary) / 0.9)",
+};
+
+/** Fatiga local: escala ámbar/naranja (misma familia que Fatiga sistémica). */
+export const FATIGUE_COLORS: Record<MuscleLoadLevel, string> = {
+  none: "hsl(var(--muted-foreground) / 0.3)",
+  light: "hsl(38 92% 50% / 0.35)",
+  moderate: "hsl(32 95% 48% / 0.62)",
+  high: "hsl(24 95% 44% / 0.95)",
 };
 
 /** Separación entre músculos (como en mapas de referencia) */
