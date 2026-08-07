@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "transition-style/transition.circles.min.css";
+@import "transition-style/transition.wipes.min.css";
 
 @config "../tailwind.config.ts";
 

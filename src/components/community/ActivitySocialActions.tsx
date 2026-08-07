@@ -11,6 +11,12 @@ import {
   ACTIVITY_COMMENT_MAX_LENGTH,
   normalizeActivityCommentText,
 } from "@/lib/activitySocial";
+import {
+  CALENDAR_DAY_EXPAND_DURATION_MS,
+  calendarDayExpandTransitionAttr,
+  calendarDayExpandTransitionStyle,
+  useCalendarDayExpandTransition,
+} from "@/lib/calendarDayExpandTransition";
 import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
 import { cn } from "@/lib/utils";
 
@@ -62,17 +68,22 @@ export function ActivitySocialActions({
   const [commentsOpen, setCommentsOpen] = useState(defaultCommentsOpen);
   const [draft, setDraft] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const commentsPanel = useCalendarDayExpandTransition(commentsOpen ? "comments" : null);
+  const commentsMounted = !!commentsPanel;
 
-  const gymComments = useActivityComments(kind === "gym" ? targetId : null, commentsOpen && kind === "gym");
+  const gymComments = useActivityComments(
+    kind === "gym" ? targetId : null,
+    commentsMounted && kind === "gym",
+  );
   const cardioComments = useCardioSessionComments(
     kind === "cardio" ? targetId : null,
-    commentsOpen && kind === "cardio",
+    commentsMounted && kind === "cardio",
   );
 
   const { comments, isLoading, addComment, removeComment, isAdding } =
     kind === "cardio" ? cardioComments : gymComments;
 
-  const displayCommentCount = commentsOpen && comments.length > 0 ? comments.length : commentCount;
+  const displayCommentCount = commentsMounted && comments.length > 0 ? comments.length : commentCount;
 
   const handleToggleLike = (e: MouseEvent) => {
     e.stopPropagation();
@@ -109,7 +120,7 @@ export function ActivitySocialActions({
 
   return (
     <div
-      className={cn("space-y-3", className)}
+      className={cn(className)}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
@@ -148,93 +159,114 @@ export function ActivitySocialActions({
         </Button>
       </div>
 
-      {commentsOpen ? (
-        <div className="space-y-3 border-t border-border/40 pt-3">
-          {isLoading ? (
-            <div className="flex justify-center py-2">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          ) : comments.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Sé el primero en comentar.</p>
-          ) : (
-            <ul className="max-h-56 space-y-3 overflow-y-auto pr-1">
-              {comments.map((c) => (
-                <li key={c.id} className="flex gap-2">
-                  <CommentAuthorAvatar
-                    avatarUrl={c.author.avatar_url}
-                    username={c.author.username}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="truncate text-xs font-semibold">
-                        {c.author.username ?? "Usuario"}
-                      </span>
-                      <time
-                        dateTime={c.created_at}
-                        className="shrink-0 text-[10px] text-muted-foreground"
-                      >
-                        {formatActivityRelativeDate(c.created_at)}
-                      </time>
-                      {canDelete(c.usuario_id) ? (
-                        <button
-                          type="button"
-                          className="ml-auto shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
-                          aria-label="Eliminar comentario"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void removeComment(c.id);
-                          }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      ) : null}
-                    </div>
-                    <p className="whitespace-pre-wrap break-words text-sm text-foreground/90">
-                      {c.texto}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] ease-[cubic-bezier(0.32,0.72,0,1)]",
+          commentsPanel && commentsPanel.phase !== "out"
+            ? "grid-rows-[1fr]"
+            : "grid-rows-[0fr]",
+        )}
+        style={{ transitionDuration: `${CALENDAR_DAY_EXPAND_DURATION_MS}ms` }}
+      >
+        <div className="min-h-0 overflow-hidden">
+          {commentsPanel ? (
+            <div
+              className="space-y-3 border-t border-border/40 pt-3"
+              data-calendar-day-expand={commentsPanel.phase}
+              {...(commentsPanel.phase !== "settled"
+                ? {
+                    "transition-style": calendarDayExpandTransitionAttr(commentsPanel.phase),
+                  }
+                : {})}
+              style={calendarDayExpandTransitionStyle(commentsPanel.phase)}
+            >
+              {isLoading ? (
+                <div className="flex justify-center py-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : comments.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Sé el primero en comentar.</p>
+              ) : (
+                <ul className="max-h-56 space-y-3 overflow-y-auto pr-1">
+                  {comments.map((c) => (
+                    <li key={c.id} className="flex gap-2">
+                      <CommentAuthorAvatar
+                        avatarUrl={c.author.avatar_url}
+                        username={c.author.username}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="truncate text-xs font-semibold">
+                            {c.author.username ?? "Usuario"}
+                          </span>
+                          <time
+                            dateTime={c.created_at}
+                            className="shrink-0 text-[10px] text-muted-foreground"
+                          >
+                            {formatActivityRelativeDate(c.created_at)}
+                          </time>
+                          {canDelete(c.usuario_id) ? (
+                            <button
+                              type="button"
+                              className="ml-auto shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+                              aria-label="Eliminar comentario"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void removeComment(c.id);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          ) : null}
+                        </div>
+                        <p className="whitespace-pre-wrap break-words text-sm text-foreground/90">
+                          {c.texto}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
-          {user ? (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-              <Textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="Escribe un comentario…"
-                rows={2}
-                maxLength={ACTIVITY_COMMENT_MAX_LENGTH}
-                className="min-h-[4.5rem] resize-none text-sm"
-                onClick={(e) => e.stopPropagation()}
-              />
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] tabular-nums text-muted-foreground">
-                  {draft.trim().length}/{ACTIVITY_COMMENT_MAX_LENGTH}
-                </span>
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5"
-                  disabled={isAdding || !draft.trim()}
-                >
-                  {isAdding ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Send className="h-3.5 w-3.5" />
-                  )}
-                  Publicar
-                </Button>
-              </div>
-              {submitError ? (
-                <p className="text-xs text-destructive">{submitError}</p>
+              {user ? (
+                <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+                  <Textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    placeholder="Escribe un comentario…"
+                    rows={2}
+                    maxLength={ACTIVITY_COMMENT_MAX_LENGTH}
+                    className="min-h-[4.5rem] resize-none text-sm"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] tabular-nums text-muted-foreground">
+                      {draft.trim().length}/{ACTIVITY_COMMENT_MAX_LENGTH}
+                    </span>
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1.5"
+                      disabled={isAdding || !draft.trim()}
+                    >
+                      {isAdding ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Send className="h-3.5 w-3.5" />
+                      )}
+                      Publicar
+                    </Button>
+                  </div>
+                  {submitError ? (
+                    <p className="text-xs text-destructive">{submitError}</p>
+                  ) : null}
+                </form>
               ) : null}
-            </form>
+            </div>
           ) : null}
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }

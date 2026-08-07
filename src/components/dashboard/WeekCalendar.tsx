@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   startOfWeek,
   addDays,
@@ -20,6 +19,12 @@ import {
   getCalendarDayCircleClasses,
   resolveCalendarDayDisplay,
 } from "@/lib/calendarDayDisplay";
+import {
+  CALENDAR_DAY_EXPAND_DURATION_MS,
+  calendarDayExpandTransitionAttr,
+  calendarDayExpandTransitionStyle,
+  useCalendarDayExpandTransition,
+} from "@/lib/calendarDayExpandTransition";
 import { pendingPlannedForDay } from "@/lib/plannedRoutineVisibility";
 import { resolveCardioSessionIcon } from "@/lib/cardioIcons";
 import { cn } from "@/lib/utils";
@@ -157,6 +162,7 @@ export function WeekCalendar({
   const [editDate, setEditDate] = useState("");
   const [editRutinaId, setEditRutinaId] = useState("");
   const [expandedDayKey, setExpandedDayKey] = useState<string | null>(null);
+  const expandPanel = useCalendarDayExpandTransition(expandedDayKey);
 
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -219,12 +225,13 @@ export function WeekCalendar({
   const goBack = () => onDateSelect(subWeeks(selectedDate ?? weekStart, 1));
   const goForward = () => onDateSelect(addWeeks(selectedDate ?? weekStart, 1));
 
-  const expandedDate = expandedDayKey ? new Date(`${expandedDayKey}T00:00:00`) : null;
-  const expandedWorkouts = expandedDayKey ? workoutsByDay.get(expandedDayKey) ?? [] : [];
-  const expandedPlanned = expandedDayKey
-    ? pendingPlannedForDay(plannedByDay.get(expandedDayKey) ?? [], expandedWorkouts)
+  const panelDayKey = expandPanel?.dayKey ?? null;
+  const expandedDate = panelDayKey ? new Date(`${panelDayKey}T00:00:00`) : null;
+  const expandedWorkouts = panelDayKey ? workoutsByDay.get(panelDayKey) ?? [] : [];
+  const expandedPlanned = panelDayKey
+    ? pendingPlannedForDay(plannedByDay.get(panelDayKey) ?? [], expandedWorkouts)
     : [];
-  const expandedCardio = expandedDayKey ? cardioByDay.get(expandedDayKey) ?? [] : [];
+  const expandedCardio = panelDayKey ? cardioByDay.get(panelDayKey) ?? [] : [];
 
   return (
     <div className="w-full">
@@ -337,16 +344,28 @@ export function WeekCalendar({
           })}
         </div>
 
-        <AnimatePresence initial={false}>
-          {expandedDayKey && expandedDate && (
-            <motion.div
-              key={expandedDayKey}
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-              className="w-full bg-background"
-            >
+        <div
+          className={cn(
+            "grid w-full transition-[grid-template-rows] ease-[cubic-bezier(0.32,0.72,0,1)]",
+            expandPanel && expandPanel.phase !== "out"
+              ? "grid-rows-[1fr]"
+              : "grid-rows-[0fr]",
+          )}
+          style={{ transitionDuration: `${CALENDAR_DAY_EXPAND_DURATION_MS}ms` }}
+        >
+          <div className="min-h-0 overflow-hidden">
+            {expandPanel && expandedDate && (
+              <div
+                key={expandPanel.dayKey}
+                className="w-full bg-background"
+                data-calendar-day-expand={expandPanel.phase}
+                {...(expandPanel.phase !== "settled"
+                  ? {
+                      "transition-style": calendarDayExpandTransitionAttr(expandPanel.phase),
+                    }
+                  : {})}
+                style={calendarDayExpandTransitionStyle(expandPanel.phase)}
+              >
               <div className="px-6 py-3">
                 <p className="text-xs font-medium text-muted-foreground mb-2">
                   {format(expandedDate, "d MMM yyyy", { locale: es })}
@@ -549,9 +568,10 @@ export function WeekCalendar({
                   </Button>
                 )}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Confirmar eliminar entrenamiento */}

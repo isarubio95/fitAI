@@ -14,10 +14,15 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Pencil, Trash2, Eye } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  CALENDAR_DAY_EXPAND_DURATION_MS,
+  calendarDayExpandTransitionAttr,
+  calendarDayExpandTransitionStyle,
+  useCalendarDayExpandTransition,
+} from "@/lib/calendarDayExpandTransition";
 import {
   Select,
   SelectContent,
@@ -174,6 +179,17 @@ export function MonthlyPlanner({
   const [editRutinaId, setEditRutinaId] = useState("");
   const [expandedWeekIndex, setExpandedWeekIndex] = useState<number | null>(null);
   const [expandedDayKey, setExpandedDayKey] = useState<string | null>(null);
+  const expandTargetKey =
+    expandedWeekIndex != null && expandedDayKey
+      ? `${expandedWeekIndex}:${expandedDayKey}`
+      : null;
+  const expandPanel = useCalendarDayExpandTransition(expandTargetKey);
+  const panelWeekIndex = expandPanel
+    ? Number(expandPanel.dayKey.slice(0, expandPanel.dayKey.indexOf(":")))
+    : null;
+  const panelDayKey = expandPanel
+    ? expandPanel.dayKey.slice(expandPanel.dayKey.indexOf(":") + 1)
+    : null;
 
   const weeks = useMemo(() => {
     const res: Date[][] = [];
@@ -333,27 +349,41 @@ export function MonthlyPlanner({
               })}
             </div>
 
-            <AnimatePresence initial={false}>
-              {expandedWeekIndex === weekIndex && expandedDayKey && (
-                (() => {
-                  const expandedDate = new Date(`${expandedDayKey}T00:00:00`);
-                  const expandedWorkouts = workoutsByDay.get(expandedDayKey) || [];
+            <div
+              className={cn(
+                "grid w-full transition-[grid-template-rows] ease-[cubic-bezier(0.32,0.72,0,1)]",
+                expandPanel &&
+                  panelWeekIndex === weekIndex &&
+                  expandPanel.phase !== "out"
+                  ? "grid-rows-[1fr]"
+                  : "grid-rows-[0fr]",
+              )}
+              style={{ transitionDuration: `${CALENDAR_DAY_EXPAND_DURATION_MS}ms` }}
+            >
+              <div className="min-h-0 overflow-hidden">
+                {expandPanel && panelWeekIndex === weekIndex && panelDayKey && (
+                  (() => {
+                  const expandedDate = new Date(`${panelDayKey}T00:00:00`);
+                  const expandedWorkouts = workoutsByDay.get(panelDayKey) || [];
                   const expandedPlanned = pendingPlannedForDay(
-                    plannedByDay.get(expandedDayKey) || [],
+                    plannedByDay.get(panelDayKey) || [],
                     expandedWorkouts,
                   );
-                  const expandedCardio = cardioByDay.get(expandedDayKey) || [];
+                  const expandedCardio = cardioByDay.get(panelDayKey) || [];
                   const dayStart = startOfDay(expandedDate);
                   const now = startOfDay(new Date());
 
                   return (
-                    <motion.div
-                      key={expandedDayKey}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+                    <div
+                      key={expandPanel.dayKey}
                       className="w-full bg-background"
+                      data-calendar-day-expand={expandPanel.phase}
+                      {...(expandPanel.phase !== "settled"
+                        ? {
+                            "transition-style": calendarDayExpandTransitionAttr(expandPanel.phase),
+                          }
+                        : {})}
+                      style={calendarDayExpandTransitionStyle(expandPanel.phase)}
                     >
                       <div className="px-6 py-3">
                         <p className="text-xs font-medium text-muted-foreground mb-2">
@@ -558,11 +588,12 @@ export function MonthlyPlanner({
                           Nuevo entrenamiento
                         </Button>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })()
-              )}
-            </AnimatePresence>
+                )}
+              </div>
+            </div>
           </div>
         ))}
       </div>

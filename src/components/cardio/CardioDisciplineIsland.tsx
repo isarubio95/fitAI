@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { useCardioDisciplinas } from "@/hooks/useCardioSessions";
 import { iconForCardioDisciplineCodigo } from "@/lib/cardioIcons";
@@ -32,6 +32,7 @@ export function CardioDisciplineIsland({
   const { data: disciplinas, isLoading } = useCardioDisciplinas();
   const list = (disciplinas ?? []) as Discipline[];
   const [expanded, setExpanded] = useState(false);
+  const islandRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (selectedId || list.length === 0) return;
@@ -40,6 +41,17 @@ export function CardioDisciplineIsland({
     const id = preferred ?? pickFallbackId(list);
     if (id) onSelect(id);
   }, [list, selectedId, preferredId, onSelect]);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const handlePointerDownOutside = (event: PointerEvent) => {
+      const root = islandRef.current;
+      if (!root || root.contains(event.target as Node)) return;
+      setExpanded(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDownOutside);
+    return () => document.removeEventListener("pointerdown", handlePointerDownOutside);
+  }, [expanded]);
 
   const selected = useMemo(
     () => list.find((d) => d.id === selectedId) ?? null,
@@ -50,6 +62,7 @@ export function CardioDisciplineIsland({
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
       <div
+        ref={islandRef}
         className={cn(
           "pointer-events-auto w-full max-w-[13.5rem] overflow-hidden rounded-[2rem]",
           "border border-border/80 bg-card/95 shadow-lg backdrop-blur-xl",
@@ -60,9 +73,11 @@ export function CardioDisciplineIsland({
           <button
             type="button"
             className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1.5 py-1.5 text-left transition-colors hover:bg-muted/50"
-            onClick={() => setExpanded((v) => !v)}
+            onClick={() => {
+              if (!expanded) setExpanded(true);
+            }}
             aria-expanded={expanded}
-            aria-label={expanded ? "Contraer tipo de cardio" : "Elegir tipo de cardio"}
+            aria-label={expanded ? "Tipo de cardio abierto" : "Elegir tipo de cardio"}
           >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               {isLoading ? (
