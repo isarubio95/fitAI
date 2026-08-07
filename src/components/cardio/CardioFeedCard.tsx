@@ -149,29 +149,33 @@ export function CardioFeedCardBody({
   return (
     <>
       {author ? (
-        <div className="mb-4 space-y-0.5 px-6">
+        <div className="mb-4 flex items-start gap-3 px-6">
           <button
             type="button"
             onClick={() => onSelectAuthor?.(author.id)}
-            className="flex w-full min-w-0 items-center gap-3 rounded-lg text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+            className="shrink-0 rounded-full outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={`Ver perfil de ${author.username ?? "usuario"}`}
           >
             <CommunityAvatar
               avatarUrl={author.avatar_url}
               username={author.username}
-              className="h-9 w-9 shrink-0"
+              className="h-9 w-9"
             />
-            <div className="min-w-0 flex-1 space-y-0.5">
-              <p className="truncate text-sm font-semibold">{author.username}</p>
-              {session.fecha_inicio ? (
-                <time dateTime={session.fecha_inicio} className="block text-xs text-muted-foreground">
-                  {formatActivityAbsoluteDate(session.fecha_inicio)}
-                </time>
-              ) : null}
-            </div>
           </button>
-          <div className="pl-12">
-            <CardioStartMetaRow session={session} />
+          <div className="min-w-0 flex-1 space-y-1">
+            <button
+              type="button"
+              onClick={() => onSelectAuthor?.(author.id)}
+              className="block w-full truncate text-left text-sm font-semibold leading-none outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {author.username}
+            </button>
+            {session.fecha_inicio ? (
+              <time dateTime={session.fecha_inicio} className="block text-xs leading-none text-muted-foreground">
+                {formatActivityAbsoluteDate(session.fecha_inicio)}
+              </time>
+            ) : null}
+            <CardioStartMetaRow session={session} className="leading-none" />
           </div>
         </div>
       ) : null}
