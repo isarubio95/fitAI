@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { checkAndAwardLogros } from "@/hooks/useLogros";
 import { notifyLogrosDesbloqueados } from "@/components/logros/logroToast";
 import type { CardioBlockInput, CardioSportDetailInput, CardioTrackInput } from "@/types/cardio";
+import type { CardioSesionWithDetails } from "@/lib/cardioSessionDisplay";
 import {
   MAX_TRACK_POINTS_DB,
   TRACK_POINTS_INSERT_CHUNK,
@@ -23,7 +24,7 @@ type CardioSessionInput = {
   bloques: CardioBlockInput[];
 };
 
-const CARDIO_SESSION_SELECT = `
+export const CARDIO_SESSION_SELECT = `
   *,
   cardio_disciplina(*),
   cardio_bloque(*),
@@ -92,7 +93,7 @@ export function useCardioSessionById(id: string | null) {
   return useQuery({
     queryKey: ["cardioSession", id],
     enabled: !!id,
-    queryFn: async () => {
+    queryFn: async (): Promise<CardioSesionWithDetails | null> => {
       if (!id) return null;
       const { data, error } = await supabase
         .from("cardio_sesion")
@@ -100,7 +101,39 @@ export function useCardioSessionById(id: string | null) {
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return (data as CardioSesionWithDetails | null) ?? null;
+    },
+  });
+}
+
+/**
+ * Historial de cardio de un usuario (perfil).
+ * Propio: todas las sesiones completadas. Ajeno: solo `es_publica`.
+ */
+export function useCardioHistory(profileUserId?: string, opts?: { onlyPublic?: boolean }) {
+  const { user } = useAuth();
+  const id = profileUserId ?? user?.id;
+  const onlyPublic = opts?.onlyPublic ?? (id != null && id !== user?.id);
+
+  return useQuery({
+    queryKey: ["cardioHistory", id, onlyPublic],
+    enabled: !!id,
+    queryFn: async (): Promise<CardioSesionWithDetails[]> => {
+      let q = supabase
+        .from("cardio_sesion")
+        .select(CARDIO_SESSION_SELECT)
+        .eq("usuario_id", id!)
+        .not("fecha_fin", "is", null)
+        .order("fecha_inicio", { ascending: false })
+        .order("orden", { referencedTable: "cardio_bloque", ascending: true });
+
+      if (onlyPublic) {
+        q = q.eq("es_publica", true);
+      }
+
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as CardioSesionWithDetails[];
     },
   });
 }
@@ -282,11 +315,13 @@ export function useUpsertCardioSession() {
     onSuccess: (_sessionId, { input }) => {
       qc.invalidateQueries({ queryKey: ["cardioSessions"] });
       qc.invalidateQueries({ queryKey: ["cardioSession"] });
+      qc.invalidateQueries({ queryKey: ["cardioHistory"] });
       qc.invalidateQueries({ queryKey: ["monthCardioSessions"] });
       qc.invalidateQueries({ queryKey: ["monthCardioSessionDates"] });
       qc.invalidateQueries({ queryKey: ["cardioDisciplinas"] });
       qc.invalidateQueries({ queryKey: ["activeCardioSession"] });
       qc.invalidateQueries({ queryKey: ["trainingLoad"] });
+      qc.invalidateQueries({ queryKey: ["communityFeed"] });
       if (input.fecha_fin) {
         qc.invalidateQueries({ queryKey: ["lastCardioDisciplineId"] });
       }
@@ -384,6 +419,8 @@ export function useDeleteCardioSession() {
       qc.invalidateQueries({ queryKey: ["monthCardioSessionDates"] });
       qc.invalidateQueries({ queryKey: ["activeCardioSession"] });
       qc.invalidateQueries({ queryKey: ["cardioSession"] });
+      qc.invalidateQueries({ queryKey: ["cardioHistory"] });
+      qc.invalidateQueries({ queryKey: ["communityFeed"] });
       qc.invalidateQueries({ queryKey: ["trainingLoad"] });
     },
   });

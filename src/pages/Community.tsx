@@ -4,11 +4,16 @@ import { Loader2, UserPlus, UserCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserSearch } from "@/hooks/useUserSearch";
 import { useFollows } from "@/hooks/useFollows";
-import { useCommunityFeed } from "@/hooks/useCommunityFeed";
+import { useCommunityFeed, type CommunityFeedItem } from "@/hooks/useCommunityFeed";
 import { useActivityLikes } from "@/hooks/useActivityLikes";
 import { useActivityCommentCounts } from "@/hooks/useActivityComments";
 import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
+import {
+  CardioFeedCard,
+  CardioFeedCardBody,
+} from "@/components/cardio/CardioFeedCard";
+import { CardioDetailsSheet } from "@/components/cardio/CardioDetailsSheet";
 import {
   CommunityAvatar,
   COMMUNITY_CARD_CLASS,
@@ -24,10 +29,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 
+function feedItemKey(item: CommunityFeedItem) {
+  return item.type === "gym" ? `gym-${item.workout.id}` : `cardio-${item.session.id}`;
+}
+
 export default function Community() {
   const { user } = useAuth();
   const [usernameQuery, setUsernameQuery] = useState("");
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
+  const [cardioDetailsId, setCardioDetailsId] = useState<string | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const { data: searchResults = [], isLoading: searching } = useUserSearch(usernameQuery);
@@ -46,11 +56,14 @@ export default function Community() {
 
   const normalizedFeed = useMemo(() => {
     const items = data?.pages.flatMap((page) => page.items) ?? [];
-    return items.slice().sort((a, b) => new Date(b.workout.fecha).getTime() - new Date(a.workout.fecha).getTime());
+    return items
+      .slice()
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
   }, [data]);
 
   const feedActividadIds = useMemo(
-    () => normalizedFeed.map((item) => item.workout.id),
+    () =>
+      normalizedFeed.filter((item) => item.type === "gym").map((item) => item.workout.id),
     [normalizedFeed],
   );
   const { likeCounts, likedIds, toggleLike, isToggling: isTogglingLike } =
@@ -167,26 +180,43 @@ export default function Community() {
       </div>
     );
 
-  const renderFeedItemBody = (item: (typeof normalizedFeed)[number]) => (
-    <WorkoutFeedCardBody
-      workout={item.workout}
-      author={item.author}
-      onSelectAuthor={openAuthorProfile}
-      onSelectWorkout={setWorkoutDetailsId}
-      social={socialFor(item.workout.id)}
-    />
-  );
+  const renderFeedItemBody = (item: CommunityFeedItem) =>
+    item.type === "gym" ? (
+      <WorkoutFeedCardBody
+        workout={item.workout}
+        author={item.author}
+        onSelectAuthor={openAuthorProfile}
+        onSelectWorkout={setWorkoutDetailsId}
+        social={socialFor(item.workout.id)}
+      />
+    ) : (
+      <CardioFeedCardBody
+        session={item.session}
+        author={item.author}
+        onSelectAuthor={openAuthorProfile}
+        onSelectSession={setCardioDetailsId}
+      />
+    );
 
-  const renderFeedCard = (item: (typeof normalizedFeed)[number]) => (
-    <WorkoutFeedCard
-      key={item.workout.id}
-      workout={item.workout}
-      author={item.author}
-      onSelectAuthor={openAuthorProfile}
-      onSelectWorkout={setWorkoutDetailsId}
-      social={socialFor(item.workout.id)}
-    />
-  );
+  const renderFeedCard = (item: CommunityFeedItem) =>
+    item.type === "gym" ? (
+      <WorkoutFeedCard
+        key={feedItemKey(item)}
+        workout={item.workout}
+        author={item.author}
+        onSelectAuthor={openAuthorProfile}
+        onSelectWorkout={setWorkoutDetailsId}
+        social={socialFor(item.workout.id)}
+      />
+    ) : (
+      <CardioFeedCard
+        key={feedItemKey(item)}
+        session={item.session}
+        author={item.author}
+        onSelectAuthor={openAuthorProfile}
+        onSelectSession={setCardioDetailsId}
+      />
+    );
 
   return (
     <>
@@ -226,7 +256,12 @@ export default function Community() {
               </div>
             )}
             {!showSearchPanel && !loadingFeed && normalizedFeed.length > 0 && (
-              <CardContent className="space-y-4 px-6 pb-4 pt-6">
+              <CardContent
+                className={cn(
+                  "space-y-4 pb-4 pt-6",
+                  normalizedFeed[0].type === "cardio" ? "px-0" : "px-6",
+                )}
+              >
                 {renderFeedItemBody(normalizedFeed[0])}
               </CardContent>
             )}
@@ -285,6 +320,14 @@ export default function Community() {
           if (!next) setWorkoutDetailsId(null);
         }}
         workoutId={workoutDetailsId}
+      />
+
+      <CardioDetailsSheet
+        open={!!cardioDetailsId}
+        onOpenChange={(next) => {
+          if (!next) setCardioDetailsId(null);
+        }}
+        sessionId={cardioDetailsId}
       />
     </>
   );

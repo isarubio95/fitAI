@@ -2,7 +2,14 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { hydrateActividadesWithDetails } from "./useWorkouts";
+import { CARDIO_SESSION_SELECT } from "./useCardioSessions";
+import {
+  mergeDatedFeedEntries,
+  nextFeedCursorFromItems,
+  type DatedFeedEntry,
+} from "@/lib/communityFeedMerge";
 import type { Actividad, ActividadWithDetails } from "@/types/workout";
+import type { CardioSesionWithDetails } from "@/lib/cardioSessionDisplay";
 
 export type CommunityAuthor = {
   id: string;
@@ -10,66 +17,149 @@ export type CommunityAuthor = {
   avatar_url: string | null;
 };
 
-export type CommunityFeedItem = {
+export type CommunityFeedGymItem = {
+  type: "gym";
   author: CommunityAuthor;
   workout: ActividadWithDetails;
+  fecha: string;
 };
+
+export type CommunityFeedCardioItem = {
+  type: "cardio";
+  author: CommunityAuthor;
+  session: CardioSesionWithDetails;
+  fecha: string;
+};
+
+export type CommunityFeedItem = CommunityFeedGymItem | CommunityFeedCardioItem;
 
 export const COMMUNITY_FEED_PAGE_SIZE = 10;
 
+function authorFromMap(
+  userId: string,
+  byId: Map<string, { id: string; username: string | null; avatar_url: string | null }>,
+): CommunityAuthor {
+  const row = byId.get(userId);
+  return {
+    id: userId,
+    username: row?.username ?? null,
+    avatar_url: row?.avatar_url ?? null,
+  };
+}
+
+async function fetchProfilesByIds(userIds: string[]) {
+  if (userIds.length === 0) return new Map<string, CommunityAuthor>();
+  const { data: perfiles, error } = await supabase
+    .from("perfil")
+    .select("id, username, avatar_url")
+    .in("id", userIds);
+  if (error) throw error;
+  return new Map(
+    (perfiles ?? []).map((p) => [
+      p.id,
+      {
+        id: p.id,
+        username: p.username ?? null,
+        avatar_url: p.avatar_url ?? null,
+      } satisfies CommunityAuthor,
+    ]),
+  );
+}
+
 async function fetchCommunityFeedPage(
   userId: string,
-  offset: number,
+  cursor: string | null,
   pageSize: number,
-): Promise<{ items: CommunityFeedItem[]; offset: number; hasMore: boolean }> {
-  const { data: actividades, error } = await supabase
+): Promise<{ items: CommunityFeedItem[]; cursor: string | null; hasMore: boolean }> {
+  let gymQuery = supabase
     .from("actividad")
     .select("*")
     .eq("es_publica", true)
     .not("fecha_fin", "is", null)
     .neq("usuario_id", userId)
     .order("fecha", { ascending: false })
-    .range(offset, offset + pageSize - 1);
+    .limit(pageSize);
 
-  if (error) throw error;
+  let cardioQuery = supabase
+    .from("cardio_sesion")
+    .select(CARDIO_SESSION_SELECT)
+    .eq("es_publica", true)
+    .not("fecha_fin", "is", null)
+    .neq("usuario_id", userId)
+    .order("fecha_inicio", { ascending: false })
+    .order("orden", { referencedTable: "cardio_bloque", ascending: true })
+    .limit(pageSize);
 
-  const acts = (actividades ?? []) as Actividad[];
-  if (acts.length === 0) {
-    return { items: [], offset, hasMore: false };
+  if (cursor) {
+    gymQuery = gymQuery.lt("fecha", cursor);
+    cardioQuery = cardioQuery.lt("fecha_inicio", cursor);
   }
 
-  const workouts = await hydrateActividadesWithDetails(acts);
+  const [gymRes, cardioRes] = await Promise.all([gymQuery, cardioQuery]);
+  if (gymRes.error) throw gymRes.error;
+  if (cardioRes.error) throw cardioRes.error;
 
-  const userIds = Array.from(new Set(acts.map((a) => a.usuario_id)));
-  const { data: perfiles, error: pErr } = await supabase
-    .from("perfil")
-    .select("id, username, avatar_url")
-    .in("id", userIds);
+  const acts = (gymRes.data ?? []) as Actividad[];
+  const cardioSessions = (cardioRes.data ?? []) as CardioSesionWithDetails[];
 
-  if (pErr) throw pErr;
+  const workouts = acts.length > 0 ? await hydrateActividadesWithDetails(acts) : [];
+  const workoutById = new Map(workouts.map((w) => [w.id, w]));
 
-  const byId = new Map((perfiles ?? []).map((p) => [p.id, p] as const));
+  const gymEntries: DatedFeedEntry<ActividadWithDetails>[] = acts.map((a) => ({
+    id: a.id,
+    fecha: a.fecha,
+    payload: workoutById.get(a.id)!,
+  })).filter((e) => e.payload);
 
-  const items = workouts.map((workout) => {
-    const authorRow = byId.get(workout.usuario_id) ?? {
-      id: workout.usuario_id,
-      username: null,
-      avatar_url: null,
-    };
+  const cardioEntries: DatedFeedEntry<CardioSesionWithDetails>[] = cardioSessions.map((s) => ({
+    id: s.id,
+    fecha: s.fecha_inicio,
+    payload: s,
+  }));
+
+  const { items: merged, hasMoreFromMerge } = mergeDatedFeedEntries(
+    gymEntries,
+    cardioEntries,
+    pageSize,
+  );
+
+  const userIds = Array.from(
+    new Set(
+      merged.map((m) =>
+        m.source === "a" ? m.entry.payload.usuario_id : m.entry.payload.usuario_id,
+      ),
+    ),
+  );
+  const byId = await fetchProfilesByIds(userIds);
+
+  const items: CommunityFeedItem[] = merged.map((m) => {
+    if (m.source === "a") {
+      const workout = m.entry.payload;
+      return {
+        type: "gym" as const,
+        workout,
+        author: authorFromMap(workout.usuario_id, byId),
+        fecha: workout.fecha,
+      };
+    }
+    const session = m.entry.payload;
     return {
-      workout,
-      author: {
-        id: authorRow.id,
-        username: authorRow.username ?? null,
-        avatar_url: authorRow.avatar_url ?? null,
-      },
+      type: "cardio" as const,
+      session,
+      author: authorFromMap(session.usuario_id, byId),
+      fecha: session.fecha_inicio,
     };
   });
 
+  const nextCursor = nextFeedCursorFromItems(items);
+  const hasMore =
+    items.length > 0 &&
+    (hasMoreFromMerge || acts.length === pageSize || cardioSessions.length === pageSize);
+
   return {
     items,
-    offset,
-    hasMore: acts.length === pageSize,
+    cursor: nextCursor,
+    hasMore,
   };
 }
 
@@ -79,12 +169,10 @@ export function useCommunityFeed(pageSize = COMMUNITY_FEED_PAGE_SIZE) {
     queryKey: ["communityFeed", pageSize],
     staleTime: 60 * 1000,
     enabled: !!user,
-    initialPageParam: 0,
+    initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
-      const offset = Number(pageParam ?? 0);
-      return fetchCommunityFeedPage(user!.id, offset, pageSize);
+      return fetchCommunityFeedPage(user!.id, pageParam, pageSize);
     },
-    getNextPageParam: (lastPage) =>
-      lastPage.hasMore ? lastPage.offset + pageSize : undefined,
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.cursor : undefined),
   });
 }

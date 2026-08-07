@@ -1,0 +1,269 @@
+import { Suspense, lazy, useMemo } from "react";
+import { Heart } from "lucide-react";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  drawerSafeAreaBottom,
+} from "@/components/ui/drawer";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCardioSessionById } from "@/hooks/useCardioSessions";
+import { firstNested } from "@/lib/firstNested";
+import {
+  computeCardioSessionMetrics,
+  extractCardioTrackPoints,
+  sessionHasRoute,
+} from "@/lib/cardioSessionDisplay";
+import {
+  formatCardioDistanceM,
+  formatCardioDuration,
+  formatCardioElevationM,
+  formatPaceSec500m,
+  formatPaceSecKm,
+  formatSpeedKmh,
+} from "@/lib/cardioFormat";
+import { resolveCardioSessionIcon } from "@/lib/cardioIcons";
+import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+
+const CardioRouteMap = lazy(() =>
+  import("@/components/cardio/CardioRouteMap").then((m) => ({ default: m.CardioRouteMap })),
+);
+
+type CardioDetailsSheetProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  sessionId: string | null;
+};
+
+function StatBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-muted/40 px-3 py-3">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-1 font-mono text-base font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDetailsSheetProps) {
+  const { data: session, isLoading } = useCardioSessionById(open ? sessionId : null);
+
+  const metrics = useMemo(
+    () => (session ? computeCardioSessionMetrics(session) : null),
+    [session],
+  );
+  const hasRoute = session ? sessionHasRoute(session) : false;
+  const mapPoints = useMemo(
+    () => (session && hasRoute ? extractCardioTrackPoints(session) : []),
+    [session, hasRoute],
+  );
+  const Icon = session ? resolveCardioSessionIcon(session) : null;
+  const running = session ? firstNested(session.cardio_sesion_running) : null;
+  const cycling = session ? firstNested(session.cardio_sesion_cycling) : null;
+
+  const absoluteDate =
+    session?.fecha_inicio != null
+      ? format(new Date(session.fecha_inicio), "d MMM yyyy · HH:mm", { locale: es })
+      : null;
+
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent
+        className={cn(
+          "flex max-h-[92dvh] flex-col gap-0 overflow-hidden bg-background p-0",
+          drawerSafeAreaBottom,
+        )}
+      >
+        <DrawerHeader className="shrink-0 border-b border-border/40 px-6 pb-3 pt-4 text-left">
+          {isLoading || !session || !metrics || !Icon ? (
+            <>
+              <DrawerTitle>Cardio</DrawerTitle>
+              <DrawerDescription className="sr-only">Cargando sesión</DrawerDescription>
+              <Skeleton className="mt-2 h-6 w-2/3" />
+            </>
+          ) : (
+            <>
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted/60">
+                  <Icon className="h-5 w-5" aria-hidden />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <DrawerTitle className="text-lg leading-tight">{session.titulo}</DrawerTitle>
+                  <DrawerDescription className="mt-1">
+                    {metrics.disciplinaNombre ?? "Cardio"}
+                    {session.fecha_inicio ? (
+                      <>
+                        {" · "}
+                        <time dateTime={session.fecha_inicio}>
+                          {formatActivityRelativeDate(session.fecha_inicio)}
+                        </time>
+                      </>
+                    ) : null}
+                  </DrawerDescription>
+                  {absoluteDate ? (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{absoluteDate}</p>
+                  ) : null}
+                </div>
+              </div>
+            </>
+          )}
+        </DrawerHeader>
+
+        <div className="min-h-0 flex-1 overflow-y-auto py-4">
+          {isLoading || !session || !metrics ? (
+            <div className="space-y-3 px-6">
+              <Skeleton className="h-48 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {hasRoute ? (
+                <div className="overflow-hidden">
+                  <Suspense fallback={<div className="h-64 w-full animate-pulse bg-muted/40" />}>
+                    <CardioRouteMap points={mapPoints} interactive className="h-64 w-full" />
+                  </Suspense>
+                </div>
+              ) : (
+                <div className="mx-6 flex items-center gap-4 rounded-2xl bg-muted/30 px-4 py-6">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-background/80 shadow-sm">
+                    {Icon ? <Icon className="h-8 w-8" aria-hidden /> : null}
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Sin recorrido GPS</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Métricas de la sesión (estilo indoor / sin mapa).
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2 px-6 sm:grid-cols-3">
+                <StatBlock label="Tiempo" value={formatCardioDuration(metrics.durationSec)} />
+                <StatBlock
+                  label="Distancia"
+                  value={metrics.distanceM > 0 ? formatCardioDistanceM(metrics.distanceM) : "—"}
+                />
+                <StatBlock
+                  label="Desnivel"
+                  value={metrics.elevationM > 0 ? `↑${formatCardioElevationM(metrics.elevationM)}` : "—"}
+                />
+                {metrics.paceKind === "km" ? (
+                  <StatBlock label="Ritmo" value={formatPaceSecKm(metrics.paceSec)} />
+                ) : null}
+                {metrics.paceKind === "500m" ? (
+                  <StatBlock label="Ritmo" value={formatPaceSec500m(metrics.paceSec)} />
+                ) : null}
+                {metrics.speedMps != null ? (
+                  <StatBlock label="Velocidad" value={formatSpeedKmh(metrics.speedMps)} />
+                ) : null}
+                {metrics.fcMedia != null ? (
+                  <StatBlock label="FC media" value={`${metrics.fcMedia} bpm`} />
+                ) : null}
+                {metrics.fcMax != null ? (
+                  <StatBlock label="FC máx" value={`${metrics.fcMax} bpm`} />
+                ) : null}
+                {metrics.calorias != null ? (
+                  <StatBlock label="Calorías" value={`${Math.round(metrics.calorias)}`} />
+                ) : null}
+              </div>
+
+              {(metrics.fcMedia != null || metrics.fcMax != null) && (
+                <p className="flex items-center gap-2 px-6 text-sm tabular-nums text-muted-foreground">
+                  <Heart className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                  {metrics.fcMedia != null ? (
+                    <span>
+                      Media <span className="font-semibold text-foreground">{metrics.fcMedia}</span> bpm
+                    </span>
+                  ) : null}
+                  {metrics.fcMax != null ? (
+                    <span>
+                      · Máx <span className="font-semibold text-foreground">{metrics.fcMax}</span> bpm
+                    </span>
+                  ) : null}
+                </p>
+              )}
+
+              {running ? (
+                <div className="mx-6 rounded-xl border border-border/40 p-3 text-sm">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Running
+                  </p>
+                  <ul className="space-y-1 text-muted-foreground">
+                    {running.cadencia_media_spm != null ? (
+                      <li>
+                        Cadencia:{" "}
+                        <span className="font-medium text-foreground">
+                          {running.cadencia_media_spm} spm
+                        </span>
+                      </li>
+                    ) : null}
+                    {running.zancada_media_cm != null ? (
+                      <li>
+                        Zancada:{" "}
+                        <span className="font-medium text-foreground">
+                          {running.zancada_media_cm} cm
+                        </span>
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+              ) : null}
+
+              {cycling ? (
+                <div className="mx-6 rounded-xl border border-border/40 p-3 text-sm">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Cycling
+                  </p>
+                  <ul className="space-y-1 text-muted-foreground">
+                    {cycling.potencia_media_w != null ? (
+                      <li>
+                        Potencia media:{" "}
+                        <span className="font-medium text-foreground">
+                          {cycling.potencia_media_w} W
+                        </span>
+                      </li>
+                    ) : null}
+                    {cycling.potencia_normalizada_w != null ? (
+                      <li>
+                        Potencia NP:{" "}
+                        <span className="font-medium text-foreground">
+                          {cycling.potencia_normalizada_w} W
+                        </span>
+                      </li>
+                    ) : null}
+                    {cycling.cadencia_media_rpm != null ? (
+                      <li>
+                        Cadencia:{" "}
+                        <span className="font-medium text-foreground">
+                          {cycling.cadencia_media_rpm} rpm
+                        </span>
+                      </li>
+                    ) : null}
+                    {cycling.tipo_bici ? (
+                      <li>
+                        Bici: <span className="font-medium text-foreground">{cycling.tipo_bici}</span>
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+              ) : null}
+
+              {session.comentarios?.trim() ? (
+                <div className="mx-6 rounded-xl bg-muted/30 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Notas
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm">{session.comentarios.trim()}</p>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}

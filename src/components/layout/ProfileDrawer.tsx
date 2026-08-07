@@ -11,7 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogros, pickFeaturedLogros } from "@/hooks/useLogros";
-import { useWorkoutHistory } from "@/hooks/useWorkouts";
+import { useProfileActivityHistory } from "@/hooks/useProfileActivityHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,8 @@ import { LogroMedal } from "@/components/logros/LogroMedal";
 import { LogrosDrawer } from "@/components/logros/LogrosDrawer";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
+import { CardioFeedCard } from "@/components/cardio/CardioFeedCard";
+import { CardioDetailsSheet } from "@/components/cardio/CardioDetailsSheet";
 import {
   WorkoutFeedCard,
   type WorkoutFeedCardAuthor,
@@ -161,6 +163,7 @@ function ProfileDrawerSheet() {
   const { toast } = useToast();
   const [followListMode, setFollowListMode] = useState<"seguidores" | "seguidos" | null>(null);
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
+  const [cardioDetailsId, setCardioDetailsId] = useState<string | null>(null);
   const [logrosOpen, setLogrosOpen] = useState(false);
   const [localAvatarPreview, setLocalAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -180,13 +183,18 @@ function ProfileDrawerSheet() {
   useEffect(() => {
     if (!open) {
       setWorkoutDetailsId(null);
+      setCardioDetailsId(null);
       setLogrosOpen(false);
     }
   }, [open]);
 
   const statsUserId = profileUserId || undefined;
   const { data: logros = [], isLoading: loadingLogros } = useLogros(statsUserId);
-  const { data: workoutsHistory = [], isLoading: loadingWorkoutHistory } = useWorkoutHistory(statsUserId);
+  const {
+    items: lastActivities,
+    totalCount: activityTotalCount,
+    isLoading: loadingWorkoutHistory,
+  } = useProfileActivityHistory(statsUserId);
 
   const { data: perfilRow, isLoading: loadingPerfil } = useQuery({
     queryKey: ["perfil-drawer", profileUserId],
@@ -241,12 +249,15 @@ function ProfileDrawerSheet() {
     },
   });
 
-  const lastWorkouts = workoutsHistory.slice(0, 5);
+  const lastWorkouts = lastActivities;
 
-  const publicWorkoutIds = useMemo(
-    () => lastWorkouts.filter((w) => w.es_publica).map((w) => w.id),
-    [lastWorkouts],
-  );
+  const publicWorkoutIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const w of lastWorkouts) {
+      if (w.type === "gym" && w.workout.es_publica) ids.push(w.workout.id);
+    }
+    return ids;
+  }, [lastWorkouts]);
   const { likeCounts, likedIds, toggleLike, isToggling: isTogglingLike } =
     useActivityLikes(publicWorkoutIds);
   const { commentCounts } = useActivityCommentCounts(publicWorkoutIds);
@@ -378,7 +389,7 @@ function ProfileDrawerSheet() {
               <div className="grid w-full min-w-0 grid-cols-3 gap-x-5 gap-y-0">
                 <div className="min-w-0 w-full flex flex-col items-start text-left">
                   <p className="text-base font-bold tabular-nums leading-none">
-                    {loadingWorkoutHistory ? "…" : workoutsHistory.length}
+                    {loadingWorkoutHistory ? "…" : activityTotalCount}
                   </p>
                   <p className="text-xs text-muted-foreground leading-tight mt-1 line-clamp-2">
                     Entrenos
@@ -475,16 +486,26 @@ function ProfileDrawerSheet() {
               </p>
             ) : (
               <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
-                {lastWorkouts.map((w) => (
-                  <WorkoutFeedCard
-                    key={w.id}
-                    workout={w}
-                    author={workoutAuthor}
-                    onSelectAuthor={openAuthorProfile}
-                    onSelectWorkout={setWorkoutDetailsId}
-                    social={w.es_publica ? socialFor(w.id) : null}
-                  />
-                ))}
+                {lastWorkouts.map((item) =>
+                  item.type === "gym" ? (
+                    <WorkoutFeedCard
+                      key={`gym-${item.workout.id}`}
+                      workout={item.workout}
+                      author={workoutAuthor}
+                      onSelectAuthor={openAuthorProfile}
+                      onSelectWorkout={setWorkoutDetailsId}
+                      social={item.workout.es_publica ? socialFor(item.workout.id) : null}
+                    />
+                  ) : (
+                    <CardioFeedCard
+                      key={`cardio-${item.session.id}`}
+                      session={item.session}
+                      author={workoutAuthor}
+                      onSelectAuthor={openAuthorProfile}
+                      onSelectSession={setCardioDetailsId}
+                    />
+                  ),
+                )}
               </div>
             )}
           </div>
@@ -531,6 +552,14 @@ function ProfileDrawerSheet() {
         if (!next) setWorkoutDetailsId(null);
       }}
       workoutId={workoutDetailsId}
+    />
+
+    <CardioDetailsSheet
+      open={!!cardioDetailsId}
+      onOpenChange={(next) => {
+        if (!next) setCardioDetailsId(null);
+      }}
+      sessionId={cardioDetailsId}
     />
 
     {!!profileUserId && (

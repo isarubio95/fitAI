@@ -1,9 +1,7 @@
-import { useMemo, useCallback, useEffect } from "react";
-import { toast } from "sonner";
+import { useMemo, useCallback } from "react";
 import { useInAppNotificationsDismiss } from "@/contexts/InAppNotificationsContext";
 import { useMyFollowersReceived } from "@/hooks/useMyFollowersReceived";
 import type { InAppNotificationItem } from "@/types/inAppNotification";
-import { useAuth } from "@/hooks/useAuth";
 
 /**
  * `true`: muestra siempre las notificaciones de diseño (seguidor) con datos de ejemplo.
@@ -14,50 +12,6 @@ import { useAuth } from "@/hooks/useAuth";
  * esos ids en `buildDesignPreviewInAppNotifications` abajo.
  */
 const HARDCODE_ALL_IN_APP_NOTIFICATIONS_FOR_DESIGN = false;
-
-const FOLLOWER_SEED_LS = (userId: string) => `gym-log.notifications.follower-seed:${userId}`;
-const FOLLOWER_TOAST_SESSION = (userId: string) => `gym-log.follower-toast-session:${userId}`;
-
-function loadToastedFollowerIds(userId: string): Set<string> {
-  try {
-    const raw = sessionStorage.getItem(FOLLOWER_TOAST_SESSION(userId));
-    const arr = raw ? (JSON.parse(raw) as unknown) : [];
-    return new Set(Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : []);
-  } catch {
-    return new Set();
-  }
-}
-
-function rememberToastedFollowerId(userId: string, id: string) {
-  try {
-    const next = loadToastedFollowerIds(userId);
-    next.add(id);
-    sessionStorage.setItem(
-      FOLLOWER_TOAST_SESSION(userId),
-      JSON.stringify([...next].slice(-200)),
-    );
-  } catch {
-    // ignore
-  }
-}
-
-/** El hook se usa en varios sitios a la vez (campana, sidebar, pills); un solo ref por instancia no deduplica entre ellos. */
-const followerToastShownInSession = new Set<string>();
-let followerToastMemoryHydratedForUser: string | null = null;
-
-function ensureFollowerToastMemoryHydrated(userId: string) {
-  if (followerToastMemoryHydratedForUser === userId) return;
-  followerToastMemoryHydratedForUser = userId;
-  followerToastShownInSession.clear();
-  for (const id of loadToastedFollowerIds(userId)) {
-    followerToastShownInSession.add(id);
-  }
-}
-
-function markFollowerToastShownOnce(userId: string, rowId: string) {
-  followerToastShownInSession.add(rowId);
-  rememberToastedFollowerId(userId, rowId);
-}
 
 function buildDesignPreviewInAppNotifications(): InAppNotificationItem[] {
   return [
@@ -76,44 +30,15 @@ function buildDesignPreviewInAppNotifications(): InAppNotificationItem[] {
 /**
  * Notificaciones in-app derivadas del estado (sin tabla propia).
  * Las descartadas persisten en localStorage por usuario.
+ * No dispara toasts: eso lo hace `InAppFollowerToastSync`.
  */
 export function useInAppNotifications() {
-  const { user } = useAuth();
   const { dismissed, dismiss, dismissMany } = useInAppNotificationsDismiss();
 
   const {
     data: followersReceived = [],
-    isSuccess: followersSuccess,
     isError: followersError,
   } = useMyFollowersReceived();
-
-  useEffect(() => {
-    if (!user?.id || !followersSuccess || followersError) return;
-
-    const key = FOLLOWER_SEED_LS(user.id);
-    const needsSeed = !localStorage.getItem(key);
-    if (needsSeed) {
-      localStorage.setItem(key, "1");
-      const seedIds = followersReceived.map((r) => `new-follow-${r.id}`);
-      if (seedIds.length > 0) {
-        dismissMany(seedIds);
-        return;
-      }
-    }
-
-    if (!localStorage.getItem(key)) return;
-
-    ensureFollowerToastMemoryHydrated(user.id);
-
-    for (const row of followersReceived) {
-      const nid = `new-follow-${row.id}`;
-      if (dismissed.has(nid)) continue;
-      if (followerToastShownInSession.has(row.id)) continue;
-      markFollowerToastShownOnce(user.id, row.id);
-      const label = row.username?.trim() || "Alguien";
-      toast.message(`${label} te ha empezado a seguir`);
-    }
-  }, [user?.id, followersSuccess, followersError, followersReceived, dismissed, dismissMany]);
 
   const followerNotifications = useMemo((): InAppNotificationItem[] => {
     if (HARDCODE_ALL_IN_APP_NOTIFICATIONS_FOR_DESIGN) return [];

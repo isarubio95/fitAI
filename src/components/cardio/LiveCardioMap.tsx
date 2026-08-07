@@ -140,7 +140,7 @@ export function LiveCardioMap({ points, className, followUser = true }: Props) {
       map.touchZoomRotate.disableRotation();
       map.addControl(
         new AttributionControl({ compact: true }),
-        "bottom-left",
+        "bottom-right",
       );
 
       map.on("dragstart", () => setFollowing(false));
@@ -263,21 +263,42 @@ export function LiveCardioMap({ points, className, followUser = true }: Props) {
           70% { transform: scale(1.15); opacity: 0; }
           100% { transform: scale(1.15); opacity: 0; }
         }
-        .live-cardio-map-canvas .maplibregl-ctrl-bottom-left { margin: 0; }
+        .live-cardio-map-canvas .maplibregl-ctrl-bottom-right {
+          margin: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+        }
         .live-cardio-map-canvas .maplibregl-ctrl-attrib {
-          background: rgba(0, 0, 0, 0.4) !important;
-          color: rgba(255, 255, 255, 0.4);
-          font-size: 9px;
-          line-height: 1.3;
-          padding: 1px 5px;
-          border-radius: 0 6px 0 0;
+          background: transparent !important;
+          color: rgba(255, 255, 255, 0.28);
+          font-size: 8px;
+          line-height: 1.2;
+          padding: 1px 3px 0 0 !important;
+          margin: 0 !important;
           box-shadow: none;
+          opacity: 0.4;
+          max-width: none;
+          white-space: nowrap;
+        }
+        .live-cardio-map-canvas .maplibregl-ctrl-attrib,
+        .live-cardio-map-canvas .maplibregl-ctrl-attrib * {
+          white-space: nowrap !important;
+        }
+        .live-cardio-map-canvas .maplibregl-ctrl-attrib:hover,
+        .live-cardio-map-canvas .maplibregl-ctrl-attrib:focus-within {
+          opacity: 0.75;
+          color: rgba(255, 255, 255, 0.55);
         }
         .live-cardio-map-canvas .maplibregl-ctrl-attrib a { color: inherit; text-decoration: none; }
         .live-cardio-map-canvas .maplibregl-ctrl-attrib-button {
-          background-color: rgba(0, 0, 0, 0.4);
-          width: 20px;
-          height: 20px;
+          background-color: transparent !important;
+          width: 14px;
+          height: 14px;
+          opacity: 0.45;
+        }
+        .live-cardio-map-canvas .maplibregl-ctrl-attrib.maplibregl-compact {
+          min-height: 14px;
+          padding: 0;
         }
       `}</style>
       <div

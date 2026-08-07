@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import UsernameSetup from "@/pages/UsernameSetup";
 import { InAppNotificationsProvider } from "@/contexts/InAppNotificationsContext";
 import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
+import { InAppFollowerToastSync } from "@/components/notifications/InAppFollowerToastSync";
 import { useSafeAreaInsetsSync } from "@/hooks/useSafeAreaInsetsSync";
 import { useLogrosSync } from "@/hooks/useLogrosSync";
 
@@ -200,6 +201,7 @@ export function AppLayout() {
     <GlobalWorkoutDrawerProvider>
       <GlobalCardioDrawerProvider>
         <InAppNotificationsProvider>
+      <InAppFollowerToastSync />
       <ProfileDrawerProvider>
       <div className="flex min-h-screen bg-background">
         <DesktopSidebar />
