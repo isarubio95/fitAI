@@ -127,16 +127,19 @@ export function SettingsDrawer() {
 
           <div className="border-t border-border/40 pt-5">
             <nav
-              className="flex flex-col items-center gap-2.5 text-center text-xs text-muted-foreground/70"
+              className="flex flex-wrap items-center justify-around gap-x-4 gap-y-2 text-center text-xs text-muted-foreground/70"
               aria-label="Cuenta y legal"
             >
-              <Link
-                to="/privacidad"
-                onClick={() => setOpen(false)}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  signOut();
+                }}
                 className="transition-colors hover:text-muted-foreground"
               >
-                Política de privacidad
-              </Link>
+                Cerrar sesión
+              </button>
               <Link
                 to="/eliminar-cuenta"
                 onClick={() => setOpen(false)}
@@ -144,16 +147,13 @@ export function SettingsDrawer() {
               >
                 Eliminar cuenta
               </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  signOut();
-                }}
-                className="mt-0.5 transition-colors hover:text-muted-foreground"
+              <Link
+                to="/privacidad"
+                onClick={() => setOpen(false)}
+                className="transition-colors hover:text-muted-foreground"
               >
-                Cerrar sesión
-              </button>
+                Política de privacidad
+              </Link>
             </nav>
           </div>
         </div>
