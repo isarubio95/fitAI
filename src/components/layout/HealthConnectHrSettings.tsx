@@ -3,6 +3,12 @@ import { Capacitor } from "@capacitor/core";
 import { HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   getHealthConnectHrAvailability,
   hasHrPermission,
   openHealthConnectHrSettings,
@@ -12,6 +18,36 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 type ConnState = "loading" | "ready" | "needs_permission" | HealthConnectHrAvailability;
+
+const COMMON_STEPS = [
+  "Concede a FitAI la lectura de frecuencia cardíaca en Health Connect.",
+  "En la app del reloj, activa la sincronización o el compartir con Health Connect (incluye FC).",
+  "Antes de finalizar el entreno, abre esa app o reconecta el reloj: la FC continua puede tardar en llegar al hub.",
+  "Al guardar cardio o fuerza sin sensor Bluetooth, FitAI importa la FC del intervalo desde Health Connect.",
+] as const;
+
+const BRAND_GUIDES = [
+  {
+    id: "samsung",
+    title: "Samsung / Galaxy Watch",
+    body: "En Samsung Health: Ajustes → Health Connect → permitir los datos (incluida frecuencia cardíaca). Tras el entreno, abre Samsung Health para forzar la sync al teléfono antes de guardar en FitAI.",
+  },
+  {
+    id: "pixel",
+    title: "Google Pixel Watch / Wear OS",
+    body: "Con Google Fit o la app del reloj, activa la sincronización con Health Connect y asegúrate de que la FC esté incluida. Abre Fit o reconecta el reloj si los datos aún no aparecen en el hub.",
+  },
+  {
+    id: "garmin",
+    title: "Garmin",
+    body: "En Garmin Connect, activa la sincronización con Health Connect si tu versión lo ofrece. Si no escribe en el hub, conecta el sensor por Bluetooth en el panel de FC del entreno.",
+  },
+  {
+    id: "otras",
+    title: "Otras (Polar, bandas, etc.)",
+    body: "Lo más fiable es el sensor Bluetooth en vivo desde el panel de FC del entreno. Health Connect solo ayuda si la app del fabricante escribe frecuencia cardíaca en el hub.",
+  },
+] as const;
 
 function statusCopy(state: ConnState): { title: string; detail: string } {
   switch (state) {
@@ -36,13 +72,13 @@ function statusCopy(state: ConnState): { title: string; detail: string } {
       return {
         title: "Sin permiso",
         detail:
-          "Conecta Health Connect para importar la FC del reloj al guardar cardio si no usaste sensor Bluetooth.",
+          "Conecta Health Connect para importar la FC del reloj al guardar cardio o fuerza si no usaste sensor Bluetooth.",
       };
     case "ready":
       return {
         title: "Conectado",
         detail:
-          "Al guardar un cardio sin sensor BLE, se importará la FC del intervalo desde Health Connect.",
+          "Al guardar cardio o fuerza sin sensor BLE, se importará la FC del intervalo desde Health Connect.",
       };
   }
 }
@@ -132,6 +168,38 @@ export function HealthConnectHrSettings() {
         >
           Gestionar permisos en Health Connect
         </Button>
+      )}
+
+      {state !== "unsupported" && state !== "loading" && (
+        <div className="space-y-3 border-t border-border/40 pt-3">
+          <p className="text-xs font-medium text-foreground">Cómo conectar el reloj</p>
+          <ol className="list-decimal space-y-1.5 pl-4 text-xs leading-snug text-muted-foreground">
+            {COMMON_STEPS.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+
+          <p className="rounded-md bg-muted/50 px-2.5 py-2 text-xs leading-snug text-muted-foreground">
+            El permiso en FitAI no basta: el reloj midiendo en su app no llega aquí hasta que esa
+            app escriba la FC en Health Connect.
+          </p>
+
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-foreground">Según tu marca</p>
+            <Accordion type="single" collapsible className="w-full">
+              {BRAND_GUIDES.map((brand) => (
+                <AccordionItem key={brand.id} value={brand.id} className="border-border/40">
+                  <AccordionTrigger className="py-2 text-left text-xs font-medium hover:no-underline">
+                    {brand.title}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-xs leading-snug text-muted-foreground">
+                    {brand.body}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </div>
       )}
     </div>
   );
