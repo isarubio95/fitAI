@@ -24,6 +24,11 @@ import {
 import { Bell, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
+import { cn } from "@/lib/utils";
+
+const settingsSectionCardClass = cn(
+  "space-y-4 rounded-xl border border-border/60 bg-secondary/40 p-4",
+);
 
 export function SettingsDrawer() {
   const { signOut } = useAuth();
@@ -58,7 +63,7 @@ export function SettingsDrawer() {
           <DrawerTitle className="text-lg">Ajustes</DrawerTitle>
         </DrawerHeader>
 
-        <div className="mt-3 flex-1 space-y-6 overflow-y-auto px-6 pb-4">
+        <div className="mt-3 flex-1 space-y-6 overflow-y-auto px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           {/* Color de acento */}
           <ColorThemeSelector />
 
@@ -78,7 +83,7 @@ export function SettingsDrawer() {
           </div>
 
           {/* Notificaciones */}
-          <div className="space-y-4">
+          <div className={settingsSectionCardClass}>
             <p className="flex items-center gap-2 text-sm font-medium">
               <Bell className="h-4 w-4 text-muted-foreground" />
               Notificaciones
@@ -119,38 +124,38 @@ export function SettingsDrawer() {
           <PhysiologySettings />
 
           <HealthConnectHrSettings />
-        </div>
 
-        <div className="mt-auto shrink-0 border-t border-border/40 px-6 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          <nav
-            className="flex flex-col items-center gap-2.5 text-center text-xs text-muted-foreground/70"
-            aria-label="Cuenta y legal"
-          >
-            <Link
-              to="/privacidad"
-              onClick={() => setOpen(false)}
-              className="transition-colors hover:text-muted-foreground"
+          <div className="border-t border-border/40 pt-5">
+            <nav
+              className="flex flex-col items-center gap-2.5 text-center text-xs text-muted-foreground/70"
+              aria-label="Cuenta y legal"
             >
-              Política de privacidad
-            </Link>
-            <Link
-              to="/eliminar-cuenta"
-              onClick={() => setOpen(false)}
-              className="transition-colors hover:text-destructive/80"
-            >
-              Eliminar cuenta
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                signOut();
-              }}
-              className="mt-0.5 transition-colors hover:text-muted-foreground"
-            >
-              Cerrar sesión
-            </button>
-          </nav>
+              <Link
+                to="/privacidad"
+                onClick={() => setOpen(false)}
+                className="transition-colors hover:text-muted-foreground"
+              >
+                Política de privacidad
+              </Link>
+              <Link
+                to="/eliminar-cuenta"
+                onClick={() => setOpen(false)}
+                className="transition-colors hover:text-destructive/80"
+              >
+                Eliminar cuenta
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  signOut();
+                }}
+                className="mt-0.5 transition-colors hover:text-muted-foreground"
+              >
+                Cerrar sesión
+              </button>
+            </nav>
+          </div>
         </div>
       </DrawerContent>
     </Drawer>

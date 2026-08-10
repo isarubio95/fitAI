@@ -8,6 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { resolveMaxHeartRate, type PhysioProfile } from "@/lib/trainingLoad";
+import { cn } from "@/lib/utils";
+
+const settingsSectionCardClass = cn(
+  "space-y-4 rounded-xl border border-border/60 bg-secondary/40 p-4",
+);
 
 type PhysioForm = {
   fecha_nacimiento: string;
@@ -33,6 +38,16 @@ function parseOptionalInt(raw: string, min: number, max: number): number | null 
   const rounded = Math.round(n);
   if (rounded < min || rounded > max) return null;
   return rounded;
+}
+
+function isPhysioFormDirty(form: PhysioForm, profile: PhysioProfile | null | undefined): boolean {
+  const baseline = toForm(profile);
+  return (
+    form.fecha_nacimiento !== baseline.fecha_nacimiento ||
+    form.fc_max !== baseline.fc_max ||
+    form.fc_reposo !== baseline.fc_reposo ||
+    form.ftp_w !== baseline.ftp_w
+  );
 }
 
 export function PhysiologySettings() {
@@ -103,9 +118,10 @@ export function PhysiologySettings() {
     fecha_nacimiento: form.fecha_nacimiento || null,
     fc_max: parseOptionalInt(form.fc_max, 100, 230),
   });
+  const isDirty = isPhysioFormDirty(form, profile);
 
   return (
-    <div className="space-y-3">
+    <div className={settingsSectionCardClass}>
       <p className="flex items-center gap-2 text-sm font-medium">
         <Heart className="h-4 w-4 text-muted-foreground" />
         Fisiología (carga y fatiga)
@@ -176,7 +192,7 @@ export function PhysiologySettings() {
         type="button"
         size="sm"
         className="w-full"
-        disabled={isLoading || saveMutation.isPending || !user}
+        disabled={!isDirty || isLoading || saveMutation.isPending || !user}
         onClick={() => saveMutation.mutate(form)}
       >
         {saveMutation.isPending ? "Guardando…" : "Guardar fisiología"}

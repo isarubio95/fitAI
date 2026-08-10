@@ -16,6 +16,11 @@ import {
   type HealthConnectHrAvailability,
 } from "@/lib/healthConnectHr";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
+const settingsSectionCardClass = cn(
+  "space-y-4 rounded-xl border border-border/60 bg-secondary/40 p-4",
+);
 
 type ConnState = "loading" | "ready" | "needs_permission" | HealthConnectHrAvailability;
 
@@ -136,7 +141,7 @@ export function HealthConnectHrSettings() {
   };
 
   return (
-    <div className="space-y-3">
+    <div className={settingsSectionCardClass}>
       <p className="flex items-center gap-2 text-sm font-medium">
         <HeartPulse className="h-4 w-4 text-muted-foreground" />
         Salud / Frecuencia cardíaca
