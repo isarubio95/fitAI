@@ -6,5 +6,5 @@ export const SWIPE_DISMISS_WINDOW_MS = 250;
 
 import { floatingGlassSurface } from "@/lib/surface-styles";
 
-/** Mismo acabado glass que header móvil y BottomNav */
+/** Mismo acabado opaco que BottomNav */
 export const ACTIVE_WORKOUT_FLOATING_SHELL = `rounded-[28px] p-1.5 ${floatingGlassSurface}`;
