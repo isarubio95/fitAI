@@ -117,8 +117,8 @@
   }
 
   .dark {
-    /* Neutros cálidos muestreados del sistema de diseño (#1a1a18 / #2c2c2a / #444442). */
-    --background: 60 4% 10%;
+    /* Fondo negro puro; neutros elevados siguen el sistema (#2c2c2a / #444442). */
+    --background: 0 0% 0%;
     --foreground: 60 100% 99%;
     --card: 0 0% 15%;
     --card-foreground: 60 100% 99%;
