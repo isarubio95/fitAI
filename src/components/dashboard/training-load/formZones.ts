@@ -20,7 +20,7 @@ export const FORM_SCALE_MAX = 45;
 export const FORM_ZONES: readonly FormZone[] = [
   {
     key: "muy-fatigado",
-    label: "Muy fatigado",
+    label: "Agotado",
     min: FORM_SCALE_MIN,
     max: -30,
     color: chartColors.danger,
@@ -52,7 +52,7 @@ export const FORM_ZONES: readonly FormZone[] = [
   },
   {
     key: "bajo",
-    label: "Bajo",
+    label: "Inactivo",
     min: 25,
     max: FORM_SCALE_MAX,
     color: chartColors.neutral,
@@ -64,12 +64,15 @@ export function getFormZone(form: number): FormZone {
   return FORM_ZONES.find((zone) => form < zone.max) ?? FORM_ZONES[FORM_ZONES.length - 1];
 }
 
-/** Posición 0–100 del valor de forma dentro de la escala visual. */
+/**
+ * Posición 0–100 del valor de forma en la escala visual.
+ * Cada zona ocupa el mismo ancho; el marcador se interpola dentro de su zona.
+ */
 export function formToScalePct(form: number): number {
   const clamped = Math.min(Math.max(form, FORM_SCALE_MIN), FORM_SCALE_MAX);
-  return ((clamped - FORM_SCALE_MIN) / (FORM_SCALE_MAX - FORM_SCALE_MIN)) * 100;
-}
-
-export function zoneWidthPct(zone: FormZone): number {
-  return ((zone.max - zone.min) / (FORM_SCALE_MAX - FORM_SCALE_MIN)) * 100;
+  const zone = getFormZone(clamped);
+  const index = FORM_ZONES.findIndex((z) => z.key === zone.key);
+  const span = zone.max - zone.min;
+  const progress = span <= 0 ? 0 : (clamped - zone.min) / span;
+  return ((index + progress) / FORM_ZONES.length) * 100;
 }

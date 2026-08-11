@@ -45,7 +45,15 @@ function BarRow({
  * Fitness y Fatiga en la misma escala: el sobrante de la barra más larga es,
  * literalmente, la forma. En rojo si sobra fatiga, en verde si sobra fitness.
  */
-export function FitnessFatigueBars({ fitness, fatigue }: { fitness: number; fatigue: number }) {
+export function FitnessFatigueBars({
+  fitness,
+  fatigue,
+  explainMode = false,
+}: {
+  fitness: number;
+  fatigue: number;
+  explainMode?: boolean;
+}) {
   const form = fitness - fatigue;
   const isFatigued = form < 0;
   // Un poco de aire al final de la pista para que la barra más larga no llegue al borde.
@@ -131,21 +139,23 @@ export function FitnessFatigueBars({ fitness, fatigue }: { fitness: number; fati
         </div>
       )}
 
-      <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-        {form === 0 ? (
-          <>Tu fitness y tu fatiga están igualados, así que tu forma es 0.</>
-        ) : isFatigued ? (
-          <>
-            La fatiga se pasa {gapPoints} puntos de tu fitness. Ese sobrante{" "}
-            <span style={{ color: chartColors.danger }}>rojo</span> es tu forma.
-          </>
-        ) : (
-          <>
-            Tu fitness le saca {gapPoints} puntos a la fatiga. Ese margen{" "}
-            <span style={{ color: chartColors.positive }}>verde</span> es tu forma.
-          </>
-        )}
-      </p>
+      {explainMode && (
+        <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+          {form === 0 ? (
+            <>Tu fitness y tu fatiga están igualados, así que tu forma es 0.</>
+          ) : isFatigued ? (
+            <>
+              La fatiga se pasa {gapPoints} puntos de tu fitness. Ese sobrante{" "}
+              <span style={{ color: chartColors.danger }}>rojo</span> es tu forma.
+            </>
+          ) : (
+            <>
+              Tu fitness le saca {gapPoints} puntos a la fatiga. Ese margen{" "}
+              <span style={{ color: chartColors.positive }}>verde</span> es tu forma.
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 }

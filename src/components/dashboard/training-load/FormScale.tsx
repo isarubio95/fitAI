@@ -5,7 +5,6 @@ import {
   FORM_ZONES,
   formToScalePct,
   getFormZone,
-  zoneWidthPct,
   type FormZoneKey,
 } from "./formZones";
 
@@ -18,7 +17,7 @@ const ZONE_ICONS: Record<FormZoneKey, LucideIcon> = {
 };
 
 /** Escala de zonas con el marcador de la forma actual. */
-export function FormScale({ form }: { form: number }) {
+export function FormScale({ form, explainMode = false }: { form: number; explainMode?: boolean }) {
   const zone = getFormZone(form);
   const ZoneIcon = ZONE_ICONS[zone.key];
   const markerPct = formToScalePct(form);
@@ -37,7 +36,7 @@ export function FormScale({ form }: { form: number }) {
       </div>
 
       <div
-        className="mt-3 flex h-2.5 gap-0.5 overflow-hidden rounded-full"
+        className="mt-3 flex h-2.5 gap-1 overflow-hidden rounded-full"
         role="meter"
         aria-valuenow={Math.round(form)}
         aria-valuemin={FORM_ZONES[0].min}
@@ -47,15 +46,15 @@ export function FormScale({ form }: { form: number }) {
         {FORM_ZONES.map((z) => (
           <span
             key={z.key}
-            className="h-full"
-            style={{ width: `${zoneWidthPct(z)}%`, backgroundColor: z.color }}
+            className="h-full min-w-0 flex-1"
+            style={{ backgroundColor: z.color }}
           />
         ))}
       </div>
 
-      <div className="relative h-6" aria-hidden>
+      <div className="relative h-7" aria-hidden>
         <span
-          className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
+          className="absolute top-1 flex -translate-x-1/2 flex-col items-center"
           style={{ left: `${markerPct}%` }}
         >
           <span className="h-0 w-0 border-x-[5px] border-b-[6px] border-x-transparent border-b-foreground" />
@@ -65,14 +64,17 @@ export function FormScale({ form }: { form: number }) {
         </span>
       </div>
 
-      <div className="mt-1 flex text-[12px] leading-tight" aria-hidden>
+      <div className="mt-2 flex gap-1 text-[12px] leading-tight" aria-hidden>
         {FORM_ZONES.map((z) => {
           const isActive = z.key === zone.key;
           return (
             <span
               key={z.key}
-              className={cn("text-center", isActive ? "font-semibold" : "text-muted-foreground/70")}
-              style={{ width: `${zoneWidthPct(z)}%`, color: isActive ? z.color : undefined }}
+              className={cn(
+                "min-w-0 flex-1 text-center",
+                isActive ? "font-semibold" : "text-muted-foreground/70",
+              )}
+              style={{ color: isActive ? z.color : undefined }}
             >
               {z.label}
             </span>
@@ -80,7 +82,7 @@ export function FormScale({ form }: { form: number }) {
         })}
       </div>
 
-      <p className="mt-2.5 text-[13px] text-muted-foreground">{zone.hint}</p>
+      {explainMode && <p className="mt-2.5 text-[13px] text-muted-foreground">{zone.hint}</p>}
     </div>
   );
 }

@@ -477,7 +477,7 @@ export function ExerciseProgressWidget() {
             >
               <SelectValue placeholder="Ejercicio" />
             </SelectTrigger>
-            <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
+            <SelectContent className="w-(--radix-select-trigger-width) max-w-(--radix-select-trigger-width)">
               {exercises.map((ex) => (
                 <SelectItem key={ex.id} value={ex.id} className="whitespace-normal wrap-break-word">
                   {ex.name}

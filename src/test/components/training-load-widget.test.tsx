@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
@@ -13,7 +13,6 @@ vi.mock("@/hooks/useTrainingLoad", () => ({
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: ReactNode }) => <svg>{children}</svg>,
   ComposedChart: ({ children }: { children: ReactNode }) => <g>{children}</g>,
-  AreaChart: ({ children }: { children: ReactNode }) => <g>{children}</g>,
   CartesianGrid: () => null,
   XAxis: () => null,
   YAxis: () => null,
@@ -25,6 +24,30 @@ vi.mock("recharts", () => ({
 }));
 
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
+
+const SAMPLE_DATA = {
+  points: [
+    {
+      date: "2026-04-01",
+      load: 100,
+      loadStrength: 60,
+      loadCardio: 40,
+      fitness: 40,
+      fatigue: 45,
+      form: -5,
+    },
+    {
+      date: "2026-04-02",
+      load: 120,
+      loadStrength: 70,
+      loadCardio: 50,
+      fitness: 42,
+      fatigue: 50,
+      form: -8,
+    },
+  ],
+  totals: { fitness: 42, fatigue: 50, form: -8 },
+};
 
 describe("TrainingLoadWidget", () => {
   beforeEach(() => {
@@ -45,29 +68,7 @@ describe("TrainingLoadWidget", () => {
 
   it("renderiza métricas con datos del hook", () => {
     mockUseTrainingLoad.mockReturnValue({
-      data: {
-        points: [
-          {
-            date: "2026-04-01",
-            load: 100,
-            loadStrength: 60,
-            loadCardio: 40,
-            fitness: 40,
-            fatigue: 45,
-            form: -5,
-          },
-          {
-            date: "2026-04-02",
-            load: 120,
-            loadStrength: 70,
-            loadCardio: 50,
-            fitness: 42,
-            fatigue: 50,
-            form: -8,
-          },
-        ],
-        totals: { fitness: 42, fatigue: 50, form: -8 },
-      },
+      data: SAMPLE_DATA,
       isLoading: false,
       isFetching: false,
     });
@@ -106,5 +107,50 @@ describe("TrainingLoadWidget", () => {
 
     render(<TrainingLoadWidget />);
     expect(screen.getAllByText("30").length).toBeGreaterThan(0);
+  });
+
+  it("muestra textos didácticos en la primera visita", () => {
+    mockUseTrainingLoad.mockReturnValue({
+      data: SAMPLE_DATA,
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TrainingLoadWidget />);
+    expect(screen.getByText(/La fatiga se pasa/)).toBeInTheDocument();
+    expect(screen.getByText(/Equilibrio entre entrenar/)).toBeInTheDocument();
+  });
+
+  it("oculta textos didácticos cuando el modo explicación está desactivado", () => {
+    localStorage.setItem("gym-log.training-load.explain-mode", "0");
+    mockUseTrainingLoad.mockReturnValue({
+      data: SAMPLE_DATA,
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TrainingLoadWidget />);
+    expect(screen.queryByText(/La fatiga se pasa/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Equilibrio entre entrenar/)).not.toBeInTheDocument();
+  });
+
+  it("permite conmutar el modo explicación y persiste la preferencia", () => {
+    mockUseTrainingLoad.mockReturnValue({
+      data: SAMPLE_DATA,
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TrainingLoadWidget />);
+    const toggle = screen.getByRole("button", { name: "Ocultar explicaciones" });
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(toggle);
+    expect(screen.queryByText(/La fatiga se pasa/)).not.toBeInTheDocument();
+    expect(localStorage.getItem("gym-log.training-load.explain-mode")).toBe("0");
+    expect(screen.getByRole("button", { name: "Mostrar explicaciones" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 });
