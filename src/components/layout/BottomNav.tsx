@@ -87,7 +87,7 @@ export function BottomNav() {
       <nav
         ref={navRef}
         data-app-bottom-nav
-        className="fixed bottom-3 left-1/2 z-50 w-[min(96vw,29rem)] -translate-x-1/2 md:hidden"
+        className="fixed bottom-3 left-1/2 z-50 w-[min(96vw,29rem)] -translate-x-1/2 pb-[calc(env(safe-area-inset-bottom)*0.55)] md:hidden"
       >
         {/* MENÚ DESPLEGABLE DE ACCIONES (fuera del contenedor con overflow-hidden) */}
       <div
@@ -121,7 +121,7 @@ export function BottomNav() {
       {/* BARRA DE NAVEGACIÓN */}
       <div
         className={cn(
-          "relative flex h-18 items-center justify-around overflow-hidden rounded-4xl px-2 pb-[calc(env(safe-area-inset-bottom)*0.55)] pt-1",
+          "relative flex items-center justify-around overflow-hidden rounded-4xl px-2 py-2",
           floatingGlassSurface,
         )}
       >
