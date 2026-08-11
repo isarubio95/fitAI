@@ -145,7 +145,7 @@ export function useMonthCardioSessions(month: Date) {
   return useQuery({
     queryKey: ["monthCardioSessions", user?.id, from],
     enabled: !!user,
-    queryFn: async () => {
+    queryFn: async (): Promise<CardioSesionWithDetails[]> => {
       const { data, error } = await supabase
         .from("cardio_sesion")
         .select(CARDIO_SESSION_SELECT)
@@ -156,7 +156,7 @@ export function useMonthCardioSessions(month: Date) {
         .order("fecha_inicio", { ascending: false })
         .order("orden", { referencedTable: "cardio_bloque", ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as CardioSesionWithDetails[];
     },
   });
 }

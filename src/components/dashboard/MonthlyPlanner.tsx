@@ -48,7 +48,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ActividadWithDetails } from "@/types/workout";
-import type { CardioSesion } from "@/types/cardio";
+import { getCardioDiscipline, type CardioSesionWithDetails } from "@/lib/cardioSessionDisplay";
 import { usePlannedRoutines, useDeletePlannedRoutine, useUpdatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useDeleteWorkout } from "@/hooks/useWorkouts";
@@ -64,22 +64,15 @@ import { pendingPlannedForDay } from "@/lib/plannedRoutineVisibility";
 import { resolveCardioSessionIcon } from "@/lib/cardioIcons";
 import { cn } from "@/lib/utils";
 
-type CardioSessionLabelData = {
-  deporte?: string | null;
-  cardio_disciplina?: { nombre?: string | null } | { nombre?: string | null }[] | null;
-};
-
-function getCardioSessionLabel(session: CardioSessionLabelData): string {
-  const disciplina = session.cardio_disciplina;
-  const disciplinaNombre = Array.isArray(disciplina) ? disciplina[0]?.nombre : disciplina?.nombre;
-  return disciplinaNombre ?? session.deporte ?? "Cardio";
+function getCardioSessionLabel(session: CardioSesionWithDetails): string {
+  return getCardioDiscipline(session)?.nombre ?? "Cardio";
 }
 
 interface MonthlyPlannerProps {
   month: Date;
   onMonthChange: (d: Date) => void;
   workouts: ActividadWithDetails[];
-  cardioSessions: CardioSesion[];
+  cardioSessions: CardioSesionWithDetails[];
   /** false mientras cargan entrenamientos o cardio desde el padre */
   activityDataReady?: boolean;
   onDayClick: (date: Date) => void;
@@ -155,7 +148,7 @@ export function MonthlyPlanner({
   }, [planned]);
 
   const cardioByDay = useMemo(() => {
-    const map = new Map<string, CardioSesion[]>();
+    const map = new Map<string, CardioSesionWithDetails[]>();
     const sessions = Array.isArray(cardioSessions) ? cardioSessions : [];
     sessions.forEach((s) => {
       const key = format(new Date(s.fecha_inicio), "yyyy-MM-dd");
@@ -173,7 +166,7 @@ export function MonthlyPlanner({
   const { toast } = useToast();
   const [confirmDeletePlanned, setConfirmDeletePlanned] = useState<PlannedRoutine | null>(null);
   const [confirmDeleteWorkout, setConfirmDeleteWorkout] = useState<ActividadWithDetails | null>(null);
-  const [confirmDeleteCardio, setConfirmDeleteCardio] = useState<CardioSesion | null>(null);
+  const [confirmDeleteCardio, setConfirmDeleteCardio] = useState<CardioSesionWithDetails | null>(null);
   const [editPlanned, setEditPlanned] = useState<PlannedRoutine | null>(null);
   const [editDate, setEditDate] = useState("");
   const [editRutinaId, setEditRutinaId] = useState("");
@@ -615,6 +608,8 @@ export function MonthlyPlanner({
                 try {
                   await deleteWorkout.mutateAsync(confirmDeleteWorkout.id);
                   setConfirmDeleteWorkout(null);
+                  setExpandedWeekIndex(null);
+                  setExpandedDayKey(null);
                 } catch {
                   // toast from mutation
                 }

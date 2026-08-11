@@ -56,22 +56,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ActividadWithDetails } from "@/types/workout";
-import type { CardioSesion } from "@/types/cardio";
+import { getCardioDiscipline, type CardioSesionWithDetails } from "@/lib/cardioSessionDisplay";
 import { useMonthWorkouts, useDeleteWorkout } from "@/hooks/useWorkouts";
 import { useMonthCardioSessions, useDeleteCardioSession } from "@/hooks/useCardioSessions";
 import { usePlannedRoutines, useDeletePlannedRoutine, useUpdatePlannedRoutine, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { useRoutines } from "@/hooks/useRoutines";
 import { useToast } from "@/hooks/use-toast";
 
-type CardioSessionLabelData = {
-  deporte?: string | null;
-  cardio_disciplina?: { nombre?: string | null } | { nombre?: string | null }[] | null;
-};
-
-function getCardioSessionLabel(session: CardioSessionLabelData): string {
-  const disciplina = session.cardio_disciplina;
-  const disciplinaNombre = Array.isArray(disciplina) ? disciplina[0]?.nombre : disciplina?.nombre;
-  return disciplinaNombre ?? session.deporte ?? "Cardio";
+function getCardioSessionLabel(session: CardioSesionWithDetails): string {
+  return getCardioDiscipline(session)?.nombre ?? "Cardio";
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -134,7 +127,7 @@ export function WeekCalendar({
   const monthCardioSessions = useMemo(() => {
     if (!spansTwoMonths) return cardioMonthA ?? [];
     const seen = new Set<string>();
-    const merged: CardioSesion[] = [];
+    const merged: CardioSesionWithDetails[] = [];
     for (const s of [...(cardioMonthA ?? []), ...(cardioMonthB ?? [])]) {
       if (seen.has(s.id)) continue;
       seen.add(s.id);
@@ -157,7 +150,7 @@ export function WeekCalendar({
   const { toast } = useToast();
   const [confirmDeletePlanned, setConfirmDeletePlanned] = useState<PlannedRoutine | null>(null);
   const [confirmDeleteWorkout, setConfirmDeleteWorkout] = useState<ActividadWithDetails | null>(null);
-  const [confirmDeleteCardio, setConfirmDeleteCardio] = useState<CardioSesion | null>(null);
+  const [confirmDeleteCardio, setConfirmDeleteCardio] = useState<CardioSesionWithDetails | null>(null);
   const [editPlanned, setEditPlanned] = useState<PlannedRoutine | null>(null);
   const [editDate, setEditDate] = useState("");
   const [editRutinaId, setEditRutinaId] = useState("");
@@ -196,7 +189,7 @@ export function WeekCalendar({
   }, [planned]);
 
   const cardioByDay = useMemo(() => {
-    const map = new Map<string, CardioSesion[]>();
+    const map = new Map<string, CardioSesionWithDetails[]>();
     const weekDateKeys = new Set(days.map((d) => format(d, "yyyy-MM-dd")));
 
     (monthCardioSessions ?? []).forEach((s) => {
@@ -591,6 +584,7 @@ export function WeekCalendar({
                 try {
                   await deleteWorkout.mutateAsync(confirmDeleteWorkout.id);
                   setConfirmDeleteWorkout(null);
+                  setExpandedDayKey(null);
                 } catch {
                   // toast from mutation
                 }
