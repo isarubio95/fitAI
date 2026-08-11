@@ -4,6 +4,7 @@ import { Home, BarChart3, ClipboardList, Plus, Users } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
+import { floatingGlassSurface } from "@/lib/surface-styles";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
@@ -118,7 +119,12 @@ export function BottomNav() {
       </div>
 
       {/* BARRA DE NAVEGACIÓN */}
-      <div className="relative flex h-18 items-center justify-around overflow-hidden rounded-4xl border border-black/10 bg-white/70 px-2 pb-[calc(env(safe-area-inset-bottom)*0.55)] pt-1 shadow-[0_10px_35px_rgba(0,0,0,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-[hsl(222_47%_12%/0.88)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.06)] dark:ring-1 dark:ring-white/5">
+      <div
+        className={cn(
+          "relative flex h-18 items-center justify-around overflow-hidden rounded-4xl px-2 pb-[calc(env(safe-area-inset-bottom)*0.55)] pt-1",
+          floatingGlassSurface,
+        )}
+      >
         {navItems.map((item, index) => {
           // Renderizado del botón central +
           if (item.type === "add") {

@@ -20,6 +20,7 @@ import { Loader2 } from "lucide-react";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
 import { FLOATING_CREATE_SLOT } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
+import { topBarSurface } from "@/lib/surface-styles";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import UsernameSetup from "@/pages/UsernameSetup";
@@ -214,7 +215,8 @@ export function AppLayout() {
           <header
             ref={headerRef}
             className={cn(
-              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/50 bg-card px-4 pb-2 pt-[calc(0.5rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] dark:bg-[hsl(222_47%_12%/0.88)] dark:backdrop-blur-2xl md:hidden",
+              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/50 px-4 pb-2 pt-[calc(0.5rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] md:hidden",
+              topBarSurface,
               showSectionPills ? "max-md:gap-2" : "gap-0",
             )}
           >
@@ -345,10 +347,6 @@ export function AppLayout() {
         <LiveSessionRehydrator />
         <ActiveWorkoutPill />
         <ActiveCardioPill />
-        <div
-          aria-hidden
-          className="pointer-events-none fixed bottom-0 left-0 right-0 z-30 h-[110px] bg-linear-to-t from-black/40 via-black/14 to-transparent md:hidden dark:from-black/55 dark:via-black/24"
-        />
         <BottomNav />
         <WorkoutLogger />
         <CardioLogger />

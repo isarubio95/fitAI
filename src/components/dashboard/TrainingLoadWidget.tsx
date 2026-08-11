@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
+  ComposedChart,
   Line,
-  LineChart,
+  ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -13,96 +16,26 @@ import {
   type TooltipContentProps,
 } from "recharts";
 import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
-import { Flame, Info, Scale, TrendingUp } from "lucide-react";
+import { CornerDownRight, Info, TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CHART_AREA_OPACITY, chartAxis, chartColors } from "@/lib/chart-colors";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
 import { cn } from "@/lib/utils";
-import { getFormClass, getFormLabel } from "@/lib/trainingLoad";
 import { useTrainingLoad, type TrainingLoadData, type TrainingLoadPoint } from "@/hooks/useTrainingLoad";
-
-function formatNumber(n: number) {
-  return Math.round(n).toLocaleString("es-ES");
-}
-
-function formatSigned(value: number) {
-  const rounded = Math.round(value);
-  if (rounded > 0) return `+${rounded}`;
-  return `${rounded}`;
-}
-
-function clampPct(value: number) {
-  return Math.max(0, Math.min(100, value));
-}
-
-/** Barra horizontal 0→100% sobre un fondo muted. */
-function LoadBar({
-  pct,
-  barClassName,
-  "aria-label": ariaLabel,
-}: {
-  pct: number;
-  barClassName: string;
-  "aria-label": string;
-}) {
-  return (
-    <div
-      className="h-2.5 w-full overflow-hidden rounded-full bg-muted"
-      role="progressbar"
-      aria-valuenow={Math.round(pct)}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-label={ariaLabel}
-    >
-      <div
-        className={cn("h-full rounded-full transition-[width] duration-300", barClassName)}
-        style={{ width: `${clampPct(pct)}%` }}
-      />
-    </div>
-  );
-}
-
-/**
- * Barra bipolar centrada en 0: izquierda = Forma negativa (más fatiga),
- * derecha = Forma positiva (más fresco).
- */
-function FormBalanceBar({
-  form,
-  scale,
-  barClassName,
-}: {
-  form: number;
-  scale: number;
-  barClassName: string;
-}) {
-  const half = Math.max(scale, 1);
-  const pctOfHalf = clampPct((Math.abs(form) / half) * 100);
-  return (
-    <div
-      className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted"
-      role="meter"
-      aria-valuenow={Math.round(form)}
-      aria-valuemin={-Math.round(half)}
-      aria-valuemax={Math.round(half)}
-      aria-label="Forma (Fitness menos Fatiga)"
-    >
-      <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border" />
-      {form < 0 ? (
-        <div
-          className={cn("absolute inset-y-0 right-1/2 rounded-l-full transition-[width] duration-300", barClassName)}
-          style={{ width: `${pctOfHalf / 2}%` }}
-        />
-      ) : form > 0 ? (
-        <div
-          className={cn("absolute inset-y-0 left-1/2 rounded-r-full transition-[width] duration-300", barClassName)}
-          style={{ width: `${pctOfHalf / 2}%` }}
-        />
-      ) : null}
-    </div>
-  );
-}
+import {
+  FitnessFatigueBars,
+  FormEquation,
+} from "@/components/dashboard/training-load/FitnessFatigueBars";
+import { FormScale } from "@/components/dashboard/training-load/FormScale";
+import { getFormZone } from "@/components/dashboard/training-load/formZones";
+import {
+  formatAxisValue,
+  formatNumber,
+  formatSigned,
+} from "@/components/dashboard/training-load/format";
 
 const RANGE_OPTIONS = [
   { key: "1m", label: "1 mes", days: 30 },
@@ -114,6 +47,9 @@ const RANGE_OPTIONS = [
 type RangeKey = (typeof RANGE_OPTIONS)[number]["key"];
 const TRAINING_LOAD_RANGE_STORAGE_KEY = "gym-log.training-load.range";
 const TRAINING_LOAD_DATA_STORAGE_KEY = "gym-log.training-load.data.v2";
+const RECENT_WINDOW_DAYS = 7;
+const Y_AXIS_WIDTH = 40;
+const AXIS_TICK = { fill: chartAxis.tick, fontSize: 12 };
 
 function isValidRangeKey(value: string): value is RangeKey {
   return RANGE_OPTIONS.some((option) => option.key === value);
@@ -163,6 +99,12 @@ function formatXAxisTickLabel(dateValue: string, rangeDays: number) {
   return format(parsedDate, "MMM", { locale: es });
 }
 
+type ChartRow = TrainingLoadPoint & {
+  /** Brecha sombreada entre ambas curvas: [abajo, arriba]. */
+  gapFatigue: [number, number] | null;
+  gapFresh: [number, number] | null;
+};
+
 export function TrainingLoadWidget() {
   const { data, isLoading, isFetching } = useTrainingLoad();
   const [cachedData, setCachedData] = useState<TrainingLoadData | null>(loadCachedTrainingLoadData);
@@ -189,36 +131,52 @@ export function TrainingLoadWidget() {
     () => RANGE_OPTIONS.find((option) => option.key === range)?.days ?? 30,
     [range],
   );
-  const resolvedPoints = resolvedData?.points ?? [];
-  const chartData = useMemo(
-    () => resolvedPoints.slice(-selectedRangeDays),
+  const resolvedPoints = useMemo(() => resolvedData?.points ?? [], [resolvedData]);
+  const chartData = useMemo<ChartRow[]>(
+    () =>
+      resolvedPoints.slice(-selectedRangeDays).map((point) => ({
+        ...point,
+        gapFatigue: point.form < 0 ? [point.fitness, point.fatigue] : null,
+        gapFresh: point.form > 0 ? [point.fatigue, point.fitness] : null,
+      })),
     [resolvedPoints, selectedRangeDays],
   );
   const totals = resolvedData?.totals ?? { fitness: 0, fatigue: 0, form: 0 };
-  const formLabel = getFormLabel(totals.form);
-  const formClass = getFormClass(totals.form);
-  const formDeltaPeriod = useMemo(
-    () => (chartData.length < 2 ? 0 : chartData[chartData.length - 1].form - chartData[0].form),
-    [chartData],
-  );
-  /** Misma escala para Fitness y Fatiga → se ve de dónde sale la diferencia. */
-  const compareScale = Math.max(totals.fitness, totals.fatigue, 1);
-  const formScale = Math.max(Math.abs(totals.form), compareScale * 0.35, 25);
-  const fitnessPct = (totals.fitness / compareScale) * 100;
-  const fatiguePct = (totals.fatigue / compareScale) * 100;
-  const yDomain = useMemo((): [number, number] => {
-    if (!chartData.length) return [0, 25];
+  const zone = getFormZone(totals.form);
+
+  const loadDomain = useMemo((): [number, number] => {
+    let max = 0;
+    for (const row of chartData) max = Math.max(max, row.fitness, row.fatigue);
+    return [0, Math.max(Math.ceil((max * 1.08) / 20) * 20, 20)];
+  }, [chartData]);
+
+  const formDomain = useMemo((): [number, number] => {
     let min = 0;
     let max = 0;
     for (const row of chartData) {
-      min = Math.min(min, row.fitness, row.fatigue, row.form);
-      max = Math.max(max, row.fitness, row.fatigue, row.form);
+      min = Math.min(min, row.form);
+      max = Math.max(max, row.form);
     }
-    const pad = Math.max((max - min) * 0.08, 5);
-    const niceMin = Math.floor((min - (min < 0 ? pad : 0)) / 25) * 25;
-    const niceMax = Math.ceil((max + pad) / 25) * 25;
-    return [Math.min(niceMin, 0), Math.max(niceMax, 25)];
+    const pad = Math.max((max - min) * 0.12, 5);
+    return [Math.floor((min - pad) / 20) * 20, Math.ceil((max + pad) / 20) * 20];
   }, [chartData]);
+
+  /** Corte del degradado en el 0 para pintar la forma positiva y negativa distinto. */
+  const formZeroOffset = useMemo(() => {
+    const [min, max] = formDomain;
+    if (max <= 0) return 0;
+    if (min >= 0) return 1;
+    return max / (max - min);
+  }, [formDomain]);
+
+  const lastRow = chartData[chartData.length - 1];
+  const recent = useMemo(() => {
+    if (resolvedPoints.length < 2) return null;
+    const last = resolvedPoints[resolvedPoints.length - 1];
+    const previous =
+      resolvedPoints[Math.max(0, resolvedPoints.length - 1 - RECENT_WINDOW_DAYS)] ?? resolvedPoints[0];
+    return { from: previous.form, to: last.form, delta: last.form - previous.form };
+  }, [resolvedPoints]);
 
   if (isLoading && !resolvedData) {
     return (
@@ -237,9 +195,9 @@ export function TrainingLoadWidget() {
 
   return (
     <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-      <CardHeader className="space-y-3 px-6 pt-8 pb-3">
-        <div className="flex items-center gap-1.5 pb-1">
-          <CardTitle asChild className="text-base">
+      <CardHeader className="px-6 pt-8 pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle asChild className="text-[18px]">
             <h2>Forma y fatiga</h2>
           </CardTitle>
           <Popover>
@@ -248,12 +206,13 @@ export function TrainingLoadWidget() {
                 variant="ghost"
                 size="icon"
                 className="touch-styled h-6 w-6 rounded-full transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100"
+                aria-label="Cómo se calcula la forma"
               >
-                <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                <Info className="h-4 w-4 text-muted-foreground" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-72 text-sm" side="bottom" align="start">
-              <p className="mb-1 font-semibold">¿Cómo leer este gráfico?</p>
+            <PopoverContent className="w-72 text-sm" side="bottom" align="end">
+              <p className="mb-1 font-semibold">¿Cómo se calcula?</p>
               <p className="mb-3 text-muted-foreground">
                 Modelo Banister/Coggan: cada día suma carga de fuerza (volumen × RIR y FC si hay) y
                 cardio (TRIMP por FC o TSS por potencia). Fitness acumula a ~42 días; Fatiga a ~7;
@@ -276,96 +235,36 @@ export function TrainingLoadWidget() {
             </PopoverContent>
           </Popover>
         </div>
-        <div className="space-y-3 rounded-xl bg-muted/40 p-3">
-          {showDynamicSkeleton ? (
-            <div className="space-y-3">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          ) : (
-            <>
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                    <TrendingUp className="h-3.5 w-3.5 text-sky-500" aria-hidden />
-                    Fitness
-                  </p>
-                  <p className="text-sm font-semibold tabular-nums text-sky-500">
-                    {formatNumber(totals.fitness)}
-                  </p>
-                </div>
-                <LoadBar pct={fitnessPct} barClassName="bg-sky-500" aria-label="Fitness" />
-                <p className="text-[10px] text-muted-foreground">Adaptación a largo plazo (~42 días)</p>
-              </div>
-
-              <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground">
-                <span className="h-px flex-1 bg-border" />
-                <span aria-hidden>−</span>
-                <span className="h-px flex-1 bg-border" />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                    <Flame className="h-3.5 w-3.5 text-amber-500" aria-hidden />
-                    Fatiga
-                  </p>
-                  <p className="text-sm font-semibold tabular-nums text-amber-500">
-                    {formatNumber(totals.fatigue)}
-                  </p>
-                </div>
-                <LoadBar pct={fatiguePct} barClassName="bg-amber-500" aria-label="Fatiga" />
-                <p className="text-[10px] text-muted-foreground">Cansancio reciente (~7 días)</p>
-              </div>
-
-              <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground">
-                <span className="h-px flex-1 bg-border" />
-                <span aria-hidden>=</span>
-                <span className="h-px flex-1 bg-border" />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                    <Scale className="h-3.5 w-3.5 text-accent-foreground" aria-hidden />
-                    Forma
-                  </p>
-                  <p className={cn("text-sm font-semibold tabular-nums", formClass)}>
-                    {formatSigned(totals.form)}
-                    <span className="ml-1.5 font-medium">· {formLabel}</span>
-                  </p>
-                </div>
-                <FormBalanceBar
-                  form={totals.form}
-                  scale={formScale}
-                  barClassName={
-                    totals.form >= 0 ? "bg-emerald-500" : "bg-amber-500"
-                  }
-                />
-                <p className="text-[10px] text-muted-foreground">
-                  Forma = Fitness − Fatiga
-                  {totals.form < 0
-                    ? " · más fatiga que forma acumulada"
-                    : totals.form > 0
-                      ? " · más fresco que fatigado"
-                      : " · en equilibrio"}
-                </p>
-              </div>
-            </>
-          )}
-        </div>
       </CardHeader>
 
       <CardContent className="space-y-4 px-6 pt-0">
-        <div className="flex flex-wrap justify-around">
+        {showDynamicSkeleton ? (
+          <div className="space-y-4">
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+          </div>
+        ) : (
+          <>
+            <FitnessFatigueBars fitness={totals.fitness} fatigue={totals.fatigue} />
+            <FormEquation
+              fitness={totals.fitness}
+              fatigue={totals.fatigue}
+              form={totals.form}
+              formColor={zone.color}
+            />
+            <FormScale form={totals.form} />
+          </>
+        )}
+
+        <div className="flex flex-wrap justify-around gap-2 pt-1">
           {RANGE_OPTIONS.map((option) => (
             <button
               key={option.key}
               type="button"
               className={cn(
                 filterPillBase,
-                "h-7 px-3 py-0 text-xs",
+                "h-7 px-4 py-0 text-[13px]",
                 range === option.key ? filterPillActive : filterPillInactive,
               )}
               onClick={() => setRange(option.key)}
@@ -374,97 +273,239 @@ export function TrainingLoadWidget() {
             </button>
           ))}
         </div>
+
         {showDynamicSkeleton ? (
-          <Skeleton className="h-[180px] w-full" />
+          <Skeleton className="h-[320px] w-full" />
         ) : (
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={chartData} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid
-                stroke="hsl(var(--border))"
-                strokeOpacity={0.45}
-                vertical={false}
-                horizontal
-              />
-              <XAxis
-                dataKey="date"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                tickMargin={10}
-                minTickGap={34}
-                tickFormatter={(d) => formatXAxisTickLabel(d, selectedRangeDays)}
-              />
-              <YAxis
-                domain={yDomain}
-                allowDataOverflow={false}
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                width={30}
-                tickCount={6}
-                tickFormatter={(v) => {
-                  const n = Math.round(v as number);
-                  // Evitar que el "-" se confunda / se recorte en ticks negativos.
-                  return n < 0 ? `−${Math.abs(n)}` : `${n}`;
-                }}
-              />
-              <ReferenceLine y={0} stroke="hsl(var(--border))" strokeOpacity={0.9} />
-              <Tooltip content={TrainingLoadTooltip} />
-              <Line
-                type="monotone"
-                dataKey="fitness"
-                name="Fitness"
-                stroke="hsl(199 89% 48%)"
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="fatigue"
-                name="Fatiga"
-                stroke="hsl(38 92% 50%)"
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="form"
-                name="Forma"
-                stroke="hsl(var(--accent))"
-                strokeWidth={2}
-                strokeDasharray="4 3"
-                dot={false}
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="space-y-1">
+            <ResponsiveContainer width="100%" height={200}>
+              <ComposedChart
+                data={chartData}
+                syncId="training-load"
+                margin={{ top: 12, right: 12, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid stroke={chartAxis.grid} vertical={false} horizontal />
+                <XAxis dataKey="date" hide />
+                <YAxis
+                  domain={loadDomain}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={AXIS_TICK}
+                  width={Y_AXIS_WIDTH}
+                  tickCount={4}
+                  tickFormatter={formatAxisValue}
+                />
+                <Tooltip content={TrainingLoadTooltip} />
+                <Area
+                  dataKey="gapFatigue"
+                  name="Forma"
+                  stroke="none"
+                  fill={chartColors.danger}
+                  fillOpacity={CHART_AREA_OPACITY}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                  activeDot={false}
+                  legendType="none"
+                  tooltipType="none"
+                />
+                <Area
+                  dataKey="gapFresh"
+                  name="Forma"
+                  stroke="none"
+                  fill={chartColors.positive}
+                  fillOpacity={CHART_AREA_OPACITY}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                  activeDot={false}
+                  legendType="none"
+                  tooltipType="none"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="fitness"
+                  name="Fitness"
+                  stroke={chartColors.fitness}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="fatigue"
+                  name="Fatiga"
+                  stroke={chartColors.fatigue}
+                  strokeWidth={2}
+                  strokeDasharray="5 4"
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                {lastRow && (
+                  <ReferenceLine
+                    segment={[
+                      { x: lastRow.date, y: lastRow.fitness },
+                      { x: lastRow.date, y: lastRow.fatigue },
+                    ]}
+                    stroke={lastRow.form < 0 ? chartColors.danger : chartColors.positive}
+                    strokeWidth={2}
+                    ifOverflow="visible"
+                    label={{
+                      value: `brecha ${formatNumber(Math.abs(lastRow.form))}`,
+                      position: "left",
+                      fill: "hsl(var(--foreground))",
+                      fontSize: 13,
+                    }}
+                  />
+                )}
+                {lastRow && (
+                  <ReferenceDot
+                    x={lastRow.date}
+                    y={lastRow.fitness}
+                    r={4}
+                    fill={chartColors.fitness}
+                    stroke={chartAxis.surface}
+                    strokeWidth={2}
+                    ifOverflow="visible"
+                  />
+                )}
+                {lastRow && (
+                  <ReferenceDot
+                    x={lastRow.date}
+                    y={lastRow.fatigue}
+                    r={4}
+                    fill={chartColors.fatigue}
+                    stroke={chartAxis.surface}
+                    strokeWidth={2}
+                    ifOverflow="visible"
+                  />
+                )}
+              </ComposedChart>
+            </ResponsiveContainer>
+
+            <p
+              className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+              style={{ paddingLeft: Y_AXIS_WIDTH }}
+            >
+              <CornerDownRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              Esa brecha sombreada es exactamente la línea de abajo
+            </p>
+
+            <ResponsiveContainer width="100%" height={120}>
+              <AreaChart
+                data={chartData}
+                syncId="training-load"
+                margin={{ top: 4, right: 12, left: 0, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="training-load-form-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset={0} stopColor={chartColors.positive} stopOpacity={0.4} />
+                    <stop
+                      offset={formZeroOffset}
+                      stopColor={chartColors.positive}
+                      stopOpacity={0.1}
+                    />
+                    <stop offset={formZeroOffset} stopColor={chartColors.danger} stopOpacity={0.1} />
+                    <stop offset={1} stopColor={chartColors.danger} stopOpacity={0.4} />
+                  </linearGradient>
+                  <linearGradient id="training-load-form-stroke" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset={formZeroOffset} stopColor={chartColors.positive} />
+                    <stop offset={formZeroOffset} stopColor={chartColors.danger} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke={chartAxis.grid} vertical={false} horizontal />
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={AXIS_TICK}
+                  tickMargin={8}
+                  minTickGap={34}
+                  tickFormatter={(d: string) => formatXAxisTickLabel(d, selectedRangeDays)}
+                />
+                <YAxis
+                  domain={formDomain}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={AXIS_TICK}
+                  width={Y_AXIS_WIDTH}
+                  tickCount={3}
+                  tickFormatter={formatAxisValue}
+                />
+                <ReferenceLine y={0} stroke={chartAxis.tick} strokeDasharray="4 4" />
+                <Tooltip content={TrainingLoadTooltip} />
+                <Area
+                  type="monotone"
+                  dataKey="form"
+                  name="Forma"
+                  baseValue={0}
+                  stroke="url(#training-load-form-stroke)"
+                  strokeWidth={2}
+                  fill="url(#training-load-form-fill)"
+                  isAnimationActive={false}
+                />
+                {lastRow && (
+                  <ReferenceDot
+                    x={lastRow.date}
+                    y={lastRow.form}
+                    r={4}
+                    fill={lastRow.form < 0 ? chartColors.danger : chartColors.positive}
+                    stroke={chartAxis.surface}
+                    strokeWidth={2}
+                    ifOverflow="visible"
+                  />
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <div className="flex flex-wrap gap-3">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-sky-500" /> Fitness
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-amber-500" /> Fatiga
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-accent" /> Forma
-            </span>
-          </div>
-          {showDynamicSkeleton ? (
-            <Skeleton className="h-4 w-36" />
-          ) : (
-            <span>
-              Cambio forma:{" "}
-              <span className={formDeltaPeriod >= 0 ? "text-emerald-500" : "text-red-500"}>
-                {formatSigned(formDeltaPeriod)}
+        <div className="flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="h-0.5 w-4 rounded-full"
+              style={{ backgroundColor: chartColors.fitness }}
+              aria-hidden
+            />{" "}
+            Fitness
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="h-0.5 w-4 rounded-full"
+              style={{
+                backgroundImage: `repeating-linear-gradient(to right, ${chartColors.fatigue} 0 5px, transparent 5px 8px)`,
+              }}
+              aria-hidden
+            />{" "}
+            Fatiga
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="h-2.5 w-2.5 rounded-[3px]"
+              style={{ backgroundColor: chartColors.danger, opacity: 0.55 }}
+              aria-hidden
+            />{" "}
+            Forma (la brecha)
+          </span>
+        </div>
+
+        {recent && !showDynamicSkeleton && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-[13px]">
+            <span className="text-muted-foreground">Últimos {RECENT_WINDOW_DAYS} días</span>
+            <span
+              className="inline-flex items-center gap-1.5 font-medium"
+              style={{ color: recent.delta >= 0 ? chartColors.positive : chartColors.danger }}
+            >
+              {recent.delta >= 0 ? (
+                <TrendingUp className="h-3.5 w-3.5" aria-hidden />
+              ) : (
+                <TrendingDown className="h-3.5 w-3.5" aria-hidden />
+              )}
+              {formatSigned(recent.delta)} de forma
+              <span className="text-muted-foreground">
+                · de {formatSigned(recent.from)} a {formatSigned(recent.to)}
               </span>
             </span>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -474,17 +515,18 @@ function TrainingLoadTooltip({ active, payload }: TooltipContentProps<ValueType,
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload as TrainingLoadPoint | undefined;
   if (!row) return null;
+  const zone = getFormZone(row.form);
   return (
-    <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md text-popover-foreground">
+    <div className="rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
       <p className="font-medium">{format(new Date(row.date), "d MMM yyyy", { locale: es })}</p>
       <p className="text-muted-foreground">
         Carga: {formatNumber(row.load)} (F {formatNumber(row.loadStrength)} · C{" "}
         {formatNumber(row.loadCardio)})
       </p>
-      <p className="text-sky-500">Fitness: {formatNumber(row.fitness)}</p>
-      <p className="text-amber-500">Fatiga: {formatNumber(row.fatigue)}</p>
-      <p className="text-accent-foreground">
-        Forma: {formatSigned(row.form)} · {getFormLabel(row.form)}
+      <p style={{ color: chartColors.fitness }}>Fitness: {formatNumber(row.fitness)}</p>
+      <p style={{ color: chartColors.fatigue }}>Fatiga: {formatNumber(row.fatigue)}</p>
+      <p style={{ color: zone.color }}>
+        Forma: {formatSigned(row.form)} · {zone.label}
       </p>
     </div>
   );

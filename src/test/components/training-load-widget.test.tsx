@@ -12,13 +12,16 @@ vi.mock("@/hooks/useTrainingLoad", () => ({
 
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: ReactNode }) => <svg>{children}</svg>,
-  LineChart: ({ children }: { children: ReactNode }) => <g>{children}</g>,
+  ComposedChart: ({ children }: { children: ReactNode }) => <g>{children}</g>,
+  AreaChart: ({ children }: { children: ReactNode }) => <g>{children}</g>,
   CartesianGrid: () => null,
   XAxis: () => null,
   YAxis: () => null,
   Tooltip: () => null,
   Line: () => null,
+  Area: () => null,
   ReferenceLine: () => null,
+  ReferenceDot: () => null,
 }));
 
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
@@ -71,8 +74,10 @@ describe("TrainingLoadWidget", () => {
 
     render(<TrainingLoadWidget />);
     expect(screen.getAllByText("Fitness").length).toBeGreaterThan(0);
-    expect(screen.getByText("42")).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes("Cambio forma:"))).toBeInTheDocument();
+    expect(screen.getAllByText("42").length).toBeGreaterThan(0);
+    expect(screen.getByText("Tu forma hoy")).toBeInTheDocument();
+    expect(screen.getAllByText("−8").length).toBeGreaterThan(0);
+    expect(screen.getByText((content) => content.includes("Últimos 7 días"))).toBeInTheDocument();
   });
 
   it("usa caché local cuando no hay respuesta de red", () => {
@@ -100,6 +105,6 @@ describe("TrainingLoadWidget", () => {
     });
 
     render(<TrainingLoadWidget />);
-    expect(screen.getByText("30")).toBeInTheDocument();
+    expect(screen.getAllByText("30").length).toBeGreaterThan(0);
   });
 });

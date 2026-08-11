@@ -53,6 +53,14 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        chart: {
+          fitness: "hsl(var(--chart-fitness))",
+          fatigue: "hsl(var(--chart-fatigue))",
+          danger: "hsl(var(--chart-danger))",
+          positive: "hsl(var(--chart-positive))",
+          fresh: "hsl(var(--chart-fresh))",
+          neutral: "hsl(var(--chart-neutral))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
