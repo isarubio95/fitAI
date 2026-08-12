@@ -11,12 +11,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Play, Pencil, Trash2, Dumbbell, GripVertical, ChevronDown, MoreVertical } from "lucide-react";
+import { Play, Pencil, Trash2, Dumbbell, Clock, GripVertical, ChevronDown, MoreVertical } from "lucide-react";
 import type { RutinaWithDetails } from "@/types/routine";
 import { formatRitmoSegKmLabel } from "@/types/workout";
 import { cn } from "@/lib/utils";
 import { summarizeRoutineMuscleGroups, resolveMainMuscleGroup } from "@/lib/muscleMapping";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
+import {
+  estimateRoutineDurationMinutes,
+  formatEstimatedDurationLabel,
+} from "@/lib/estimateRoutineDuration";
 import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
 
@@ -44,6 +48,9 @@ export function SortableRoutineCard({
       ? fromExercises.join(" · ")
       : resolveMainMuscleGroup(r.grupo_muscular) ?? (r.grupo_muscular?.trim() || null);
   const subtitle = description ?? muscleGroupsLabel;
+  const durationLabel = formatEstimatedDurationLabel(
+    estimateRoutineDurationMinutes(r.ejercicios),
+  );
 
   const {
     attributes,
@@ -103,9 +110,17 @@ export function SortableRoutineCard({
                   {subtitle}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                <Dumbbell className="h-3 w-3" />
-                {r.ejercicios.length} ejercicio{r.ejercicios.length !== 1 ? "s" : ""}
+              <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-2.5">
+                <span className="inline-flex items-center gap-1">
+                  <Dumbbell className="h-3 w-3" />
+                  {r.ejercicios.length} ejercicio{r.ejercicios.length !== 1 ? "s" : ""}
+                </span>
+                {durationLabel && (
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {durationLabel}
+                  </span>
+                )}
               </p>
             </button>
           </div>

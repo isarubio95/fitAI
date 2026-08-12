@@ -283,15 +283,11 @@ const Routines = () => {
     return "Orden manual";
   };
 
-  const fillBottomWithCard = (routines?.length ?? 0) > 3;
-
   return (
     <div
       className={cn(
         "flex w-full min-w-0 flex-col md:max-w-2xl md:mx-auto md:px-8 md:pt-3",
-        fillBottomWithCard
-          ? "flex-1 bg-card max-md:-mb-24 max-md:pb-24 md:bg-transparent"
-          : "bg-background",
+        "flex-1 bg-card max-md:-mb-24 max-md:pb-24 md:bg-transparent",
       )}
     >
       {mobileActionsSlot &&
@@ -440,8 +436,7 @@ const Routines = () => {
           <SortableContext items={sortedRoutines.map((r) => r.id)} strategy={verticalListSortingStrategy}>
             <div
               className={cn(
-                "flex w-full flex-col bg-background",
-                fillBottomWithCard && "md:bg-transparent",
+                "flex w-full flex-col bg-background md:bg-transparent",
                 PAGE_CARD_STACK_GAP,
               )}
             >
