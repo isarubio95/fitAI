@@ -606,8 +606,8 @@ const Exercises = () => {
 
           {/* Filtros: una sola fila con scroll horizontal */}
           <div className="flex flex-col gap-3 md:gap-2">
-            <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden pb-1 [-webkit-overflow-scrolling:touch]">
-              <div className="flex min-w-max items-center gap-2 whitespace-nowrap">
+            <div className="w-full min-w-0">
+              <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-webkit-overflow-scrolling:touch]">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
