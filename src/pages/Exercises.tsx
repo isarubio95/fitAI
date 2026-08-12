@@ -42,11 +42,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, ChevronDown, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, BicepsFlexed, Filter, X, Plus } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, ChevronDown, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, BicepsFlexed, Filter, X, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
-import type { MainMuscleGroup } from "@/constants/muscleGroups";
+import { MUSCLE_GROUP_ICON_SRC, type MainMuscleGroup } from "@/constants/muscleGroups";
 import { EXERCISE_SYNONYMS } from "@/constants/exerciseSynonyms";
 import type { RegistroSeries, TipoEjercicio } from "@/types/workout";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
@@ -198,6 +198,11 @@ const MUSCLE_GROUP_ICONS: Record<MainMuscleGroup, typeof Dumbbell> = {
 function getExerciseIcon(ex: { musculos_involucrados?: string[] | null }) {
   const group = getMainGroupFromBodyPart(ex.musculos_involucrados as string[] | null);
   return group ? MUSCLE_GROUP_ICONS[group] : Dumbbell;
+}
+
+function getExerciseGroupIconSrc(ex: { musculos_involucrados?: string[] | null }) {
+  const group = getMainGroupFromBodyPart(ex.musculos_involucrados as string[] | null);
+  return group ? MUSCLE_GROUP_ICON_SRC[group] : null;
 }
 
 function difficultyToLevel(d: unknown): 1 | 2 | 3 | null {
@@ -496,7 +501,7 @@ const Exercises = () => {
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-hidden bg-background px-0 pb-6 mx-auto md:px-8 md:pt-6",
+        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-hidden bg-card px-0 pb-6 mx-auto md:px-8 md:pt-6",
         PAGE_CARD_STACK_GAP,
       )}
     >
@@ -891,79 +896,94 @@ const Exercises = () => {
         </Card>
       )}
 
-      <div className={cn("grid w-full grid-cols-1 bg-background sm:grid-cols-2", PAGE_CARD_STACK_GAP)}>
+      <div className="grid w-full grid-cols-2 gap-3 bg-card px-3 md:gap-[11px] md:px-0">
         {isLoading || difficultyLoading
-          ? Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-none border-0 bg-card md:rounded-3xl" />
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="w-full overflow-hidden rounded-3xl border border-border/20 bg-card">
+                <Skeleton className="aspect-[4/3] w-full rounded-none" />
+                <div className="space-y-2 px-3 py-3">
+                  <Skeleton className="h-4 w-4/5" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
             ))
           : filteredExercises.map((ex) => {
               const isOwn = ex.usuario_id === user?.id;
               const IconComponent = getExerciseIcon(ex as { musculos_involucrados?: string[] | null });
+              const groupIconSrc = getExerciseGroupIconSrc(ex as { musculos_involucrados?: string[] | null });
+              const mediaUrl = ex.gif_url || ex.imagen;
+              const level = difficultyToLevel(ex.dificultad);
               return (
                 <Card
                   key={ex.id}
                   className={cn(
-                    "w-full max-w-none cursor-pointer overflow-hidden rounded-none border-0 shadow-none transition-colors md:rounded-3xl md:border md:border-border/20",
+                    "flex h-full w-full max-w-none cursor-pointer flex-col overflow-hidden rounded-xl border border-border/20 shadow-none transition-colors",
                     isOwn
-                      ? "bg-primary/5 md:border-primary/30 hover:md:border-primary/50"
-                      : "bg-card hover:md:border-primary/50",
+                      ? "bg-primary/5 border-primary/30 hover:border-primary/50"
+                      : "bg-card hover:border-primary/50",
                   )}
                   onClick={() => setSelectedExercise(ex)}
                 >
-                  <CardContent className="flex items-start gap-3 px-6 py-4">
-                    <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                        isOwn ? "bg-primary/20" : "bg-primary/10"
-                      }`}
-                    >
-                      <IconComponent className="h-5 w-5 text-primary" />
+                  <CardContent className="flex flex-1 flex-col p-0">
+                    <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-muted">
+                      {mediaUrl ? (
+                        <img
+                          src={mediaUrl}
+                          alt={ex.nombre}
+                          className="h-full w-full object-contain"
+                          loading="lazy"
+                          decoding="async"
+                          draggable={false}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <IconComponent className="h-8 w-8 text-muted-foreground/40" />
+                        </div>
+                      )}
+
+                      {groupIconSrc && (
+                        <img
+                          src={groupIconSrc}
+                          alt=""
+                          className="absolute right-2 top-2 h-6 w-6 opacity-60"
+                          draggable={false}
+                        />
+                      )}
+
+                      {isOwn && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute left-2 top-2 h-8 w-8 rounded-full bg-background/75 text-destructive backdrop-blur-sm hover:bg-background"
+                          aria-label={`Eliminar ${ex.nombre}`}
+                          onClick={(e) => { e.stopPropagation(); setDeleteId(ex.id); }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold truncate">{ex.nombre}</p>
-                        {isOwn && <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+
+                    <div className="space-y-1 px-3 py-3">
+                      <div className="flex min-h-[2.75rem] items-start gap-1.5">
+                        <p className="line-clamp-2 text-sm font-semibold leading-snug">{ex.nombre}</p>
+                        {isOwn && <User className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
                       </div>
-                      <div className="mt-1 flex flex-wrap gap-1.5">
-                        {isOwn && (
-                          <Badge variant="secondary" className="text-[11px]">
-                            Personal
-                          </Badge>
-                        )}
-                        {ex.tipo && (
-                          <Badge variant="outline" className="text-[11px]">
-                            <Dumbbell className="mr-1 h-3 w-3" />
-                            {ex.tipo}
-                          </Badge>
-                        )}
-                        {ex.grupo_muscular && (
-                          <Badge variant="outline" className="text-[11px]">
-                            <Layers className="mr-1 h-3 w-3" />
-                            {ex.grupo_muscular}
-                          </Badge>
-                        )}
-                        {difficultyToLevel(ex.dificultad) && (
-                          <Badge variant="outline" className="text-[11px]">
-                            <DifficultyBars level={difficultyToLevel(ex.dificultad)!} />
-                          </Badge>
-                        )}
+                      <div className="flex min-h-[1rem] min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                         {ex.equipment && (
-                          <Badge variant="outline" className="text-[11px]">
-                            <Wrench className="mr-1 h-3 w-3" />
-                            {ex.equipment}
-                          </Badge>
+                          <span className="truncate capitalize">{ex.equipment}</span>
+                        )}
+                        {ex.equipment && level && (
+                          <span className="shrink-0 text-muted-foreground/50" aria-hidden>
+                            ·
+                          </span>
+                        )}
+                        {level && (
+                          <span className="shrink-0" title={difficultyLabel(level)}>
+                            <DifficultyBars level={level} />
+                          </span>
                         )}
                       </div>
                     </div>
-                    {isOwn && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0 text-destructive"
-                        onClick={(e) => { e.stopPropagation(); setDeleteId(ex.id); }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
                   </CardContent>
                 </Card>
               );
