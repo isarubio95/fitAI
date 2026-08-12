@@ -5,7 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Play, Pencil, Trash2, Dumbbell, GripVertical, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Play, Pencil, Trash2, Dumbbell, GripVertical, ChevronDown, MoreVertical } from "lucide-react";
 import type { RutinaWithDetails } from "@/types/routine";
 import { formatRitmoSegKmLabel } from "@/types/workout";
 import { cn } from "@/lib/utils";
@@ -71,9 +77,9 @@ export function SortableRoutineCard({
         isDragging && "shadow-lg ring-2 ring-primary/30",
       )}
     >
-      <CardContent className="px-6 py-6">
+      <CardContent className="px-6 py-4">
         {/* Header */}
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-stretch justify-between gap-3">
           <div className="flex items-start gap-2 flex-1 min-w-0">
             {isDragMode && (
               <button
@@ -103,27 +109,52 @@ export function SortableRoutineCard({
               </p>
             </button>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex flex-col items-end justify-between shrink-0 -mr-1">
+            <div className="flex items-center gap-0.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 text-foreground"
+                aria-label="Iniciar entrenamiento"
+                onClick={(e) => onStart(r, pillCircleOriginFromElement(e.currentTarget))}
+              >
+                <Play className="h-6 w-6 fill-current" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-muted-foreground"
+                    aria-label="Más opciones"
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40 bg-popover">
+                  <DropdownMenuItem onClick={() => onEdit(r.id)}>
+                    <Pencil className="mr-2 h-4 w-4" /> Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onDelete(r.id)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-muted-foreground"
+              aria-label={isOpen ? "Ocultar ejercicios" : "Ver ejercicios"}
+              aria-expanded={isOpen}
               onClick={() => setIsOpen((v) => !v)}
             >
               <ChevronDown
                 className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
               />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(r.id)}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-destructive"
-              onClick={() => onDelete(r.id)}
-            >
-              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -173,14 +204,6 @@ export function SortableRoutineCard({
             </div>
           </div>
         </div>
-
-        <Button
-          className="w-full mt-3"
-          variant="secondary"
-          onClick={(e) => onStart(r, pillCircleOriginFromElement(e.currentTarget))}
-        >
-          <Play className="h-4 w-4 mr-2" /> Iniciar Entrenamiento
-        </Button>
       </CardContent>
     </Card>
   );
