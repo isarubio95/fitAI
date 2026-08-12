@@ -42,7 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, ChevronDown, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, BicepsFlexed, SignalMedium, Filter, X, Plus } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, ChevronDown, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, BicepsFlexed, Filter, X, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
@@ -227,20 +227,17 @@ function DifficultyBars({ level }: { level: 1 | 2 | 3 }) {
         : "text-orange-600 dark:text-orange-400";
 
   return (
-    <span className={cn("inline-flex items-center gap-1", color)}>
-      <SignalMedium className="h-3.5 w-3.5" />
-      <span className="inline-flex items-end gap-[3px]">
-        {[1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className={cn(
-              "inline-block w-[4px] rounded-sm",
-              i === 1 ? "h-[6px]" : i === 2 ? "h-[9px]" : "h-[12px]",
-              i <= level ? "bg-current" : "bg-current/25",
-            )}
-          />
-        ))}
-      </span>
+    <span className={cn("inline-flex items-end gap-[3px]", color)} aria-hidden>
+      {[1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className={cn(
+            "inline-block w-[4px] rounded-sm",
+            i === 1 ? "h-[6px]" : i === 2 ? "h-[9px]" : "h-[12px]",
+            i <= level ? "bg-current" : "bg-current/25",
+          )}
+        />
+      ))}
     </span>
   );
 }

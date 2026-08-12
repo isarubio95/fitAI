@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Dumbbell, Layers, Pencil, SignalMedium, Wrench } from "lucide-react";
+import { Dumbbell, Layers, Pencil, Wrench } from "lucide-react";
 
 function difficultyToLevel(d: unknown): 1 | 2 | 3 | null {
   if (d == null) return null;
@@ -39,20 +39,17 @@ function DifficultyBars({ level }: { level: 1 | 2 | 3 }) {
         : "text-orange-600 dark:text-orange-400";
 
   return (
-    <span className={cn("inline-flex items-center gap-1", color)}>
-      <SignalMedium className="h-3.5 w-3.5" />
-      <span className="inline-flex items-end gap-[3px]">
-        {[1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className={cn(
-              "inline-block w-[4px] rounded-sm",
-              i === 1 ? "h-[6px]" : i === 2 ? "h-[9px]" : "h-[12px]",
-              i <= level ? "bg-current" : "bg-current/25",
-            )}
-          />
-        ))}
-      </span>
+    <span className={cn("inline-flex items-end gap-[3px]", color)} aria-hidden>
+      {[1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className={cn(
+            "inline-block w-[4px] rounded-sm",
+            i === 1 ? "h-[6px]" : i === 2 ? "h-[9px]" : "h-[12px]",
+            i <= level ? "bg-current" : "bg-current/25",
+          )}
+        />
+      ))}
     </span>
   );
 }
