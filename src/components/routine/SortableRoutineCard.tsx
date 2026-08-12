@@ -9,6 +9,7 @@ import { Play, Pencil, Trash2, Dumbbell, GripVertical, ChevronDown } from "lucid
 import type { RutinaWithDetails } from "@/types/routine";
 import { formatRitmoSegKmLabel } from "@/types/workout";
 import { cn } from "@/lib/utils";
+import { summarizeRoutineMuscleGroups, resolveMainMuscleGroup } from "@/lib/muscleMapping";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
@@ -30,6 +31,13 @@ export function SortableRoutineCard({
 }: SortableRoutineCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const RoutineTitleIcon = resolveRoutineIcon(r.icono);
+  const description = r.descripcion?.trim() || null;
+  const fromExercises = summarizeRoutineMuscleGroups(r.ejercicios);
+  const muscleGroupsLabel =
+    fromExercises.length > 0
+      ? fromExercises.join(" · ")
+      : resolveMainMuscleGroup(r.grupo_muscular) ?? (r.grupo_muscular?.trim() || null);
+  const subtitle = description ?? muscleGroupsLabel;
 
   const {
     attributes,
@@ -81,12 +89,12 @@ export function SortableRoutineCard({
               className="flex-1 min-w-0 text-left"
             >
               <h2 className="font-semibold text-base flex items-center gap-2 min-w-0">
-                <RoutineTitleIcon className="h-4 w-4 shrink-0 text-primary" />
+                <RoutineTitleIcon className="h-4 w-4 shrink-0" />
                 <span className="truncate">{r.nombre}</span>
               </h2>
-              {r.descripcion && (
+              {subtitle && (
                 <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-                  {r.descripcion}
+                  {subtitle}
                 </p>
               )}
               <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
