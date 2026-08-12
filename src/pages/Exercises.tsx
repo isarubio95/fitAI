@@ -42,7 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, BicepsFlexed, SignalMedium, Filter, X, Plus } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, ChevronDown, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, BicepsFlexed, SignalMedium, Filter, X, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
@@ -52,6 +52,12 @@ import type { RegistroSeries, TipoEjercicio } from "@/types/workout";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
 
 type DifficultyLevel = 1 | 2 | 3;
+
+const DIFFICULTY_OPTIONS: { level: DifficultyLevel; label: string }[] = [
+  { level: 1, label: "Baja" },
+  { level: 2, label: "Media" },
+  { level: 3, label: "Alta" },
+];
 
 /** Fila unificada del catálogo sistema + ejercicios de usuario. */
 type CatalogExercise = TipoEjercicio & {
@@ -118,6 +124,14 @@ function serializeFiltersToSearchParams(sp: URLSearchParams, f: ExerciseFilters)
 
 function toggleInList(list: string[], value: string) {
   return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
+}
+
+function toggleDifficulty(list: DifficultyLevel[], value: DifficultyLevel) {
+  return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
+}
+
+function difficultyLabel(level: DifficultyLevel) {
+  return DIFFICULTY_OPTIONS.find((o) => o.level === level)?.label ?? String(level);
 }
 
 function splitEquipmentUnits(value: unknown): string[] {
@@ -214,32 +228,6 @@ function DifficultyBars({ level }: { level: 1 | 2 | 3 }) {
 
   return (
     <span className={cn("inline-flex items-center gap-1", color)}>
-      <SignalMedium className="h-3.5 w-3.5" />
-      <span className="inline-flex items-end gap-[3px]">
-        {[1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className={cn(
-              "inline-block w-[4px] rounded-sm",
-              i === 1 ? "h-[6px]" : i === 2 ? "h-[9px]" : "h-[12px]",
-              i <= level ? "bg-current" : "bg-current/25",
-            )}
-          />
-        ))}
-      </span>
-    </span>
-  );
-}
-
-function DifficultyBarsMono({ level, active }: { level: 1 | 2 | 3; active: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1",
-        active ? "text-primary" : "text-foreground",
-      )}
-      aria-hidden
-    >
       <SignalMedium className="h-3.5 w-3.5" />
       <span className="inline-flex items-end gap-[3px]">
         {[1, 2, 3].map((i) => (
@@ -616,214 +604,200 @@ const Exercises = () => {
             />
           </div>
 
-          {/* Filtros */}
+          {/* Filtros: una sola fila con scroll horizontal */}
           <div className="flex flex-col gap-3 md:gap-2">
-            <div className="w-full min-w-0 md:max-w-full md:overflow-x-auto md:overflow-y-hidden md:pb-1 md:[-webkit-overflow-scrolling:touch]">
-              <div className="grid w-full grid-cols-3 gap-3 md:flex md:min-w-max md:items-center md:gap-2 md:whitespace-nowrap">
+            <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden pb-1 [-webkit-overflow-scrolling:touch]">
+              <div className="flex min-w-max items-center gap-2 whitespace-nowrap">
                 <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="filter"
-                size="sm"
-                className={cn(
-                  "w-full min-w-0 justify-center gap-2 md:w-28 md:shrink-0",
-                  filters.tipos.length > 0 && filterButtonActive,
-                )}
-              >
-                <Filter className="h-4 w-4" /> Tipo
-                {filters.tipos.length > 0 && (
-                  <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
-                    {filters.tipos.length}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Buscar tipo..." />
-                <CommandList className="max-h-[260px]">
-                  <CommandEmpty>Sin resultados.</CommandEmpty>
-                  <CommandGroup heading="Tipo">
-                    {tipoOptions.map((t) => (
-                      <CommandItem
-                        key={t}
-                        value={t}
-                        onSelect={() => {
-                          const nextFilters: ExerciseFilters = { ...filters, tipos: toggleInList(filters.tipos, t) };
-                          setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", filters.tipos.includes(t) ? "opacity-100" : "opacity-0")} />
-                        {t}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="filter"
+                      size="sm"
+                      className={cn(
+                        "shrink-0 justify-center gap-2",
+                        filters.tipos.length > 0 && filterButtonActive,
+                      )}
+                    >
+                      <Filter className="h-4 w-4" /> Tipo
+                      {filters.tipos.length > 0 && (
+                        <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
+                          {filters.tipos.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar tipo..." />
+                      <CommandList className="max-h-[260px]">
+                        <CommandEmpty>Sin resultados.</CommandEmpty>
+                        <CommandGroup heading="Tipo">
+                          {tipoOptions.map((t) => (
+                            <CommandItem
+                              key={t}
+                              value={t}
+                              onSelect={() => {
+                                const nextFilters: ExerciseFilters = { ...filters, tipos: toggleInList(filters.tipos, t) };
+                                setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", filters.tipos.includes(t) ? "opacity-100" : "opacity-0")} />
+                              {t}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
                 </Popover>
 
                 <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="filter"
-                size="sm"
-                className={cn(
-                  "w-full min-w-0 justify-center gap-2 md:w-28 md:shrink-0",
-                  filters.grupos.length > 0 && filterButtonActive,
-                )}
-              >
-                <BicepsFlexed className="h-4 w-4" /> Grupo
-                {filters.grupos.length > 0 && (
-                  <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
-                    {filters.grupos.length}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Buscar grupo..." />
-                <CommandList className="max-h-[260px]">
-                  <CommandEmpty>Sin resultados.</CommandEmpty>
-                  <CommandGroup heading="Grupo muscular">
-                    {grupoOptions.map((g) => (
-                      <CommandItem
-                        key={g}
-                        value={g}
-                        onSelect={() => {
-                          const nextFilters: ExerciseFilters = { ...filters, grupos: toggleInList(filters.grupos, g) };
-                          setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", filters.grupos.includes(g) ? "opacity-100" : "opacity-0")} />
-                        {g}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="filter"
+                      size="sm"
+                      className={cn(
+                        "shrink-0 justify-center gap-2",
+                        filters.grupos.length > 0 && filterButtonActive,
+                      )}
+                    >
+                      <BicepsFlexed className="h-4 w-4" /> Grupo
+                      {filters.grupos.length > 0 && (
+                        <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
+                          {filters.grupos.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar grupo..." />
+                      <CommandList className="max-h-[260px]">
+                        <CommandEmpty>Sin resultados.</CommandEmpty>
+                        <CommandGroup heading="Grupo muscular">
+                          {grupoOptions.map((g) => (
+                            <CommandItem
+                              key={g}
+                              value={g}
+                              onSelect={() => {
+                                const nextFilters: ExerciseFilters = { ...filters, grupos: toggleInList(filters.grupos, g) };
+                                setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", filters.grupos.includes(g) ? "opacity-100" : "opacity-0")} />
+                              {g}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
                 </Popover>
 
                 <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="filter"
-                size="sm"
-                className={cn(
-                  "w-full min-w-0 justify-center gap-2 md:w-28 md:shrink-0",
-                  filters.equipments.length > 0 && filterButtonActive,
-                )}
-              >
-                <Wrench className="h-4 w-4" /> Equipo
-                {filters.equipments.length > 0 && (
-                  <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
-                    {filters.equipments.length}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Buscar equipamiento..." />
-                <CommandList className="max-h-[260px]">
-                  <CommandEmpty>Sin resultados.</CommandEmpty>
-                  <CommandGroup heading="Equipamiento">
-                    {equipmentOptions.map((eq) => (
-                      <CommandItem
-                        key={eq}
-                        value={eq}
-                        onSelect={() => {
-                          const nextFilters: ExerciseFilters = {
-                            ...filters,
-                            equipments: toggleInList(filters.equipments, eq),
-                          };
-                          setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            filters.equipments.includes(eq) ? "opacity-100" : "opacity-0",
-                          )}
-                        />
-                        {eq}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="filter"
+                      size="sm"
+                      className={cn(
+                        "shrink-0 justify-center gap-2",
+                        filters.equipments.length > 0 && filterButtonActive,
+                      )}
+                    >
+                      <Wrench className="h-4 w-4" /> Equipo
+                      {filters.equipments.length > 0 && (
+                        <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
+                          {filters.equipments.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar equipamiento..." />
+                      <CommandList className="max-h-[260px]">
+                        <CommandEmpty>Sin resultados.</CommandEmpty>
+                        <CommandGroup heading="Equipamiento">
+                          {equipmentOptions.map((eq) => (
+                            <CommandItem
+                              key={eq}
+                              value={eq}
+                              onSelect={() => {
+                                const nextFilters: ExerciseFilters = {
+                                  ...filters,
+                                  equipments: toggleInList(filters.equipments, eq),
+                                };
+                                setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  filters.equipments.includes(eq) ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                              {eq}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
                 </Popover>
-              </div>
-            </div>
 
-            <div className="w-full min-w-0 md:max-w-full md:overflow-x-auto md:overflow-y-hidden md:pb-1 md:[-webkit-overflow-scrolling:touch]">
-              <div className="grid w-full grid-cols-3 gap-3 md:flex md:min-w-max md:items-center md:gap-2 md:whitespace-nowrap">
-                <Button
-                  type="button"
-                  variant="filter"
-                  size="sm"
-                  className={cn(
-                    "w-full min-w-0 justify-center md:w-28 md:shrink-0",
-                    filters.difs.includes(1) && filterButtonActive,
-                  )}
-                  onClick={() => {
-                    const difs: DifficultyLevel[] = filters.difs.includes(1)
-                      ? filters.difs.filter((d) => d !== 1)
-                      : [...filters.difs, 1 as DifficultyLevel];
-                    triggerDifficultyLoading();
-                    setSearchParams(
-                      serializeFiltersToSearchParams(searchParams, { ...filters, difs } as ExerciseFilters),
-                      { replace: true },
-                    );
-                  }}
-                >
-                  <DifficultyBarsMono level={1} active={filters.difs.includes(1)} />
-                </Button>
-                <Button
-                  type="button"
-                  variant="filter"
-                  size="sm"
-                  className={cn(
-                    "w-full min-w-0 justify-center md:w-28 md:shrink-0",
-                    filters.difs.includes(2) && filterButtonActive,
-                  )}
-                  onClick={() => {
-                    const difs: DifficultyLevel[] = filters.difs.includes(2)
-                      ? filters.difs.filter((d) => d !== 2)
-                      : [...filters.difs, 2 as DifficultyLevel];
-                    triggerDifficultyLoading();
-                    setSearchParams(
-                      serializeFiltersToSearchParams(searchParams, { ...filters, difs } as ExerciseFilters),
-                      { replace: true },
-                    );
-                  }}
-                >
-                  <DifficultyBarsMono level={2} active={filters.difs.includes(2)} />
-                </Button>
-                <Button
-                  type="button"
-                  variant="filter"
-                  size="sm"
-                  className={cn(
-                    "w-full min-w-0 justify-center md:w-28 md:shrink-0",
-                    filters.difs.includes(3) && filterButtonActive,
-                  )}
-                  onClick={() => {
-                    const difs: DifficultyLevel[] = filters.difs.includes(3)
-                      ? filters.difs.filter((d) => d !== 3)
-                      : [...filters.difs, 3 as DifficultyLevel];
-                    triggerDifficultyLoading();
-                    setSearchParams(
-                      serializeFiltersToSearchParams(searchParams, { ...filters, difs } as ExerciseFilters),
-                      { replace: true },
-                    );
-                  }}
-                >
-                  <DifficultyBarsMono level={3} active={filters.difs.includes(3)} />
-                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="filter"
+                      size="sm"
+                      className={cn(
+                        "shrink-0 justify-center gap-2",
+                        filters.difs.length > 0 && filterButtonActive,
+                      )}
+                    >
+                      Dificultad
+                      {filters.difs.length > 0 && (
+                        <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
+                          {filters.difs.length}
+                        </Badge>
+                      )}
+                      <ChevronDown className="h-4 w-4 opacity-70" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-0" align="start">
+                    <Command>
+                      <CommandList>
+                        <CommandGroup heading="Dificultad">
+                          {DIFFICULTY_OPTIONS.map(({ level, label }) => (
+                            <CommandItem
+                              key={level}
+                              value={label}
+                              onSelect={() => {
+                                const difs = toggleDifficulty(filters.difs, level);
+                                triggerDifficultyLoading();
+                                setSearchParams(
+                                  serializeFiltersToSearchParams(searchParams, { ...filters, difs }),
+                                  { replace: true },
+                                );
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  filters.difs.includes(level) ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                              <span className="flex flex-1 items-center justify-between gap-3">
+                                {label}
+                                <DifficultyBars level={level} />
+                              </span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
@@ -888,7 +862,7 @@ const Exercises = () => {
               ))}
               {filters.difs.map((d) => (
                 <Badge key={`dif:${d}`} variant="secondary" className="gap-1">
-                  Dif: {d}
+                  Dif: {difficultyLabel(d)}
                   <X
                     className="h-3 w-3 cursor-pointer hover:text-destructive"
                     onClick={() => {

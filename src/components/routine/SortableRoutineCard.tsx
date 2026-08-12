@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Play, Pencil, Trash2, Dumbbell, Clock, GripVertical, ChevronDown, MoreVertical } from "lucide-react";
+import { Play, Pencil, Trash2, Copy, Dumbbell, Clock, History, GripVertical, ChevronDown, MoreVertical } from "lucide-react";
 import type { RutinaWithDetails } from "@/types/routine";
 import { formatRitmoSegKmLabel } from "@/types/workout";
 import { cn } from "@/lib/utils";
@@ -21,22 +21,27 @@ import {
   estimateRoutineDurationMinutes,
   formatEstimatedDurationLabel,
 } from "@/lib/estimateRoutineDuration";
+import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
 import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
 
 interface SortableRoutineCardProps {
   routine: RutinaWithDetails;
   isDragMode: boolean;
+  lastTrainedAt?: string | null;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (routine: RutinaWithDetails) => void;
   onStart: (routine: RutinaWithDetails, origin?: PillCircleOrigin) => void;
 }
 
 export function SortableRoutineCard({
   routine: r,
   isDragMode,
+  lastTrainedAt = null,
   onEdit,
   onDelete,
+  onDuplicate,
   onStart,
 }: SortableRoutineCardProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -51,6 +56,9 @@ export function SortableRoutineCard({
   const durationLabel = formatEstimatedDurationLabel(
     estimateRoutineDurationMinutes(r.ejercicios),
   );
+  const lastTrainedLabel = lastTrainedAt
+    ? formatActivityRelativeDate(lastTrainedAt) || "Nunca"
+    : "Nunca";
 
   const {
     attributes,
@@ -110,7 +118,7 @@ export function SortableRoutineCard({
                   {subtitle}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-2.5">
+              <p className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
                 <span className="inline-flex items-center gap-1">
                   <Dumbbell className="h-3 w-3" />
                   {r.ejercicios.length} ejercicio{r.ejercicios.length !== 1 ? "s" : ""}
@@ -121,6 +129,10 @@ export function SortableRoutineCard({
                     {durationLabel}
                   </span>
                 )}
+                <span className="inline-flex items-center gap-1">
+                  <History className="h-3 w-3" />
+                  {lastTrainedLabel}
+                </span>
               </p>
             </button>
           </div>
@@ -146,9 +158,12 @@ export function SortableRoutineCard({
                     <MoreVertical className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40 bg-popover">
+              <DropdownMenuContent align="end" className="w-44 bg-popover">
                   <DropdownMenuItem onClick={() => onEdit(r.id)}>
                     <Pencil className="mr-2 h-4 w-4" /> Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDuplicate(r)}>
+                    <Copy className="mr-2 h-4 w-4" /> Duplicar
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"

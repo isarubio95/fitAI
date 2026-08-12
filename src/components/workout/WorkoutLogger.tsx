@@ -937,6 +937,7 @@ export function WorkoutLogger() {
     }
     queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
     queryClient.invalidateQueries({ queryKey: ["communityFeed"] });
+    queryClient.invalidateQueries({ queryKey: ["routineLastTrained"] });
     queryClient.invalidateQueries({ queryKey: ["plannedRoutines"] });
   };
 

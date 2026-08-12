@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchAllPages } from "@/lib/supabaseBatch";
 
 interface ExerciseWithHistory {
   id: string;
@@ -16,28 +15,8 @@ interface ExerciseHistoryPoint {
   reps: number;
 }
 
-interface ExerciseTypeReference {
-  id: string;
-  nombre: string;
-}
-
-interface ExerciseJoinRow {
-  tipo_ejercicio: ExerciseTypeReference | null;
-}
-
-interface ExerciseWithHistoryQueryRow {
-  created_at: string;
-  ejercicio: ExerciseJoinRow | null;
-}
-
-function parseExerciseTypeReference(row: ExerciseWithHistoryQueryRow): ExerciseTypeReference | null {
-  const tipo = row.ejercicio?.tipo_ejercicio;
-  if (!tipo) return null;
-  if (typeof tipo.id !== "string" || typeof tipo.nombre !== "string") {
-    return null;
-  }
-  return { id: tipo.id, nombre: tipo.nombre };
-}
+/** Ventana de historial en meses (agregado diario en SQL). */
+export const EXERCISE_HISTORY_MONTHS = 12;
 
 // Returns exercises the user has performed at least once, ordered by most recent
 export function useExerciseWithHistory() {
@@ -47,41 +26,15 @@ export function useExerciseWithHistory() {
     queryKey: ["exercise-with-history", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      // Get all series with exercise + tipo_ejercicio info
-      const data = await fetchAllPages<ExerciseWithHistoryQueryRow>((from, to) =>
-        supabase
-          .from("serie")
-          .select(`
-          created_at,
-          ejercicio!inner (
-            actividad!inner ( fecha_fin ),
-            tipo_ejercicio_id,
-            tipo_ejercicio!inner ( id, nombre )
-          )
-        `)
-          .eq("usuario_id", user!.id)
-          .not("ejercicio.actividad.fecha_fin", "is", null)
-          .order("created_at", { ascending: false })
-          .range(from, to),
-      );
+      const { data, error } = await supabase.rpc("list_exercises_with_history");
+      if (error) throw error;
+      if (!data?.length) return [];
 
-      if (!data.length) return [];
-
-      // Group by tipo_ejercicio_id, keep most recent date
-      const map = new Map<string, ExerciseWithHistory>();
-      for (const row of data as ExerciseWithHistoryQueryRow[]) {
-        const tipo = parseExerciseTypeReference(row);
-        if (!tipo) continue;
-        if (!map.has(tipo.id)) {
-          map.set(tipo.id, {
-            id: tipo.id,
-            name: tipo.nombre,
-            lastPerformed: row.created_at,
-          });
-        }
-      }
-
-      return Array.from(map.values());
+      return data.map((row) => ({
+        id: row.id,
+        name: row.name,
+        lastPerformed: row.last_performed,
+      }));
     },
   });
 }
@@ -158,52 +111,22 @@ export const exerciseHistoryQueryKey = (exerciseId: string) => ["exercise-histor
 const EXERCISE_HISTORY_STALE_MS = 10 * 60 * 1000;
 
 export async function fetchExerciseHistory(
-  userId: string,
+  _userId: string,
   exerciseId: string,
+  months: number = EXERCISE_HISTORY_MONTHS,
 ): Promise<ExerciseHistoryResult> {
-  const data = await fetchAllPages<{
-    ejercicio?: { actividad?: { fecha?: string } };
-    created_at: string;
-    peso_kg: number;
-    repeticiones: number;
-  }>((from, to) =>
-    supabase
-      .from("serie")
-      .select(`
-      peso_kg,
-      repeticiones,
-      created_at,
-      ejercicio:ejercicio_id!inner (
-         actividad:actividad_id!inner ( fecha, fecha_fin )
-      )
-    `)
-      .eq("usuario_id", userId)
-      .eq("ejercicio.tipo_ejercicio_id", exerciseId)
-      .not("ejercicio.actividad.fecha_fin", "is", null)
-      .order("created_at", { ascending: true })
-      .range(from, to),
-  );
-
-  const setsByDay = new Map<string, { weight: number; reps: number }[]>();
-
-  data.forEach((item) => {
-    const dateStr = item.ejercicio?.actividad?.fecha || item.created_at;
-    const dateKey = new Date(dateStr).toISOString().split("T")[0];
-    const peso = Number(item.peso_kg);
-    const repes = Number(item.repeticiones);
-    const list = setsByDay.get(dateKey) ?? [];
-    list.push({ weight: peso, reps: repes });
-    setsByDay.set(dateKey, list);
+  const { data, error } = await supabase.rpc("get_exercise_daily_best", {
+    p_tipo_ejercicio_id: exerciseId,
+    p_months: months,
   });
+  if (error) throw error;
 
-  const history: ExerciseHistoryPoint[] = [];
-  for (const [dateKey, sets] of setsByDay) {
-    const best = pickBestSetOfDay(sets);
-    if (!best) continue;
-    history.push({ ...best, date: dateKey });
-  }
-
-  history.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const history: ExerciseHistoryPoint[] = (data ?? []).map((row) => ({
+    date: row.day,
+    oneRepMax: Number(row.one_rep_max),
+    weight: Number(row.weight),
+    reps: Number(row.reps),
+  }));
 
   return {
     history,

@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import { useRoutines, useDeleteRoutine, useUpdateRoutineOrder } from "@/hooks/useRoutines";
+import { useRoutines, useDeleteRoutine, useUpdateRoutineOrder, useDuplicateRoutine, useRoutineLastTrainedByName } from "@/hooks/useRoutines";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
@@ -30,6 +30,8 @@ import {
   Calendar,
   ArrowDownAZ,
   Hand,
+  History,
+  Clock,
   Check,
   PenLine,
   Sparkles,
@@ -47,6 +49,7 @@ import { RoutineForm } from "@/components/routine/RoutineForm";
 import { SortableRoutineCard } from "@/components/routine/SortableRoutineCard";
 import { ImportRoutineFromCsvDialog } from "@/components/routine/ImportRoutineFromCsvDialog";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
+import { estimateRoutineDurationMinutes } from "@/lib/estimateRoutineDuration";
 import {
   Dialog,
   DialogActions,
@@ -75,8 +78,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type SortMode = "date" | "name" | "custom";
+type SortMode = "date" | "name" | "lastUsed" | "duration" | "custom";
 type SortDir = "asc" | "desc";
+
+const SORT_MODES: SortMode[] = ["date", "name", "lastUsed", "duration", "custom"];
 
 const ROUTINES_SORT_STORAGE_KEY = "gym-log.routines.sort";
 
@@ -85,10 +90,9 @@ function loadRoutinesSortPreference(): { sortMode: SortMode; sortDir: SortDir } 
     const raw = localStorage.getItem(ROUTINES_SORT_STORAGE_KEY);
     if (!raw) return { sortMode: "date", sortDir: "desc" };
     const parsed = JSON.parse(raw) as { sortMode?: string; sortDir?: string };
-    const sortMode: SortMode =
-      parsed.sortMode === "date" || parsed.sortMode === "name" || parsed.sortMode === "custom"
-        ? parsed.sortMode
-        : "date";
+    const sortMode: SortMode = SORT_MODES.includes(parsed.sortMode as SortMode)
+      ? (parsed.sortMode as SortMode)
+      : "date";
     const sortDir: SortDir =
       parsed.sortDir === "asc" || parsed.sortDir === "desc" ? parsed.sortDir : "desc";
     return { sortMode, sortDir };
@@ -108,11 +112,18 @@ function saveRoutinesSortPreference(sortMode: SortMode, sortDir: SortDir) {
 const Routines = () => {
   const { data: routines, isLoading } = useRoutines();
   const deleteRoutine = useDeleteRoutine();
+  const duplicateRoutine = useDuplicateRoutine();
   const navigate = useNavigate();
   const location = useLocation();
   const updateOrder = useUpdateRoutineOrder();
   const { toast } = useToast();
   const { openFromTemplate } = useGlobalWorkoutDrawer();
+
+  const routineNames = useMemo(
+    () => (routines ?? []).map((r) => r.nombre),
+    [routines],
+  );
+  const { data: lastTrainedByName } = useRoutineLastTrainedByName(routineNames);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -169,12 +180,36 @@ const Routines = () => {
           return sortDir === "asc" ? c : -c;
         });
         break;
+      case "lastUsed":
+        sorted.sort((a, b) => {
+          const taRaw = lastTrainedByName?.[a.nombre.trim()];
+          const tbRaw = lastTrainedByName?.[b.nombre.trim()];
+          const ta = taRaw ? new Date(taRaw).getTime() : NaN;
+          const tb = tbRaw ? new Date(tbRaw).getTime() : NaN;
+          const aOk = Number.isFinite(ta);
+          const bOk = Number.isFinite(tb);
+          if (!aOk && !bOk) return a.nombre.localeCompare(b.nombre);
+          if (!aOk) return 1;
+          if (!bOk) return -1;
+          const d = ta - tb;
+          return sortDir === "asc" ? d : -d;
+        });
+        break;
+      case "duration":
+        sorted.sort((a, b) => {
+          const da = estimateRoutineDurationMinutes(a.ejercicios) ?? 0;
+          const db = estimateRoutineDurationMinutes(b.ejercicios) ?? 0;
+          const d = da - db;
+          if (d !== 0) return sortDir === "asc" ? d : -d;
+          return a.nombre.localeCompare(b.nombre);
+        });
+        break;
       case "custom":
         sorted.sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
         break;
     }
     return sorted;
-  }, [routines, sortMode, sortDir, customOrder, isDragMode]);
+  }, [routines, sortMode, sortDir, customOrder, isDragMode, lastTrainedByName]);
 
   const selectSort = (mode: SortMode, dir: SortDir) => {
     setSortMode(mode);
@@ -230,6 +265,19 @@ const Routines = () => {
     setFormOpen(true);
   };
 
+  const handleDuplicate = async (routine: RutinaWithDetails) => {
+    try {
+      await duplicateRoutine.mutateAsync(routine);
+      toast({ title: "Rutina duplicada" });
+    } catch (e: unknown) {
+      toast({
+        title: "Error",
+        description: e instanceof Error ? e.message : "Error desconocido",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
@@ -280,8 +328,67 @@ const Routines = () => {
   const sortLabel = () => {
     if (sortMode === "date") return sortDir === "desc" ? "Más recientes" : "Más antiguas";
     if (sortMode === "name") return sortDir === "asc" ? "A-Z" : "Z-A";
+    if (sortMode === "lastUsed") {
+      return sortDir === "desc" ? "Recién entrenadas" : "Hace más tiempo";
+    }
+    if (sortMode === "duration") return sortDir === "asc" ? "Más cortas" : "Más largas";
     return "Orden manual";
   };
+
+  const sortMenuContent = (
+    <>
+      <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+        <Calendar className="h-3.5 w-3.5" /> Fecha de creación
+      </DropdownMenuLabel>
+      <DropdownMenuItem onClick={() => selectSort("date", "desc")}>
+        Más recientes {sortMode === "date" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => selectSort("date", "asc")}>
+        Más antiguas {sortMode === "date" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+        <History className="h-3.5 w-3.5" /> Última vez
+      </DropdownMenuLabel>
+      <DropdownMenuItem onClick={() => selectSort("lastUsed", "desc")}>
+        Recién entrenadas {sortMode === "lastUsed" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => selectSort("lastUsed", "asc")}>
+        Hace más tiempo {sortMode === "lastUsed" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+        <Clock className="h-3.5 w-3.5" /> Duración
+      </DropdownMenuLabel>
+      <DropdownMenuItem onClick={() => selectSort("duration", "asc")}>
+        Más cortas {sortMode === "duration" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => selectSort("duration", "desc")}>
+        Más largas {sortMode === "duration" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+        <ArrowDownAZ className="h-3.5 w-3.5" /> Nombre
+      </DropdownMenuLabel>
+      <DropdownMenuItem onClick={() => selectSort("name", "asc")}>
+        A → Z {sortMode === "name" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => selectSort("name", "desc")}>
+        Z → A {sortMode === "name" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+        <Hand className="h-3.5 w-3.5" /> Personalizado
+      </DropdownMenuLabel>
+      <DropdownMenuItem onClick={() => selectSort("custom", "asc")}>
+        Orden manual {sortMode === "custom" && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+    </>
+  );
 
   return (
     <div
@@ -307,35 +414,8 @@ const Routines = () => {
                     <ArrowUpDown />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-popover">
-                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                    <Calendar className="h-3.5 w-3.5" /> Fecha
-                  </DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => selectSort("date", "desc")}>
-                    Más recientes {sortMode === "date" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => selectSort("date", "asc")}>
-                    Más antiguas {sortMode === "date" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                    <ArrowDownAZ className="h-3.5 w-3.5" /> Nombre
-                  </DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => selectSort("name", "asc")}>
-                    A → Z {sortMode === "name" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => selectSort("name", "desc")}>
-                    Z → A {sortMode === "name" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                    <Hand className="h-3.5 w-3.5" /> Personalizado
-                  </DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => selectSort("custom", "asc")}>
-                    Orden manual {sortMode === "custom" && <Check className="ml-auto h-4 w-4" />}
-                  </DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-56 bg-popover">
+                  {sortMenuContent}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -368,35 +448,8 @@ const Routines = () => {
                 <ArrowUpDown />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-popover">
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <Calendar className="h-3.5 w-3.5" /> Fecha
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => selectSort("date", "desc")}>
-                Más recientes {sortMode === "date" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => selectSort("date", "asc")}>
-                Más antiguas {sortMode === "date" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <ArrowDownAZ className="h-3.5 w-3.5" /> Nombre
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => selectSort("name", "asc")}>
-                A → Z {sortMode === "name" && sortDir === "asc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => selectSort("name", "desc")}>
-                Z → A {sortMode === "name" && sortDir === "desc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <Hand className="h-3.5 w-3.5" /> Personalizado
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => selectSort("custom", "asc")}>
-                Orden manual {sortMode === "custom" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-56 bg-popover">
+              {sortMenuContent}
             </DropdownMenuContent>
           </DropdownMenu>,
           desktopToolbarSlot,
@@ -445,8 +498,10 @@ const Routines = () => {
                   key={r.id}
                   routine={r}
                   isDragMode={isDragMode}
+                  lastTrainedAt={lastTrainedByName?.[r.nombre.trim()] ?? null}
                   onEdit={openEdit}
                   onDelete={setDeleteId}
+                  onDuplicate={handleDuplicate}
                   onStart={startRoutine}
                 />
               ))}
