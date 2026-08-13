@@ -892,6 +892,7 @@ export function CardioLiveRecorder() {
                   onPointerMove={onControlsSheetPointerMove}
                   onPointerUp={onControlsSheetPointerEnd}
                   onToggleExpanded={() => setControlsExpanded((v) => !v)}
+                  onCollapseExpanded={() => setControlsExpanded(false)}
                   onStart={() => void onStartFromIsland()}
                   onPauseToggle={onPauseToggle}
                   onFinish={onFinishRecording}

@@ -41,6 +41,8 @@ type Props = {
   onPointerMove: (e: ReactPointerEvent) => void;
   onPointerUp: () => void;
   onToggleExpanded: () => void;
+  /** Colapsa el sheet al tocar fuera (posición original). */
+  onCollapseExpanded: () => void;
   onStart: () => void;
   onPauseToggle: () => void;
   onFinish: () => void;
@@ -70,6 +72,7 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
     onPointerMove,
     onPointerUp,
     onToggleExpanded,
+    onCollapseExpanded,
     onStart,
     onPauseToggle,
     onFinish,
@@ -83,8 +86,21 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
         ref={ref}
         side="bottom"
         className="z-110 mt-0 max-h-[85lvh] overflow-hidden bg-[hsl(var(--surface-elevated))] p-0 transition-[height] duration-300 ease-out"
-        overlayClassName="z-110 pointer-events-none bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none"
+        overlayClassName={cn(
+          "z-110 bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none",
+          // Desplegado: el overlay captura el toque fuera para colapsar.
+          // Colapsado: deja pasar gestos al mapa / UI detrás.
+          controlsExpanded ? "pointer-events-auto" : "pointer-events-none",
+        )}
         {...drawerPillProps}
+        onPointerDownOutside={(e) => {
+          e.preventDefault();
+          if (controlsExpanded) onCollapseExpanded();
+        }}
+        onInteractOutside={(e) => {
+          e.preventDefault();
+          if (controlsExpanded) onCollapseExpanded();
+        }}
       >
         <div
           className="touch-pan-x"
