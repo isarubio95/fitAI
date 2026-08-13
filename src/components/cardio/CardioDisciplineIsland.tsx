@@ -65,7 +65,7 @@ export function CardioDisciplineIsland({
         ref={islandRef}
         className={cn(
           "pointer-events-auto w-full max-w-[13.5rem] overflow-hidden rounded-[2rem]",
-          "border border-border/80 bg-card/95 shadow-lg backdrop-blur-xl",
+          "border border-border/80 bg-[hsl(var(--surface-elevated)/0.95)] shadow-lg backdrop-blur-xl",
           "transition-[box-shadow] duration-300 ease-out",
         )}
       >

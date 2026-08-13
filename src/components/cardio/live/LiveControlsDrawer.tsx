@@ -82,7 +82,7 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
       <DrawerContent
         ref={ref}
         side="bottom"
-        className="z-110 mt-0 max-h-[85lvh] overflow-hidden bg-card p-0 transition-[height] duration-300 ease-out"
+        className="z-110 mt-0 max-h-[85lvh] overflow-hidden bg-[hsl(var(--surface-elevated))] p-0 transition-[height] duration-300 ease-out"
         overlayClassName="z-110 pointer-events-none bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none"
         {...drawerPillProps}
       >
@@ -100,7 +100,7 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
             </DrawerHeader>
             <div
               className={cn(
-                "space-y-3 bg-card px-4",
+                "space-y-3 bg-[hsl(var(--surface-elevated))] px-4",
                 controlsExpanded ? "pb-4" : "pb-[max(1rem,env(safe-area-inset-bottom))]",
               )}
             >
@@ -203,7 +203,7 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
             )}
           >
             <div className="min-h-0 overflow-hidden">
-              <div className="space-y-4 bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <div className="space-y-4 bg-[hsl(var(--surface-elevated))] px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <HeartRatePanel
                   bpm={hr.bpm}
                   connected={hr.connected}

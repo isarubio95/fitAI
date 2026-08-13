@@ -76,7 +76,7 @@ export function LiveMetricsBar({
         onClick={onOpenStats}
         className={cn(
           "mx-auto flex w-full max-w-lg flex-col overflow-hidden rounded-[1.75rem] text-left",
-          "border border-border/80 bg-card/95 shadow-lg backdrop-blur-xl",
+          "border border-border/80 bg-[hsl(var(--surface-elevated)/0.95)] shadow-lg backdrop-blur-xl",
           "transition-transform active:scale-[0.98]",
         )}
       >
