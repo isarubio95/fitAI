@@ -211,7 +211,12 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
   }, [points, ready]);
 
   return (
-    <div className={cn("relative overflow-hidden", className)} aria-busy={!painted}>
+    <div
+      className={cn("relative overflow-hidden", className)}
+      aria-busy={!painted}
+      // Evita que Vaul interprete pan/zoom del mapa como arrastre del drawer.
+      {...(interactive ? { "data-vaul-no-drag": true } : {})}
+    >
       <style>{`
         .cardio-route-map-canvas { background: ${MAP_COLORS.land}; }
         .cardio-route-map-canvas .maplibregl-canvas { outline: none; }
