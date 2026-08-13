@@ -71,6 +71,10 @@ function addDraftLayers(map: MapLibreMap) {
   });
 }
 
+/**
+ * `touch-styled` es obligatorio: sin ella el CSS global de táctil vacía el fondo y pinta el
+ * borde con currentColor mientras el WebView deja el :hover pegado tras el toque.
+ */
 function MapControl({
   label,
   disabled,
@@ -89,7 +93,7 @@ function MapControl({
       disabled={disabled}
       aria-label={label}
       className={cn(
-        "flex h-11 w-11 items-center justify-center rounded-full",
+        "touch-styled flex h-11 w-11 items-center justify-center rounded-full",
         "border border-white/15 bg-[#1a1f21]/90 text-white/85 shadow-lg backdrop-blur-sm",
         "transition-colors active:scale-95 hover:text-white",
         "disabled:pointer-events-none disabled:opacity-35",
@@ -384,7 +388,7 @@ export function RouteDrawMap({
             onClick={onFitRoute}
             disabled={path.length < 2}
             className={cn(
-              "rounded-full border border-white/15 bg-[#1a1f21]/90 px-4 py-2 text-xs text-white/80",
+              "touch-styled rounded-full border border-white/15 bg-[#1a1f21]/90 px-4 py-2 text-xs text-white/80",
               "shadow-lg backdrop-blur-sm transition-colors active:scale-95 hover:text-white",
               "disabled:pointer-events-none disabled:opacity-40",
             )}

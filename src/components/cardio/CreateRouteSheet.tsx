@@ -1,4 +1,13 @@
-import { Suspense, lazy, useCallback, useMemo, useRef, useState, type DragEvent } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+} from "react";
 import { FileUp, Loader2, PencilLine, Route, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,6 +93,8 @@ export function CreateRouteSheet({
   const createRoute = useCreateCardioRoute();
   const [mode, setMode] = useState<Mode>("draw");
   const [nombre, setNombre] = useState("");
+  /** Si el usuario (o un archivo importado) ya eligió nombre, no lo pisamos con la sugerencia. */
+  const [nombreCustom, setNombreCustom] = useState(false);
   const [imported, setImported] = useState<ImportedRoute | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
@@ -114,8 +125,20 @@ export function CreateRouteSheet({
   const elevationM = mode === "draw" ? drawing.elevationGainM : importedMetrics.elevationM;
   const canSave = points.length >= 2 && !createRoute.isPending;
 
+  const suggestedName = useMemo(
+    () => (points.length >= 2 ? defaultRouteNameFromPoints(points) : ""),
+    [points],
+  );
+
+  // Rellenamos el input con la sugerencia (editable). Solo se actualiza mientras no haya nombre custom.
+  useEffect(() => {
+    if (nombreCustom) return;
+    setNombre(suggestedName);
+  }, [suggestedName, nombreCustom]);
+
   const reset = useCallback(() => {
     setNombre("");
+    setNombreCustom(false);
     setImported(null);
     setImportError(null);
     setImporting(false);
@@ -136,7 +159,16 @@ export function CreateRouteSheet({
       try {
         const route = await parseRouteFile(file);
         setImported(route);
-        setNombre((current) => current || route.nombre || "");
+        if (route.nombre) {
+          setNombre(route.nombre);
+          setNombreCustom(true);
+        } else {
+          setNombre((current) => {
+            // Si el usuario ya escribió algo, lo respetamos; si no, sugerimos por distancia.
+            if (current.trim()) return current;
+            return defaultRouteNameFromPoints(route.points);
+          });
+        }
       } catch (err) {
         setImported(null);
         setImportError(err instanceof Error ? err.message : "No se pudo leer el archivo");
@@ -177,8 +209,6 @@ export function CreateRouteSheet({
   }, [points, createRoute, nombre, defaultDisciplinaId, toast, onCreated, close]);
 
   if (!open) return null;
-
-  const namePlaceholder = points.length >= 2 ? defaultRouteNameFromPoints(points) : "Mi ruta";
 
   return (
     <div
@@ -365,9 +395,14 @@ export function CreateRouteSheet({
           <Input
             id="route-name"
             value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            placeholder={namePlaceholder}
+            onChange={(e) => {
+              setNombreCustom(true);
+              setNombre(e.target.value);
+            }}
+            placeholder="Nombre de la ruta"
             maxLength={120}
+            autoComplete="off"
+            enterKeyHint="done"
           />
         </div>
         <Button
