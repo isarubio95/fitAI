@@ -73,11 +73,9 @@ export function CardioDisciplineIsland({
           <button
             type="button"
             className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-1.5 py-1.5 text-left transition-colors hover:bg-muted/50"
-            onClick={() => {
-              if (!expanded) setExpanded(true);
-            }}
+            onClick={() => setExpanded((open) => !open)}
             aria-expanded={expanded}
-            aria-label={expanded ? "Tipo de cardio abierto" : "Elegir tipo de cardio"}
+            aria-label={expanded ? "Cerrar tipo de cardio" : "Elegir tipo de cardio"}
           >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               {isLoading ? (
