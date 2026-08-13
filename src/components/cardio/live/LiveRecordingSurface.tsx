@@ -17,6 +17,10 @@ type Props = {
   referencePoints?: Array<{ lat: number; lng: number }>;
   /** Sesión en curso: el mapa se acerca respecto a la vista de setup. */
   recording: boolean;
+  /** Posición actual mientras no hay track (setup), para centrar el mapa y activar sus controles. */
+  previewPoint?: { lat: number; lng: number } | null;
+  /** Alto libre bajo los controles del mapa: quedan justo encima de la barra de métricas. */
+  mapControlsBottomPx: number;
   loadingSession: boolean;
   isSetup: boolean;
   setupDisciplineId: string | null;
@@ -34,6 +38,8 @@ export function LiveRecordingSurface({
   mapPoints,
   referencePoints,
   recording,
+  previewPoint,
+  mapControlsBottomPx,
   loadingSession,
   isSetup,
   setupDisciplineId,
@@ -76,6 +82,8 @@ export function LiveRecordingSurface({
             referencePoints={referencePoints}
             followUser
             recording={recording}
+            previewPoint={previewPoint}
+            controlsBottomPx={mapControlsBottomPx}
             className="h-full min-h-dvh w-full"
           />
         </Suspense>

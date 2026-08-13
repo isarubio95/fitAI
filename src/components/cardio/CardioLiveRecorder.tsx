@@ -89,6 +89,7 @@ export function CardioLiveRecorder() {
   const pillCloseTimerRef = useRef<number | null>(null);
   const controlsDrawerRef = useRef<HTMLDivElement | null>(null);
   const [controlsDrawerHeightPx, setControlsDrawerHeightPx] = useState(0);
+  const [metricsBarHeightPx, setMetricsBarHeightPx] = useState(0);
   /** Compacto = métricas + botones; expandido = + pulsaciones + formulario. Altura = contenido. */
   const [controlsExpanded, setControlsExpanded] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
@@ -127,6 +128,7 @@ export function CardioLiveRecorder() {
     isSetup || (open && step === "recording" && cardioDisciplineUsesGpsMap(code));
   const {
     points,
+    lastPosition,
     distanceM,
     elevationGainM: nativeElevationGainM,
     error: gpsError,
@@ -190,6 +192,7 @@ export function CardioLiveRecorder() {
       setConfirmDiscard(false);
       setPillCirclePhase(null);
       setControlsDrawerHeightPx(0);
+      setMetricsBarHeightPx(0);
       setControlsExpanded(false);
       setStatsOpen(false);
       setStatsCircleOrigin(undefined);
@@ -261,6 +264,21 @@ export function CardioLiveRecorder() {
     ro?.observe(el);
     return () => ro?.disconnect();
   }, [liveOpen, isSetup, open, step, sessionLoading, sessionData, showMap, controlsExpanded]);
+
+  // Alto real de la barra de métricas: los controles del mapa se apoyan justo encima.
+  useLayoutEffect(() => {
+    if (!liveOpen || step !== "recording" || statsOpen) return;
+    const el = metricsBarRef.current;
+    if (!el) return;
+    const measure = () => {
+      const h = el.getBoundingClientRect().height;
+      if (h > 0) setMetricsBarHeightPx(h);
+    };
+    measure();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, [liveOpen, isSetup, open, step, statsOpen, sessionLoading, sessionData]);
 
   const onControlsSheetPointerDown = useCallback((e: ReactPointerEvent) => {
     const target = e.target;
@@ -803,6 +821,9 @@ export function CardioLiveRecorder() {
   const noGpsBannerText = gpsDenied
     ? "Sin señal GPS · permiso denegado"
     : "Sin señal GPS";
+  const metricsBarBottomPx = Math.max(controlsDrawerHeightPx, 96) + 12;
+  // 76px ≈ alto de la barra de métricas antes de medirla, para no arrancar solapados.
+  const mapControlsBottomPx = metricsBarBottomPx + (metricsBarHeightPx || 76) + 12;
 
   return (
     <>
@@ -838,6 +859,8 @@ export function CardioLiveRecorder() {
               mapPoints={mapPoints}
               referencePoints={selectedRoute?.points}
               recording={open && step === "recording" && !loadingSession}
+              previewPoint={mapPoints.length === 0 ? lastPosition : null}
+              mapControlsBottomPx={mapControlsBottomPx}
               loadingSession={loadingSession}
               isSetup={isSetup}
               setupDisciplineId={setupDisciplineId}
@@ -850,7 +873,7 @@ export function CardioLiveRecorder() {
               <>
                 <LiveMetricsBar
                   containerRef={metricsBarRef}
-                  bottomOffsetPx={Math.max(controlsDrawerHeightPx, 96) + 12}
+                  bottomOffsetPx={metricsBarBottomPx}
                   isSetup={isSetup}
                   elapsedSec={elapsedSec}
                   distanceM={displayDistanceM}

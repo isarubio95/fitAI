@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { E2E_CARDIO_DISCIPLINE_ID } from "./fixtures/ids";
 import { findMutation } from "./fixtures/supabaseMock";
 import { loginAsE2EUser, openCardioLive } from "./fixtures/ui";
 
@@ -14,9 +15,18 @@ const GPX = `<?xml version="1.0" encoding="UTF-8"?>
   </trk>
 </gpx>`;
 
-/** WebGL tumba Chromium headless: los chunks de mapa se sustituyen por componentes vacíos. */
+/**
+ * WebGL tumba Chromium headless: los chunks de mapa se sustituyen por componentes vacíos.
+ * `RouteDrawMap` publica sus props en `window` para poder simular toques en el mapa.
+ */
 async function stubMapChunks(page: Page) {
-  for (const name of ["RouteDrawMap", "CardioRouteMap"]) {
+  const bodies: Record<string, string> = {
+    RouteDrawMap:
+      "export function RouteDrawMap(props){ window.__routeDrawProps = props; return null; }\n",
+    CardioRouteMap: "export function CardioRouteMap(){ return null; }\n",
+  };
+
+  for (const [name, body] of Object.entries(bodies)) {
     await page.route(
       (url) => url.pathname.includes(name),
       (route) => {
@@ -27,17 +37,60 @@ async function stubMapChunks(page: Page) {
           status: 200,
           contentType: "application/javascript",
           headers: { "Cache-Control": "no-store" },
-          body: `export function ${name}(){ return null; }\n`,
+          body,
         });
       },
     );
   }
 }
 
+async function tapMap(page: Page, lat: number, lng: number) {
+  await page.evaluate(
+    ([latitude, longitude]) => {
+      (
+        window as unknown as {
+          __routeDrawProps?: { onAddPoint: (p: { lat: number; lng: number }) => void };
+        }
+      ).__routeDrawProps?.onAddPoint({ lat: latitude, lng: longitude });
+    },
+    [lat, lng],
+  );
+}
+
+/**
+ * El botón de rutas solo aparece en disciplinas con GPS; el mock compartido solo
+ * expone una de interior. Este override es local a este spec.
+ */
+async function useOutdoorDiscipline(page: Page) {
+  await page.route("**/rest/v1/cardio_disciplina*", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify([
+        {
+          id: E2E_CARDIO_DISCIPLINE_ID,
+          nombre: "Correr",
+          codigo: "running",
+          activo: true,
+          orden: 1,
+        },
+      ]),
+    }),
+  );
+}
+
 test.describe("E2E: crear ruta", () => {
+  test.use({
+    geolocation: { latitude: 40.4168, longitude: -3.7038, accuracy: 8 },
+    permissions: ["geolocation"],
+  });
+
   test("importar un GPX desde rutas guardadas lo persiste en cardio_ruta", async ({ page }) => {
     const mock = await loginAsE2EUser(page);
     await stubMapChunks(page);
+    await useOutdoorDiscipline(page);
+    await page.reload();
 
     await openCardioLive(page);
     await page.getByRole("button", { name: "Elegir ruta guardada" }).click();
@@ -72,6 +125,12 @@ test.describe("E2E: crear ruta", () => {
     expect(Number(rutaRow.distancia_total_m)).toBeGreaterThan(0);
     expect(Number(rutaRow.elevacion_positiva_m)).toBeGreaterThan(0);
 
+    await expect
+      .poll(() => findMutation(mock, "cardio_ruta_punto", (m) => m.method === "POST").length, {
+        timeout: 20_000,
+      })
+      .toBeGreaterThan(0);
+
     const [puntos] = findMutation(mock, "cardio_ruta_punto", (m) => m.method === "POST");
     const puntosRows = puntos.body as Array<Record<string, unknown>>;
     expect(puntosRows).toHaveLength(3);
@@ -79,5 +138,53 @@ test.describe("E2E: crear ruta", () => {
 
     // Al guardar, la ruta queda seleccionada para la sesión.
     await expect(page.getByText("Vuelta al Retiro").first()).toBeVisible();
+  });
+
+  test("trazar puntos en el mapa guarda la polilínea dibujada", async ({ page }) => {
+    const mock = await loginAsE2EUser(page);
+    await stubMapChunks(page);
+    await useOutdoorDiscipline(page);
+    // Sin enrutador los tramos quedan rectos: el trazado es determinista.
+    await page.route("**/brouter.de/**", (route) => route.abort());
+    await page.reload();
+
+    await openCardioLive(page);
+    await page.getByRole("button", { name: "Elegir ruta guardada" }).click();
+    await page.getByRole("button", { name: "Crear ruta" }).first().click();
+
+    const sheet = page.getByRole("dialog", { name: "Nueva ruta" });
+    await expect(sheet).toBeVisible();
+    await expect(sheet.getByRole("tab", { name: "Dibujar" })).toHaveAttribute(
+      "data-state",
+      "active",
+    );
+
+    await tapMap(page, 40.415, -3.683);
+    await tapMap(page, 40.42, -3.678);
+    await tapMap(page, 40.425, -3.673);
+    await expect(sheet.getByText("3 puntos")).toBeVisible();
+
+    // Sin nombre, se usa el generado a partir de la distancia.
+    await sheet.getByRole("button", { name: "Guardar ruta" }).click();
+
+    await expect
+      .poll(() => findMutation(mock, "cardio_ruta_punto", (m) => m.method === "POST").length, {
+        timeout: 20_000,
+      })
+      .toBeGreaterThan(0);
+
+    const [ruta] = findMutation(mock, "cardio_ruta", (m) => m.method === "POST");
+    const rutaRow = (Array.isArray(ruta.body) ? ruta.body[0] : ruta.body) as Record<
+      string,
+      unknown
+    >;
+    expect(String(rutaRow.nombre)).toMatch(/^Ruta · /);
+    expect(rutaRow.cardio_disciplina_id).toBeTruthy();
+
+    const [puntos] = findMutation(mock, "cardio_ruta_punto", (m) => m.method === "POST");
+    const puntosRows = puntos.body as Array<Record<string, unknown>>;
+    expect(puntosRows).toHaveLength(3);
+    expect(puntosRows.map((p) => p.orden)).toEqual([0, 1, 2]);
+    expect(puntosRows[2]).toMatchObject({ lat: 40.425, lng: -3.673 });
   });
 });

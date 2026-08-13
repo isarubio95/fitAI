@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   AttributionControl,
   Map as MapLibreMap,
@@ -7,7 +7,7 @@ import {
   type GeoJSONSource,
 } from "maplibre-gl";
 import type { Feature, FeatureCollection } from "geojson";
-import { Compass, LocateFixed } from "lucide-react";
+import { Compass, Locate, Navigation } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 /** Vite empaqueta el worker + shared chunk; sin esto el mapa queda en blanco (404 del worker). */
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
@@ -41,6 +41,10 @@ type Props = {
   followUser?: boolean;
   /** Sesión en curso: acerca la cámara respecto a la vista de setup. */
   recording?: boolean;
+  /** Posición actual cuando aún no hay track (setup): centra el mapa y activa los controles. */
+  previewPoint?: { lat: number; lng: number } | null;
+  /** Separación desde abajo de los controles flotantes: van justo encima de las métricas. */
+  controlsBottomPx?: number;
   /** Ruta objetivo (fantasma) debajo del track live. */
   referencePoints?: Array<{ lat: number; lng: number }>;
 };
@@ -132,52 +136,50 @@ function addRouteLayers(map: MapLibreMap) {
   });
 }
 
+/**
+ * `touch-styled` es obligatorio: sin ella el CSS global de táctil vacía el fondo y pinta el
+ * borde con currentColor mientras el WebView deja el :hover pegado tras el toque.
+ */
 const MAP_CONTROL_CLASS = cn(
-  "flex h-11 w-11 items-center justify-center rounded-full",
+  "touch-styled flex h-10 w-10 items-center justify-center rounded-full text-white",
   "border border-white/15 bg-[#1a1f21]/90 shadow-lg backdrop-blur-sm",
   "transition-colors active:scale-95",
 );
 
-function RecenterControl({ active, onRecenter }: { active: boolean; onRecenter: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onRecenter}
-      aria-label="Centrar en mi posición"
-      className={cn(
-        MAP_CONTROL_CLASS,
-        active ? "text-[#2D8CFF]" : "text-white/85 hover:text-white",
-      )}
-    >
-      <LocateFixed className="h-5 w-5" strokeWidth={2.25} />
-    </button>
-  );
-}
+/**
+ * Un único control que muta con el estado de la cámara: descentrado manda sobre la
+ * orientación, porque volver a la posición es lo primero que se quiere hacer.
+ */
+type CameraControlState = "recenter" | MapOrientationMode;
 
-function OrientationControl({
-  mode,
-  bearing,
-  onToggle,
+const CAMERA_CONTROL_UI: Record<CameraControlState, { Icon: typeof Compass; label: string }> = {
+  recenter: { Icon: Locate, label: "Centrar en mi posición" },
+  heading: { Icon: Navigation, label: "Fijar el norte arriba" },
+  north: { Icon: Compass, label: "Seguir mi dirección" },
+};
+
+function CameraControl({
+  state,
+  className,
+  style,
+  onPress,
 }: {
-  mode: MapOrientationMode;
-  bearing: number;
-  onToggle: () => void;
+  state: CameraControlState;
+  className?: string;
+  style?: CSSProperties;
+  onPress: () => void;
 }) {
-  const label = mode === "heading" ? "Fijar el norte arriba" : "Seguir mi dirección";
+  const { Icon, label } = CAMERA_CONTROL_UI[state];
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={onPress}
       aria-label={label}
       title={label}
-      aria-pressed={mode === "heading"}
-      className={cn(
-        MAP_CONTROL_CLASS,
-        mode === "heading" ? "text-[#2D8CFF]" : "text-white/85 hover:text-white",
-      )}
+      className={cn(MAP_CONTROL_CLASS, className)}
+      style={style}
     >
-      {/* La aguja apunta siempre al norte real, gire el mapa lo que gire. */}
-      <Compass className="h-5 w-5" strokeWidth={2.25} style={{ transform: `rotate(${-bearing}deg)` }} />
+      <Icon className="h-5 w-5" strokeWidth={2.25} />
     </button>
   );
 }
@@ -187,12 +189,17 @@ export function LiveCardioMap({
   className,
   followUser = true,
   recording = false,
+  previewPoint = null,
+  controlsBottomPx = 12,
   referencePoints,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const markerElementRef = useRef<HTMLDivElement | null>(null);
+  /** Giro acumulado del halo (sin normalizar) y si ya está visible, para animar solo los cambios. */
+  const beamRotationRef = useRef(0);
+  const beamVisibleRef = useRef(false);
   const centeredOnceRef = useRef(false);
   /** Último centro aplicado a la cámara: evita reanimar el paneo en cada giro de la brújula. */
   const appliedCenterRef = useRef<[number, number] | null>(null);
@@ -212,11 +219,18 @@ export function LiveCardioMap({
   const heading = compassHeading ?? gpsCourse;
   const targetZoom = recording ? RECORDING_ZOOM : FOLLOW_ZOOM;
 
+  /** Posición que manda en cámara y marcador: el track si existe y, si no, el fix del preview. */
+  const anchor = useMemo<[number, number] | null>(() => {
+    const last = points.length > 0 ? points[points.length - 1] : null;
+    if (last) return [last.lng, last.lat];
+    if (previewPoint) return [previewPoint.lng, previewPoint.lat];
+    return null;
+  }, [points, previewPoint]);
+
   const initialViewRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
   if (initialViewRef.current === null) {
-    const last = points.length > 0 ? points[points.length - 1] : null;
-    initialViewRef.current = last
-      ? { center: [last.lng, last.lat], zoom: FOLLOW_ZOOM }
+    initialViewRef.current = anchor
+      ? { center: anchor, zoom: FOLLOW_ZOOM }
       : { center: DEFAULT_CENTER, zoom: 12 };
   }
 
@@ -272,6 +286,8 @@ export function LiveCardioMap({
       markerRef.current?.remove();
       markerRef.current = null;
       markerElementRef.current = null;
+      beamRotationRef.current = 0;
+      beamVisibleRef.current = false;
       mapRef.current?.remove();
       mapRef.current = null;
       centeredOnceRef.current = false;
@@ -332,9 +348,8 @@ export function LiveCardioMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || points.length === 0) return;
-    const last = points[points.length - 1];
-    const target: [number, number] = [last.lng, last.lat];
+    if (!map || !ready || anchor == null) return;
+    const target = anchor;
 
     if (markerRef.current) {
       markerRef.current.setLngLat(target);
@@ -342,23 +357,36 @@ export function LiveCardioMap({
       const element = document.createElement("div");
       element.className = "live-cardio-pos";
       element.innerHTML =
-        '<span class="live-cardio-pos-pulse"></span><span class="live-cardio-pos-arrow"></span><span class="live-cardio-pos-dot"></span>';
+        '<span class="live-cardio-pos-beam"></span><span class="live-cardio-pos-pulse"></span><span class="live-cardio-pos-dot"></span>';
       markerElementRef.current = element;
       markerRef.current = new Marker({ element }).setLngLat(target).addTo(map);
     }
-  }, [points, ready]);
+  }, [anchor, ready]);
 
-  // La flecha se orienta respecto al mapa: en modo dirección apunta siempre arriba.
+  // El halo se orienta respecto al mapa: en modo dirección apunta siempre arriba.
   useEffect(() => {
     const element = markerElementRef.current;
     if (!element) return;
     if (heading == null) {
-      element.style.setProperty("--pos-arrow-opacity", "0");
+      element.style.setProperty("--pos-heading-opacity", "0");
+      beamVisibleRef.current = false;
       return;
     }
-    element.style.setProperty("--pos-arrow-opacity", "1");
-    element.style.setProperty("--pos-arrow-rot", `${shortestAngleDelta(mapBearing, heading)}deg`);
-  }, [heading, mapBearing, points, ready]);
+
+    // Ángulos acumulados sin normalizar: así la transición CSS gira siempre por el lado corto.
+    const target = shortestAngleDelta(mapBearing, heading);
+    const rotation = beamRotationRef.current + shortestAngleDelta(beamRotationRef.current, target);
+    beamRotationRef.current = rotation;
+
+    // Al aparecer no tiene sentido animar el giro desde el norte: se coloca ya orientado.
+    if (!beamVisibleRef.current) {
+      beamVisibleRef.current = true;
+      element.style.setProperty("--pos-heading-turn", "0ms");
+      requestAnimationFrame(() => element.style.removeProperty("--pos-heading-turn"));
+    }
+    element.style.setProperty("--pos-heading-opacity", "1");
+    element.style.setProperty("--pos-heading-rot", `${rotation}deg`);
+  }, [heading, mapBearing, anchor, ready]);
 
   // Al pulsar Start la cámara se acerca un poco. Si aún no hay fix lo hace el primer centrado.
   useEffect(() => {
@@ -371,9 +399,8 @@ export function LiveCardioMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || points.length === 0) return;
-    const last = points[points.length - 1];
-    const center: [number, number] = [last.lng, last.lat];
+    if (!map || !ready) return;
+    const center = anchor;
     const bearing = orientationMode === "heading" ? heading : 0;
     const rotateTo =
       bearing != null &&
@@ -381,8 +408,10 @@ export function LiveCardioMap({
         ? bearing
         : null;
 
-    // El usuario movió el mapa: se respeta la orientación, pero no se recentra.
-    if (!following) {
+    // Mientras se elige ruta (sin grabar ni track) manda su encuadre, no el seguimiento.
+    const routeFramed = !recording && points.length === 0 && (referencePoints?.length ?? 0) >= 2;
+    // Sin posición o con el mapa movido a mano: se respeta la orientación, pero no se recentra.
+    if (!following || center == null || routeFramed) {
       if (rotateTo != null) map.easeTo({ bearing: rotateTo, duration: 300 });
       return;
     }
@@ -406,17 +435,16 @@ export function LiveCardioMap({
       ...(rotateTo != null ? { bearing: rotateTo } : {}),
       duration: centerChanged ? 450 : 300,
     });
-  }, [points, ready, following, heading, orientationMode, recording]);
+  }, [anchor, points, referencePoints, ready, following, heading, orientationMode, recording]);
 
   const onRecenter = useCallback(() => {
     setFollowing(true);
     const map = mapRef.current;
-    const last = points.length > 0 ? points[points.length - 1] : null;
-    if (!map || !last) return;
+    if (!map || anchor == null) return;
     centeredOnceRef.current = true;
-    appliedCenterRef.current = [last.lng, last.lat];
-    map.easeTo({ center: [last.lng, last.lat], zoom: targetZoom, duration: 500 });
-  }, [points, targetZoom]);
+    appliedCenterRef.current = anchor;
+    map.easeTo({ center: anchor, zoom: targetZoom, duration: 500 });
+  }, [anchor, targetZoom]);
 
   const onToggleOrientation = useCallback(() => {
     const next: MapOrientationMode = orientationMode === "heading" ? "north" : "heading";
@@ -429,6 +457,15 @@ export function LiveCardioMap({
     // iOS exige gesto de usuario para la brújula, así que se pide aquí.
     void requestPermission();
   }, [orientationMode, requestPermission]);
+
+  const cameraState: CameraControlState = following ? orientationMode : "recenter";
+  const onCameraControlPress = useCallback(() => {
+    if (following) {
+      onToggleOrientation();
+      return;
+    }
+    onRecenter();
+  }, [following, onToggleOrientation, onRecenter]);
 
   return (
     <div className={cn("relative overflow-hidden", className)}>
@@ -460,20 +497,47 @@ export function LiveCardioMap({
           border: 3px solid #fff;
           box-shadow: 0 1px 6px rgba(0,0,0,0.55);
         }
-        /* Flecha de rumbo: relativa al mapa, así que con el norte fijo apunta al rumbo real. */
-        .live-cardio-pos-arrow {
+        /* Halo de rumbo: cono que sale del punto, relativo al mapa (con el norte fijo apunta al rumbo real). */
+        .live-cardio-pos-beam {
           position: absolute;
           left: 50%;
           top: 50%;
-          width: 0;
-          height: 0;
-          border-left: 5px solid transparent;
-          border-right: 5px solid transparent;
-          border-bottom: 7px solid #fff;
-          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
-          transform: translate(-50%, -50%) rotate(var(--pos-arrow-rot, 0deg)) translateY(-14px);
-          opacity: var(--pos-arrow-opacity, 0);
-          transition: opacity 250ms ease;
+          width: 108px;
+          height: 108px;
+          border-radius: 9999px;
+          pointer-events: none;
+          /* El cono se dibuja como sector (conic) y el degradado radial lo apaga con la distancia. */
+          background: conic-gradient(
+            from -33deg at 50% 50%,
+            rgba(90, 170, 255, 0) 0deg,
+            rgba(90, 170, 255, 0.55) 14deg,
+            rgba(120, 190, 255, 0.9) 33deg,
+            rgba(90, 170, 255, 0.55) 52deg,
+            rgba(90, 170, 255, 0) 66deg,
+            rgba(90, 170, 255, 0) 360deg
+          );
+          -webkit-mask-image: radial-gradient(
+            circle at 50% 50%,
+            #000 0%,
+            rgba(0, 0, 0, 0.85) 28%,
+            rgba(0, 0, 0, 0.4) 55%,
+            rgba(0, 0, 0, 0) 88%
+          );
+          mask-image: radial-gradient(
+            circle at 50% 50%,
+            #000 0%,
+            rgba(0, 0, 0, 0.85) 28%,
+            rgba(0, 0, 0, 0.4) 55%,
+            rgba(0, 0, 0, 0) 88%
+          );
+          transform: translate(-50%, -50%) rotate(var(--pos-heading-rot, 0deg));
+          opacity: var(--pos-heading-opacity, 0);
+          transition:
+            opacity 300ms ease,
+            transform var(--pos-heading-turn, 400ms) cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .live-cardio-pos-beam { transition: opacity 300ms ease; }
         }
         @keyframes live-cardio-pulse {
           0% { transform: scale(0.45); opacity: 0.5; }
@@ -523,17 +587,13 @@ export function LiveCardioMap({
         className="live-cardio-map-canvas h-full min-h-55 w-full"
         style={{ background: MAP_COLORS.land }}
       />
-      {/* Arriba a la derecha: abajo lo tapan la barra de métricas y el drawer de controles. */}
-      {points.length > 0 ? (
-        <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex flex-col gap-2">
-          <RecenterControl active={following} onRecenter={onRecenter} />
-          <OrientationControl
-            mode={orientationMode}
-            bearing={mapBearing}
-            onToggle={onToggleOrientation}
-          />
-        </div>
-      ) : null}
+      {/* `controlsBottomPx` lo deja justo encima de la barra de métricas. */}
+      <CameraControl
+        state={cameraState}
+        className="absolute right-3 z-10"
+        style={{ bottom: `${controlsBottomPx}px` }}
+        onPress={onCameraControlPress}
+      />
     </div>
   );
 }

@@ -80,7 +80,8 @@ export function LiveMetricsBar({
         aria-label="Ver estadísticas"
         onClick={onOpenStats}
         className={cn(
-          "mx-auto flex w-full max-w-lg flex-col overflow-hidden rounded-[1.75rem] text-left",
+          /* touch-styled: evita que el CSS táctil global vacíe el fondo con :hover pegado */
+          "touch-styled mx-auto flex w-full max-w-lg flex-col overflow-hidden rounded-[1.75rem] text-left",
           "border border-border/80 bg-[hsl(var(--surface-elevated)/0.95)] shadow-lg backdrop-blur-xl",
           "transition-transform active:scale-[0.98]",
         )}

@@ -95,6 +95,8 @@ export function useCardioGpsRecorder({
   autoPauseEnabled,
 }: Options) {
   const [points, setPoints] = useState<CardioGpsPoint[]>([]);
+  /** Último fix conocido, también en preview: el mapa lo necesita antes de empezar a grabar. */
+  const [lastPosition, setLastPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [denied, setDenied] = useState(false);
   const [hasFix, setHasFix] = useState(false);
@@ -200,6 +202,7 @@ export function useCardioGpsRecorder({
     }
     setPoints([]);
     lastAcceptedRef.current = null;
+    setLastPosition(null);
     setError(null);
     setDenied(false);
     setHasFix(false);
@@ -345,6 +348,8 @@ export function useCardioGpsRecorder({
         const lat = latitude;
         const lng = longitude;
 
+        setLastPosition((prev) => (prev && prev.lat === lat && prev.lng === lng ? prev : { lat, lng }));
+
         // Motion también en preview (p. ej. autopausa / reanudación).
         motionTrackerRef.current = reduceGpsMotion(
           motionTrackerRef.current,
@@ -420,6 +425,8 @@ export function useCardioGpsRecorder({
 
   return {
     points,
+    /** Posición actual aunque no se esté grabando (mapa de setup). */
+    lastPosition,
     distanceM,
     /** null en web: el consumidor lo calcula con elevationGainM(points). */
     elevationGainM: nativeElevationGainM,
