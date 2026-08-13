@@ -153,7 +153,11 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
                         "h-12 w-12 shrink-0 rounded-full p-0 shadow-none",
                         selectedRouteName && "border-primary/40 text-primary",
                       )}
-                      onClick={onOpenRoutePicker}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenRoutePicker?.();
+                      }}
                       aria-label="Elegir ruta guardada"
                     >
                       <Route className="h-5 w-5" />

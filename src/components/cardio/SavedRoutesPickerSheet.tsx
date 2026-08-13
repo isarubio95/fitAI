@@ -57,7 +57,11 @@ export function SavedRoutesPickerSheet({
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
-        className={cn("flex max-h-[75dvh] flex-col gap-0 overflow-hidden bg-card p-0", drawerSafeAreaBottom)}
+        className={cn(
+          "z-120 flex max-h-[75dvh] flex-col gap-0 overflow-hidden bg-card p-0",
+          drawerSafeAreaBottom,
+        )}
+        overlayClassName="z-120"
       >
         <DrawerHeader className="shrink-0 border-b border-border text-left">
           <DrawerTitle>Rutas guardadas</DrawerTitle>
