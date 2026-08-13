@@ -18,6 +18,7 @@ import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
 import { AnimatedTabsList, pillTabsListClass, pillTabsTriggerClass, Tabs, TabsTrigger } from "@/components/ui/tabs";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
+import { CardioDetailsSheet } from "@/components/cardio/CardioDetailsSheet";
 import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashboard/ProgramWizard";
 import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -207,6 +208,8 @@ const Dashboard = () => {
 
   const [workoutDetailsOpen, setWorkoutDetailsOpen] = useState(false);
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
+  const [cardioDetailsOpen, setCardioDetailsOpen] = useState(false);
+  const [cardioDetailsId, setCardioDetailsId] = useState<string | null>(null);
 
   const { data: monthWorkouts, isPending: monthWorkoutsPending } = useMonthWorkouts(calendarMonth);
   const { data: workoutDates } = useMonthWorkoutDates(calendarMonth);
@@ -257,6 +260,12 @@ const Dashboard = () => {
     if (isDragMode) return;
     setWorkoutDetailsId(id);
     setWorkoutDetailsOpen(true);
+  };
+
+  const openCardioDetails = (id: string) => {
+    if (isDragMode) return;
+    setCardioDetailsId(id);
+    setCardioDetailsOpen(true);
   };
 
   const startPlanned = (planned: PlannedRoutine) => {
@@ -441,6 +450,7 @@ const Dashboard = () => {
                         }}
                         onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
                         onCardioClick={(id) => { if (!isDragMode) openCardioEdit(id); }}
+                        onCardioDetailsClick={(id) => openCardioDetails(id)}
                         onWorkoutDetailsClick={(id) => openWorkoutDetails(id)}
                         onPlannedStart={!isDragMode ? startPlanned : undefined}
                       />
@@ -457,6 +467,7 @@ const Dashboard = () => {
                         cardioSessionDates={cardioSessionDates ?? []}
                         onWorkoutClick={(id) => { if (!isDragMode) openEdit(id); }}
                         onCardioClick={(id) => { if (!isDragMode) openCardioEdit(id); }}
+                        onCardioDetailsClick={(id) => openCardioDetails(id)}
                         onWorkoutDetailsClick={(id) => openWorkoutDetails(id)}
                         onPlannedClick={(p) => { if (!isDragMode) startPlanned(p); }}
                       />
@@ -604,6 +615,15 @@ const Dashboard = () => {
           if (!next) setWorkoutDetailsId(null);
         }}
         workoutId={workoutDetailsId}
+      />
+
+      <CardioDetailsSheet
+        open={cardioDetailsOpen}
+        onOpenChange={(next) => {
+          setCardioDetailsOpen(next);
+          if (!next) setCardioDetailsId(null);
+        }}
+        sessionId={cardioDetailsId}
       />
     </div>
   );

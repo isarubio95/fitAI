@@ -5,9 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { useInAppNotifications } from "@/hooks/useInAppNotifications";
 import { cn } from "@/lib/utils";
-import { isNewFollowerNotification, type InAppNotificationItem } from "@/types/inAppNotification";
+import {
+  isNewFollowerNotification,
+  isSocialInteractionNotification,
+  type InAppNotificationItem,
+} from "@/types/inAppNotification";
 import { NewFollowerNotificationContent } from "@/components/notifications/NewFollowerNotificationContent";
+import { SocialInteractionNotificationContent } from "@/components/notifications/SocialInteractionNotificationContent";
 import { InAppNotificationItemMotion } from "@/components/notifications/InAppNotificationItemMotion";
+
+function DismissButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground [&_svg]:opacity-80 hover:[&_svg]:opacity-100"
+      aria-label="Descartar"
+      onClick={onClick}
+    >
+      <X className="h-4 w-4" />
+    </button>
+  );
+}
 
 function NotificationRow({
   item,
@@ -31,16 +49,32 @@ function NotificationRow({
           avatarUrl={item.avatarUrl}
           onAfterOpenProfile={onAfterPrimaryAction}
           trailing={
-            item.dismissable ? (
-              <button
-                type="button"
-                className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground [&_svg]:opacity-80 hover:[&_svg]:opacity-100"
-                aria-label="Descartar"
-                onClick={() => onDismiss(item.id)}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            ) : null
+            item.dismissable ? <DismissButton onClick={() => onDismiss(item.id)} /> : null
+          }
+        />
+      </div>
+    );
+  }
+
+  if (isSocialInteractionNotification(item)) {
+    return (
+      <div
+        className={cn(
+          "rounded-xl border border-primary/20 bg-primary/8 px-3 py-3 text-left dark:border-primary/25 dark:bg-primary/5",
+        )}
+      >
+        <SocialInteractionNotificationContent
+          interaction={item.interaction}
+          targetType={item.targetType}
+          targetTitle={item.targetTitle}
+          autorId={item.autorId}
+          username={item.username}
+          avatarUrl={item.avatarUrl}
+          texto={item.texto}
+          createdAt={item.createdAt}
+          onAfterOpenProfile={onAfterPrimaryAction}
+          trailing={
+            item.dismissable ? <DismissButton onClick={() => onDismiss(item.id)} /> : null
           }
         />
       </div>
@@ -62,16 +96,7 @@ function NotificationRow({
             <p className="mt-1 text-xs text-muted-foreground leading-snug">{item.body}</p>
           ) : null}
         </div>
-        {item.dismissable ? (
-          <button
-            type="button"
-            className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground [&_svg]:opacity-80 hover:[&_svg]:opacity-100"
-            aria-label="Descartar"
-            onClick={() => onDismiss(item.id)}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        ) : null}
+        {item.dismissable ? <DismissButton onClick={() => onDismiss(item.id)} /> : null}
       </div>
       {item.accion ? (
         <Button

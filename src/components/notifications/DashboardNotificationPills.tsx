@@ -3,34 +3,63 @@ import { X, Info, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useInAppNotifications } from "@/hooks/useInAppNotifications";
 import { cn } from "@/lib/utils";
-import { isNewFollowerNotification, type InAppNotificationItem } from "@/types/inAppNotification";
+import {
+  isNewFollowerNotification,
+  isSocialInteractionNotification,
+  type InAppNotificationItem,
+} from "@/types/inAppNotification";
 import { NewFollowerNotificationContent } from "@/components/notifications/NewFollowerNotificationContent";
+import { SocialInteractionNotificationContent } from "@/components/notifications/SocialInteractionNotificationContent";
 import { InAppNotificationItemMotion } from "@/components/notifications/InAppNotificationItemMotion";
+
+const pillClassName =
+  "flex min-w-0 flex-1 flex-col gap-0 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2.5 sm:max-w-sm sm:flex-initial dark:border-primary/42 dark:bg-primary/8";
+
+function DismissButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground [&_svg]:opacity-80 hover:[&_svg]:opacity-100"
+      aria-label="Descartar"
+      onClick={onClick}
+    >
+      <X className="h-4 w-4" />
+    </button>
+  );
+}
 
 function Pill({ item, onDismiss }: { item: InAppNotificationItem; onDismiss: (id: string) => void }) {
   if (isNewFollowerNotification(item)) {
     return (
-      <div
-        className={cn(
-          "flex min-w-0 flex-1 flex-col gap-0 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2.5 sm:max-w-sm sm:flex-initial dark:border-primary/42 dark:bg-primary/8",
-        )}
-      >
+      <div className={cn(pillClassName)}>
         <NewFollowerNotificationContent
           compact
           seguidorId={item.seguidorId}
           username={item.username}
           avatarUrl={item.avatarUrl}
           trailing={
-            item.dismissable ? (
-              <button
-                type="button"
-                className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground [&_svg]:opacity-80 hover:[&_svg]:opacity-100"
-                aria-label="Descartar"
-                onClick={() => onDismiss(item.id)}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            ) : null
+            item.dismissable ? <DismissButton onClick={() => onDismiss(item.id)} /> : null
+          }
+        />
+      </div>
+    );
+  }
+
+  if (isSocialInteractionNotification(item)) {
+    return (
+      <div className={cn(pillClassName)}>
+        <SocialInteractionNotificationContent
+          compact
+          interaction={item.interaction}
+          targetType={item.targetType}
+          targetTitle={item.targetTitle}
+          autorId={item.autorId}
+          username={item.username}
+          avatarUrl={item.avatarUrl}
+          texto={item.texto}
+          createdAt={item.createdAt}
+          trailing={
+            item.dismissable ? <DismissButton onClick={() => onDismiss(item.id)} /> : null
           }
         />
       </div>
@@ -60,16 +89,7 @@ function Pill({ item, onDismiss }: { item: InAppNotificationItem; onDismiss: (id
             <p className="mt-0.5 text-xs text-muted-foreground leading-snug line-clamp-2">{item.body}</p>
           ) : null}
         </div>
-        {item.dismissable ? (
-          <button
-            type="button"
-            className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground [&_svg]:opacity-80 hover:[&_svg]:opacity-100"
-            aria-label="Descartar"
-            onClick={() => onDismiss(item.id)}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        ) : null}
+        {item.dismissable ? <DismissButton onClick={() => onDismiss(item.id)} /> : null}
       </div>
       {item.accion ? (
         <Button

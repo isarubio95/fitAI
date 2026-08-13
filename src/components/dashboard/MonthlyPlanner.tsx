@@ -78,6 +78,7 @@ interface MonthlyPlannerProps {
   onDayClick: (date: Date) => void;
   onWorkoutClick: (workoutId: string) => void;
   onCardioClick?: (sessionId: string) => void;
+  onCardioDetailsClick?: (sessionId: string) => void;
   onWorkoutDetailsClick?: (workoutId: string) => void;
   onPlannedStart?: (planned: PlannedRoutine) => void;
 }
@@ -93,6 +94,7 @@ export function MonthlyPlanner({
   onDayClick,
   onWorkoutClick,
   onCardioClick,
+  onCardioDetailsClick,
   onWorkoutDetailsClick,
   onPlannedStart,
 }: MonthlyPlannerProps) {
@@ -543,6 +545,17 @@ export function MonthlyPlanner({
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
+                                    {onCardioDetailsClick && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        onClick={() => onCardioDetailsClick(s.id)}
+                                        title="Ver detalles"
+                                      >
+                                        <Eye className="h-3.5 w-3.5" />
+                                      </Button>
+                                    )}
                                     {onCardioClick && (
                                       <Button
                                         variant="ghost"

@@ -1,10 +1,15 @@
 import { useMemo, useCallback } from "react";
 import { useInAppNotificationsDismiss } from "@/contexts/InAppNotificationsContext";
 import { useMyFollowersReceived } from "@/hooks/useMyFollowersReceived";
+import {
+  socialInteractionNotificationId,
+  useMySocialInteractionsReceived,
+} from "@/hooks/useMySocialInteractionsReceived";
 import type { InAppNotificationItem } from "@/types/inAppNotification";
 
 /**
- * `true`: muestra siempre las notificaciones de diseño (seguidor) con datos de ejemplo.
+ * `true`: muestra siempre las notificaciones de diseño (seguidor, like, comentario)
+ * con datos de ejemplo.
  * Pon `false` cuando termines de maquetar o antes de desplegar.
  *
  * Si las descartas y quieres verlas otra vez: en localStorage quita del array de
@@ -24,13 +29,50 @@ function buildDesignPreviewInAppNotifications(): InAppNotificationItem[] {
       username: "ana_gym",
       avatarUrl: null,
     },
+    {
+      id: "design-preview-social-like",
+      variant: "social-interaction",
+      kind: "action",
+      dismissable: true,
+      interaction: "like",
+      targetType: "actividad",
+      targetId: "00000000-0000-4000-8000-000000000098",
+      targetTitle: "Pecho y bíceps",
+      autorId: "00000000-0000-4000-8000-000000000099",
+      username: "ana_gym",
+      avatarUrl: null,
+      texto: null,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "design-preview-social-comment",
+      variant: "social-interaction",
+      kind: "action",
+      dismissable: true,
+      interaction: "comment",
+      targetType: "cardio",
+      targetId: "00000000-0000-4000-8000-000000000097",
+      targetTitle: "Carrera matutina",
+      autorId: "00000000-0000-4000-8000-000000000096",
+      username: "carlos_run",
+      avatarUrl: null,
+      texto: "Menudo ritmo llevas, la próxima salimos juntos",
+      createdAt: new Date().toISOString(),
+    },
   ];
+}
+
+/** Más recientes primero; las que no tienen fecha (avisos del sistema) van al final. */
+function byCreatedAtDesc(a: InAppNotificationItem, b: InAppNotificationItem) {
+  const aDate = "createdAt" in a ? a.createdAt ?? "" : "";
+  const bDate = "createdAt" in b ? b.createdAt ?? "" : "";
+  return bDate.localeCompare(aDate);
 }
 
 /**
  * Notificaciones in-app derivadas del estado (sin tabla propia).
  * Las descartadas persisten en localStorage por usuario.
- * No dispara toasts: eso lo hace `InAppFollowerToastSync`.
+ * No dispara toasts: eso lo hacen `InAppFollowerToastSync` e `InAppSocialToastSync`.
  */
 export function useInAppNotifications() {
   const { dismissed, dismiss, dismissMany } = useInAppNotificationsDismiss();
@@ -39,6 +81,11 @@ export function useInAppNotifications() {
     data: followersReceived = [],
     isError: followersError,
   } = useMyFollowersReceived();
+
+  const {
+    data: socialInteractions = [],
+    isError: socialError,
+  } = useMySocialInteractionsReceived();
 
   const followerNotifications = useMemo((): InAppNotificationItem[] => {
     if (HARDCODE_ALL_IN_APP_NOTIFICATIONS_FOR_DESIGN) return [];
@@ -55,18 +102,45 @@ export function useInAppNotifications() {
         seguidorId: row.seguidor_id,
         username: row.username,
         avatarUrl: row.avatar_url,
+        createdAt: row.created_at,
       });
     }
     return list;
   }, [followersReceived, followersError, dismissed]);
+
+  const socialNotifications = useMemo((): InAppNotificationItem[] => {
+    if (HARDCODE_ALL_IN_APP_NOTIFICATIONS_FOR_DESIGN) return [];
+    if (socialError) return [];
+    const list: InAppNotificationItem[] = [];
+    for (const row of socialInteractions) {
+      const id = socialInteractionNotificationId(row);
+      if (dismissed.has(id)) continue;
+      list.push({
+        id,
+        variant: "social-interaction",
+        kind: "action",
+        dismissable: true,
+        interaction: row.interaction,
+        targetType: row.targetType,
+        targetId: row.targetId,
+        targetTitle: row.targetTitle,
+        autorId: row.autorId,
+        username: row.username,
+        avatarUrl: row.avatarUrl,
+        texto: row.texto,
+        createdAt: row.createdAt,
+      });
+    }
+    return list;
+  }, [socialInteractions, socialError, dismissed]);
 
   const built = useMemo((): InAppNotificationItem[] => {
     if (HARDCODE_ALL_IN_APP_NOTIFICATIONS_FOR_DESIGN) {
       return buildDesignPreviewInAppNotifications();
     }
 
-    return [...followerNotifications];
-  }, [followerNotifications]);
+    return [...followerNotifications, ...socialNotifications].sort(byCreatedAtDesc);
+  }, [followerNotifications, socialNotifications]);
 
   const items = useMemo(() => {
     return built.filter((n) => {

@@ -80,6 +80,7 @@ interface WeekCalendarProps {
   onWorkoutDetailsClick?: (id: string) => void;
   onPlannedClick?: (planned: PlannedRoutine) => void;
   onCardioClick?: (id: string) => void;
+  onCardioDetailsClick?: (id: string) => void;
 }
 
 export function WeekCalendar({
@@ -91,6 +92,7 @@ export function WeekCalendar({
   onWorkoutDetailsClick,
   onPlannedClick,
   onCardioClick,
+  onCardioDetailsClick,
 }: WeekCalendarProps) {
   const weekStart = useMemo(
     () => startOfWeek(selectedDate ?? displayWeekStart ?? new Date(), { weekStartsOn: 1 }),
@@ -521,6 +523,17 @@ export function WeekCalendar({
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
+                            {onCardioDetailsClick && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => onCardioDetailsClick(s.id)}
+                                title="Ver detalles"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
                             {onCardioClick && (
                               <Button
                                 variant="ghost"
