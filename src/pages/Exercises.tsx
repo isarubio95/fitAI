@@ -42,16 +42,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, Layers, BicepsFlexed, SignalMedium, Filter, X, Plus } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, ChevronDown, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, BicepsFlexed, Filter, X, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
-import type { MainMuscleGroup } from "@/constants/muscleGroups";
+import { MUSCLE_GROUP_ICON_SRC, type MainMuscleGroup } from "@/constants/muscleGroups";
 import { EXERCISE_SYNONYMS } from "@/constants/exerciseSynonyms";
 import type { RegistroSeries, TipoEjercicio } from "@/types/workout";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
 
 type DifficultyLevel = 1 | 2 | 3;
+
+const DIFFICULTY_OPTIONS: { level: DifficultyLevel; label: string }[] = [
+  { level: 1, label: "Baja" },
+  { level: 2, label: "Media" },
+  { level: 3, label: "Alta" },
+];
 
 /** Fila unificada del catálogo sistema + ejercicios de usuario. */
 type CatalogExercise = TipoEjercicio & {
@@ -120,6 +126,14 @@ function toggleInList(list: string[], value: string) {
   return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
 }
 
+function toggleDifficulty(list: DifficultyLevel[], value: DifficultyLevel) {
+  return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
+}
+
+function difficultyLabel(level: DifficultyLevel) {
+  return DIFFICULTY_OPTIONS.find((o) => o.level === level)?.label ?? String(level);
+}
+
 function splitEquipmentUnits(value: unknown): string[] {
   return String(value ?? "")
     .split(",")
@@ -186,6 +200,11 @@ function getExerciseIcon(ex: { musculos_involucrados?: string[] | null }) {
   return group ? MUSCLE_GROUP_ICONS[group] : Dumbbell;
 }
 
+function getExerciseGroupIconSrc(ex: { musculos_involucrados?: string[] | null }) {
+  const group = getMainGroupFromBodyPart(ex.musculos_involucrados as string[] | null);
+  return group ? MUSCLE_GROUP_ICON_SRC[group] : null;
+}
+
 function difficultyToLevel(d: unknown): 1 | 2 | 3 | null {
   if (d == null) return null;
   if (typeof d === "number" && Number.isFinite(d)) {
@@ -213,46 +232,17 @@ function DifficultyBars({ level }: { level: 1 | 2 | 3 }) {
         : "text-orange-600 dark:text-orange-400";
 
   return (
-    <span className={cn("inline-flex items-center gap-1", color)}>
-      <SignalMedium className="h-3.5 w-3.5" />
-      <span className="inline-flex items-end gap-[3px]">
-        {[1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className={cn(
-              "inline-block w-[4px] rounded-sm",
-              i === 1 ? "h-[6px]" : i === 2 ? "h-[9px]" : "h-[12px]",
-              i <= level ? "bg-current" : "bg-current/25",
-            )}
-          />
-        ))}
-      </span>
-    </span>
-  );
-}
-
-function DifficultyBarsMono({ level, active }: { level: 1 | 2 | 3; active: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1",
-        active ? "text-primary" : "text-foreground",
-      )}
-      aria-hidden
-    >
-      <SignalMedium className="h-3.5 w-3.5" />
-      <span className="inline-flex items-end gap-[3px]">
-        {[1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className={cn(
-              "inline-block w-[4px] rounded-sm",
-              i === 1 ? "h-[6px]" : i === 2 ? "h-[9px]" : "h-[12px]",
-              i <= level ? "bg-current" : "bg-current/25",
-            )}
-          />
-        ))}
-      </span>
+    <span className={cn("inline-flex items-end gap-[3px]", color)} aria-hidden>
+      {[1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className={cn(
+            "inline-block w-[4px] rounded-sm",
+            i === 1 ? "h-[6px]" : i === 2 ? "h-[9px]" : "h-[12px]",
+            i <= level ? "bg-current" : "bg-current/25",
+          )}
+        />
+      ))}
     </span>
   );
 }
@@ -511,7 +501,7 @@ const Exercises = () => {
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-hidden bg-background px-0 pb-6 mx-auto md:px-8 md:pt-6",
+        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-hidden bg-card px-0 pb-6 mx-auto md:px-8 md:pt-6",
         PAGE_CARD_STACK_GAP,
       )}
     >
@@ -616,214 +606,200 @@ const Exercises = () => {
             />
           </div>
 
-          {/* Filtros */}
+          {/* Filtros: una sola fila con scroll horizontal */}
           <div className="flex flex-col gap-3 md:gap-2">
-            <div className="w-full min-w-0 md:max-w-full md:overflow-x-auto md:overflow-y-hidden md:pb-1 md:[-webkit-overflow-scrolling:touch]">
-              <div className="grid w-full grid-cols-3 gap-3 md:flex md:min-w-max md:items-center md:gap-2 md:whitespace-nowrap">
+            <div className="w-full min-w-0">
+              <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-webkit-overflow-scrolling:touch]">
                 <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="filter"
-                size="sm"
-                className={cn(
-                  "w-full min-w-0 justify-center gap-2 md:w-28 md:shrink-0",
-                  filters.tipos.length > 0 && filterButtonActive,
-                )}
-              >
-                <Filter className="h-4 w-4" /> Tipo
-                {filters.tipos.length > 0 && (
-                  <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
-                    {filters.tipos.length}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Buscar tipo..." />
-                <CommandList className="max-h-[260px]">
-                  <CommandEmpty>Sin resultados.</CommandEmpty>
-                  <CommandGroup heading="Tipo">
-                    {tipoOptions.map((t) => (
-                      <CommandItem
-                        key={t}
-                        value={t}
-                        onSelect={() => {
-                          const nextFilters: ExerciseFilters = { ...filters, tipos: toggleInList(filters.tipos, t) };
-                          setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", filters.tipos.includes(t) ? "opacity-100" : "opacity-0")} />
-                        {t}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="filter"
+                      size="sm"
+                      className={cn(
+                        "shrink-0 justify-center gap-2",
+                        filters.tipos.length > 0 && filterButtonActive,
+                      )}
+                    >
+                      <Filter className="h-4 w-4" /> Tipo
+                      {filters.tipos.length > 0 && (
+                        <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
+                          {filters.tipos.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar tipo..." />
+                      <CommandList className="max-h-[260px]">
+                        <CommandEmpty>Sin resultados.</CommandEmpty>
+                        <CommandGroup heading="Tipo">
+                          {tipoOptions.map((t) => (
+                            <CommandItem
+                              key={t}
+                              value={t}
+                              onSelect={() => {
+                                const nextFilters: ExerciseFilters = { ...filters, tipos: toggleInList(filters.tipos, t) };
+                                setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", filters.tipos.includes(t) ? "opacity-100" : "opacity-0")} />
+                              {t}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
                 </Popover>
 
                 <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="filter"
-                size="sm"
-                className={cn(
-                  "w-full min-w-0 justify-center gap-2 md:w-28 md:shrink-0",
-                  filters.grupos.length > 0 && filterButtonActive,
-                )}
-              >
-                <BicepsFlexed className="h-4 w-4" /> Grupo
-                {filters.grupos.length > 0 && (
-                  <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
-                    {filters.grupos.length}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Buscar grupo..." />
-                <CommandList className="max-h-[260px]">
-                  <CommandEmpty>Sin resultados.</CommandEmpty>
-                  <CommandGroup heading="Grupo muscular">
-                    {grupoOptions.map((g) => (
-                      <CommandItem
-                        key={g}
-                        value={g}
-                        onSelect={() => {
-                          const nextFilters: ExerciseFilters = { ...filters, grupos: toggleInList(filters.grupos, g) };
-                          setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", filters.grupos.includes(g) ? "opacity-100" : "opacity-0")} />
-                        {g}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="filter"
+                      size="sm"
+                      className={cn(
+                        "shrink-0 justify-center gap-2",
+                        filters.grupos.length > 0 && filterButtonActive,
+                      )}
+                    >
+                      <BicepsFlexed className="h-4 w-4" /> Grupo
+                      {filters.grupos.length > 0 && (
+                        <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
+                          {filters.grupos.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar grupo..." />
+                      <CommandList className="max-h-[260px]">
+                        <CommandEmpty>Sin resultados.</CommandEmpty>
+                        <CommandGroup heading="Grupo muscular">
+                          {grupoOptions.map((g) => (
+                            <CommandItem
+                              key={g}
+                              value={g}
+                              onSelect={() => {
+                                const nextFilters: ExerciseFilters = { ...filters, grupos: toggleInList(filters.grupos, g) };
+                                setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", filters.grupos.includes(g) ? "opacity-100" : "opacity-0")} />
+                              {g}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
                 </Popover>
 
                 <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="filter"
-                size="sm"
-                className={cn(
-                  "w-full min-w-0 justify-center gap-2 md:w-28 md:shrink-0",
-                  filters.equipments.length > 0 && filterButtonActive,
-                )}
-              >
-                <Wrench className="h-4 w-4" /> Equipo
-                {filters.equipments.length > 0 && (
-                  <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
-                    {filters.equipments.length}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Buscar equipamiento..." />
-                <CommandList className="max-h-[260px]">
-                  <CommandEmpty>Sin resultados.</CommandEmpty>
-                  <CommandGroup heading="Equipamiento">
-                    {equipmentOptions.map((eq) => (
-                      <CommandItem
-                        key={eq}
-                        value={eq}
-                        onSelect={() => {
-                          const nextFilters: ExerciseFilters = {
-                            ...filters,
-                            equipments: toggleInList(filters.equipments, eq),
-                          };
-                          setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            filters.equipments.includes(eq) ? "opacity-100" : "opacity-0",
-                          )}
-                        />
-                        {eq}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="filter"
+                      size="sm"
+                      className={cn(
+                        "shrink-0 justify-center gap-2",
+                        filters.equipments.length > 0 && filterButtonActive,
+                      )}
+                    >
+                      <Wrench className="h-4 w-4" /> Equipo
+                      {filters.equipments.length > 0 && (
+                        <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
+                          {filters.equipments.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar equipamiento..." />
+                      <CommandList className="max-h-[260px]">
+                        <CommandEmpty>Sin resultados.</CommandEmpty>
+                        <CommandGroup heading="Equipamiento">
+                          {equipmentOptions.map((eq) => (
+                            <CommandItem
+                              key={eq}
+                              value={eq}
+                              onSelect={() => {
+                                const nextFilters: ExerciseFilters = {
+                                  ...filters,
+                                  equipments: toggleInList(filters.equipments, eq),
+                                };
+                                setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  filters.equipments.includes(eq) ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                              {eq}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
                 </Popover>
-              </div>
-            </div>
 
-            <div className="w-full min-w-0 md:max-w-full md:overflow-x-auto md:overflow-y-hidden md:pb-1 md:[-webkit-overflow-scrolling:touch]">
-              <div className="grid w-full grid-cols-3 gap-3 md:flex md:min-w-max md:items-center md:gap-2 md:whitespace-nowrap">
-                <Button
-                  type="button"
-                  variant="filter"
-                  size="sm"
-                  className={cn(
-                    "w-full min-w-0 justify-center md:w-28 md:shrink-0",
-                    filters.difs.includes(1) && filterButtonActive,
-                  )}
-                  onClick={() => {
-                    const difs: DifficultyLevel[] = filters.difs.includes(1)
-                      ? filters.difs.filter((d) => d !== 1)
-                      : [...filters.difs, 1 as DifficultyLevel];
-                    triggerDifficultyLoading();
-                    setSearchParams(
-                      serializeFiltersToSearchParams(searchParams, { ...filters, difs } as ExerciseFilters),
-                      { replace: true },
-                    );
-                  }}
-                >
-                  <DifficultyBarsMono level={1} active={filters.difs.includes(1)} />
-                </Button>
-                <Button
-                  type="button"
-                  variant="filter"
-                  size="sm"
-                  className={cn(
-                    "w-full min-w-0 justify-center md:w-28 md:shrink-0",
-                    filters.difs.includes(2) && filterButtonActive,
-                  )}
-                  onClick={() => {
-                    const difs: DifficultyLevel[] = filters.difs.includes(2)
-                      ? filters.difs.filter((d) => d !== 2)
-                      : [...filters.difs, 2 as DifficultyLevel];
-                    triggerDifficultyLoading();
-                    setSearchParams(
-                      serializeFiltersToSearchParams(searchParams, { ...filters, difs } as ExerciseFilters),
-                      { replace: true },
-                    );
-                  }}
-                >
-                  <DifficultyBarsMono level={2} active={filters.difs.includes(2)} />
-                </Button>
-                <Button
-                  type="button"
-                  variant="filter"
-                  size="sm"
-                  className={cn(
-                    "w-full min-w-0 justify-center md:w-28 md:shrink-0",
-                    filters.difs.includes(3) && filterButtonActive,
-                  )}
-                  onClick={() => {
-                    const difs: DifficultyLevel[] = filters.difs.includes(3)
-                      ? filters.difs.filter((d) => d !== 3)
-                      : [...filters.difs, 3 as DifficultyLevel];
-                    triggerDifficultyLoading();
-                    setSearchParams(
-                      serializeFiltersToSearchParams(searchParams, { ...filters, difs } as ExerciseFilters),
-                      { replace: true },
-                    );
-                  }}
-                >
-                  <DifficultyBarsMono level={3} active={filters.difs.includes(3)} />
-                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="filter"
+                      size="sm"
+                      className={cn(
+                        "shrink-0 justify-center gap-2",
+                        filters.difs.length > 0 && filterButtonActive,
+                      )}
+                    >
+                      Dificultad
+                      {filters.difs.length > 0 && (
+                        <Badge variant="outline" className="border-primary/25 bg-transparent text-primary">
+                          {filters.difs.length}
+                        </Badge>
+                      )}
+                      <ChevronDown className="h-4 w-4 opacity-70" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-0" align="start">
+                    <Command>
+                      <CommandList>
+                        <CommandGroup heading="Dificultad">
+                          {DIFFICULTY_OPTIONS.map(({ level, label }) => (
+                            <CommandItem
+                              key={level}
+                              value={label}
+                              onSelect={() => {
+                                const difs = toggleDifficulty(filters.difs, level);
+                                triggerDifficultyLoading();
+                                setSearchParams(
+                                  serializeFiltersToSearchParams(searchParams, { ...filters, difs }),
+                                  { replace: true },
+                                );
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  filters.difs.includes(level) ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                              <span className="flex flex-1 items-center justify-between gap-3">
+                                {label}
+                                <DifficultyBars level={level} />
+                              </span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
@@ -888,7 +864,7 @@ const Exercises = () => {
               ))}
               {filters.difs.map((d) => (
                 <Badge key={`dif:${d}`} variant="secondary" className="gap-1">
-                  Dif: {d}
+                  Dif: {difficultyLabel(d)}
                   <X
                     className="h-3 w-3 cursor-pointer hover:text-destructive"
                     onClick={() => {
@@ -920,79 +896,94 @@ const Exercises = () => {
         </Card>
       )}
 
-      <div className={cn("grid w-full grid-cols-1 bg-background sm:grid-cols-2", PAGE_CARD_STACK_GAP)}>
+      <div className="grid w-full grid-cols-2 gap-3 bg-card px-3 md:gap-[11px] md:px-0">
         {isLoading || difficultyLoading
-          ? Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-none border-0 bg-card md:rounded-3xl" />
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="w-full overflow-hidden rounded-3xl border border-border/20 bg-card">
+                <Skeleton className="aspect-[4/3] w-full rounded-none" />
+                <div className="space-y-2 px-3 py-3">
+                  <Skeleton className="h-4 w-4/5" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
             ))
           : filteredExercises.map((ex) => {
               const isOwn = ex.usuario_id === user?.id;
               const IconComponent = getExerciseIcon(ex as { musculos_involucrados?: string[] | null });
+              const groupIconSrc = getExerciseGroupIconSrc(ex as { musculos_involucrados?: string[] | null });
+              const mediaUrl = ex.gif_url || ex.imagen;
+              const level = difficultyToLevel(ex.dificultad);
               return (
                 <Card
                   key={ex.id}
                   className={cn(
-                    "w-full max-w-none cursor-pointer overflow-hidden rounded-none border-0 shadow-none transition-colors md:rounded-3xl md:border md:border-border/20",
+                    "flex h-full w-full max-w-none cursor-pointer flex-col overflow-hidden rounded-xl border border-border/20 shadow-none transition-colors",
                     isOwn
-                      ? "bg-primary/5 md:border-primary/30 hover:md:border-primary/50"
-                      : "bg-card hover:md:border-primary/50",
+                      ? "bg-primary/5 border-primary/30 hover:border-primary/50"
+                      : "bg-card hover:border-primary/50",
                   )}
                   onClick={() => setSelectedExercise(ex)}
                 >
-                  <CardContent className="flex items-start gap-3 px-6 py-4">
-                    <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                        isOwn ? "bg-primary/20" : "bg-primary/10"
-                      }`}
-                    >
-                      <IconComponent className="h-5 w-5 text-primary" />
+                  <CardContent className="flex flex-1 flex-col p-0">
+                    <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-muted">
+                      {mediaUrl ? (
+                        <img
+                          src={mediaUrl}
+                          alt={ex.nombre}
+                          className="h-full w-full object-contain"
+                          loading="lazy"
+                          decoding="async"
+                          draggable={false}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <IconComponent className="h-8 w-8 text-muted-foreground/40" />
+                        </div>
+                      )}
+
+                      {groupIconSrc && (
+                        <img
+                          src={groupIconSrc}
+                          alt=""
+                          className="absolute right-2 top-2 h-6 w-6 opacity-60"
+                          draggable={false}
+                        />
+                      )}
+
+                      {isOwn && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute left-2 top-2 h-8 w-8 rounded-full bg-background/75 text-destructive backdrop-blur-sm hover:bg-background"
+                          aria-label={`Eliminar ${ex.nombre}`}
+                          onClick={(e) => { e.stopPropagation(); setDeleteId(ex.id); }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold truncate">{ex.nombre}</p>
-                        {isOwn && <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+
+                    <div className="space-y-1 px-3 py-3">
+                      <div className="flex min-h-[2.75rem] items-start gap-1.5">
+                        <p className="line-clamp-2 text-sm font-semibold leading-snug">{ex.nombre}</p>
+                        {isOwn && <User className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
                       </div>
-                      <div className="mt-1 flex flex-wrap gap-1.5">
-                        {isOwn && (
-                          <Badge variant="secondary" className="text-[11px]">
-                            Personal
-                          </Badge>
-                        )}
-                        {ex.tipo && (
-                          <Badge variant="outline" className="text-[11px]">
-                            <Dumbbell className="mr-1 h-3 w-3" />
-                            {ex.tipo}
-                          </Badge>
-                        )}
-                        {ex.grupo_muscular && (
-                          <Badge variant="outline" className="text-[11px]">
-                            <Layers className="mr-1 h-3 w-3" />
-                            {ex.grupo_muscular}
-                          </Badge>
-                        )}
-                        {difficultyToLevel(ex.dificultad) && (
-                          <Badge variant="outline" className="text-[11px]">
-                            <DifficultyBars level={difficultyToLevel(ex.dificultad)!} />
-                          </Badge>
-                        )}
+                      <div className="flex min-h-[1rem] min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                         {ex.equipment && (
-                          <Badge variant="outline" className="text-[11px]">
-                            <Wrench className="mr-1 h-3 w-3" />
-                            {ex.equipment}
-                          </Badge>
+                          <span className="truncate capitalize">{ex.equipment}</span>
+                        )}
+                        {ex.equipment && level && (
+                          <span className="shrink-0 text-muted-foreground/50" aria-hidden>
+                            ·
+                          </span>
+                        )}
+                        {level && (
+                          <span className="shrink-0" title={difficultyLabel(level)}>
+                            <DifficultyBars level={level} />
+                          </span>
                         )}
                       </div>
                     </div>
-                    {isOwn && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0 text-destructive"
-                        onClick={(e) => { e.stopPropagation(); setDeleteId(ex.id); }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
                   </CardContent>
                 </Card>
               );

@@ -1328,7 +1328,24 @@ export type Database = {
     }
     Functions: {
       delete_user_data: { Args: { p_user_id: string }; Returns: undefined }
+      get_exercise_daily_best: {
+        Args: { p_tipo_ejercicio_id: string; p_months?: number }
+        Returns: {
+          day: string
+          weight: number
+          reps: number
+          one_rep_max: number
+        }[]
+      }
       gym_normalize_tipo_nombre: { Args: { p_nombre: string }; Returns: string }
+      list_exercises_with_history: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          name: string
+          last_performed: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

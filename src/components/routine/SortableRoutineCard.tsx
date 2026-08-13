@@ -5,31 +5,60 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Play, Pencil, Trash2, Dumbbell, GripVertical, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Play, Pencil, Trash2, Copy, Dumbbell, Clock, History, GripVertical, ChevronDown, MoreVertical } from "lucide-react";
 import type { RutinaWithDetails } from "@/types/routine";
 import { formatRitmoSegKmLabel } from "@/types/workout";
 import { cn } from "@/lib/utils";
+import { summarizeRoutineMuscleGroups, resolveMainMuscleGroup } from "@/lib/muscleMapping";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
+import {
+  estimateRoutineDurationMinutes,
+  formatEstimatedDurationLabel,
+} from "@/lib/estimateRoutineDuration";
+import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
 import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
 
 interface SortableRoutineCardProps {
   routine: RutinaWithDetails;
   isDragMode: boolean;
+  lastTrainedAt?: string | null;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (routine: RutinaWithDetails) => void;
   onStart: (routine: RutinaWithDetails, origin?: PillCircleOrigin) => void;
 }
 
 export function SortableRoutineCard({
   routine: r,
   isDragMode,
+  lastTrainedAt = null,
   onEdit,
   onDelete,
+  onDuplicate,
   onStart,
 }: SortableRoutineCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const RoutineTitleIcon = resolveRoutineIcon(r.icono);
+  const description = r.descripcion?.trim() || null;
+  const fromExercises = summarizeRoutineMuscleGroups(r.ejercicios);
+  const muscleGroupsLabel =
+    fromExercises.length > 0
+      ? fromExercises.join(" · ")
+      : resolveMainMuscleGroup(r.grupo_muscular) ?? (r.grupo_muscular?.trim() || null);
+  const subtitle = description ?? muscleGroupsLabel;
+  const durationLabel = formatEstimatedDurationLabel(
+    estimateRoutineDurationMinutes(r.ejercicios),
+  );
+  const lastTrainedLabel = lastTrainedAt
+    ? formatActivityRelativeDate(lastTrainedAt) || "Nunca"
+    : "Nunca";
 
   const {
     attributes,
@@ -63,9 +92,9 @@ export function SortableRoutineCard({
         isDragging && "shadow-lg ring-2 ring-primary/30",
       )}
     >
-      <CardContent className="px-6 py-6">
+      <CardContent className="px-6 py-4">
         {/* Header */}
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-stretch justify-between gap-3">
           <div className="flex items-start gap-2 flex-1 min-w-0">
             {isDragMode && (
               <button
@@ -81,41 +110,81 @@ export function SortableRoutineCard({
               className="flex-1 min-w-0 text-left"
             >
               <h2 className="font-semibold text-base flex items-center gap-2 min-w-0">
-                <RoutineTitleIcon className="h-4 w-4 shrink-0 text-primary" />
+                <RoutineTitleIcon className="h-4 w-4 shrink-0" />
                 <span className="truncate">{r.nombre}</span>
               </h2>
-              {r.descripcion && (
+              {subtitle && (
                 <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-                  {r.descripcion}
+                  {subtitle}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                <Dumbbell className="h-3 w-3" />
-                {r.ejercicios.length} ejercicio{r.ejercicios.length !== 1 ? "s" : ""}
+              <p className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                <span className="inline-flex items-center gap-1">
+                  <Dumbbell className="h-3 w-3" />
+                  {r.ejercicios.length} ejercicio{r.ejercicios.length !== 1 ? "s" : ""}
+                </span>
+                {durationLabel && (
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {durationLabel}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1">
+                  <History className="h-3 w-3" />
+                  {lastTrainedLabel}
+                </span>
               </p>
             </button>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex flex-col items-end justify-between shrink-0 -mr-1">
+            <div className="flex items-center gap-0.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 text-foreground"
+                aria-label="Iniciar entrenamiento"
+                onClick={(e) => onStart(r, pillCircleOriginFromElement(e.currentTarget))}
+              >
+                <Play className="h-6 w-6 fill-current" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-muted-foreground"
+                    aria-label="Más opciones"
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44 bg-popover">
+                  <DropdownMenuItem onClick={() => onEdit(r.id)}>
+                    <Pencil className="mr-2 h-4 w-4" /> Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDuplicate(r)}>
+                    <Copy className="mr-2 h-4 w-4" /> Duplicar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onDelete(r.id)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 text-muted-foreground"
+              aria-label={isOpen ? "Ocultar ejercicios" : "Ver ejercicios"}
+              aria-expanded={isOpen}
               onClick={() => setIsOpen((v) => !v)}
             >
               <ChevronDown
                 className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
               />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(r.id)}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-destructive"
-              onClick={() => onDelete(r.id)}
-            >
-              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -165,14 +234,6 @@ export function SortableRoutineCard({
             </div>
           </div>
         </div>
-
-        <Button
-          className="w-full mt-3"
-          variant="secondary"
-          onClick={(e) => onStart(r, pillCircleOriginFromElement(e.currentTarget))}
-        >
-          <Play className="h-4 w-4 mr-2" /> Iniciar Entrenamiento
-        </Button>
       </CardContent>
     </Card>
   );

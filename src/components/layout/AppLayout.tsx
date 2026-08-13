@@ -206,7 +206,7 @@ export function AppLayout() {
       <ProfileDrawerProvider>
       <div className="flex min-h-screen bg-background">
         <DesktopSidebar />
-        <div className="relative flex flex-1 flex-col">
+        <div className="relative flex min-w-0 flex-1 flex-col">
           <div
             id="desktop-floating-create-slot"
             className={FLOATING_CREATE_SLOT}

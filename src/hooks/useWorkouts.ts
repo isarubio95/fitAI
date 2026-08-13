@@ -293,6 +293,7 @@ export function useDeleteWorkout() {
         queryClient.invalidateQueries({ queryKey: ["monthWorkouts", user?.id, from] });
       }
       queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
+      queryClient.invalidateQueries({ queryKey: ["routineLastTrained"] });
     },
     onSuccess: () => toast({ title: "Entrenamiento eliminado correctamente" }),
     onError: (err: Error) => toast({ title: "Error al eliminar", description: err.message, variant: "destructive" }),
