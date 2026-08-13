@@ -94,7 +94,7 @@ export async function installSupabaseMock(page: Page): Promise<SupabaseMockState
         transition: none !important;
         transition-duration: 0s !important;
       }
-      [data-pill-circle], [transition-style], [data-open-from-pill] {
+      [data-pill-circle], [data-circle-center], [transition-style], [data-open-from-pill] {
         clip-path: none !important;
         -webkit-clip-path: none !important;
         transform: none !important;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AttributionControl,
   Map as MapLibreMap,
@@ -7,12 +7,20 @@ import {
   type GeoJSONSource,
 } from "maplibre-gl";
 import type { Feature, FeatureCollection } from "geojson";
-import { LocateFixed } from "lucide-react";
+import { Compass, LocateFixed } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 /** Vite empaqueta el worker + shared chunk; sin esto el mapa queda en blanco (404 del worker). */
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { CardioGpsPoint } from "@/hooks/useCardioGpsRecorder";
+import { useDeviceHeading } from "@/hooks/useDeviceHeading";
 import { splitTrackByTimeGaps } from "@/lib/cardioTrackSegments";
+import {
+  courseFromPoints,
+  readCardioMapOrientation,
+  shortestAngleDelta,
+  writeCardioMapOrientation,
+  type MapOrientationMode,
+} from "@/lib/mapHeading";
 import { MAP_COLORS, loadStravaDarkMapStyle } from "@/lib/stravaDarkMapStyle";
 import { cn } from "@/lib/utils";
 
@@ -20,12 +28,19 @@ setWorkerUrl(maplibreWorkerUrl);
 
 const DEFAULT_CENTER: [number, number] = [-3.7038, 40.4168];
 const FOLLOW_ZOOM = 16;
+/** Grabando se acerca un poco más: se ve mejor el trazado que va creciendo. */
+const RECORDING_ZOOM = 17.3;
+const ZOOM_IN_MS = 900;
+/** Giros más pequeños no merecen animación: la brújula nunca está del todo quieta. */
+const MIN_BEARING_DELTA_DEG = 2;
 
 type Props = {
   points: CardioGpsPoint[];
   className?: string;
   /** Si true, la cámara sigue el último punto (grabación en vivo). */
   followUser?: boolean;
+  /** Sesión en curso: acerca la cámara respecto a la vista de setup. */
+  recording?: boolean;
   /** Ruta objetivo (fantasma) debajo del track live. */
   referencePoints?: Array<{ lat: number; lng: number }>;
 };
@@ -117,6 +132,12 @@ function addRouteLayers(map: MapLibreMap) {
   });
 }
 
+const MAP_CONTROL_CLASS = cn(
+  "flex h-11 w-11 items-center justify-center rounded-full",
+  "border border-white/15 bg-[#1a1f21]/90 shadow-lg backdrop-blur-sm",
+  "transition-colors active:scale-95",
+);
+
 function RecenterControl({ active, onRecenter }: { active: boolean; onRecenter: () => void }) {
   return (
     <button
@@ -124,9 +145,7 @@ function RecenterControl({ active, onRecenter }: { active: boolean; onRecenter: 
       onClick={onRecenter}
       aria-label="Centrar en mi posición"
       className={cn(
-        "absolute right-3 bottom-3 z-10 flex h-11 w-11 items-center justify-center rounded-full",
-        "border border-white/15 bg-[#1a1f21]/90 shadow-lg backdrop-blur-sm",
-        "transition-colors active:scale-95",
+        MAP_CONTROL_CLASS,
         active ? "text-[#2D8CFF]" : "text-white/85 hover:text-white",
       )}
     >
@@ -135,13 +154,63 @@ function RecenterControl({ active, onRecenter }: { active: boolean; onRecenter: 
   );
 }
 
-export function LiveCardioMap({ points, className, followUser = true, referencePoints }: Props) {
+function OrientationControl({
+  mode,
+  bearing,
+  onToggle,
+}: {
+  mode: MapOrientationMode;
+  bearing: number;
+  onToggle: () => void;
+}) {
+  const label = mode === "heading" ? "Fijar el norte arriba" : "Seguir mi dirección";
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={label}
+      title={label}
+      aria-pressed={mode === "heading"}
+      className={cn(
+        MAP_CONTROL_CLASS,
+        mode === "heading" ? "text-[#2D8CFF]" : "text-white/85 hover:text-white",
+      )}
+    >
+      {/* La aguja apunta siempre al norte real, gire el mapa lo que gire. */}
+      <Compass className="h-5 w-5" strokeWidth={2.25} style={{ transform: `rotate(${-bearing}deg)` }} />
+    </button>
+  );
+}
+
+export function LiveCardioMap({
+  points,
+  className,
+  followUser = true,
+  recording = false,
+  referencePoints,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
+  const markerElementRef = useRef<HTMLDivElement | null>(null);
   const centeredOnceRef = useRef(false);
+  /** Último centro aplicado a la cámara: evita reanimar el paneo en cada giro de la brújula. */
+  const appliedCenterRef = useRef<[number, number] | null>(null);
+  const wasRecordingRef = useRef(recording);
   const [ready, setReady] = useState(false);
   const [following, setFollowing] = useState(followUser);
+  const [orientationMode, setOrientationMode] = useState<MapOrientationMode>(() =>
+    readCardioMapOrientation(),
+  );
+  const [mapBearing, setMapBearing] = useState(0);
+
+  const { heading: compassHeading, requestPermission } = useDeviceHeading({
+    enabled: orientationMode === "heading",
+  });
+  const gpsCourse = useMemo(() => courseFromPoints(points), [points]);
+  /** Híbrido: la brújula manda (gira parado) y el rumbo GPS cubre cuando no hay sensor. */
+  const heading = compassHeading ?? gpsCourse;
+  const targetZoom = recording ? RECORDING_ZOOM : FOLLOW_ZOOM;
 
   const initialViewRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
   if (initialViewRef.current === null) {
@@ -185,6 +254,11 @@ export function LiveCardioMap({ points, className, followUser = true, referenceP
         // Ignora el zoom programático de easeTo/jumpTo: solo gestos del usuario.
         if ((e as { originalEvent?: Event }).originalEvent) setFollowing(false);
       });
+      // Umbral de 1º: rotate se dispara en cada frame de la animación y no hace falta tanto detalle.
+      map.on("rotate", () => {
+        const next = map.getBearing();
+        setMapBearing((prev) => (Math.abs(shortestAngleDelta(prev, next)) < 1 ? prev : next));
+      });
       map.on("load", () => {
         if (cancelled) return;
         addRouteLayers(map);
@@ -197,10 +271,13 @@ export function LiveCardioMap({ points, className, followUser = true, referenceP
       cancelled = true;
       markerRef.current?.remove();
       markerRef.current = null;
+      markerElementRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
       centeredOnceRef.current = false;
+      appliedCenterRef.current = null;
       setReady(false);
+      setMapBearing(0);
     };
   }, []);
 
@@ -265,24 +342,71 @@ export function LiveCardioMap({ points, className, followUser = true, referenceP
       const element = document.createElement("div");
       element.className = "live-cardio-pos";
       element.innerHTML =
-        '<span class="live-cardio-pos-pulse"></span><span class="live-cardio-pos-dot"></span>';
+        '<span class="live-cardio-pos-pulse"></span><span class="live-cardio-pos-arrow"></span><span class="live-cardio-pos-dot"></span>';
+      markerElementRef.current = element;
       markerRef.current = new Marker({ element }).setLngLat(target).addTo(map);
     }
   }, [points, ready]);
 
+  // La flecha se orienta respecto al mapa: en modo dirección apunta siempre arriba.
+  useEffect(() => {
+    const element = markerElementRef.current;
+    if (!element) return;
+    if (heading == null) {
+      element.style.setProperty("--pos-arrow-opacity", "0");
+      return;
+    }
+    element.style.setProperty("--pos-arrow-opacity", "1");
+    element.style.setProperty("--pos-arrow-rot", `${shortestAngleDelta(mapBearing, heading)}deg`);
+  }, [heading, mapBearing, points, ready]);
+
+  // Al pulsar Start la cámara se acerca un poco. Si aún no hay fix lo hace el primer centrado.
+  useEffect(() => {
+    const wasRecording = wasRecordingRef.current;
+    wasRecordingRef.current = recording;
+    const map = mapRef.current;
+    if (!map || !ready || !recording || wasRecording || !centeredOnceRef.current) return;
+    map.easeTo({ zoom: Math.max(map.getZoom(), RECORDING_ZOOM), duration: ZOOM_IN_MS });
+  }, [recording, ready]);
+
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || !following || points.length === 0) return;
+    if (!map || !ready || points.length === 0) return;
     const last = points[points.length - 1];
-    const target: [number, number] = [last.lng, last.lat];
+    const center: [number, number] = [last.lng, last.lat];
+    const bearing = orientationMode === "heading" ? heading : 0;
+    const rotateTo =
+      bearing != null &&
+      Math.abs(shortestAngleDelta(map.getBearing(), bearing)) >= MIN_BEARING_DELTA_DEG
+        ? bearing
+        : null;
+
+    // El usuario movió el mapa: se respeta la orientación, pero no se recentra.
+    if (!following) {
+      if (rotateTo != null) map.easeTo({ bearing: rotateTo, duration: 300 });
+      return;
+    }
 
     if (!centeredOnceRef.current) {
       centeredOnceRef.current = true;
-      map.jumpTo({ center: target, zoom: Math.max(map.getZoom(), FOLLOW_ZOOM) });
+      appliedCenterRef.current = center;
+      map.jumpTo({ center, zoom: Math.max(map.getZoom(), FOLLOW_ZOOM), bearing: bearing ?? 0 });
+      if (recording) {
+        map.easeTo({ zoom: Math.max(map.getZoom(), RECORDING_ZOOM), duration: ZOOM_IN_MS });
+      }
       return;
     }
-    map.easeTo({ center: target, duration: 450 });
-  }, [points, ready, following]);
+
+    const applied = appliedCenterRef.current;
+    const centerChanged = !applied || applied[0] !== center[0] || applied[1] !== center[1];
+    if (!centerChanged && rotateTo == null) return;
+    appliedCenterRef.current = center;
+    map.easeTo({
+      center,
+      ...(rotateTo != null ? { bearing: rotateTo } : {}),
+      duration: centerChanged ? 450 : 300,
+    });
+  }, [points, ready, following, heading, orientationMode, recording]);
 
   const onRecenter = useCallback(() => {
     setFollowing(true);
@@ -290,8 +414,21 @@ export function LiveCardioMap({ points, className, followUser = true, referenceP
     const last = points.length > 0 ? points[points.length - 1] : null;
     if (!map || !last) return;
     centeredOnceRef.current = true;
-    map.easeTo({ center: [last.lng, last.lat], zoom: FOLLOW_ZOOM, duration: 500 });
-  }, [points]);
+    appliedCenterRef.current = [last.lng, last.lat];
+    map.easeTo({ center: [last.lng, last.lat], zoom: targetZoom, duration: 500 });
+  }, [points, targetZoom]);
+
+  const onToggleOrientation = useCallback(() => {
+    const next: MapOrientationMode = orientationMode === "heading" ? "north" : "heading";
+    setOrientationMode(next);
+    writeCardioMapOrientation(next);
+    if (next === "north") {
+      mapRef.current?.easeTo({ bearing: 0, duration: 400 });
+      return;
+    }
+    // iOS exige gesto de usuario para la brújula, así que se pide aquí.
+    void requestPermission();
+  }, [orientationMode, requestPermission]);
 
   return (
     <div className={cn("relative overflow-hidden", className)}>
@@ -322,6 +459,21 @@ export function LiveCardioMap({ points, className, followUser = true, referenceP
           background: ${MAP_COLORS.position};
           border: 3px solid #fff;
           box-shadow: 0 1px 6px rgba(0,0,0,0.55);
+        }
+        /* Flecha de rumbo: relativa al mapa, así que con el norte fijo apunta al rumbo real. */
+        .live-cardio-pos-arrow {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 0;
+          height: 0;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-bottom: 7px solid #fff;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+          transform: translate(-50%, -50%) rotate(var(--pos-arrow-rot, 0deg)) translateY(-14px);
+          opacity: var(--pos-arrow-opacity, 0);
+          transition: opacity 250ms ease;
         }
         @keyframes live-cardio-pulse {
           0% { transform: scale(0.45); opacity: 0.5; }
@@ -371,7 +523,17 @@ export function LiveCardioMap({ points, className, followUser = true, referenceP
         className="live-cardio-map-canvas h-full min-h-55 w-full"
         style={{ background: MAP_COLORS.land }}
       />
-      {points.length > 0 ? <RecenterControl active={following} onRecenter={onRecenter} /> : null}
+      {/* Arriba a la derecha: abajo lo tapan la barra de métricas y el drawer de controles. */}
+      {points.length > 0 ? (
+        <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex flex-col gap-2">
+          <RecenterControl active={following} onRecenter={onRecenter} />
+          <OrientationControl
+            mode={orientationMode}
+            bearing={mapBearing}
+            onToggle={onToggleOrientation}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

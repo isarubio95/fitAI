@@ -41,6 +41,11 @@ import {
   type PillCirclePhase,
 } from "@/lib/pillCircleTransition";
 import {
+  circleOriginFromElement,
+  useCircleCenterTransition,
+  type CircleCenterOrigin,
+} from "@/lib/circleCenterTransition";
+import {
   formatDistanceLabel,
   startLiveCardio,
   stopLiveCardio,
@@ -87,6 +92,9 @@ export function CardioLiveRecorder() {
   /** Compacto = métricas + botones; expandido = + pulsaciones + formulario. Altura = contenido. */
   const [controlsExpanded, setControlsExpanded] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [statsCircleOrigin, setStatsCircleOrigin] = useState<CircleCenterOrigin | undefined>();
+  const statsCirclePhase = useCircleCenterTransition(statsOpen);
+  const metricsBarRef = useRef<HTMLButtonElement | null>(null);
   const sheetDragStartY = useRef<number | null>(null);
   const [setupDisciplineId, setSetupDisciplineId] = useState<string | null>(null);
   /** Samples HC prefetchados al entrar en resumen (si no hubo BLE). */
@@ -184,6 +192,7 @@ export function CardioLiveRecorder() {
       setControlsDrawerHeightPx(0);
       setControlsExpanded(false);
       setStatsOpen(false);
+      setStatsCircleOrigin(undefined);
       sheetDragStartY.current = null;
       setSetupDisciplineId(null);
       setSelectedRoute(null);
@@ -521,6 +530,10 @@ export function CardioLiveRecorder() {
     };
   }, [statsOpen]);
 
+  useEffect(() => {
+    if (statsCirclePhase == null) setStatsCircleOrigin(undefined);
+  }, [statsCirclePhase]);
+
   const onFinishRecording = () => {
     // Leer el tramo de pausa en local antes de tocar el ref (si el updater
     // ve pauseStartedAt=null, Date.now()-null ≈ Date.now() y el tiempo cae a 0).
@@ -824,6 +837,7 @@ export function CardioLiveRecorder() {
               gpsError={gpsError}
               mapPoints={mapPoints}
               referencePoints={selectedRoute?.points}
+              recording={open && step === "recording" && !loadingSession}
               loadingSession={loadingSession}
               isSetup={isSetup}
               setupDisciplineId={setupDisciplineId}
@@ -834,26 +848,28 @@ export function CardioLiveRecorder() {
 
             {(isSetup || (open && !loadingSession)) ? (
               <>
-                {!statsOpen ? (
-                  <LiveMetricsBar
-                    bottomOffsetPx={Math.max(controlsDrawerHeightPx, 96) + 12}
-                    isSetup={isSetup}
-                    elapsedSec={elapsedSec}
-                    distanceM={displayDistanceM}
-                    elevationM={displayElevationM}
-                    showNoGpsBanner={showNoGpsBanner}
-                    noGpsBannerText={noGpsBannerText}
-                    onOpenStats={() => setStatsOpen(true)}
-                    routePercent={
-                      selectedRoute && routeProgress && !isSetup ? routeProgress.percent : null
-                    }
-                    routeRemainingM={
-                      selectedRoute && routeProgress && !isSetup
-                        ? routeProgress.remainingM
-                        : null
-                    }
-                  />
-                ) : null}
+                <LiveMetricsBar
+                  containerRef={metricsBarRef}
+                  bottomOffsetPx={Math.max(controlsDrawerHeightPx, 96) + 12}
+                  isSetup={isSetup}
+                  elapsedSec={elapsedSec}
+                  distanceM={displayDistanceM}
+                  elevationM={displayElevationM}
+                  showNoGpsBanner={showNoGpsBanner}
+                  noGpsBannerText={noGpsBannerText}
+                  onOpenStats={() => {
+                    setStatsCircleOrigin(circleOriginFromElement(metricsBarRef.current));
+                    setStatsOpen(true);
+                  }}
+                  routePercent={
+                    selectedRoute && routeProgress && !isSetup ? routeProgress.percent : null
+                  }
+                  routeRemainingM={
+                    selectedRoute && routeProgress && !isSetup
+                      ? routeProgress.remainingM
+                      : null
+                  }
+                />
                 <LiveControlsDrawer
                   ref={controlsDrawerRef}
                   headerTitle={headerTitle}
@@ -910,9 +926,11 @@ export function CardioLiveRecorder() {
         selectedRouteId={selectedRoute?.id ?? null}
         onSelect={setSelectedRoute}
         onClear={() => setSelectedRoute(null)}
+        disciplinaId={isSetup ? setupDisciplineId : sessionData?.cardio_disciplina_id ?? null}
+        disciplinaCodigo={isSetup ? setupDisciplineCodigo : code}
       />
 
-      {statsOpen && (isSetup || (open && !loadingSession)) ? (
+      {statsCirclePhase && (isSetup || (open && !loadingSession)) ? (
         <LiveStatsFullscreen
           title={
             isSetup
@@ -930,6 +948,8 @@ export function CardioLiveRecorder() {
             fcMedia,
             fcMax,
           }}
+          phase={statsCirclePhase}
+          origin={statsCircleOrigin}
           onClose={() => setStatsOpen(false)}
         />
       ) : null}

@@ -1,15 +1,30 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buildLiveStatItems, type LiveStatMetrics } from "@/lib/cardioLiveStats";
+import {
+  circleCenterTransitionAttr,
+  circleCenterTransitionStyle,
+  type CircleCenterOrigin,
+  type CircleCenterPhase,
+} from "@/lib/circleCenterTransition";
 
 type Props = {
   title: string;
   disciplineCode: string | null | undefined;
   metrics: LiveStatMetrics;
+  phase: CircleCenterPhase;
+  origin?: CircleCenterOrigin;
   onClose: () => void;
 };
 
-export function LiveStatsFullscreen({ title, disciplineCode, metrics, onClose }: Props) {
+export function LiveStatsFullscreen({
+  title,
+  disciplineCode,
+  metrics,
+  phase,
+  origin,
+  onClose,
+}: Props) {
   const items = buildLiveStatItems(disciplineCode, metrics);
 
   return (
@@ -18,6 +33,11 @@ export function LiveStatsFullscreen({ title, disciplineCode, metrics, onClose }:
       role="dialog"
       aria-modal="true"
       aria-label={title}
+      data-circle-center={phase}
+      {...(phase !== "settled"
+        ? { "transition-style": circleCenterTransitionAttr(phase) }
+        : {})}
+      style={circleCenterTransitionStyle(phase, origin)}
     >
       <header className="flex shrink-0 items-center gap-2 border-b border-border/60 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <Button

@@ -15,6 +15,8 @@ type Props = {
   gpsError: string | null;
   mapPoints: CardioGpsPoint[];
   referencePoints?: Array<{ lat: number; lng: number }>;
+  /** Sesión en curso: el mapa se acerca respecto a la vista de setup. */
+  recording: boolean;
   loadingSession: boolean;
   isSetup: boolean;
   setupDisciplineId: string | null;
@@ -31,6 +33,7 @@ export function LiveRecordingSurface({
   gpsError,
   mapPoints,
   referencePoints,
+  recording,
   loadingSession,
   isSetup,
   setupDisciplineId,
@@ -72,6 +75,7 @@ export function LiveRecordingSurface({
             points={mapPoints}
             referencePoints={referencePoints}
             followUser
+            recording={recording}
             className="h-full min-h-dvh w-full"
           />
         </Suspense>

@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import { cn } from "@/lib/utils";
 import {
   formatCardioDistanceM,
@@ -17,6 +18,8 @@ type Props = {
   /** Progreso sobre ruta objetivo (solo si hay ruta seleccionada). */
   routePercent?: number | null;
   routeRemainingM?: number | null;
+  /** Centro del botón: origen del círculo al abrir estadísticas. */
+  containerRef?: Ref<HTMLButtonElement>;
 };
 
 export function LiveMetricsBar({
@@ -30,6 +33,7 @@ export function LiveMetricsBar({
   onOpenStats,
   routePercent = null,
   routeRemainingM = null,
+  containerRef,
 }: Props) {
   const showRouteProgress = routePercent != null && routeRemainingM != null;
   const metrics = showRouteProgress
@@ -71,6 +75,7 @@ export function LiveMetricsBar({
   return (
     <div className="fixed inset-x-0 z-115 px-3" style={{ bottom: `${bottomOffsetPx}px` }}>
       <button
+        ref={containerRef}
         type="button"
         aria-label="Ver estadísticas"
         onClick={onOpenStats}

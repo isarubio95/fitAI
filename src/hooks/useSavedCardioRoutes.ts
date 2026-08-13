@@ -10,7 +10,8 @@ import {
   extractCardioTrackPoints,
   type CardioSesionWithDetails,
 } from "@/lib/cardioSessionDisplay";
-import { formatCardioDistanceM } from "@/lib/cardioFormat";
+import { elevationGainM, formatCardioDistanceM } from "@/lib/cardioFormat";
+import { polylineLengthM } from "@/lib/cardioRouteProgress";
 import type { CardioRutaWithPoints, SelectedCardioRoute } from "@/types/cardio";
 
 const CARDIO_RUTA_SELECT = `
@@ -43,6 +44,31 @@ export function defaultRouteNameFromSession(session: CardioSesionWithDetails): s
   if (title) return title.slice(0, 120);
   const metrics = computeCardioSessionMetrics(session);
   return `Ruta · ${formatCardioDistanceM(metrics.distanceM)}`;
+}
+
+export type NewCardioRoutePoint = {
+  lat: number;
+  lng: number;
+  elevacion_m?: number | null;
+};
+
+/** `Ruta · 5,20 km` para rutas creadas a mano o importadas sin nombre. */
+export function defaultRouteNameFromPoints(points: NewCardioRoutePoint[]): string {
+  const distanceM = polylineLengthM(points);
+  if (distanceM <= 0) return "Ruta nueva";
+  return `Ruta · ${formatCardioDistanceM(distanceM)}`;
+}
+
+function sanitizeRoutePoints(points: NewCardioRoutePoint[]): NewCardioRoutePoint[] {
+  return points.filter(
+    (p) =>
+      Number.isFinite(p.lat) &&
+      Number.isFinite(p.lng) &&
+      p.lat >= -90 &&
+      p.lat <= 90 &&
+      p.lng >= -180 &&
+      p.lng <= 180,
+  );
 }
 
 export function useSavedCardioRoutes() {
@@ -119,6 +145,81 @@ export function useSaveCardioRouteFromSession() {
       }
 
       return ruta.id as string;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["savedCardioRoutes"] });
+    },
+  });
+}
+
+/**
+ * Crea una ruta desde una polilínea suelta: trazada en el mapa o importada de un archivo.
+ * Las métricas se calculan sobre los puntos que se persisten para que coincidan con el mapa.
+ */
+export function useCreateCardioRoute() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      points: NewCardioRoutePoint[];
+      nombre?: string;
+      descripcion?: string | null;
+      cardio_disciplina_id?: string | null;
+    }): Promise<SelectedCardioRoute> => {
+      if (!user) throw new Error("No autenticado");
+
+      const points = sanitizeRoutePoints(input.points);
+      if (points.length < 2) throw new Error("La ruta necesita al menos 2 puntos");
+
+      const prepared = prepareTrackPointsForStorage(
+        points.map((p, idx) => ({
+          orden: idx,
+          lat: p.lat,
+          lng: p.lng,
+          elevacion_m: p.elevacion_m ?? null,
+        })),
+      );
+
+      const distanciaM = polylineLengthM(prepared);
+      const elevacionM = elevationGainM(prepared);
+      const nombre = (input.nombre?.trim() || defaultRouteNameFromPoints(prepared)).slice(0, 120);
+
+      const { data: ruta, error: insertErr } = await supabase
+        .from("cardio_ruta")
+        .insert({
+          usuario_id: user.id,
+          nombre,
+          descripcion: input.descripcion?.trim() || null,
+          cardio_disciplina_id: input.cardio_disciplina_id ?? null,
+          distancia_total_m: distanciaM || null,
+          elevacion_positiva_m: elevacionM || null,
+        })
+        .select("id")
+        .single();
+      if (insertErr) throw insertErr;
+
+      const pointRows = prepared.map((p, idx) => ({
+        cardio_ruta_id: ruta.id,
+        orden: p.orden ?? idx,
+        lat: p.lat,
+        lng: p.lng,
+        elevacion_m: p.elevacion_m ?? null,
+      }));
+
+      for (let i = 0; i < pointRows.length; i += TRACK_POINTS_INSERT_CHUNK) {
+        const chunk = pointRows.slice(i, i + TRACK_POINTS_INSERT_CHUNK);
+        const { error: pointsError } = await supabase.from("cardio_ruta_punto").insert(chunk);
+        if (pointsError) throw pointsError;
+      }
+
+      return {
+        id: ruta.id as string,
+        nombre,
+        distancia_total_m: distanciaM || null,
+        elevacion_positiva_m: elevacionM || null,
+        points: prepared.map((p) => ({ lat: p.lat, lng: p.lng, elevacion_m: p.elevacion_m })),
+      };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["savedCardioRoutes"] });
