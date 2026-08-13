@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { App } from "@capacitor/app";
+import type { PluginListenerHandle } from "@capacitor/core";
 import {
   createGpsMotionTrackerState,
   haversineM,
@@ -11,6 +13,18 @@ import {
   MAX_TRACK_POINTS_DRAFT,
   prepareTrackPointsForStorage,
 } from "@/lib/cardioTrackPoints";
+import {
+  addNativeCardioTrackListener,
+  buildNativeCardioTrackConfig,
+  clearNativeCardioTrack,
+  getNativeCardioTrackSnapshot,
+  isNativeCardioTrackingAvailable,
+  setNativeCardioAutoPauseEnabled,
+  startNativeCardioTracking,
+  stopNativeCardioTracking,
+  type NativeCardioTrackPoint,
+  type NativeCardioTrackUpdate,
+} from "@/lib/nativeCardioTracker";
 
 export const CARDIO_GPS_DRAFT_STORAGE_KEY = "gym-log-activeCardioDraft";
 
@@ -37,6 +51,23 @@ const EMPTY_MOTION: GpsMotionSnapshot = {
   movingMs: 0,
 };
 
+/** Estado que solo existe cuando graba el servicio nativo (Android). */
+export type NativeRecorderState = {
+  paused: boolean;
+  pauseSource: "manual" | "auto" | null;
+  pausedAccumMs: number;
+  autoPauseEnabled: boolean;
+};
+
+function toGpsPoint(p: NativeCardioTrackPoint): CardioGpsPoint {
+  return {
+    lat: p.lat,
+    lng: p.lng,
+    timestamp_utc: p.timestamp_utc,
+    elevacion_m: p.elevacion_m ?? null,
+  };
+}
+
 type Options = {
   sessionId: string | null;
   /** Si es false, se detiene watchPosition y no se añaden puntos. */
@@ -46,6 +77,10 @@ type Options = {
   minIntervalMs?: number;
   minDeltaM?: number;
   maxAccuracyM?: number;
+  /** Título y arranque para la notificación del servicio nativo. */
+  title?: string;
+  startedAtMs?: number;
+  autoPauseEnabled?: boolean;
 };
 
 export function useCardioGpsRecorder({
@@ -55,21 +90,44 @@ export function useCardioGpsRecorder({
   minIntervalMs = 4000,
   minDeltaM = 6,
   maxAccuracyM = 85,
+  title,
+  startedAtMs,
+  autoPauseEnabled,
 }: Options) {
   const [points, setPoints] = useState<CardioGpsPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [denied, setDenied] = useState(false);
   const [hasFix, setHasFix] = useState(false);
   const [motion, setMotion] = useState<GpsMotionSnapshot>(EMPTY_MOTION);
+  const [nativeDistanceM, setNativeDistanceM] = useState<number | null>(null);
+  const [nativeElevationGainM, setNativeElevationGainM] = useState<number | null>(null);
+  const [nativeState, setNativeState] = useState<NativeRecorderState | null>(null);
+  /** El servicio nativo no pudo arrancar (p. ej. sin permiso de ubicación precisa). */
+  const [nativeUnavailable, setNativeUnavailable] = useState(false);
 
   const lastAcceptedRef = useRef<{ t: number; lat: number; lng: number } | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const motionTrackerRef = useRef<GpsMotionTrackerState>(createGpsMotionTrackerState());
 
+  /**
+   * En Android el WebView se suspende al bloquear la pantalla, así que el track lo graba el
+   * servicio en primer plano. `preview` sigue siendo true durante una pausa, por lo que el
+   * recorder nativo no se detiene al pausar: necesita fixes para poder auto-reanudar.
+   */
+  const nativeBackend =
+    isNativeCardioTrackingAvailable() &&
+    !nativeUnavailable &&
+    Boolean(sessionId) &&
+    (recording || preview);
+
   const resetMotion = useCallback(() => {
     motionTrackerRef.current = createGpsMotionTrackerState();
     setMotion(EMPTY_MOTION);
   }, []);
+
+  useEffect(() => {
+    setNativeUnavailable(false);
+  }, [sessionId]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -136,13 +194,117 @@ export function useCardioGpsRecorder({
     } catch {
       /* ignore */
     }
+    if (isNativeCardioTrackingAvailable()) {
+      void stopNativeCardioTracking();
+      void clearNativeCardioTrack(sessionId ?? undefined);
+    }
     setPoints([]);
     lastAcceptedRef.current = null;
     setError(null);
     setDenied(false);
     setHasFix(false);
+    setNativeDistanceM(null);
+    setNativeElevationGainM(null);
+    setNativeState(null);
     resetMotion();
-  }, [resetMotion]);
+  }, [resetMotion, sessionId]);
+
+  // ------------------------------------------------------------ backend nativo
+
+  useEffect(() => {
+    if (!nativeBackend || !sessionId) return;
+
+    let cancelled = false;
+    let trackHandle: PluginListenerHandle | null = null;
+    let appHandle: PluginListenerHandle | null = null;
+
+    const applyCommon = (update: NativeCardioTrackUpdate) => {
+      setHasFix(update.hasFix);
+      setMotion(update.motion);
+      setNativeDistanceM(update.distanceM);
+      setNativeElevationGainM(update.elevationGainM);
+      setNativeState({
+        paused: update.paused,
+        pauseSource: update.pauseSource,
+        pausedAccumMs: update.pausedAccumMs,
+        autoPauseEnabled: update.autoPauseEnabled,
+      });
+      setError(null);
+      setDenied(false);
+    };
+
+    const resync = async () => {
+      const snapshot = await getNativeCardioTrackSnapshot();
+      if (cancelled || !snapshot) return;
+      applyCommon(snapshot);
+      setPoints(snapshot.points.map(toGpsPoint));
+    };
+
+    void (async () => {
+      trackHandle = await addNativeCardioTrackListener((update) => {
+        if (cancelled) return;
+        applyCommon(update);
+        // El servicio dejó de grabar por su cuenta (p. ej. se apagaron las notificaciones en
+        // vivo, que son obligatorias para el GPS en background): degrada a watchPosition.
+        if (!update.tracking) {
+          setNativeUnavailable(true);
+          return;
+        }
+        // Tras un adelgazado nativo los índices dejan de cuadrar: se pide el buffer entero.
+        if (update.resync) {
+          void resync();
+          return;
+        }
+        if (update.points.length > 0) {
+          setPoints((prev) => [...prev, ...update.points.map(toGpsPoint)]);
+        }
+      });
+      if (cancelled) return;
+
+      const started = await startNativeCardioTracking({
+        sessionId,
+        title,
+        startedAtMs,
+        config: buildNativeCardioTrackConfig({
+          minIntervalMs,
+          minDeltaM,
+          maxAccuracyM,
+          autoPauseEnabled,
+        }),
+      });
+      if (cancelled) return;
+      if (!started) {
+        // Sin servicio nativo se cae a watchPosition: peor en background, pero mejor que nada.
+        setNativeUnavailable(true);
+        return;
+      }
+
+      await resync();
+      if (cancelled) return;
+
+      // Al volver del bloqueo se recuperan de golpe los puntos grabados en background.
+      appHandle = await App.addListener("appStateChange", ({ isActive }) => {
+        if (isActive) void resync();
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+      void trackHandle?.remove();
+      void appHandle?.remove();
+      // Sin stopTracking: cerrar el drawer no debe cortar la grabación. Solo termina en
+      // clearDraft() (guardar/descartar) o al parar la sesión en vivo.
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nativeBackend, sessionId]);
+
+  // La preferencia de autopausa puede cambiar en medio de la sesión.
+  useEffect(() => {
+    if (!nativeBackend || autoPauseEnabled == null) return;
+    void setNativeCardioAutoPauseEnabled(autoPauseEnabled);
+  }, [nativeBackend, autoPauseEnabled]);
+
+  // -------------------------------------------------------------- backend web
 
   useEffect(() => {
     const clearWatch = () => {
@@ -152,10 +314,10 @@ export function useCardioGpsRecorder({
       }
     };
 
-    const shouldWatch = preview || (Boolean(sessionId) && recording);
+    const shouldWatch = !nativeBackend && (preview || (Boolean(sessionId) && recording));
     if (!shouldWatch) {
       clearWatch();
-      if (!preview && !recording) {
+      if (!nativeBackend && !preview && !recording) {
         setHasFix(false);
         resetMotion();
       }
@@ -229,21 +391,44 @@ export function useCardioGpsRecorder({
     );
     watchIdRef.current = wid;
     return clearWatch;
-  }, [sessionId, recording, preview, minIntervalMs, minDeltaM, maxAccuracyM, resetMotion]);
+  }, [
+    sessionId,
+    recording,
+    preview,
+    minIntervalMs,
+    minDeltaM,
+    maxAccuracyM,
+    nativeBackend,
+    resetMotion,
+  ]);
 
   // Refresca stationaryMs/movingMs aunque el GPS no emita (umbrales por reloj).
+  // En nativo los umbrales los evalúa el servicio, que sí sigue vivo con la pantalla apagada.
   useEffect(() => {
-    const shouldWatch = preview || (Boolean(sessionId) && recording);
-    if (!shouldWatch) return;
+    const shouldTick = !nativeBackend && (preview || (Boolean(sessionId) && recording));
+    if (!shouldTick) return;
     const id = window.setInterval(() => {
       const tracker = motionTrackerRef.current;
       if (tracker.stationarySince == null && tracker.movingSince == null) return;
       setMotion(toMotionSnapshot(tracker, Date.now()));
     }, 1000);
     return () => clearInterval(id);
-  }, [sessionId, recording, preview]);
+  }, [sessionId, recording, preview, nativeBackend]);
 
-  const distanceM = totalPathLengthM(points);
+  const webDistanceM = useMemo(() => totalPathLengthM(points), [points]);
+  const distanceM = nativeDistanceM ?? webDistanceM;
 
-  return { points, distanceM, error, denied, hasFix, motion, clearDraft };
+  return {
+    points,
+    distanceM,
+    /** null en web: el consumidor lo calcula con elevationGainM(points). */
+    elevationGainM: nativeElevationGainM,
+    error,
+    denied,
+    hasFix,
+    motion,
+    clearDraft,
+    /** Activo solo cuando graba el servicio nativo; dueño de la pausa y el cronómetro. */
+    nativeState: nativeBackend ? nativeState : null,
+  };
 }

@@ -12,6 +12,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 /** Vite empaqueta el worker + shared chunk; sin esto el mapa queda en blanco (404 del worker). */
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { CardioGpsPoint } from "@/hooks/useCardioGpsRecorder";
+import { splitTrackByTimeGaps } from "@/lib/cardioTrackSegments";
 import { MAP_COLORS, loadStravaDarkMapStyle } from "@/lib/stravaDarkMapStyle";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,15 @@ type Props = {
 
 function lineFeature(coordinates: [number, number][]): Feature {
   return { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates } };
+}
+
+/** El track se dibuja por tramos para no cerrar con una recta los huecos sin señal. */
+function trackFeature(points: CardioGpsPoint[]): Feature {
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: { type: "MultiLineString", coordinates: splitTrackByTimeGaps(points) },
+  };
 }
 
 function pointFeature(coordinates: [number, number] | null): FeatureCollection {
@@ -207,9 +217,7 @@ export function LiveCardioMap({ points, className, followUser = true, referenceP
     const map = mapRef.current;
     if (!map || !ready) return;
     const coordinates = points.map((p) => [p.lng, p.lat] as [number, number]);
-    (map.getSource("cardio-route") as GeoJSONSource | undefined)?.setData(
-      lineFeature(coordinates),
-    );
+    (map.getSource("cardio-route") as GeoJSONSource | undefined)?.setData(trackFeature(points));
     (map.getSource("cardio-start") as GeoJSONSource | undefined)?.setData(
       pointFeature(coordinates.length > 1 ? coordinates[0] : null),
     );

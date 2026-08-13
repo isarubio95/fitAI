@@ -1,45 +1,14 @@
-import { registerPlugin } from "@capacitor/core";
 import { Capacitor } from "@capacitor/core";
 import { isLiveSessionNotificationEnabled } from "@/lib/notificationPreferences";
+import { LiveSession } from "@/lib/liveSessionPlugin";
 
-export type LiveSessionKind = "workout" | "cardio";
+export type {
+  LiveSessionKind,
+  LiveSessionPayload,
+  LiveSessionUpdate,
+} from "@/lib/liveSessionPlugin";
 
-export interface LiveSessionPayload {
-  kind: LiveSessionKind;
-  sessionId: string;
-  title?: string;
-  exerciseName?: string;
-  setLabel?: string;
-  distanceLabel?: string;
-  paused?: boolean;
-  /** Rest countdown is running. */
-  resting?: boolean;
-  /** Rest just finished (show green full bar + ¡Listo!). */
-  restFinished?: boolean;
-  /** Epoch ms when the session started (for chronometer). */
-  startedAtMs?: number;
-  /** Epoch ms when rest ends (countdown chronometer + emptying bar). */
-  restEndAtMs?: number;
-  /** Total rest duration in seconds (matches RestProgressBar duration). */
-  restDurationSec?: number;
-  /** Accumulated pause duration in ms (subtracts from chronometer base). */
-  pausedAccumMs?: number;
-  /** Use location FGS type when GPS cardio is active. */
-  wantsLocation?: boolean;
-}
-
-export type LiveSessionUpdate = Partial<Omit<LiveSessionPayload, "kind">> & {
-  kind: LiveSessionKind;
-};
-
-interface LiveSessionPlugin {
-  start(options: LiveSessionPayload): Promise<{ ok: boolean }>;
-  update(options: LiveSessionUpdate): Promise<{ ok: boolean }>;
-  stop(options: { kind: LiveSessionKind }): Promise<{ ok: boolean }>;
-  stopAll(): Promise<{ ok: boolean }>;
-}
-
-const LiveSession = registerPlugin<LiveSessionPlugin>("LiveSession");
+import type { LiveSessionPayload, LiveSessionUpdate } from "@/lib/liveSessionPlugin";
 
 function isNativeAndroid(): boolean {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";

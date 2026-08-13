@@ -27,6 +27,7 @@ import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
 import { firstNested } from "@/lib/firstNested";
 import { nearestHeartRate, summarizeHeartRate, type HeartRateSample } from "@/lib/heartRateMetrics";
+import { setNativeCardioPaused } from "@/lib/nativeCardioTracker";
 import {
   appendHealthConnectFuente,
   hasHrPermission,
@@ -119,10 +120,12 @@ export function CardioLiveRecorder() {
   const {
     points,
     distanceM,
+    elevationGainM: nativeElevationGainM,
     error: gpsError,
     denied: gpsDenied,
     hasFix: gpsHasFix,
     motion: gpsMotion,
+    nativeState,
     clearDraft,
   } = useCardioGpsRecorder({
     sessionId: open ? sessionId : null,
@@ -131,7 +134,16 @@ export function CardioLiveRecorder() {
     // Muestreo más denso para que el trazado crezca de forma fluida al caminar/correr
     minIntervalMs: 2000,
     minDeltaM: 4,
+    // Misma precedencia que cardioTitle, que se define más abajo.
+    title: discipline?.nombre?.trim() || sessionData?.titulo?.trim() || undefined,
+    startedAtMs: sessionData?.fecha_inicio
+      ? new Date(sessionData.fecha_inicio).getTime()
+      : undefined,
+    autoPauseEnabled,
   });
+
+  /** En Android el servicio nativo es dueño de la pausa y del cronómetro. */
+  const nativeActive = nativeState != null;
 
   const hrRecording = open && step === "recording" && !paused;
   const {
@@ -345,7 +357,8 @@ export function CardioLiveRecorder() {
 
   const elapsedSec = step === "summary" && elapsedSecFrozen != null ? elapsedSecFrozen : computeElapsedSec();
   const displayDistanceM = step === "summary" && distanceFrozenM != null ? distanceFrozenM : distanceM;
-  const elevationGainLive = useMemo(() => elevationGainM(points), [points]);
+  const pointsElevationGainM = useMemo(() => elevationGainM(points), [points]);
+  const elevationGainLive = nativeElevationGainM ?? pointsElevationGainM;
   const displayElevationM =
     step === "summary" && elevationFrozenM != null ? elevationFrozenM : elevationGainLive;
 
@@ -392,6 +405,7 @@ export function CardioLiveRecorder() {
   ]);
 
   const resumeRecording = useCallback(() => {
+    if (nativeActive) void setNativeCardioPaused(false);
     if (pauseStartedAt.current != null) {
       const pauseSegmentMs = Date.now() - pauseStartedAt.current;
       pauseStartedAt.current = null;
@@ -399,13 +413,37 @@ export function CardioLiveRecorder() {
     }
     setPauseSource(null);
     setPaused(false);
-  }, []);
+  }, [nativeActive]);
 
-  const pauseRecording = useCallback((source: "manual" | "auto") => {
-    pauseStartedAt.current = Date.now();
-    setPauseSource(source);
-    setPaused(true);
-  }, []);
+  const pauseRecording = useCallback(
+    (source: "manual" | "auto") => {
+      if (nativeActive) void setNativeCardioPaused(true, source);
+      pauseStartedAt.current = Date.now();
+      setPauseSource(source);
+      setPaused(true);
+    },
+    [nativeActive],
+  );
+
+  /**
+   * Espeja la pausa nativa. `pausedAccumMs` llega congelado mientras dura la pausa (el nativo
+   * solo emite al cambiar de estado), así que el tramo en curso se mide en local y el
+   * cronómetro no avanza estando pausado.
+   */
+  useEffect(() => {
+    if (!nativeState) return;
+    setPaused(nativeState.paused);
+    setPauseSource(nativeState.pauseSource);
+    if (nativeState.paused) {
+      if (pauseStartedAt.current == null) {
+        pauseStartedAt.current = Date.now();
+        setPausedMsAccum(nativeState.pausedAccumMs);
+      }
+    } else {
+      pauseStartedAt.current = null;
+      setPausedMsAccum(nativeState.pausedAccumMs);
+    }
+  }, [nativeState]);
 
   const onPauseToggle = () => {
     if (paused) {
@@ -416,7 +454,10 @@ export function CardioLiveRecorder() {
   };
 
   // Autopausa / reanudación por GPS (solo disciplinas con mapa).
+  // Con el recorder nativo los umbrales se evalúan en el servicio, que sigue vivo con la
+  // pantalla apagada; hacerlo aquí dispararía pausas falsas al suspenderse el WebView.
   useEffect(() => {
+    if (nativeActive) return;
     if (!autoPauseEnabled) return;
     if (!open || step !== "recording" || !cardioDisciplineUsesGpsMap(code)) return;
     if (!sessionData?.fecha_inicio) return;
@@ -450,6 +491,7 @@ export function CardioLiveRecorder() {
       resumeRecording();
     }
   }, [
+    nativeActive,
     autoPauseEnabled,
     open,
     step,
@@ -497,7 +539,7 @@ export function CardioLiveRecorder() {
       : Date.now();
     setElapsedSecFrozen(Math.max(0, Math.floor((Date.now() - startMs - pauseExtra) / 1000)));
     setDistanceFrozenM(distanceM);
-    setElevationFrozenM(elevationGainM(points));
+    setElevationFrozenM(elevationGainLive);
     setStatsOpen(false);
     setStep("summary");
     void updateLiveCardio({
@@ -597,7 +639,7 @@ export function CardioLiveRecorder() {
 
     const dur = elapsedSecFrozen ?? elapsedSec;
     const dist = distanceFrozenM ?? distanceM;
-    const elevGain = elevationFrozenM ?? elevationGainM(points);
+    const elevGain = elevationFrozenM ?? elevationGainLive;
 
     const track =
       cardioDisciplineUsesGpsMap(code) && trackPoints.length > 0

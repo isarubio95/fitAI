@@ -79,9 +79,12 @@ export function formatCardioBpm(bpm: number | null | undefined): string {
 }
 
 /** Ganancia positiva acumulada; ignora saltos pequeños (ruido GPS de altitud). */
+/** Ruido barométrico por debajo de esto no cuenta como desnivel. */
+export const ELEVATION_MIN_STEP_M = 1.5;
+
 export function elevationGainM(
   points: { elevacion_m?: number | null }[],
-  minStepM = 1.5,
+  minStepM = ELEVATION_MIN_STEP_M,
 ): number {
   let gain = 0;
   let prev: number | null = null;

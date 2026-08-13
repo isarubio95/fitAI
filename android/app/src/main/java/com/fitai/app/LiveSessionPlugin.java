@@ -7,12 +7,15 @@ import android.os.Build;
 import androidx.core.content.ContextCompat;
 
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+
+import org.json.JSONObject;
 
 @CapacitorPlugin(
     name = "LiveSession",
@@ -24,10 +27,41 @@ import com.getcapacitor.annotation.PermissionCallback;
         @Permission(
             alias = "activity",
             strings = { Manifest.permission.ACTIVITY_RECOGNITION }
+        ),
+        @Permission(
+            alias = "location",
+            strings = {
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            }
         )
     }
 )
 public class LiveSessionPlugin extends Plugin {
+
+    private static final String EVENT_TRACK_UPDATE = "cardioTrackUpdate";
+
+    private CardioTrackRecorder.Listener trackListener;
+
+    @Override
+    public void load() {
+        trackListener = payload -> {
+            try {
+                notifyListeners(EVENT_TRACK_UPDATE, JSObject.fromJSONObject(payload));
+            } catch (Exception ignored) {
+                // A malformed payload must never break recording.
+            }
+        };
+        CardioTrackRecorder.getInstance().addListener(trackListener);
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        if (trackListener != null) {
+            CardioTrackRecorder.getInstance().removeListener(trackListener);
+        }
+        super.handleOnDestroy();
+    }
 
     @PluginMethod
     public void start(PluginCall call) {
@@ -96,6 +130,115 @@ public class LiveSessionPlugin extends Plugin {
             call.resolve(result);
         } catch (Exception e) {
             call.reject("Failed to stop live sessions: " + e.getMessage(), e);
+        }
+    }
+
+    // ------------------------------------------------------- cardio GPS tracking
+
+    @PluginMethod
+    public void startTracking(PluginCall call) {
+        if (getPermissionState("location") != PermissionState.GRANTED) {
+            call.setKeepAlive(true);
+            requestPermissionForAlias("location", call, "onLocationPermission");
+            return;
+        }
+        doStartTracking(call);
+    }
+
+    @PermissionCallback
+    private void onLocationPermission(PluginCall call) {
+        if (getPermissionState("location") != PermissionState.GRANTED) {
+            call.reject("Location permission denied");
+            return;
+        }
+        doStartTracking(call);
+    }
+
+    private void doStartTracking(PluginCall call) {
+        try {
+            String sessionId = call.getString("sessionId", "");
+            if (sessionId == null || sessionId.isEmpty()) {
+                call.reject("sessionId is required");
+                return;
+            }
+            String title = call.getString("title", "Cardio");
+            long startedAtMs = readLong(call, "startedAtMs", 0L);
+            JSObject config = call.getObject("config");
+
+            LiveSessionForegroundService.startTracking(
+                getContext(),
+                sessionId,
+                title,
+                startedAtMs,
+                config == null ? null : config.toString()
+            );
+
+            JSObject result = new JSObject();
+            result.put("ok", true);
+            call.resolve(result);
+        } catch (Exception e) {
+            call.reject("Failed to start cardio tracking: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
+    public void stopTracking(PluginCall call) {
+        try {
+            LiveSessionForegroundService.stopTracking(getContext());
+            JSObject result = new JSObject();
+            result.put("ok", true);
+            call.resolve(result);
+        } catch (Exception e) {
+            call.reject("Failed to stop cardio tracking: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
+    public void getTrackSnapshot(PluginCall call) {
+        try {
+            JSONObject snapshot = CardioTrackRecorder.getInstance().snapshot();
+            call.resolve(JSObject.fromJSONObject(snapshot));
+        } catch (Exception e) {
+            call.reject("Failed to read cardio track: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
+    public void setPaused(PluginCall call) {
+        try {
+            boolean paused = readBoolean(call, "paused", false);
+            String source = call.getString("source", paused ? "manual" : null);
+            CardioTrackRecorder.getInstance().setPaused(paused, source);
+            JSObject result = new JSObject();
+            result.put("ok", true);
+            call.resolve(result);
+        } catch (Exception e) {
+            call.reject("Failed to set pause state: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
+    public void setAutoPauseEnabled(PluginCall call) {
+        try {
+            CardioTrackRecorder.getInstance().setAutoPauseEnabled(readBoolean(call, "enabled", true));
+            JSObject result = new JSObject();
+            result.put("ok", true);
+            call.resolve(result);
+        } catch (Exception e) {
+            call.reject("Failed to set auto-pause: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
+    public void clearTrack(PluginCall call) {
+        try {
+            LiveSessionForegroundService.stopTracking(getContext());
+            CardioTrackRecorder.getInstance().clear(call.getString("sessionId", null));
+            JSObject result = new JSObject();
+            result.put("ok", true);
+            call.resolve(result);
+        } catch (Exception e) {
+            call.reject("Failed to clear cardio track: " + e.getMessage(), e);
         }
     }
 
