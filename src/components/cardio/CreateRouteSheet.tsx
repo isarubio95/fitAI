@@ -36,9 +36,19 @@ import {
 } from "@/lib/cardioFormat";
 import { polylineLengthM } from "@/lib/cardioRouteProgress";
 import { ROUTE_FILE_ACCEPT, parseRouteFile, type ImportedRoute } from "@/lib/routeFileImport";
-import { snapProfileForDiscipline } from "@/lib/routeSnapping";
+import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
+import {
+  snapProfileForDiscipline,
+  type SnapSurface,
+} from "@/lib/routeSnapping";
 import type { SelectedCardioRoute } from "@/types/cardio";
 import { cn } from "@/lib/utils";
+
+const SURFACE_OPTIONS: { value: SnapSurface; label: string }[] = [
+  { value: "any", label: "Todos" },
+  { value: "dirt", label: "Tierra" },
+  { value: "asphalt", label: "Asfalto" },
+];
 
 const RouteDrawMap = lazy(() =>
   import("@/components/cardio/RouteDrawMap").then((m) => ({ default: m.RouteDrawMap })),
@@ -280,6 +290,7 @@ export function CreateRouteSheet({
                   path={drawing.path}
                   onAddPoint={drawing.addPoint}
                   onMoveWaypoint={drawing.moveWaypointTo}
+                  onRemoveWaypoint={drawing.removeWaypointAt}
                   onUndo={drawing.undo}
                   onClear={drawing.clear}
                   onCloseLoop={drawing.closeLoop}
@@ -290,7 +301,7 @@ export function CreateRouteSheet({
               </Suspense>
             </div>
 
-            <div className="shrink-0 space-y-2 px-4 pt-3">
+            <div className="shrink-0 space-y-2 px-4 pt-3 pb-3">
               <div className="flex items-center justify-between gap-3">
                 <MetricsRow
                   distanceM={distanceM}
@@ -310,6 +321,32 @@ export function CreateRouteSheet({
                   </div>
                 ) : null}
               </div>
+              {snapProfile && drawing.snapEnabled ? (
+                <div
+                  className="flex flex-wrap gap-1.5"
+                  role="group"
+                  aria-label="Tipo de camino"
+                >
+                  {SURFACE_OPTIONS.map((option) => {
+                    const active = drawing.surfacePreference === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={cn(
+                          filterPillBase,
+                          "px-3 py-1 text-xs",
+                          active ? filterPillActive : filterPillInactive,
+                        )}
+                        aria-pressed={active}
+                        onClick={() => drawing.setSurfacePreference(option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
               {drawing.snapUnavailable && drawing.snapEnabled ? (
                 <p className="text-xs text-amber-500">
                   No se pudo calcular el camino de algún tramo: quedó en línea recta.

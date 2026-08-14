@@ -14,12 +14,61 @@ export type SnappedPoint = {
 };
 
 /** Perfiles de BRouter por tipo de actividad. */
-const BROUTER_PROFILES = {
-  foot: "hiking-beta",
-  bike: "trekking",
-} as const;
+export type SnapProfile = "foot" | "bike";
 
-export type SnapProfile = keyof typeof BROUTER_PROFILES;
+/**
+ * Preferencia de superficie al ajustar a caminos.
+ * `any` = perfil por defecto; `dirt` / `asphalt` sesgan hacia tierra o asfalto.
+ */
+export type SnapSurface = "any" | "dirt" | "asphalt";
+
+type BRouterRequest = {
+  profile: string;
+  /** Overrides `profile:xxx` que entiende el servidor de BRouter. */
+  params?: Record<string, string>;
+};
+
+/**
+ * Mapea actividad + superficie al perfil (y parámetros) de BRouter.
+ * Tierra / asfalto usan perfiles y factores que penalizan la superficie contraria.
+ */
+export function brouterRequestFor(
+  snapProfile: SnapProfile,
+  surface: SnapSurface = "any",
+): BRouterRequest {
+  if (snapProfile === "foot") {
+    switch (surface) {
+      case "dirt":
+        return {
+          profile: "hiking-mountain",
+          params: {
+            "profile:Offroad_factor": "2",
+            "profile:path_preference": "20",
+          },
+        };
+      case "asphalt":
+        return {
+          profile: "hiking-mountain",
+          params: { "profile:Offroad_factor": "-2" },
+        };
+      default:
+        return { profile: "hiking-beta" };
+    }
+  }
+
+  switch (surface) {
+    case "dirt":
+      return {
+        profile: "gravel",
+        params: { "profile:prefer_unpaved_paths": "1" },
+      };
+    case "asphalt":
+      // Perfil de carretera: prioriza asfalto y evita tracks de tierra.
+      return { profile: "fastbike" };
+    default:
+      return { profile: "trekking" };
+  }
+}
 
 const BROUTER_URL = "https://brouter.de/brouter";
 const REQUEST_TIMEOUT_MS = 12_000;
@@ -58,17 +107,24 @@ export async function snapRouteLeg(
   to: SnapLatLng,
   profile: SnapProfile,
   signal?: AbortSignal,
+  surface: SnapSurface = "any",
 ): Promise<SnappedPoint[] | null> {
   if (haversineM(from, to) > MAX_LEG_DISTANCE_M) return null;
 
+  const request = brouterRequestFor(profile, surface);
   const url = new URL(BROUTER_URL);
   url.searchParams.set(
     "lonlats",
     `${from.lng.toFixed(6)},${from.lat.toFixed(6)}|${to.lng.toFixed(6)},${to.lat.toFixed(6)}`,
   );
-  url.searchParams.set("profile", BROUTER_PROFILES[profile]);
+  url.searchParams.set("profile", request.profile);
   url.searchParams.set("alternativeidx", "0");
   url.searchParams.set("format", "geojson");
+  if (request.params) {
+    for (const [key, value] of Object.entries(request.params)) {
+      url.searchParams.set(key, value);
+    }
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);

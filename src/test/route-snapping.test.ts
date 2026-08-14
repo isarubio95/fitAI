@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { snapProfileForDiscipline, snapRouteLeg } from "@/lib/routeSnapping";
+import {
+  brouterRequestFor,
+  snapProfileForDiscipline,
+  snapRouteLeg,
+} from "@/lib/routeSnapping";
 
 const FROM = { lat: 40.4168, lng: -3.7038 };
 const TO = { lat: 40.42, lng: -3.7 };
@@ -38,6 +42,35 @@ describe("snapProfileForDiscipline", () => {
   });
 });
 
+describe("brouterRequestFor", () => {
+  it("por defecto usa hiking-beta / trekking", () => {
+    expect(brouterRequestFor("foot")).toEqual({ profile: "hiking-beta" });
+    expect(brouterRequestFor("bike", "any")).toEqual({ profile: "trekking" });
+  });
+
+  it("tierra prioriza caminos sin asfaltar", () => {
+    expect(brouterRequestFor("foot", "dirt")).toEqual({
+      profile: "hiking-mountain",
+      params: {
+        "profile:Offroad_factor": "2",
+        "profile:path_preference": "20",
+      },
+    });
+    expect(brouterRequestFor("bike", "dirt")).toEqual({
+      profile: "gravel",
+      params: { "profile:prefer_unpaved_paths": "1" },
+    });
+  });
+
+  it("asfalto prioriza superficie pavimentada", () => {
+    expect(brouterRequestFor("foot", "asphalt")).toEqual({
+      profile: "hiking-mountain",
+      params: { "profile:Offroad_factor": "-2" },
+    });
+    expect(brouterRequestFor("bike", "asphalt")).toEqual({ profile: "fastbike" });
+  });
+});
+
 describe("snapRouteLeg", () => {
   it("convierte lng,lat,ele en puntos con altitud", async () => {
     vi.stubGlobal(
@@ -72,6 +105,22 @@ describe("snapRouteLeg", () => {
     const url = String(fetchMock.mock.calls[0][0]);
     expect(url).toContain("profile=trekking");
     expect(url).toContain("lonlats=-3.703800%2C40.416800%7C-3.700000%2C40.420000");
+  });
+
+  it("pasa parámetros de superficie tierra", async () => {
+    const fetchMock = vi.fn(async () =>
+      geojsonResponse([
+        [-3.7038, 40.4168],
+        [-3.7, 40.42],
+      ]),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await snapRouteLeg(FROM, TO, "foot", undefined, "dirt");
+    const url = String(fetchMock.mock.calls[0][0]);
+    expect(url).toContain("profile=hiking-mountain");
+    expect(url).toContain("profile%3AOffroad_factor=2");
+    expect(url).toContain("profile%3Apath_preference=20");
   });
 
   it("null si BRouter responde texto de error con 200", async () => {

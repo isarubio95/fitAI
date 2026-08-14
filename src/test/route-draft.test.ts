@@ -9,6 +9,7 @@ import {
   loopClosingPoint,
   moveWaypoint,
   removeLastWaypoint,
+  removeWaypoint,
   setLegPoints,
   unsnapAllLegs,
   type RouteDraft,
@@ -103,6 +104,46 @@ describe("removeLastWaypoint", () => {
 
   it("draft vacío es no-op", () => {
     expect(removeLastWaypoint(EMPTY_ROUTE_DRAFT)).toBe(EMPTY_ROUTE_DRAFT);
+  });
+});
+
+describe("removeWaypoint", () => {
+  it("borra el único punto", () => {
+    expect(removeWaypoint(draftWith(A), 0)).toEqual(EMPTY_ROUTE_DRAFT);
+  });
+
+  it("borra el extremo inicial y conserva el resto de tramos", () => {
+    const draft = draftWith(A, B, C);
+    const removed = removeWaypoint(draft, 0);
+    expect(removed.waypoints).toEqual([B, C]);
+    expect(removed.legs).toHaveLength(1);
+    expect(removed.legs[0].id).toBe(draft.legs[1].id);
+  });
+
+  it("borra el extremo final", () => {
+    const draft = draftWith(A, B, C);
+    const removed = removeWaypoint(draft, 2);
+    expect(removed.waypoints).toEqual([A, B]);
+    expect(removed.legs).toHaveLength(1);
+    expect(removed.legs[0].id).toBe(draft.legs[0].id);
+  });
+
+  it("borra un intermedio y une vecinos con tramo recto nuevo", () => {
+    const draft = draftWith(A, B, C);
+    const previousIds = draft.legs.map((l) => l.id);
+    const removed = removeWaypoint(draft, 1);
+
+    expect(removed.waypoints).toEqual([A, C]);
+    expect(removed.legs).toHaveLength(1);
+    expect(removed.legs[0].snapped).toBe(false);
+    expect(removed.legs[0].points).toEqual([A, C]);
+    expect(previousIds).not.toContain(removed.legs[0].id);
+  });
+
+  it("índice fuera de rango es no-op", () => {
+    const draft = draftWith(A, B);
+    expect(removeWaypoint(draft, 5)).toBe(draft);
+    expect(removeWaypoint(draft, -1)).toBe(draft);
   });
 });
 

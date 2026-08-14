@@ -10,13 +10,14 @@ import {
   loopClosingPoint,
   moveWaypoint,
   removeLastWaypoint,
+  removeWaypoint,
   setLegPoints,
   unsnapAllLegs,
   type DraftPoint,
   type RouteDraft,
   type RouteLeg,
 } from "@/lib/routeDraft";
-import { snapRouteLeg, type SnapProfile } from "@/lib/routeSnapping";
+import { snapRouteLeg, type SnapProfile, type SnapSurface } from "@/lib/routeSnapping";
 
 export type UseRouteDraftResult = {
   draft: RouteDraft;
@@ -30,16 +31,20 @@ export type UseRouteDraftResult = {
   /** Hay tramos esperando respuesta del enrutador. */
   routing: boolean;
   snapEnabled: boolean;
+  /** Preferencia de superficie al ajustar a caminos. */
+  surfacePreference: SnapSurface;
   /** El enrutador no respondió y el tramo quedó recto. */
   snapUnavailable: boolean;
   canUndo: boolean;
   canCloseLoop: boolean;
   addPoint: (point: DraftPoint) => void;
   moveWaypointTo: (index: number, point: DraftPoint) => void;
+  removeWaypointAt: (index: number) => void;
   undo: () => void;
   clear: () => void;
   closeLoop: () => void;
   setSnapEnabled: (enabled: boolean) => void;
+  setSurfacePreference: (surface: SnapSurface) => void;
 };
 
 /**
@@ -49,11 +54,13 @@ export type UseRouteDraftResult = {
 export function useRouteDraft(profile: SnapProfile | null): UseRouteDraftResult {
   const [draft, setDraft] = useState<RouteDraft>(EMPTY_ROUTE_DRAFT);
   const [snapEnabled, setSnapEnabledState] = useState(true);
+  const [surfacePreference, setSurfacePreferenceState] = useState<SnapSurface>("any");
   const [routingCount, setRoutingCount] = useState(0);
   const [snapUnavailable, setSnapUnavailable] = useState(false);
 
   const draftRef = useRef(draft);
   const snapEnabledRef = useRef(snapEnabled);
+  const surfaceRef = useRef(surfacePreference);
   const profileRef = useRef(profile);
   profileRef.current = profile;
   const controllersRef = useRef<Set<AbortController>>(new Set());
@@ -81,7 +88,13 @@ export function useRouteDraft(profile: SnapProfile | null): UseRouteDraftResult 
       setRoutingCount((n) => n + 1);
 
       try {
-        const snapped = await snapRouteLeg(leg.from, leg.to, activeProfile, controller.signal);
+        const snapped = await snapRouteLeg(
+          leg.from,
+          leg.to,
+          activeProfile,
+          controller.signal,
+          surfaceRef.current,
+        );
         if (controller.signal.aborted) return;
 
         if (!snapped) {
@@ -103,6 +116,16 @@ export function useRouteDraft(profile: SnapProfile | null): UseRouteDraftResult 
     [commit],
   );
 
+  const resnapAllLegs = useCallback(() => {
+    abortPending();
+    setSnapUnavailable(false);
+    const reset = unsnapAllLegs(draftRef.current);
+    commit(reset);
+    for (const leg of draftRef.current.legs) {
+      void snapLeg(leg);
+    }
+  }, [abortPending, commit, snapLeg]);
+
   const addPoint = useCallback(
     (point: DraftPoint) => {
       const next = appendWaypoint(draftRef.current, point);
@@ -119,6 +142,22 @@ export function useRouteDraft(profile: SnapProfile | null): UseRouteDraftResult 
       if (next === draftRef.current) return;
       commit(next);
       for (const leg of legsTouchingWaypoint(next, index)) void snapLeg(leg);
+    },
+    [commit, snapLeg],
+  );
+
+  const removeWaypointAt = useCallback(
+    (index: number) => {
+      const prev = draftRef.current;
+      const next = removeWaypoint(prev, index);
+      if (next === prev) return;
+      commit(next);
+
+      // Punto intermedio: el tramo nuevo que une vecinos está en index - 1.
+      if (index > 0 && index < prev.waypoints.length - 1) {
+        const bridged = next.legs[index - 1];
+        if (bridged) void snapLeg(bridged);
+      }
     },
     [commit, snapLeg],
   );
@@ -156,6 +195,18 @@ export function useRouteDraft(profile: SnapProfile | null): UseRouteDraftResult 
     [abortPending, commit, snapLeg],
   );
 
+  const setSurfacePreference = useCallback(
+    (surface: SnapSurface) => {
+      if (surface === surfaceRef.current) return;
+      surfaceRef.current = surface;
+      setSurfacePreferenceState(surface);
+      if (!snapEnabledRef.current || !profileRef.current) return;
+      if (draftRef.current.legs.length === 0) return;
+      resnapAllLegs();
+    },
+    [resnapAllLegs],
+  );
+
   const path = useMemo(() => draftPolyline(draft), [draft]);
   const storablePoints = useMemo(() => draftStorablePoints(draft), [draft]);
 
@@ -168,14 +219,17 @@ export function useRouteDraft(profile: SnapProfile | null): UseRouteDraftResult 
     storablePoints,
     routing: routingCount > 0,
     snapEnabled,
+    surfacePreference,
     snapUnavailable,
     canUndo: draft.waypoints.length > 0,
     canCloseLoop: loopClosingPoint(draft) != null,
     addPoint,
     moveWaypointTo,
+    removeWaypointAt,
     undo,
     clear,
     closeLoop,
     setSnapEnabled,
+    setSurfacePreference,
   };
 }

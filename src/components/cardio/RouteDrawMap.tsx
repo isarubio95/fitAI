@@ -30,6 +30,7 @@ type Props = {
   path: DrawMapPoint[];
   onAddPoint: (point: DrawMapPoint) => void;
   onMoveWaypoint: (index: number, point: DrawMapPoint) => void;
+  onRemoveWaypoint: (index: number) => void;
   onUndo: () => void;
   onClear: () => void;
   onCloseLoop: () => void;
@@ -39,6 +40,24 @@ type Props = {
   routing?: boolean;
   className?: string;
 };
+
+const TRASH_HIT_PADDING_PX = 14;
+
+/** ¿El marcador (en coords de mapa) cae sobre la zona de la papelera? */
+function isOverTrashZone(
+  map: MapLibreMap,
+  lngLat: { lng: number; lat: number },
+  zone: HTMLElement | null,
+): boolean {
+  if (!zone) return false;
+  const containerRect = map.getContainer().getBoundingClientRect();
+  const projected = map.project(lngLat);
+  const x = containerRect.left + projected.x;
+  const y = containerRect.top + projected.y;
+  const r = zone.getBoundingClientRect();
+  const pad = TRASH_HIT_PADDING_PX;
+  return x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad;
+}
 
 function lineFeature(coordinates: [number, number][]): Feature {
   return { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates } };
@@ -113,6 +132,7 @@ export function RouteDrawMap({
   path,
   onAddPoint,
   onMoveWaypoint,
+  onRemoveWaypoint,
   onUndo,
   onClear,
   onCloseLoop,
@@ -124,15 +144,23 @@ export function RouteDrawMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const trashZoneRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
+  /** Evita que el `click` tras soltar un marcador añada un punto. */
+  const ignoreMapClickRef = useRef(false);
+  const overTrashRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [draggingWaypoint, setDraggingWaypoint] = useState(false);
+  const [overTrash, setOverTrash] = useState(false);
 
   // Los handlers del mapa se registran una vez; las props se leen por referencia.
   const onAddPointRef = useRef(onAddPoint);
   onAddPointRef.current = onAddPoint;
   const onMoveWaypointRef = useRef(onMoveWaypoint);
   onMoveWaypointRef.current = onMoveWaypoint;
+  const onRemoveWaypointRef = useRef(onRemoveWaypoint);
+  onRemoveWaypointRef.current = onRemoveWaypoint;
 
   const initialCenterRef = useRef<[number, number] | null>(null);
   if (initialCenterRef.current === null) {
@@ -166,7 +194,7 @@ export function RouteDrawMap({
       map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
       map.on("click", (e) => {
-        if (draggingRef.current) return;
+        if (draggingRef.current || ignoreMapClickRef.current) return;
         onAddPointRef.current({ lat: e.lngLat.lat, lng: e.lngLat.lng });
       });
 
@@ -242,16 +270,44 @@ export function RouteDrawMap({
         marker = new Marker({ element, draggable: true }).setLngLat(target).addTo(map);
         marker.on("dragstart", () => {
           draggingRef.current = true;
+          ignoreMapClickRef.current = true;
+          overTrashRef.current = false;
+          setOverTrash(false);
+          setDraggingWaypoint(true);
+        });
+        marker.on("drag", () => {
+          const activeMap = mapRef.current;
+          if (!activeMap) return;
+          const hit = isOverTrashZone(activeMap, marker.getLngLat(), trashZoneRef.current);
+          if (hit !== overTrashRef.current) {
+            overTrashRef.current = hit;
+            setOverTrash(hit);
+          }
         });
         marker.on("dragend", () => {
           const position = marker.getLngLat();
           const currentIndex = markersRef.current.indexOf(marker);
+          const activeMap = mapRef.current;
+          const hit = activeMap
+            ? isOverTrashZone(activeMap, position, trashZoneRef.current)
+            : overTrashRef.current;
+
+          // Liberar antes del commit para que el sync de marcadores reposicione.
+          draggingRef.current = false;
+          overTrashRef.current = false;
+          setOverTrash(false);
+          setDraggingWaypoint(false);
+
           if (currentIndex >= 0) {
-            onMoveWaypointRef.current(currentIndex, { lat: position.lat, lng: position.lng });
+            if (hit) {
+              onRemoveWaypointRef.current(currentIndex);
+            } else {
+              onMoveWaypointRef.current(currentIndex, { lat: position.lat, lng: position.lng });
+            }
           }
           // El `click` del mapa llega justo después de soltar: no añadir un punto.
           window.setTimeout(() => {
-            draggingRef.current = false;
+            ignoreMapClickRef.current = false;
           }, 0);
         });
         markers[index] = marker;
@@ -375,13 +431,39 @@ export function RouteDrawMap({
         </MapControl>
       </div>
 
-      {waypoints.length === 0 ? (
+      {/* Siempre montada para el hit-test; solo visible al arrastrar un punto. */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-4",
+          "transition-opacity duration-150",
+          draggingWaypoint ? "opacity-100" : "opacity-0",
+        )}
+        aria-hidden={!draggingWaypoint}
+      >
+        <div
+          ref={trashZoneRef}
+          className={cn(
+            "flex h-14 w-14 items-center justify-center rounded-full border shadow-lg backdrop-blur-sm",
+            "transition-all duration-150",
+            overTrash
+              ? "scale-110 border-red-400/55 bg-red-500/30 text-red-100"
+              : "border-white/15 bg-[#1a1f21]/90 text-white/85",
+          )}
+          aria-label="Soltar para eliminar el punto"
+        >
+          <Trash2 className="h-6 w-6" strokeWidth={2.25} />
+        </div>
+      </div>
+
+      {!draggingWaypoint && waypoints.length === 0 ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-4">
           <p className="rounded-full border border-white/15 bg-[#1a1f21]/90 px-4 py-2 text-center text-xs text-white/80 shadow-lg backdrop-blur-sm">
             Toca el mapa para marcar el recorrido
           </p>
         </div>
-      ) : (
+      ) : null}
+
+      {!draggingWaypoint && waypoints.length > 0 ? (
         <div className="absolute inset-x-0 bottom-3 z-10 flex justify-center px-4">
           <button
             type="button"
@@ -396,7 +478,7 @@ export function RouteDrawMap({
             {routing ? "Ajustando a caminos…" : "Ver recorrido completo"}
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

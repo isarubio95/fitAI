@@ -81,6 +81,38 @@ export function removeLastWaypoint(draft: RouteDraft): RouteDraft {
   };
 }
 
+/**
+ * Quita un waypoint por índice. Si era intermedio, une a los vecinos con un
+ * tramo recto nuevo (id fresco) para invalidar snaps en vuelo.
+ */
+export function removeWaypoint(draft: RouteDraft, index: number): RouteDraft {
+  if (index < 0 || index >= draft.waypoints.length) return draft;
+
+  const waypoints = [...draft.waypoints.slice(0, index), ...draft.waypoints.slice(index + 1)];
+  if (waypoints.length < 2) {
+    return { waypoints, legs: [] };
+  }
+
+  // Extremo inicial: se descarta solo el primer tramo.
+  if (index === 0) {
+    return { waypoints, legs: draft.legs.slice(1) };
+  }
+
+  // Extremo final: equivalente a removeLastWaypoint.
+  if (index === draft.waypoints.length - 1) {
+    return { waypoints, legs: draft.legs.slice(0, -1) };
+  }
+
+  // Intermedio: quitar legs index-1 e index; insertar tramo recto entre vecinos.
+  const bridged = straightLeg(nextLegId(draft), waypoints[index - 1], waypoints[index]);
+  const legs = [
+    ...draft.legs.slice(0, index - 1),
+    bridged,
+    ...draft.legs.slice(index + 1),
+  ];
+  return { waypoints, legs };
+}
+
 /** Mueve un waypoint; los tramos que lo tocan vuelven a recto hasta re-enrutarse. */
 export function moveWaypoint(draft: RouteDraft, index: number, point: DraftPoint): RouteDraft {
   if (index < 0 || index >= draft.waypoints.length) return draft;
