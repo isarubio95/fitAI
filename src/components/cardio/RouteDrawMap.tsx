@@ -348,7 +348,11 @@ export function RouteDrawMap({
   }, [path]);
 
   return (
-    <div className={cn("relative overflow-hidden", className)}>
+    <div
+      className={cn("relative overflow-hidden", className)}
+      // Evita que Vaul interprete pan/zoom del mapa como arrastre del drawer.
+      data-vaul-no-drag
+    >
       <style>{`
         .route-draw-map-canvas { background: ${MAP_COLORS.land}; }
         .route-draw-map-canvas .maplibregl-canvas { outline: none; cursor: crosshair; }
