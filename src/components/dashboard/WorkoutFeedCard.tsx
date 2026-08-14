@@ -5,7 +5,7 @@ import {
   type ActivitySocialStatsProps,
 } from "@/components/community/ActivitySocialActions";
 import { WorkoutDetailsContent } from "@/components/dashboard/WorkoutDetailsSheet";
-import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
+import { formatActivityAbsoluteDate } from "@/lib/formatActivityRelativeDate";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { cn } from "@/lib/utils";
 import type { ActividadWithDetails } from "@/types/workout";
@@ -105,7 +105,7 @@ export function WorkoutFeedCardBody({
                 dateTime={workout.fecha}
                 className="block text-xs leading-none text-muted-foreground"
               >
-                {formatActivityRelativeDate(workout.fecha)}
+                {formatActivityAbsoluteDate(workout.fecha)}
               </time>
             ) : null}
           </div>

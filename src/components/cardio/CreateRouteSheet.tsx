@@ -10,11 +10,18 @@ import {
 } from "react";
 import { FileUp, Loader2, PencilLine, Route, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  drawerSafeAreaBottom,
+} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
 import { useRouteDraft } from "@/hooks/useRouteDraft";
 import {
   defaultRouteNameFromPoints,
@@ -107,8 +114,6 @@ export function CreateRouteSheet({
   );
   const drawing = useRouteDraft(snapProfile);
 
-  useBackCloseLayer({ open, onOpenChange, kind: "sheet" });
-
   const importedMetrics = useMemo(() => {
     if (!imported) return { distanceM: 0, elevationM: 0 };
     return {
@@ -146,10 +151,17 @@ export function CreateRouteSheet({
     drawing.clear();
   }, [drawing]);
 
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      onOpenChange(next);
+      if (!next) reset();
+    },
+    [onOpenChange, reset],
+  );
+
   const close = useCallback(() => {
-    onOpenChange(false);
-    reset();
-  }, [onOpenChange, reset]);
+    handleOpenChange(false);
+  }, [handleOpenChange]);
 
   const onPickFile = useCallback(
     async (file: File | null | undefined) => {
@@ -208,217 +220,219 @@ export function CreateRouteSheet({
     }
   }, [points, createRoute, nombre, defaultDisciplinaId, toast, onCreated, close]);
 
-  if (!open) return null;
-
   return (
-    <div
-      // `pointer-events-auto`: se abre desde un drawer que bloquea el body al cerrarse.
-      className="pointer-events-auto fixed inset-0 z-130 flex flex-col bg-card text-card-foreground"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Nueva ruta"
-    >
-      <header className="flex shrink-0 items-center gap-2 border-b border-border/60 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 shrink-0 rounded-full"
-          onClick={close}
-          aria-label="Cerrar"
-        >
-          <X className="h-5 w-5" />
-        </Button>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-semibold tracking-tight">Nueva ruta</p>
-          <p className="text-xs text-muted-foreground">
-            Trázala en el mapa o importa un archivo GPS
-          </p>
-        </div>
-      </header>
-
-      <Tabs
-        value={mode}
-        onValueChange={(value) => setMode(value as Mode)}
-        className="flex min-h-0 flex-1 flex-col"
+    <Drawer open={open} onOpenChange={handleOpenChange}>
+      <DrawerContent
+        side="bottom"
+        className="z-130 mt-0 flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden rounded-none bg-card p-0"
+        overlayClassName="z-130"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="shrink-0 px-4 pt-3">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="draw" className="gap-1.5">
-              <PencilLine className="h-4 w-4" />
-              Dibujar
-            </TabsTrigger>
-            <TabsTrigger value="import" className="gap-1.5">
-              <Upload className="h-4 w-4" />
-              Importar
-            </TabsTrigger>
-          </TabsList>
-        </div>
+        <DrawerHeader className="shrink-0 border-b border-border/60 text-left">
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 shrink-0 rounded-full"
+              onClick={close}
+              aria-label="Cerrar"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <DrawerTitle className="truncate text-base">Nueva ruta</DrawerTitle>
+              <DrawerDescription className="text-xs">
+                Trázala en el mapa o importa un archivo GPS
+              </DrawerDescription>
+            </div>
+          </div>
+        </DrawerHeader>
 
-        <TabsContent
-          value="draw"
-          className="mt-3 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
+        <Tabs
+          value={mode}
+          onValueChange={(value) => setMode(value as Mode)}
+          className="flex min-h-0 flex-1 flex-col"
         >
-          <div className="min-h-0 flex-1 overflow-hidden border-y border-border/60">
-            <Suspense fallback={<MapFallback />}>
-              <RouteDrawMap
-                className="h-full w-full"
-                waypoints={drawing.waypoints}
-                path={drawing.path}
-                onAddPoint={drawing.addPoint}
-                onMoveWaypoint={drawing.moveWaypointTo}
-                onUndo={drawing.undo}
-                onClear={drawing.clear}
-                onCloseLoop={drawing.closeLoop}
-                canUndo={drawing.canUndo}
-                canCloseLoop={drawing.canCloseLoop}
-                routing={drawing.routing}
-              />
-            </Suspense>
+          <div className="shrink-0 px-4 pt-3">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="draw" className="gap-1.5">
+                <PencilLine className="h-4 w-4" />
+                Dibujar
+              </TabsTrigger>
+              <TabsTrigger value="import" className="gap-1.5">
+                <Upload className="h-4 w-4" />
+                Importar
+              </TabsTrigger>
+            </TabsList>
           </div>
 
-          <div className="shrink-0 space-y-2 px-4 pt-3">
-            <div className="flex items-center justify-between gap-3">
-              <MetricsRow
-                distanceM={distanceM}
-                elevationM={elevationM}
-                pointCount={drawing.waypoints.length}
-              />
-              {snapProfile ? (
-                <div className="flex shrink-0 items-center gap-2">
-                  <Label htmlFor="route-snap" className="text-xs text-muted-foreground">
-                    Ajustar a caminos
-                  </Label>
-                  <Switch
-                    id="route-snap"
-                    checked={drawing.snapEnabled}
-                    onCheckedChange={drawing.setSnapEnabled}
-                  />
-                </div>
+          <TabsContent
+            value="draw"
+            className="mt-3 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
+          >
+            <div className="min-h-0 flex-1 overflow-hidden border-y border-border/60">
+              <Suspense fallback={<MapFallback />}>
+                <RouteDrawMap
+                  className="h-full w-full"
+                  waypoints={drawing.waypoints}
+                  path={drawing.path}
+                  onAddPoint={drawing.addPoint}
+                  onMoveWaypoint={drawing.moveWaypointTo}
+                  onUndo={drawing.undo}
+                  onClear={drawing.clear}
+                  onCloseLoop={drawing.closeLoop}
+                  canUndo={drawing.canUndo}
+                  canCloseLoop={drawing.canCloseLoop}
+                  routing={drawing.routing}
+                />
+              </Suspense>
+            </div>
+
+            <div className="shrink-0 space-y-2 px-4 pt-3">
+              <div className="flex items-center justify-between gap-3">
+                <MetricsRow
+                  distanceM={distanceM}
+                  elevationM={elevationM}
+                  pointCount={drawing.waypoints.length}
+                />
+                {snapProfile ? (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Label htmlFor="route-snap" className="text-xs text-muted-foreground">
+                      Ajustar a caminos
+                    </Label>
+                    <Switch
+                      id="route-snap"
+                      checked={drawing.snapEnabled}
+                      onCheckedChange={drawing.setSnapEnabled}
+                    />
+                  </div>
+                ) : null}
+              </div>
+              {drawing.snapUnavailable && drawing.snapEnabled ? (
+                <p className="text-xs text-amber-500">
+                  No se pudo calcular el camino de algún tramo: quedó en línea recta.
+                </p>
               ) : null}
             </div>
-            {drawing.snapUnavailable && drawing.snapEnabled ? (
-              <p className="text-xs text-amber-500">
-                No se pudo calcular el camino de algún tramo: quedó en línea recta.
-              </p>
-            ) : null}
-          </div>
-        </TabsContent>
+          </TabsContent>
 
-        <TabsContent
-          value="import"
-          className="mt-3 min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden"
-        >
-          <div className="space-y-3 px-4">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ROUTE_FILE_ACCEPT}
-              className="hidden"
-              onChange={(e) => {
-                void onPickFile(e.target.files?.[0]);
-                e.target.value = "";
-              }}
-            />
+          <TabsContent
+            value="import"
+            className="mt-3 min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden"
+          >
+            <div className="space-y-3 px-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ROUTE_FILE_ACCEPT}
+                className="hidden"
+                onChange={(e) => {
+                  void onPickFile(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
 
-            {imported ? (
-              <>
-                <div className="h-52 overflow-hidden rounded-xl border border-border/60">
-                  <Suspense fallback={<MapFallback />}>
-                    <CardioRouteMap points={imported.points} className="h-full w-full" interactive />
-                  </Suspense>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <MetricsRow
-                    distanceM={distanceM}
-                    elevationM={elevationM}
-                    pointCount={imported.points.length}
-                  />
+              {imported ? (
+                <>
+                  <div className="h-52 overflow-hidden rounded-xl border border-border/60">
+                    <Suspense fallback={<MapFallback />}>
+                      <CardioRouteMap points={imported.points} className="h-full w-full" interactive />
+                    </Suspense>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <MetricsRow
+                      distanceM={distanceM}
+                      elevationM={elevationM}
+                      pointCount={imported.points.length}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Cambiar archivo
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragActive(true);
+                  }}
+                  onDragLeave={() => setDragActive(false)}
+                  onDrop={onDrop}
+                  className={cn(
+                    "flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-10 text-center transition-colors",
+                    dragActive ? "border-primary bg-primary/5" : "border-border/70 bg-muted/20",
+                  )}
+                >
+                  {importing ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  ) : (
+                    <FileUp className="h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
+                  )}
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">
+                      {importing ? "Leyendo archivo…" : "Importa un recorrido"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Archivos GPX, TCX, KML o GeoJSON de Strava, Garmin, Wikiloc, Komoot…
+                    </p>
+                  </div>
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0"
+                    variant="secondary"
+                    disabled={importing}
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    Cambiar archivo
+                    Seleccionar archivo
                   </Button>
                 </div>
-              </>
-            ) : (
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragActive(true);
-                }}
-                onDragLeave={() => setDragActive(false)}
-                onDrop={onDrop}
-                className={cn(
-                  "flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-10 text-center transition-colors",
-                  dragActive ? "border-primary bg-primary/5" : "border-border/70 bg-muted/20",
-                )}
-              >
-                {importing ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                ) : (
-                  <FileUp className="h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
-                )}
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">
-                    {importing ? "Leyendo archivo…" : "Importa un recorrido"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Archivos GPX, TCX, KML o GeoJSON de Strava, Garmin, Wikiloc, Komoot…
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={importing}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Seleccionar archivo
-                </Button>
-              </div>
-            )}
+              )}
 
-            {importError ? <p className="text-xs text-destructive">{importError}</p> : null}
+              {importError ? <p className="text-xs text-destructive">{importError}</p> : null}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        <div className={cn("shrink-0 space-y-3 border-t border-border/60 px-4 pt-3", drawerSafeAreaBottom)}>
+          <div className="space-y-1.5">
+            <Label htmlFor="route-name" className="text-xs text-muted-foreground">
+              Nombre
+            </Label>
+            <Input
+              id="route-name"
+              value={nombre}
+              onChange={(e) => {
+                setNombreCustom(true);
+                setNombre(e.target.value);
+              }}
+              placeholder="Nombre de la ruta"
+              maxLength={120}
+              autoComplete="off"
+              enterKeyHint="done"
+            />
           </div>
-        </TabsContent>
-      </Tabs>
-
-      <div className="shrink-0 space-y-3 border-t border-border/60 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="route-name" className="text-xs text-muted-foreground">
-            Nombre
-          </Label>
-          <Input
-            id="route-name"
-            value={nombre}
-            onChange={(e) => {
-              setNombreCustom(true);
-              setNombre(e.target.value);
-            }}
-            placeholder="Nombre de la ruta"
-            maxLength={120}
-            autoComplete="off"
-            enterKeyHint="done"
-          />
+          <Button
+            type="button"
+            className="w-full gap-2"
+            disabled={!canSave}
+            onClick={() => void onSave()}
+          >
+            {createRoute.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Route className="h-4 w-4" />
+            )}
+            Guardar ruta
+          </Button>
         </div>
-        <Button
-          type="button"
-          className="w-full gap-2"
-          disabled={!canSave}
-          onClick={() => void onSave()}
-        >
-          {createRoute.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Route className="h-4 w-4" />
-          )}
-          Guardar ruta
-        </Button>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

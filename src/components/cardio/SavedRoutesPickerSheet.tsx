@@ -47,7 +47,7 @@ export function SavedRoutesPickerSheet({
   const [createOpen, setCreateOpen] = useState(false);
   const justCreatedRef = useRef(false);
 
-  /** El editor es a pantalla completa: cierra el drawer para no competir por el foco. */
+  /** El editor es otro drawer a pantalla completa: cierra el listado para no competir por el foco. */
   const openCreate = () => {
     setCreateOpen(true);
     onOpenChange(false);
