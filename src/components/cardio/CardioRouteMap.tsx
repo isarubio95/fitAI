@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AttributionControl,
   LngLatBounds,
@@ -10,7 +10,14 @@ import type { Feature, FeatureCollection } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 /** Vite empaqueta el worker + shared chunk; sin esto el mapa queda en blanco (404 del worker). */
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
-import { MAP_COLORS, loadStravaDarkMapStyle } from "@/lib/stravaDarkMapStyle";
+import { MapBasemapControl } from "@/components/cardio/MapBasemapControl";
+import {
+  loadMapBasemapStyle,
+  readCardioMapBasemap,
+  writeCardioMapBasemap,
+  type MapBasemapId,
+} from "@/lib/mapBasemap";
+import { MAP_COLORS } from "@/lib/stravaDarkMapStyle";
 import { cn } from "@/lib/utils";
 
 setWorkerUrl(maplibreWorkerUrl);
@@ -117,9 +124,11 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const paintedRef = useRef(false);
+  const basemapRef = useRef<MapBasemapId>(readCardioMapBasemap());
   const [ready, setReady] = useState(false);
   /** Estilo + primer paint (tiles); el skeleton con reflejo se quita al pintar. */
   const [painted, setPainted] = useState(false);
+  const [basemap, setBasemap] = useState<MapBasemapId>(() => basemapRef.current);
 
   const initialViewRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
   if (initialViewRef.current === null) {
@@ -133,7 +142,7 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
     if (!containerRef.current) return;
     let cancelled = false;
 
-    void loadStravaDarkMapStyle().then((style) => {
+    void loadMapBasemapStyle(basemapRef.current).then((style) => {
       const container = containerRef.current;
       if (cancelled || !container) return;
 
@@ -170,6 +179,25 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
     };
     // interactive fijo al montar
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onBasemapChange = useCallback((id: MapBasemapId) => {
+    if (id === basemapRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
+    basemapRef.current = id;
+    setBasemap(id);
+    writeCardioMapBasemap(id);
+    setReady(false);
+    void loadMapBasemapStyle(id).then((style) => {
+      if (mapRef.current !== map || basemapRef.current !== id) return;
+      map.once("style.load", () => {
+        if (mapRef.current !== map) return;
+        addRouteLayers(map);
+        setReady(true);
+      });
+      map.setStyle(style);
+    });
   }, []);
 
   useEffect(() => {
@@ -266,6 +294,14 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
         className="cardio-route-map-canvas h-full min-h-40 w-full"
         style={{ background: MAP_COLORS.land }}
       />
+      {interactive ? (
+        <MapBasemapControl
+          value={basemap}
+          onChange={onBasemapChange}
+          className="absolute right-3 bottom-3 z-10"
+          menuPlacement="above"
+        />
+      ) : null}
       {!painted ? (
         <div
           className="map-route-skeleton absolute inset-0 z-10 transition-opacity duration-300"

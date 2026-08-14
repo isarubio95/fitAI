@@ -21,7 +21,14 @@ import {
   writeCardioMapOrientation,
   type MapOrientationMode,
 } from "@/lib/mapHeading";
-import { MAP_COLORS, loadStravaDarkMapStyle } from "@/lib/stravaDarkMapStyle";
+import { MAP_COLORS } from "@/lib/stravaDarkMapStyle";
+import {
+  loadMapBasemapStyle,
+  readCardioMapBasemap,
+  writeCardioMapBasemap,
+  type MapBasemapId,
+} from "@/lib/mapBasemap";
+import { MapBasemapControl } from "@/components/cardio/MapBasemapControl";
 import { cn } from "@/lib/utils";
 
 setWorkerUrl(maplibreWorkerUrl);
@@ -204,7 +211,9 @@ export function LiveCardioMap({
   /** Último centro aplicado a la cámara: evita reanimar el paneo en cada giro de la brújula. */
   const appliedCenterRef = useRef<[number, number] | null>(null);
   const wasRecordingRef = useRef(recording);
+  const basemapRef = useRef<MapBasemapId>(readCardioMapBasemap());
   const [ready, setReady] = useState(false);
+  const [basemap, setBasemap] = useState<MapBasemapId>(() => basemapRef.current);
   const [following, setFollowing] = useState(followUser);
   const [orientationMode, setOrientationMode] = useState<MapOrientationMode>(() =>
     readCardioMapOrientation(),
@@ -242,7 +251,7 @@ export function LiveCardioMap({
     if (!containerRef.current) return;
     let cancelled = false;
 
-    void loadStravaDarkMapStyle().then((style) => {
+    void loadMapBasemapStyle(basemapRef.current).then((style) => {
       const container = containerRef.current;
       if (cancelled || !container) return;
 
@@ -295,6 +304,25 @@ export function LiveCardioMap({
       setReady(false);
       setMapBearing(0);
     };
+  }, []);
+
+  const onBasemapChange = useCallback((id: MapBasemapId) => {
+    if (id === basemapRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
+    basemapRef.current = id;
+    setBasemap(id);
+    writeCardioMapBasemap(id);
+    setReady(false);
+    void loadMapBasemapStyle(id).then((style) => {
+      if (mapRef.current !== map || basemapRef.current !== id) return;
+      map.once("style.load", () => {
+        if (mapRef.current !== map) return;
+        addRouteLayers(map);
+        setReady(true);
+      });
+      map.setStyle(style);
+    });
   }, []);
 
   // El contenedor se monta dentro de paneles con transición: recalcula tamaño.
@@ -588,12 +616,17 @@ export function LiveCardioMap({
         style={{ background: MAP_COLORS.land }}
       />
       {/* `controlsBottomPx` lo deja justo encima de la barra de métricas. */}
-      <CameraControl
-        state={cameraState}
-        className="absolute right-3 z-10"
+      <div
+        className="absolute right-3 z-10 flex flex-col gap-2"
         style={{ bottom: `${controlsBottomPx}px` }}
-        onPress={onCameraControlPress}
-      />
+      >
+        <MapBasemapControl
+          value={basemap}
+          onChange={onBasemapChange}
+          menuPlacement="above"
+        />
+        <CameraControl state={cameraState} onPress={onCameraControlPress} />
+      </div>
     </div>
   );
 }

@@ -12,7 +12,14 @@ import { Loader2, LocateFixed, Repeat, Trash2, Undo2 } from "lucide-react";
 import "maplibre-gl/dist/maplibre-gl.css";
 /** Vite empaqueta el worker + shared chunk; sin esto el mapa queda en blanco (404 del worker). */
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
-import { MAP_COLORS, loadStravaDarkMapStyle } from "@/lib/stravaDarkMapStyle";
+import { MapBasemapControl } from "@/components/cardio/MapBasemapControl";
+import {
+  loadMapBasemapStyle,
+  readCardioMapBasemap,
+  writeCardioMapBasemap,
+  type MapBasemapId,
+} from "@/lib/mapBasemap";
+import { MAP_COLORS } from "@/lib/stravaDarkMapStyle";
 import { cn } from "@/lib/utils";
 
 setWorkerUrl(maplibreWorkerUrl);
@@ -149,7 +156,9 @@ export function RouteDrawMap({
   /** Evita que el `click` tras soltar un marcador añada un punto. */
   const ignoreMapClickRef = useRef(false);
   const overTrashRef = useRef(false);
+  const basemapRef = useRef<MapBasemapId>(readCardioMapBasemap());
   const [ready, setReady] = useState(false);
+  const [basemap, setBasemap] = useState<MapBasemapId>(() => basemapRef.current);
   const [locating, setLocating] = useState(false);
   const [draggingWaypoint, setDraggingWaypoint] = useState(false);
   const [overTrash, setOverTrash] = useState(false);
@@ -173,7 +182,7 @@ export function RouteDrawMap({
     if (!containerRef.current) return;
     let cancelled = false;
 
-    void loadStravaDarkMapStyle().then((style) => {
+    void loadMapBasemapStyle(basemapRef.current).then((style) => {
       const container = containerRef.current;
       if (cancelled || !container) return;
 
@@ -214,6 +223,25 @@ export function RouteDrawMap({
       mapRef.current = null;
       setReady(false);
     };
+  }, []);
+
+  const onBasemapChange = useCallback((id: MapBasemapId) => {
+    if (id === basemapRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
+    basemapRef.current = id;
+    setBasemap(id);
+    writeCardioMapBasemap(id);
+    setReady(false);
+    void loadMapBasemapStyle(id).then((style) => {
+      if (mapRef.current !== map || basemapRef.current !== id) return;
+      map.once("style.load", () => {
+        if (mapRef.current !== map) return;
+        addDraftLayers(map);
+        setReady(true);
+      });
+      map.setStyle(style);
+    });
   }, []);
 
   useEffect(() => {
@@ -417,6 +445,11 @@ export function RouteDrawMap({
       />
 
       <div className="absolute right-3 top-3 z-10 flex flex-col gap-2">
+        <MapBasemapControl
+          value={basemap}
+          onChange={onBasemapChange}
+          menuPlacement="below"
+        />
         <MapControl label="Centrar en mi posición" onClick={onLocate} disabled={locating}>
           {locating ? (
             <Loader2 className="h-5 w-5 animate-spin" />
