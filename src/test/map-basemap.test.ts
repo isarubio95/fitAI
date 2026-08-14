@@ -9,6 +9,7 @@ import {
 afterEach(() => {
   localStorage.removeItem(CARDIO_MAP_BASEMAP_STORAGE_KEY);
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe("mapBasemap", () => {
@@ -16,10 +17,17 @@ describe("mapBasemap", () => {
     expect(readCardioMapBasemap()).toBe("map");
   });
 
-  it("persists satellite preference", () => {
+  it("persists satellite and hybrid preferences", () => {
     writeCardioMapBasemap("satellite");
     expect(readCardioMapBasemap()).toBe("satellite");
-    expect(localStorage.getItem(CARDIO_MAP_BASEMAP_STORAGE_KEY)).toBe("satellite");
+    writeCardioMapBasemap("hybrid");
+    expect(readCardioMapBasemap()).toBe("hybrid");
+    expect(localStorage.getItem(CARDIO_MAP_BASEMAP_STORAGE_KEY)).toBe("hybrid");
+  });
+
+  it("ignores unknown stored values", () => {
+    localStorage.setItem(CARDIO_MAP_BASEMAP_STORAGE_KEY, "terrain");
+    expect(readCardioMapBasemap()).toBe("map");
   });
 
   it("returns raster satellite style", async () => {
@@ -29,5 +37,17 @@ describe("mapBasemap", () => {
     const esri = style.sources.esri as { type: string; tiles: string[] };
     expect(esri.type).toBe("raster");
     expect(esri.tiles[0]).toContain("World_Imagery");
+  });
+
+  it("returns hybrid style with satellite + labels", async () => {
+    const style = await loadMapBasemapStyle("hybrid");
+    expect(style.sources).toHaveProperty("esri");
+    expect(style.sources).toHaveProperty("openmaptiles");
+    expect(style.glyphs).toContain("openfreemap.org");
+    const ids = (style.layers ?? []).map((layer) => layer.id);
+    expect(ids).toContain("esri");
+    expect(ids).toContain("place_city");
+    expect(ids).toContain("highway_name_other");
+    expect(ids).not.toContain("road_oneway");
   });
 });

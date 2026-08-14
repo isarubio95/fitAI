@@ -12,6 +12,7 @@ const CONTROL_CLASS = cn(
 const OPTIONS: Array<{ id: MapBasemapId; label: string }> = [
   { id: "map", label: "Mapa" },
   { id: "satellite", label: "Satélite" },
+  { id: "hybrid", label: "Híbrido" },
 ];
 
 type Props = {
@@ -24,7 +25,7 @@ type Props = {
 };
 
 /**
- * Botón de capas típico: abre un menú compacto Mapa / Satélite.
+ * Botón de capas típico: abre un menú compacto Mapa / Satélite / Híbrido.
  */
 export function MapBasemapControl({
   value,
