@@ -158,7 +158,7 @@ export function SortableRoutineCard({
                     <MoreVertical className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44 bg-popover">
+              <DropdownMenuContent align="end" className="flex w-44 flex-col gap-1 bg-popover">
                   <DropdownMenuItem onClick={() => onEdit(r.id)}>
                     <Pencil className="mr-2 h-4 w-4" /> Editar
                   </DropdownMenuItem>

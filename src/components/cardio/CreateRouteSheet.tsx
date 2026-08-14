@@ -8,7 +8,7 @@ import {
   useState,
   type DragEvent,
 } from "react";
-import { FileUp, Loader2, PencilLine, Route, Upload, X } from "lucide-react";
+import { FileUp, Loader2, Route, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -21,7 +21,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouteDraft } from "@/hooks/useRouteDraft";
 import {
   defaultRouteNameFromPoints,
@@ -57,11 +56,13 @@ const CardioRouteMap = lazy(() =>
   import("@/components/cardio/CardioRouteMap").then((m) => ({ default: m.CardioRouteMap })),
 );
 
-type Mode = "draw" | "import";
+export type CreateRouteMode = "draw" | "import";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Cómo se abre el editor: dibujar en mapa o importar archivo. */
+  initialMode?: CreateRouteMode;
   /** Disciplina con la que se asocia la ruta creada (la del setup de cardio). */
   defaultDisciplinaId?: string | null;
   /** Código de la disciplina: decide el perfil de enrutado (a pie / bici). */
@@ -102,13 +103,14 @@ function MetricsRow({
 export function CreateRouteSheet({
   open,
   onOpenChange,
+  initialMode = "draw",
   defaultDisciplinaId = null,
   defaultDisciplinaCodigo = null,
   onCreated,
 }: Props) {
   const { toast } = useToast();
   const createRoute = useCreateCardioRoute();
-  const [mode, setMode] = useState<Mode>("draw");
+  const [mode, setMode] = useState<CreateRouteMode>(initialMode);
   const [nombre, setNombre] = useState("");
   /** Si el usuario (o un archivo importado) ya eligió nombre, no lo pisamos con la sugerencia. */
   const [nombreCustom, setNombreCustom] = useState(false);
@@ -150,6 +152,11 @@ export function CreateRouteSheet({
     if (nombreCustom) return;
     setNombre(suggestedName);
   }, [suggestedName, nombreCustom]);
+
+  // Al abrir, aplica el modo elegido en el menú de «Crear ruta».
+  useEffect(() => {
+    if (open) setMode(initialMode);
+  }, [open, initialMode]);
 
   const reset = useCallback(() => {
     setNombre("");
@@ -254,35 +261,17 @@ export function CreateRouteSheet({
             <div className="min-w-0 flex-1">
               <DrawerTitle className="truncate text-base">Nueva ruta</DrawerTitle>
               <DrawerDescription className="text-xs">
-                Trázala en el mapa o importa un archivo GPS
+                {mode === "draw"
+                  ? "Trázala tocando el mapa"
+                  : "Importa un archivo GPS"}
               </DrawerDescription>
             </div>
           </div>
         </DrawerHeader>
 
-        <Tabs
-          value={mode}
-          onValueChange={(value) => setMode(value as Mode)}
-          className="flex min-h-0 flex-1 flex-col"
-        >
-          <div className="shrink-0 px-4 pt-3">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="draw" className="gap-1.5">
-                <PencilLine className="h-4 w-4" />
-                Dibujar
-              </TabsTrigger>
-              <TabsTrigger value="import" className="gap-1.5">
-                <Upload className="h-4 w-4" />
-                Importar
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent
-            value="draw"
-            className="mt-3 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
-          >
-            <div className="min-h-0 flex-1 overflow-hidden border-y border-border/60">
+        {mode === "draw" ? (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 overflow-hidden border-b border-border/60">
               <Suspense fallback={<MapFallback />}>
                 <RouteDrawMap
                   className="h-full w-full"
@@ -353,13 +342,10 @@ export function CreateRouteSheet({
                 </p>
               ) : null}
             </div>
-          </TabsContent>
-
-          <TabsContent
-            value="import"
-            className="mt-3 min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden"
-          >
-            <div className="space-y-3 px-4">
+          </div>
+        ) : (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="space-y-3 px-4 pt-3">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -434,8 +420,8 @@ export function CreateRouteSheet({
 
               {importError ? <p className="text-xs text-destructive">{importError}</p> : null}
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
 
         <div className={cn("shrink-0 space-y-3 border-t border-border/60 px-4 pt-3", drawerSafeAreaBottom)}>
           <div className="space-y-1.5">

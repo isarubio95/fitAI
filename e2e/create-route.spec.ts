@@ -97,10 +97,10 @@ test.describe("E2E: crear ruta", () => {
     await expect(page.getByText("Rutas guardadas")).toBeVisible();
 
     await page.getByRole("button", { name: "Crear ruta" }).first().click();
+    await page.getByRole("menuitem", { name: "Importar" }).click();
     const sheet = page.getByRole("dialog", { name: "Nueva ruta" });
     await expect(sheet).toBeVisible();
 
-    await sheet.getByRole("tab", { name: "Importar" }).click();
     await sheet.locator('input[type="file"]').setInputFiles({
       name: "retiro.gpx",
       mimeType: "application/gpx+xml",
@@ -151,13 +151,10 @@ test.describe("E2E: crear ruta", () => {
     await openCardioLive(page);
     await page.getByRole("button", { name: "Elegir ruta guardada" }).click();
     await page.getByRole("button", { name: "Crear ruta" }).first().click();
+    await page.getByRole("menuitem", { name: "Dibujar" }).click();
 
     const sheet = page.getByRole("dialog", { name: "Nueva ruta" });
     await expect(sheet).toBeVisible();
-    await expect(sheet.getByRole("tab", { name: "Dibujar" })).toHaveAttribute(
-      "data-state",
-      "active",
-    );
 
     await tapMap(page, 40.415, -3.683);
     await tapMap(page, 40.42, -3.678);

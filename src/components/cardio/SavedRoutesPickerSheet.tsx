@@ -1,4 +1,4 @@
-import { Plus, Route, Trash2 } from "lucide-react";
+import { PencilLine, Plus, Route, Trash2, Upload } from "lucide-react";
 import { useRef, useState, type MouseEvent } from "react";
 import {
   Drawer,
@@ -9,8 +9,14 @@ import {
   drawerSafeAreaBottom,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreateRouteSheet } from "@/components/cardio/CreateRouteSheet";
+import { CreateRouteSheet, type CreateRouteMode } from "@/components/cardio/CreateRouteSheet";
 import {
   routeToSelected,
   useDeleteSavedCardioRoute,
@@ -32,6 +38,37 @@ type Props = {
   disciplinaCodigo?: string | null;
 };
 
+function CreateRouteMenuButton({
+  onChoose,
+  size = "sm",
+  className,
+}: {
+  onChoose: (mode: CreateRouteMode) => void;
+  size?: "sm" | "default";
+  className?: string;
+}) {
+  return (
+    // modal={false}: el focus trap del Drawer no traga el menú.
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" size={size} className={cn("gap-1.5", className)}>
+          <Plus className="h-4 w-4" />
+          Crear ruta
+        </Button>
+      </DropdownMenuTrigger>
+      {/* Por encima del drawer de rutas (z-120). */}
+      <DropdownMenuContent align="end" className="z-[140] flex w-44 flex-col gap-1 bg-popover">
+        <DropdownMenuItem onClick={() => onChoose("draw")}>
+          <PencilLine className="mr-2 h-4 w-4" /> Dibujar
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onChoose("import")}>
+          <Upload className="mr-2 h-4 w-4" /> Importar
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function SavedRoutesPickerSheet({
   open,
   onOpenChange,
@@ -45,10 +82,12 @@ export function SavedRoutesPickerSheet({
   const deleteRoute = useDeleteSavedCardioRoute();
   const { toast } = useToast();
   const [createOpen, setCreateOpen] = useState(false);
+  const [createMode, setCreateMode] = useState<CreateRouteMode>("draw");
   const justCreatedRef = useRef(false);
 
   /** El editor es otro drawer a pantalla completa: cierra el listado para no competir por el foco. */
-  const openCreate = () => {
+  const openCreate = (mode: CreateRouteMode) => {
+    setCreateMode(mode);
     setCreateOpen(true);
     onOpenChange(false);
   };
@@ -86,15 +125,7 @@ export function SavedRoutesPickerSheet({
                   Elige una ruta para verla en el mapa y seguir el progreso.
                 </DrawerDescription>
               </div>
-              <Button
-                type="button"
-                size="sm"
-                className="shrink-0 gap-1.5 rounded-full"
-                onClick={openCreate}
-              >
-                <Plus className="h-4 w-4" />
-                Crear ruta
-              </Button>
+              <CreateRouteMenuButton onChoose={openCreate} className="shrink-0 rounded-full" />
             </div>
           </DrawerHeader>
 
@@ -111,10 +142,7 @@ export function SavedRoutesPickerSheet({
                   Aún no tienes rutas. Traza una en el mapa, importa un archivo GPS o guárdala
                   desde el detalle de una sesión de cardio con GPS en Comunidad.
                 </p>
-                <Button type="button" className="gap-1.5" onClick={openCreate}>
-                  <Plus className="h-4 w-4" />
-                  Crear ruta
-                </Button>
+                <CreateRouteMenuButton onChoose={openCreate} size="default" />
               </div>
             ) : (
               <ul className="space-y-2">
@@ -145,28 +173,32 @@ export function SavedRoutesPickerSheet({
                       : null;
                   return (
                     <li key={route.id}>
-                      <button
-                        type="button"
+                      <div
                         className={cn(
-                          "flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors",
+                          "flex w-full items-center gap-3 rounded-xl border px-3 py-3 transition-colors",
                           selected
                             ? "border-primary/50 bg-primary/10"
                             : "border-border/60 bg-muted/30 hover:bg-muted/50",
                         )}
-                        onClick={() => {
-                          onSelect(routeToSelected(route));
-                          onOpenChange(false);
-                        }}
                       >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-background/80">
-                          <Route className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold">{route.nombre}</p>
-                          <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                            {[distance, elev].filter(Boolean).join(" · ") || "Sin métricas"}
-                          </p>
-                        </div>
+                        <button
+                          type="button"
+                          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                          onClick={() => {
+                            onSelect(routeToSelected(route));
+                            onOpenChange(false);
+                          }}
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-background/80">
+                            <Route className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold">{route.nombre}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                              {[distance, elev].filter(Boolean).join(" · ") || "Sin métricas"}
+                            </p>
+                          </div>
+                        </button>
                         <Button
                           type="button"
                           size="icon"
@@ -177,7 +209,7 @@ export function SavedRoutesPickerSheet({
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      </button>
+                      </div>
                     </li>
                   );
                 })}
@@ -189,6 +221,7 @@ export function SavedRoutesPickerSheet({
 
       <CreateRouteSheet
         open={createOpen}
+        initialMode={createMode}
         onOpenChange={(next) => {
           setCreateOpen(next);
           if (next) return;
