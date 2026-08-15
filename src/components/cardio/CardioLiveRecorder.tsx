@@ -26,13 +26,8 @@ import { computeRouteProgress } from "@/lib/cardioRouteProgress";
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
 import { firstNested } from "@/lib/firstNested";
-import { nearestHeartRate, summarizeHeartRate, type HeartRateSample } from "@/lib/heartRateMetrics";
+import { nearestHeartRate, summarizeHeartRate } from "@/lib/heartRateMetrics";
 import { setNativeCardioPaused } from "@/lib/nativeCardioTracker";
-import {
-  appendHealthConnectFuente,
-  hasHrPermission,
-  readHeartRateSamples,
-} from "@/lib/healthConnectHr";
 import {
   PILL_CIRCLE_DURATION_MS,
   pillCircleTransitionAttr,
@@ -98,9 +93,6 @@ export function CardioLiveRecorder() {
   const metricsBarRef = useRef<HTMLButtonElement | null>(null);
   const sheetDragStartY = useRef<number | null>(null);
   const [setupDisciplineId, setSetupDisciplineId] = useState<string | null>(null);
-  /** Samples HC prefetchados al entrar en resumen (si no hubo BLE). */
-  const [hcSamples, setHcSamples] = useState<HeartRateSample[]>([]);
-  const hcPrefetchGen = useRef(0);
   const [selectedRoute, setSelectedRoute] = useState<SelectedCardioRoute | null>(null);
   const [routesPickerOpen, setRoutesPickerOpen] = useState(false);
 
@@ -200,8 +192,6 @@ export function CardioLiveRecorder() {
       setSetupDisciplineId(null);
       setSelectedRoute(null);
       setRoutesPickerOpen(false);
-      setHcSamples([]);
-      hcPrefetchGen.current += 1;
       if (pillCloseTimerRef.current != null) {
         window.clearTimeout(pillCloseTimerRef.current);
         pillCloseTimerRef.current = null;
@@ -220,33 +210,6 @@ export function CardioLiveRecorder() {
     }, PILL_CIRCLE_DURATION_MS);
     return () => window.clearTimeout(t);
   }, [pillCirclePhase]);
-
-  // Prefetch FC desde Health Connect al entrar en resumen si no hubo BLE.
-  useEffect(() => {
-    if (step !== "summary" || !sessionData?.fecha_inicio) return;
-    if (hrSamples.length > 0) {
-      setHcSamples([]);
-      return;
-    }
-
-    const startMs = Date.parse(sessionData.fecha_inicio);
-    if (!Number.isFinite(startMs)) return;
-    const endMs = Date.now();
-    const gen = ++hcPrefetchGen.current;
-
-    void (async () => {
-      const permitted = await hasHrPermission();
-      if (!permitted || gen !== hcPrefetchGen.current) return;
-      const samples = await readHeartRateSamples(startMs, endMs);
-      if (gen !== hcPrefetchGen.current) return;
-      setHcSamples(samples);
-    })();
-  }, [step, sessionData?.fecha_inicio, hrSamples.length]);
-
-  const { fcMedia: displayFcMedia, fcMax: displayFcMax } = useMemo(
-    () => (hrSamples.length > 0 ? { fcMedia, fcMax } : summarizeHeartRate(hcSamples)),
-    [hrSamples.length, fcMedia, fcMax, hcSamples],
-  );
 
   // El drawer de controles vive en un portal (fuera del full-screen), así que
   // medimos su caja para el mismo círculo hacia la pill que el mapa/header.
@@ -625,34 +588,12 @@ export function CardioLiveRecorder() {
       summaryTitulo.trim() ||
       getDefaultCardioTitle(discipline?.nombre, Number.isNaN(startedAt.getTime()) ? undefined : startedAt);
 
-    const startMs = Date.parse(sessionData.fecha_inicio);
-    const endMs = Date.now();
-    let saveHrSamples = hrSamples;
-    let importedFromHc = false;
-
-    if (saveHrSamples.length === 0 && Number.isFinite(startMs)) {
-      try {
-        const permitted = await hasHrPermission();
-        if (permitted) {
-          const fresh = await readHeartRateSamples(startMs, endMs);
-          const resolved = fresh.length > 0 ? fresh : hcSamples;
-          if (resolved.length > 0) {
-            saveHrSamples = resolved;
-            importedFromHc = true;
-            setHcSamples(resolved);
-          }
-        }
-      } catch {
-        // No bloquear el guardado si Health Connect falla.
-      }
-    }
-
-    const { fcMedia: saveFcMedia, fcMax: saveFcMax } = summarizeHeartRate(saveHrSamples);
+    const { fcMedia: saveFcMedia, fcMax: saveFcMax } = summarizeHeartRate(hrSamples);
 
     const trackPoints: CardioTrackPointInput[] = prepareTrackPointsForStorage(
       points.map((p, idx) => {
         const ts = p.timestamp_utc ? Date.parse(p.timestamp_utc) : NaN;
-        const fc = Number.isFinite(ts) ? nearestHeartRate(saveHrSamples, ts) : null;
+        const fc = Number.isFinite(ts) ? nearestHeartRate(hrSamples, ts) : null;
         return {
           orden: idx,
           lat: p.lat,
@@ -675,7 +616,7 @@ export function CardioLiveRecorder() {
     const track =
       cardioDisciplineUsesGpsMap(code) && trackPoints.length > 0
         ? {
-            fuente: importedFromHc ? appendHealthConnectFuente("gps-web") : "gps-web",
+            fuente: "gps-web",
             distancia_total_m: Math.round(dist * 10) / 10,
             duracion_total_seg: dur,
             elevacion_positiva_m: Math.round(elevGain * 10) / 10,
@@ -710,24 +651,10 @@ export function CardioLiveRecorder() {
       });
       clearDraft();
       clearHrSamples();
-      setHcSamples([]);
       void disconnectHr();
       void stopLiveCardio();
       closeLiveRecording();
-      if (importedFromHc) {
-        toast({
-          title: "Entrenamiento guardado",
-          description: "FC importada desde Health Connect.",
-        });
-      } else if (hrSamples.length === 0 && saveFcMedia == null) {
-        toast({
-          title: "Entrenamiento guardado",
-          description:
-            "Sin FC: el reloj puede tardar en sincronizar con Health Connect, o no hay permiso.",
-        });
-      } else {
-        toast({ title: "Entrenamiento guardado" });
-      }
+      toast({ title: "Entrenamiento guardado" });
     } catch {
       toast({ title: "No se pudo guardar", variant: "destructive" });
     }
@@ -833,8 +760,8 @@ export function CardioLiveRecorder() {
             elapsedSec={elapsedSec}
             distanceM={displayDistanceM}
             elevationM={displayElevationM}
-            fcMedia={displayFcMedia}
-            fcMax={displayFcMax}
+            fcMedia={fcMedia}
+            fcMax={fcMax}
             recordingMap={recordingMap}
             pointsCount={points.length}
             titulo={summaryTitulo}

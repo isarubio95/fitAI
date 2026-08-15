@@ -3,7 +3,6 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { ColorThemeSelector } from "@/components/ColorThemeSelector";
-import { HealthConnectHrSettings } from "@/components/layout/HealthConnectHrSettings";
 import { PhysiologySettings } from "@/components/layout/PhysiologySettings";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -122,8 +121,6 @@ export function SettingsDrawer() {
           </div>
 
           <PhysiologySettings />
-
-          <HealthConnectHrSettings />
 
           <div className="border-t border-border/40 pt-5">
             <nav

@@ -57,9 +57,8 @@ export default function PrivacyPolicy() {
                 <li>
                   <strong className="text-foreground">Datos de cardio y ubicación:</strong> si utilizas
                   funciones de cardio en vivo, podemos registrar rutas GPS, distancia, ritmo y duración de la
-                  sesión. En Android, si concedes permiso a Health Connect, podemos leer tu frecuencia
-                  cardíaca del intervalo del entrenamiento para asociarla a esa sesión (no usamos Health
-                  Connect para streaming en vivo; la FC en vivo opcional es por Bluetooth).
+                  sesión. Si conectas un sensor de frecuencia cardíaca por Bluetooth, podemos registrar tu FC
+                  durante el entrenamiento y asociarla a esa sesión.
                 </li>
                 <li>
                   <strong className="text-foreground">Datos de uso:</strong> información técnica básica sobre

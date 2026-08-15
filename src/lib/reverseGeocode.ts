@@ -48,7 +48,8 @@ export async function reverseGeocodeCityRegion(
   const url = new URL(PHOTON_URL);
   url.searchParams.set("lat", String(lat));
   url.searchParams.set("lon", String(lng));
-  url.searchParams.set("lang", "es");
+  // Photon público solo admite: default, de, en, fr (lang=es → 400).
+  url.searchParams.set("lang", "default");
 
   const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
   if (!res.ok) return null;

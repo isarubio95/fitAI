@@ -1,9 +1,4 @@
 import {
-  hasHrPermission,
-  readHeartRateSamples,
-} from "@/lib/healthConnectHr";
-import {
-  mergeHeartRateSamples,
   sampleHeartRateSeries,
   summarizeHeartRate,
   type HeartRateSample,
@@ -29,37 +24,21 @@ async function insertActividadFcSamples(
 }
 
 /**
- * Fusiona BLE + Health Connect, actualiza fc_media/fc_max en actividad
- * y persiste samples. No lanza si HC falla al leer.
+ * Persiste FC de sensor BLE abierto: actualiza fc_media/fc_max en actividad
+ * y guarda samples. Sin samples BLE no escribe nada.
  */
 export async function persistActividadHeartRate(opts: {
   actividadId: string;
   bleSamples: HeartRateSample[];
   startIso: string;
   endIso: string;
-}): Promise<{ saved: boolean; usedHealthConnect: boolean }> {
+}): Promise<{ saved: boolean }> {
   const startMs = Date.parse(opts.startIso);
   const endMs = Date.parse(opts.endIso);
-  let samples = opts.bleSamples.slice();
-  let usedHealthConnect = false;
-
-  if (Number.isFinite(startMs) && Number.isFinite(endMs) && endMs > startMs) {
-    try {
-      if (await hasHrPermission()) {
-        const hc = await readHeartRateSamples(startMs, endMs);
-        if (hc.length > 0) {
-          const before = samples.length;
-          samples = mergeHeartRateSamples(samples, hc);
-          usedHealthConnect = samples.length > before || before === 0;
-        }
-      }
-    } catch {
-      // no bloquear finalización
-    }
-  }
+  const samples = opts.bleSamples.slice();
 
   if (samples.length === 0) {
-    return { saved: false, usedHealthConnect: false };
+    return { saved: false };
   }
 
   const forStore =
@@ -81,5 +60,5 @@ export async function persistActividadHeartRate(opts: {
   await supabase.from("actividad_fc_sample").delete().eq("actividad_id", opts.actividadId);
   await insertActividadFcSamples(opts.actividadId, finalSamples);
 
-  return { saved: true, usedHealthConnect };
+  return { saved: true };
 }
