@@ -45,6 +45,10 @@ import {
   type PredefinedRouteSummary,
 } from "@/lib/predefinedCardioRoutes";
 import { formatCardioDistanceM, formatCardioElevationM } from "@/lib/cardioFormat";
+import {
+  prefetchMineRouteThumbs,
+  prefetchPredefinedRouteThumbs,
+} from "@/lib/prefetchRouteThumbs";
 import type { CardioRutaWithPoints, SelectedCardioRoute } from "@/types/cardio";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -324,6 +328,19 @@ export function SavedRoutesPickerSheet({
     pageSize: PAGE_SIZE,
     resetKey: `${disciplinaId ?? "none"}:${open ? "1" : "0"}`,
   });
+
+  // Precarga el lote visible + el siguiente (10+10) para que al hacer scroll ya estén las capturas.
+  useEffect(() => {
+    if (!open || tab !== "predefined" || predefinedList.length === 0) return;
+    const end = Math.min(predefinedPage.visibleCount + PAGE_SIZE, predefinedList.length);
+    void prefetchPredefinedRouteThumbs(predefinedList.slice(0, end), queryClient);
+  }, [open, tab, predefinedList, predefinedPage.visibleCount, queryClient]);
+
+  useEffect(() => {
+    if (!open || tab !== "mine" || myRoutes.length === 0) return;
+    const end = Math.min(minePage.visibleCount + PAGE_SIZE, myRoutes.length);
+    void prefetchMineRouteThumbs(myRoutes.slice(0, end));
+  }, [open, tab, myRoutes, minePage.visibleCount]);
 
   /** El editor es otro drawer a pantalla completa: cierra el listado para no competir por el foco. */
   const openCreate = (mode: CreateRouteMode) => {

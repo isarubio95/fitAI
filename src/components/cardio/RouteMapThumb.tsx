@@ -1,13 +1,14 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { acquireMapThumbSlot } from "@/lib/mapThumbSlots";
 import { downsampleRoutePoints, type RouteThumbPoint } from "@/lib/routeMapThumb";
+import {
+  getRouteThumbSnapshot,
+  routeThumbCacheKey,
+  subscribeRouteThumbCache,
+} from "@/lib/routeMapThumbCache";
+import { requestRouteThumbSnapshot } from "@/lib/routeMapThumbRenderer";
 import { MAP_COLORS } from "@/lib/stravaDarkMapStyle";
 import { cn } from "@/lib/utils";
-
-const CardioRouteMap = lazy(() =>
-  import("@/components/cardio/CardioRouteMap").then((m) => ({ default: m.CardioRouteMap })),
-);
 
 type Props = {
   points?: RouteThumbPoint[] | null;
@@ -29,77 +30,49 @@ function ThumbPlaceholder({ className, label }: { className?: string; label?: st
 }
 
 /**
- * Miniatura con el mapa real (MapLibre).
- * Solo monta cuando está en vista, tiene tamaño real y hay cupo WebGL libre.
+ * Miniatura del mapa real: captura vía renderer singleton.
+ * Arranca en cuanto hay puntos (sin esperar al viewport) y escucha el prefetch.
  */
 export function RouteMapThumb({ points, loading = false, className }: Props) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-  const [hasSize, setHasSize] = useState(false);
-  const [hasSlot, setHasSlot] = useState(false);
-
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry) setInView(entry.isIntersecting);
-      },
-      { root: null, rootMargin: "120px 0px", threshold: 0 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const measure = () => {
-      setHasSize(el.clientWidth > 8 && el.clientHeight > 8);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!inView || !hasSize || loading) {
-      setHasSlot(false);
-      return;
-    }
-
-    let cancelled = false;
-    let release: (() => void) | null = null;
-
-    void acquireMapThumbSlot().then((rel) => {
-      if (cancelled) {
-        rel();
-        return;
-      }
-      release = rel;
-      setHasSlot(true);
-    });
-
-    return () => {
-      cancelled = true;
-      setHasSlot(false);
-      release?.();
-    };
-  }, [inView, hasSize, loading]);
-
   const mapPoints = useMemo(() => {
     if (!points?.length) return [];
     return downsampleRoutePoints(points, 120);
   }, [points]);
 
+  const cacheKey = useMemo(() => routeThumbCacheKey(mapPoints), [mapPoints]);
   const readyForMap = !loading && mapPoints.length >= 2;
-  const showMap = readyForMap && inView && hasSize && hasSlot;
+
+  const [snapshot, setSnapshot] = useState<string | null>(() =>
+    readyForMap ? (getRouteThumbSnapshot(cacheKey) ?? null) : null,
+  );
+
+  useEffect(() => {
+    setSnapshot(getRouteThumbSnapshot(cacheKey) ?? null);
+  }, [cacheKey]);
+
+  useEffect(() => {
+    return subscribeRouteThumbCache(() => {
+      const hit = getRouteThumbSnapshot(cacheKey);
+      if (hit) setSnapshot(hit);
+    });
+  }, [cacheKey]);
+
+  useEffect(() => {
+    if (!readyForMap || snapshot) return;
+
+    let cancelled = false;
+    void requestRouteThumbSnapshot(cacheKey, mapPoints, () => cancelled, "high").then((url) => {
+      if (cancelled || !url) return;
+      setSnapshot(url);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [readyForMap, snapshot, cacheKey, mapPoints]);
 
   return (
     <div
-      ref={rootRef}
       className={cn(
         "pointer-events-none h-44 w-full overflow-hidden rounded-t-xl [transform:translateZ(0)]",
         className,
@@ -109,14 +82,8 @@ export function RouteMapThumb({ points, loading = false, className }: Props) {
     >
       {loading || !readyForMap ? (
         <ThumbPlaceholder label={!loading && !readyForMap ? "Sin trazado" : undefined} />
-      ) : showMap ? (
-        <Suspense fallback={<ThumbPlaceholder />}>
-          <CardioRouteMap
-            points={mapPoints}
-            interactive={false}
-            className="h-44 w-full overflow-hidden rounded-t-xl"
-          />
-        </Suspense>
+      ) : snapshot ? (
+        <img src={snapshot} alt="" className="h-full w-full object-cover" draggable={false} />
       ) : (
         <Skeleton className="h-44 w-full rounded-none" />
       )}

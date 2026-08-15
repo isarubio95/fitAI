@@ -146,8 +146,6 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
   /** Estilo + primer paint (tiles); el skeleton con reflejo se quita al pintar. */
   const [painted, setPainted] = useState(false);
   const [basemap, setBasemap] = useState<MapBasemapId>(() => basemapRef.current);
-  /** Remonta el mapa si el navegador pierde el contexto WebGL. */
-  const [mapEpoch, setMapEpoch] = useState(0);
 
   const initialViewRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
   if (initialViewRef.current === null) {
@@ -180,13 +178,6 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
       map.touchZoomRotate.disableRotation();
       map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
-      const onContextLost = (event: Event) => {
-        event.preventDefault();
-        if (cancelled) return;
-        setMapEpoch((n) => n + 1);
-      };
-      map.getCanvas().addEventListener("webglcontextlost", onContextLost, false);
-
       map.on("load", () => {
         if (cancelled) return;
         addRouteLayers(map);
@@ -203,9 +194,9 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
       setReady(false);
       setPainted(false);
     };
-    // interactive fijo al montar; mapEpoch fuerza remount tras webglcontextlost
+    // interactive fijo al montar
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapEpoch]);
+  }, []);
 
   const onBasemapChange = useCallback((id: MapBasemapId) => {
     if (id === basemapRef.current) return;
@@ -238,7 +229,7 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
     });
     observer.observe(container);
     return () => observer.disconnect();
-  }, [mapEpoch]);
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;
