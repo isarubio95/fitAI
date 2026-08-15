@@ -26,6 +26,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { CreateRouteSheet, type CreateRouteMode } from "@/components/cardio/CreateRouteSheet";
+import { RouteListFiltersBar } from "@/components/cardio/RouteListFiltersBar";
 import { RouteMapThumb } from "@/components/cardio/RouteMapThumb";
 import {
   routeToSelected,
@@ -49,6 +50,11 @@ import {
   prefetchMineRouteThumbs,
   prefetchPredefinedRouteThumbs,
 } from "@/lib/prefetchRouteThumbs";
+import {
+  applyRouteListFilters,
+  DEFAULT_ROUTE_LIST_FILTERS,
+  type RouteListFilters,
+} from "@/lib/routeListFilters";
 import type { CardioRutaWithPoints, SelectedCardioRoute } from "@/types/cardio";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -304,12 +310,14 @@ export function SavedRoutesPickerSheet({
   const [createOpen, setCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState<CreateRouteMode>("draw");
   const [tab, setTab] = useState<TabId>("predefined");
+  const [filters, setFilters] = useState<RouteListFilters>(DEFAULT_ROUTE_LIST_FILTERS);
   const [loadingPredefinedId, setLoadingPredefinedId] = useState<string | null>(null);
   const justCreatedRef = useRef(false);
   const predefinedScrollRef = useRef<HTMLDivElement>(null);
   const mineScrollRef = useRef<HTMLDivElement>(null);
 
   const hasPredefinedSports = komootSportsForDiscipline(disciplinaCodigo).length > 0;
+  const showCyclingSportFilter = disciplinaCodigo === "cycling";
 
   const myRoutes = useMemo(() => {
     const list = savedRoutes ?? [];
@@ -319,28 +327,70 @@ export function SavedRoutesPickerSheet({
     );
   }, [savedRoutes, disciplinaId]);
 
-  const predefinedList = predefinedRoutes ?? [];
-  const predefinedPage = usePagedWindow(predefinedList, {
+  const predefinedFiltered = useMemo(() => {
+    const list = predefinedRoutes ?? [];
+    return applyRouteListFilters(
+      list.map((t) => ({
+        ...t,
+        name: t.name,
+        distanceM: t.distanceM,
+        elevationUpM: t.elevationUpM,
+      })),
+      filters,
+      {
+        useDifficulty: true,
+        useSport: showCyclingSportFilter,
+        usePopularity: true,
+      },
+    );
+  }, [predefinedRoutes, filters, showCyclingSportFilter]);
+
+  const myRoutesFiltered = useMemo(() => {
+    return applyRouteListFilters(
+      myRoutes.map((r) => ({
+        ...r,
+        name: r.nombre,
+        distanceM: r.distancia_total_m,
+        elevationUpM: r.elevacion_positiva_m,
+      })),
+      filters,
+      { useDifficulty: false, useSport: false, usePopularity: false },
+    );
+  }, [myRoutes, filters]);
+
+  const filtersResetKey = [
+    filters.q,
+    filters.distance,
+    filters.difficulty,
+    filters.sort,
+    filters.sport,
+  ].join("|");
+
+  const predefinedPage = usePagedWindow(predefinedFiltered, {
     pageSize: PAGE_SIZE,
-    resetKey: `${disciplinaCodigo ?? "none"}:${open ? "1" : "0"}`,
+    resetKey: `${disciplinaCodigo ?? "none"}:${open ? "1" : "0"}:${filtersResetKey}`,
   });
-  const minePage = usePagedWindow(myRoutes, {
+  const minePage = usePagedWindow(myRoutesFiltered, {
     pageSize: PAGE_SIZE,
-    resetKey: `${disciplinaId ?? "none"}:${open ? "1" : "0"}`,
+    resetKey: `${disciplinaId ?? "none"}:${open ? "1" : "0"}:${filtersResetKey}`,
   });
 
   // Precarga el lote visible + el siguiente (10+10) para que al hacer scroll ya estén las capturas.
   useEffect(() => {
-    if (!open || tab !== "predefined" || predefinedList.length === 0) return;
-    const end = Math.min(predefinedPage.visibleCount + PAGE_SIZE, predefinedList.length);
-    void prefetchPredefinedRouteThumbs(predefinedList.slice(0, end), queryClient);
-  }, [open, tab, predefinedList, predefinedPage.visibleCount, queryClient]);
+    if (!open || tab !== "predefined" || predefinedFiltered.length === 0) return;
+    const end = Math.min(predefinedPage.visibleCount + PAGE_SIZE, predefinedFiltered.length);
+    void prefetchPredefinedRouteThumbs(predefinedFiltered.slice(0, end), queryClient);
+  }, [open, tab, predefinedFiltered, predefinedPage.visibleCount, queryClient]);
 
   useEffect(() => {
-    if (!open || tab !== "mine" || myRoutes.length === 0) return;
-    const end = Math.min(minePage.visibleCount + PAGE_SIZE, myRoutes.length);
-    void prefetchMineRouteThumbs(myRoutes.slice(0, end));
-  }, [open, tab, myRoutes, minePage.visibleCount]);
+    if (!open || tab !== "mine" || myRoutesFiltered.length === 0) return;
+    const end = Math.min(minePage.visibleCount + PAGE_SIZE, myRoutesFiltered.length);
+    void prefetchMineRouteThumbs(myRoutesFiltered.slice(0, end));
+  }, [open, tab, myRoutesFiltered, minePage.visibleCount]);
+
+  useEffect(() => {
+    if (!open) setFilters(DEFAULT_ROUTE_LIST_FILTERS);
+  }, [open]);
 
   /** El editor es otro drawer a pantalla completa: cierra el listado para no competir por el foco. */
   const openCreate = (mode: CreateRouteMode) => {
@@ -450,6 +500,15 @@ export function SavedRoutesPickerSheet({
               </AnimatedTabsList>
             </div>
 
+            <div className="shrink-0">
+              <RouteListFiltersBar
+                value={filters}
+                onChange={setFilters}
+                showDifficulty={tab === "predefined"}
+                showSport={tab === "predefined" && showCyclingSportFilter}
+              />
+            </div>
+
             <TabsContent
               value="predefined"
               ref={predefinedScrollRef}
@@ -471,9 +530,13 @@ export function SavedRoutesPickerSheet({
                 <p className="py-10 text-center text-sm text-muted-foreground">
                   No se pudo cargar el catálogo de rutas.
                 </p>
-              ) : !predefinedList.length ? (
+              ) : !(predefinedRoutes?.length) ? (
                 <p className="py-10 text-center text-sm text-muted-foreground">
                   No hay rutas predefinidas para este deporte.
+                </p>
+              ) : !predefinedFiltered.length ? (
+                <p className="py-10 text-center text-sm text-muted-foreground">
+                  Ninguna ruta coincide con estos filtros.
                 </p>
               ) : (
                 <>
@@ -525,6 +588,10 @@ export function SavedRoutesPickerSheet({
                   </p>
                   <CreateRouteMenuButton onChoose={openCreate} size="default" />
                 </div>
+              ) : !myRoutesFiltered.length ? (
+                <p className="py-10 text-center text-sm text-muted-foreground">
+                  Ninguna ruta coincide con estos filtros.
+                </p>
               ) : (
                 <>
                   <ul className="space-y-3">
