@@ -797,6 +797,52 @@ export type Database = {
           },
         ]
       }
+      ejercicio_favorito: {
+        Row: {
+          created_at: string
+          id: string
+          tipo_ejercicio_id: string | null
+          usuario_ejercicio_id: string | null
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tipo_ejercicio_id?: string | null
+          usuario_ejercicio_id?: string | null
+          usuario_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tipo_ejercicio_id?: string | null
+          usuario_ejercicio_id?: string | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ejercicio_favorito_tipo_ejercicio_id_fkey"
+            columns: ["tipo_ejercicio_id"]
+            isOneToOne: false
+            referencedRelation: "tipo_ejercicio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ejercicio_favorito_usuario_ejercicio_id_fkey"
+            columns: ["usuario_ejercicio_id"]
+            isOneToOne: false
+            referencedRelation: "usuario_ejercicio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ejercicio_favorito_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       logro: {
         Row: {
           categoria: string | null

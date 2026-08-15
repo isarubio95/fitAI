@@ -189,3 +189,17 @@ export function loadMapBasemapStyle(id: MapBasemapId): Promise<StyleSpecificatio
   }
   return loadStravaDarkMapStyle();
 }
+
+/**
+ * Primera capa de nombre de localidad (`place_*`).
+ * El trazado debe ir *antes* de esta capa (encima de carreteras/vías) y debajo de los topónimos.
+ */
+export function firstMapLabelLayerId(
+  layers: Array<{ id: string; type: string }> | undefined,
+): string | undefined {
+  if (!layers) return undefined;
+  for (const layer of layers) {
+    if (layer.type === "symbol" && layer.id.startsWith("place_")) return layer.id;
+  }
+  return undefined;
+}

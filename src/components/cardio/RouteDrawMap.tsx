@@ -14,6 +14,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { MapBasemapControl } from "@/components/cardio/MapBasemapControl";
 import {
+  firstMapLabelLayerId,
   loadMapBasemapStyle,
   readCardioMapBasemap,
   writeCardioMapBasemap,
@@ -73,28 +74,36 @@ function lineFeature(coordinates: [number, number][]): Feature {
 function addDraftLayers(map: MapLibreMap) {
   map.addSource("route-draft", { type: "geojson", data: lineFeature([]) });
 
-  map.addLayer({
-    id: "route-draft-casing",
-    type: "line",
-    source: "route-draft",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": MAP_COLORS.routeCasing,
-      "line-blur": 0.6,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 4, 16, 8, 20, 12],
-    },
-  });
+  const belowLabels = firstMapLabelLayerId(map.getStyle().layers);
 
-  map.addLayer({
-    id: "route-draft-line",
-    type: "line",
-    source: "route-draft",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": MAP_COLORS.route,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 2.5, 16, 5, 20, 8],
+  map.addLayer(
+    {
+      id: "route-draft-casing",
+      type: "line",
+      source: "route-draft",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": MAP_COLORS.routeCasing,
+        "line-blur": 0.6,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 4, 16, 8, 20, 12],
+      },
     },
-  });
+    belowLabels,
+  );
+
+  map.addLayer(
+    {
+      id: "route-draft-line",
+      type: "line",
+      source: "route-draft",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": MAP_COLORS.route,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 2.5, 16, 5, 20, 8],
+      },
+    },
+    belowLabels,
+  );
 }
 
 /**

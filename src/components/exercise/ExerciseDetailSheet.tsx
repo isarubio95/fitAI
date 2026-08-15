@@ -10,7 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Dumbbell, Layers, Pencil, Wrench } from "lucide-react";
+import { Dumbbell, Layers, Pencil, Bookmark, Wrench } from "lucide-react";
+import {
+  useExerciseFavorites,
+  type ExerciseFavoriteSource,
+} from "@/hooks/useExerciseFavorites";
+import { useToast } from "@/hooks/use-toast";
 
 function difficultyToLevel(d: unknown): 1 | 2 | 3 | null {
   if (d == null) return null;
@@ -77,6 +82,7 @@ interface ExerciseDetail {
   grupo_muscular?: string | null;
   dificultad?: string | null;
   usuario_id?: string | null;
+  __source?: ExerciseFavoriteSource;
 }
 
 interface ExerciseDetailSheetProps {
@@ -85,9 +91,20 @@ interface ExerciseDetailSheetProps {
   onOpenChange: (open: boolean) => void;
   currentUserId?: string;
   onEdit?: (exercise: ExerciseDetail) => void;
+  /** Origen del ejercicio para favoritos; si no se pasa se infiere de usuario_id / __source. */
+  favoriteSource?: ExerciseFavoriteSource;
   /** Clases extra del panel (p. ej. z-index en drawers anidados). */
   className?: string;
   overlayClassName?: string;
+}
+
+function resolveFavoriteSource(
+  exercise: ExerciseDetail,
+  explicit?: ExerciseFavoriteSource,
+): ExerciseFavoriteSource {
+  if (explicit) return explicit;
+  if (exercise.__source === "usuario" || exercise.__source === "catalogo") return exercise.__source;
+  return exercise.usuario_id ? "usuario" : "catalogo";
 }
 
 const ExerciseDetailSheet = ({
@@ -96,13 +113,20 @@ const ExerciseDetailSheet = ({
   onOpenChange,
   currentUserId,
   onEdit,
+  favoriteSource,
   className,
   overlayClassName,
 }: ExerciseDetailSheetProps) => {
+  const { toast } = useToast();
+  const { isFavorite, toggleFavorite } = useExerciseFavorites();
+
   if (!exercise) return null;
 
   const mediaUrl = exercise.gif_url || exercise.imagen;
   const isOwn = exercise.usuario_id && exercise.usuario_id === currentUserId;
+  const source = resolveFavoriteSource(exercise, favoriteSource);
+  const canFavorite = !!currentUserId;
+  const favored = canFavorite && isFavorite(source, exercise.id);
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -133,29 +157,60 @@ const ExerciseDetailSheet = ({
             <div className={cn("p-5 space-y-5", drawerSafeAreaBottom)}>
               {/* Header */}
               <DrawerHeader className="p-0">
-                <div className="flex items-start justify-between gap-3">
-                  <DrawerTitle className="text-xl text-left leading-tight">
+                <div className="flex items-center justify-between gap-3">
+                  <DrawerTitle className="min-w-0 flex-1 text-left text-xl leading-snug">
                     {exercise.nombre}
                   </DrawerTitle>
-                  {isOwn && onEdit && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0 gap-1.5"
-                      onClick={() => onEdit(exercise)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" /> Editar
-                    </Button>
-                  )}
+                  <div className="flex shrink-0 items-center gap-2 self-center">
+                    {canFavorite && (
+                      <button
+                        type="button"
+                        className={cn(
+                          "touch-styled inline-flex size-5 shrink-0 items-center justify-center p-0",
+                          favored ? "text-primary" : "text-muted-foreground",
+                        )}
+                        aria-label={
+                          favored
+                            ? `Quitar ${exercise.nombre} de favoritos`
+                            : `Guardar ${exercise.nombre} en favoritos`
+                        }
+                        aria-pressed={favored}
+                        onClick={async (e) => {
+                          (e.currentTarget as HTMLButtonElement).blur();
+                          try {
+                            await toggleFavorite({ source, id: exercise.id });
+                          } catch (err: unknown) {
+                            toast({
+                              title: "No se pudo actualizar favoritos",
+                              description: err instanceof Error ? err.message : "Error desconocido",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        <Bookmark
+                          className={cn("size-5", favored && "fill-current")}
+                          strokeWidth={2}
+                        />
+                      </button>
+                    )}
+                    {isOwn && onEdit && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => onEdit(exercise)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Editar
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </DrawerHeader>
 
               {/* Metadatos en líneas separadas */}
               {(exercise.body_part || exercise.equipment || exercise.tipo || exercise.grupo_muscular || exercise.dificultad) && (
-                <div
-                  data-drawer-section
-                  className="rounded-none border border-border bg-muted/20 p-4 space-y-2.5"
-                >
+                <div className="rounded-2xl bg-background p-4 space-y-2.5">
                   {difficultyToLevel(exercise.dificultad) && (
                     <MetaRow label="Dificultad">
                       <DifficultyBars level={difficultyToLevel(exercise.dificultad)!} />

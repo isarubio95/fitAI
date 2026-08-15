@@ -42,3 +42,6 @@ scripts/__pycache__/
 scripts/*.pyc
 scripts/venv/
 scripts/.env
+
+# Komoot bulk downloads (fuente local; la app usa public/predefined-routes/)
+data/komoot-la-rioja/

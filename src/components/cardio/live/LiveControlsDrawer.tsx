@@ -1,5 +1,5 @@
 import { forwardRef, type PointerEvent as ReactPointerEvent } from "react";
-import { Loader2, Pause, Play, Route, Square, X } from "lucide-react";
+import { Loader2, Pause, Play, Route, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Switch } from "@/components/ui/switch";
@@ -33,9 +33,9 @@ type Props = {
   hr: HrProps;
   /** Mostrar botón de rutas (setup + disciplina GPS). */
   showRoutePicker?: boolean;
+  /** Resalta el botón de rutas cuando hay una seleccionada. */
   selectedRouteName?: string | null;
   onOpenRoutePicker?: () => void;
-  onClearSelectedRoute?: () => void;
   onOpenChange: (open: boolean) => void;
   onPointerDown: (e: ReactPointerEvent) => void;
   onPointerMove: (e: ReactPointerEvent) => void;
@@ -66,7 +66,6 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
     showRoutePicker = false,
     selectedRouteName = null,
     onOpenRoutePicker,
-    onClearSelectedRoute,
     onOpenChange,
     onPointerDown,
     onPointerMove,
@@ -120,28 +119,6 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
                 controlsExpanded ? "pb-4" : "pb-[max(1rem,env(safe-area-inset-bottom))]",
               )}
             >
-              {isSetup && selectedRouteName ? (
-                <div className="flex items-center justify-center gap-2">
-                  <span className="inline-flex max-w-[min(100%,16rem)] items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                    <Route className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{selectedRouteName}</span>
-                    {onClearSelectedRoute ? (
-                      <button
-                        type="button"
-                        className="ml-0.5 rounded-full p-0.5 hover:bg-primary/15"
-                        aria-label="Quitar ruta"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onClearSelectedRoute();
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    ) : null}
-                  </span>
-                </div>
-              ) : null}
-
               {isSetup ? (
                 <div className="flex w-full items-center justify-around">
                   {/* Reserva para un futuro control a la izquierda */}

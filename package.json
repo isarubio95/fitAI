@@ -20,6 +20,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "komoot:la-rioja": "node scripts/download-komoot-la-rioja.mjs",
+    "komoot:sync-public": "node -e \"const fs=require('fs');const p=require('path');const src='data/komoot-la-rioja';const dst='public/predefined-routes/la-rioja';if(!fs.existsSync(src)){console.error('Falta',src);process.exit(1);}fs.cpSync(src,dst,{recursive:true});console.log('OK',dst);\"",
     "supabase:types": "npx supabase gen types --lang=typescript --project-id ugbhwarfkaeobaycxlwp --schema public > src/integrations/supabase/types.ts"
   },
   "dependencies": {

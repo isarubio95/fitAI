@@ -12,6 +12,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { MapBasemapControl } from "@/components/cardio/MapBasemapControl";
 import {
+  firstMapLabelLayerId,
   loadMapBasemapStyle,
   readCardioMapBasemap,
   writeCardioMapBasemap,
@@ -56,52 +57,66 @@ function addRouteLayers(map: MapLibreMap) {
   map.addSource("cardio-start", { type: "geojson", data: pointFeature(null) });
   map.addSource("cardio-end", { type: "geojson", data: pointFeature(null) });
 
-  map.addLayer({
-    id: "cardio-route-casing",
-    type: "line",
-    source: "cardio-route",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": MAP_COLORS.routeCasing,
-      "line-blur": 0.6,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 4, 16, 8, 20, 12],
-    },
-  });
+  const belowLabels = firstMapLabelLayerId(map.getStyle().layers);
 
-  map.addLayer({
-    id: "cardio-route-line",
-    type: "line",
-    source: "cardio-route",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": MAP_COLORS.route,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 2.5, 16, 5, 20, 8],
+  map.addLayer(
+    {
+      id: "cardio-route-casing",
+      type: "line",
+      source: "cardio-route",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": MAP_COLORS.routeCasing,
+        "line-blur": 0.6,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 4, 16, 8, 20, 12],
+      },
     },
-  });
+    belowLabels,
+  );
 
-  map.addLayer({
-    id: "cardio-start-dot",
-    type: "circle",
-    source: "cardio-start",
-    paint: {
-      "circle-radius": 5.5,
-      "circle-color": MAP_COLORS.start,
-      "circle-stroke-width": 2,
-      "circle-stroke-color": "#ffffff",
+  map.addLayer(
+    {
+      id: "cardio-route-line",
+      type: "line",
+      source: "cardio-route",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": MAP_COLORS.route,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 2.5, 16, 5, 20, 8],
+      },
     },
-  });
+    belowLabels,
+  );
 
-  map.addLayer({
-    id: "cardio-end-dot",
-    type: "circle",
-    source: "cardio-end",
-    paint: {
-      "circle-radius": 5.5,
-      "circle-color": MAP_COLORS.route,
-      "circle-stroke-width": 2,
-      "circle-stroke-color": "#ffffff",
+  map.addLayer(
+    {
+      id: "cardio-start-dot",
+      type: "circle",
+      source: "cardio-start",
+      paint: {
+        "circle-radius": 5.5,
+        "circle-color": MAP_COLORS.start,
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#ffffff",
+      },
     },
-  });
+    belowLabels,
+  );
+
+  map.addLayer(
+    {
+      id: "cardio-end-dot",
+      type: "circle",
+      source: "cardio-end",
+      paint: {
+        "circle-radius": 5.5,
+        "circle-color": MAP_COLORS.route,
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#ffffff",
+      },
+    },
+    belowLabels,
+  );
 }
 
 function fitRoute(map: MapLibreMap, coordinates: [number, number][]) {
@@ -124,11 +139,15 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const paintedRef = useRef(false);
+  const pointsRef = useRef(points);
+  pointsRef.current = points;
   const basemapRef = useRef<MapBasemapId>(readCardioMapBasemap());
   const [ready, setReady] = useState(false);
   /** Estilo + primer paint (tiles); el skeleton con reflejo se quita al pintar. */
   const [painted, setPainted] = useState(false);
   const [basemap, setBasemap] = useState<MapBasemapId>(() => basemapRef.current);
+  /** Remonta el mapa si el navegador pierde el contexto WebGL. */
+  const [mapEpoch, setMapEpoch] = useState(0);
 
   const initialViewRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
   if (initialViewRef.current === null) {
@@ -161,6 +180,13 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
       map.touchZoomRotate.disableRotation();
       map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
+      const onContextLost = (event: Event) => {
+        event.preventDefault();
+        if (cancelled) return;
+        setMapEpoch((n) => n + 1);
+      };
+      map.getCanvas().addEventListener("webglcontextlost", onContextLost, false);
+
       map.on("load", () => {
         if (cancelled) return;
         addRouteLayers(map);
@@ -177,9 +203,9 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
       setReady(false);
       setPainted(false);
     };
-    // interactive fijo al montar
+    // interactive fijo al montar; mapEpoch fuerza remount tras webglcontextlost
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [mapEpoch]);
 
   const onBasemapChange = useCallback((id: MapBasemapId) => {
     if (id === basemapRef.current) return;
@@ -203,10 +229,16 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
   useEffect(() => {
     const container = containerRef.current;
     if (!container || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => mapRef.current?.resize());
+    const observer = new ResizeObserver(() => {
+      const map = mapRef.current;
+      if (!map) return;
+      map.resize();
+      const coordinates = pointsRef.current.map((p) => [p.lng, p.lat] as [number, number]);
+      if (coordinates.length > 0) fitRoute(map, coordinates);
+    });
     observer.observe(container);
     return () => observer.disconnect();
-  }, []);
+  }, [mapEpoch]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -248,6 +280,10 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
       <style>{`
         .cardio-route-map-canvas { background: ${MAP_COLORS.land}; }
         .cardio-route-map-canvas .maplibregl-canvas { outline: none; }
+        .cardio-route-map-canvas .maplibregl-canvas-container,
+        .cardio-route-map-canvas .maplibregl-canvas {
+          border-radius: inherit;
+        }
         .cardio-route-map-canvas .maplibregl-ctrl-bottom-right {
           margin: 0 !important;
           right: 0 !important;
@@ -291,7 +327,7 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
       `}</style>
       <div
         ref={containerRef}
-        className="cardio-route-map-canvas h-full min-h-40 w-full"
+        className="cardio-route-map-canvas h-full min-h-0 w-full overflow-hidden rounded-[inherit]"
         style={{ background: MAP_COLORS.land }}
       />
       {interactive ? (

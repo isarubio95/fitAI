@@ -42,14 +42,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, ChevronDown, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, BicepsFlexed, Filter, X, Plus } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, ChevronDown, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, BicepsFlexed, Filter, X, Plus, Bookmark } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
-import { MUSCLE_GROUP_ICON_SRC, type MainMuscleGroup } from "@/constants/muscleGroups";
+import { type MainMuscleGroup } from "@/constants/muscleGroups";
 import { EXERCISE_SYNONYMS } from "@/constants/exerciseSynonyms";
 import type { RegistroSeries, TipoEjercicio } from "@/types/workout";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
+import {
+  useExerciseFavorites,
+  type ExerciseFavoriteSource,
+} from "@/hooks/useExerciseFavorites";
 
 type DifficultyLevel = 1 | 2 | 3;
 
@@ -73,6 +77,7 @@ type ExerciseFilters = {
   grupos: string[];
   equipments: string[];
   difs: DifficultyLevel[];
+  favoritesOnly: boolean;
 };
 
 function uniqNonEmpty(values: (string | null | undefined)[]) {
@@ -104,6 +109,7 @@ function parseFiltersFromSearchParams(sp: URLSearchParams): ExerciseFilters {
     grupos: parseCsvListParam(sp.get("grupo")),
     equipments: parseCsvListParam(sp.get("eq")),
     difs: parseDifficultyListParam(sp.get("dif")),
+    favoritesOnly: sp.get("fav") === "1",
   };
 }
 
@@ -119,7 +125,13 @@ function serializeFiltersToSearchParams(sp: URLSearchParams, f: ExerciseFilters)
   setOrDelete("grupo", uniqNonEmpty(f.grupos).join(","));
   setOrDelete("eq", uniqNonEmpty(f.equipments).join(","));
   setOrDelete("dif", [...new Set(f.difs)].sort().join(","));
+  setOrDelete("fav", f.favoritesOnly ? "1" : "");
   return next;
+}
+
+function exerciseFavoriteSource(ex: { __source?: string; usuario_id?: string | null }): ExerciseFavoriteSource {
+  if (ex.__source === "usuario" || ex.__source === "catalogo") return ex.__source;
+  return ex.usuario_id ? "usuario" : "catalogo";
 }
 
 function toggleInList(list: string[], value: string) {
@@ -200,11 +212,6 @@ function getExerciseIcon(ex: { musculos_involucrados?: string[] | null }) {
   return group ? MUSCLE_GROUP_ICONS[group] : Dumbbell;
 }
 
-function getExerciseGroupIconSrc(ex: { musculos_involucrados?: string[] | null }) {
-  const group = getMainGroupFromBodyPart(ex.musculos_involucrados as string[] | null);
-  return group ? MUSCLE_GROUP_ICON_SRC[group] : null;
-}
-
 function difficultyToLevel(d: unknown): 1 | 2 | 3 | null {
   if (d == null) return null;
   if (typeof d === "number" && Number.isFinite(d)) {
@@ -280,6 +287,7 @@ const Exercises = () => {
   const createExercise = useCreateExercise();
   const deleteExercise = useDeleteExercise();
   const { toast } = useToast();
+  const { isFavorite, toggleFavorite } = useExerciseFavorites();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -339,6 +347,11 @@ const Exercises = () => {
     const qTokens = q.split(" ").filter(Boolean);
 
     return sortedExercises.filter((ex) => {
+      if (filters.favoritesOnly) {
+        const source = exerciseFavoriteSource(ex);
+        if (!isFavorite(source, ex.id)) return false;
+      }
+
       // Multi-select exact match filters
       if (filters.tipos.length && !filters.tipos.includes(String(ex.tipo ?? "").trim())) return false;
       if (filters.grupos.length && !filters.grupos.includes(String(ex.grupo_muscular ?? "").trim())) return false;
@@ -376,14 +389,15 @@ const Exercises = () => {
 
       return true;
     });
-  }, [sortedExercises, filters]);
+  }, [sortedExercises, filters, isFavorite]);
 
   const anyFilterActive =
     !!filters.q.trim() ||
     filters.tipos.length > 0 ||
     filters.grupos.length > 0 ||
     filters.equipments.length > 0 ||
-    filters.difs.length > 0;
+    filters.difs.length > 0 ||
+    filters.favoritesOnly;
 
   // UX: al cambiar la búsqueda/orden, volvemos arriba
   useEffect(() => {
@@ -406,13 +420,23 @@ const Exercises = () => {
         grupos: filters.grupos,
         equipments: filters.equipments,
         difs: filters.difs,
+        favoritesOnly: filters.favoritesOnly,
       });
       if (next.toString() !== searchParams.toString()) {
         setSearchParams(next, { replace: true });
       }
     }, 180);
     return () => window.clearTimeout(timer);
-  }, [searchInput, filters.tipos, filters.grupos, filters.equipments, filters.difs, searchParams, setSearchParams]);
+  }, [
+    searchInput,
+    filters.tipos,
+    filters.grupos,
+    filters.equipments,
+    filters.difs,
+    filters.favoritesOnly,
+    searchParams,
+    setSearchParams,
+  ]);
 
   useEffect(() => {
     if (location.state?.action === "new") {
@@ -610,6 +634,29 @@ const Exercises = () => {
           <div className="flex flex-col gap-3 md:gap-2">
             <div className="w-full min-w-0">
               <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-webkit-overflow-scrolling:touch]">
+                {user && (
+                  <Button
+                    type="button"
+                    variant="filter"
+                    size="sm"
+                    className={cn(
+                      "shrink-0 justify-center gap-2",
+                      filters.favoritesOnly && filterButtonActive,
+                    )}
+                    onClick={() => {
+                      const nextFilters: ExerciseFilters = {
+                        ...filters,
+                        favoritesOnly: !filters.favoritesOnly,
+                      };
+                      setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), {
+                        replace: true,
+                      });
+                    }}
+                  >
+                    <Bookmark className={cn("h-4 w-4", filters.favoritesOnly && "fill-current")} />{" "}
+                    Favoritos
+                  </Button>
+                )}
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -811,7 +858,14 @@ const Exercises = () => {
                   size="sm"
                   className="gap-2 text-muted-foreground hover:text-foreground"
                   onClick={() => {
-                    const cleared: ExerciseFilters = { q: "", tipos: [], grupos: [], equipments: [], difs: [] };
+                    const cleared: ExerciseFilters = {
+                      q: "",
+                      tipos: [],
+                      grupos: [],
+                      equipments: [],
+                      difs: [],
+                      favoritesOnly: false,
+                    };
                     setSearchParams(serializeFiltersToSearchParams(searchParams, cleared), { replace: true });
                   }}
                 >
@@ -875,6 +929,20 @@ const Exercises = () => {
                   />
                 </Badge>
               ))}
+              {filters.favoritesOnly && (
+                <Badge variant="secondary" className="gap-1">
+                  Favoritos
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive"
+                    onClick={() => {
+                      const nextFilters: ExerciseFilters = { ...filters, favoritesOnly: false };
+                      setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), {
+                        replace: true,
+                      });
+                    }}
+                  />
+                </Badge>
+              )}
             </div>
           )}
           </div>
@@ -896,10 +964,10 @@ const Exercises = () => {
         </Card>
       )}
 
-      <div className="grid w-full grid-cols-2 gap-3 bg-card px-3 md:gap-[11px] md:px-0">
+      <div className="grid w-full grid-cols-2 gap-3 bg-card px-6 md:gap-[11px] md:px-0">
         {isLoading || difficultyLoading
           ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="w-full overflow-hidden rounded-3xl border border-border/20 bg-card">
+              <div key={i} className="w-full overflow-hidden rounded-3xl border border-border/40 bg-secondary">
                 <Skeleton className="aspect-[4/3] w-full rounded-none" />
                 <div className="space-y-2 px-3 py-3">
                   <Skeleton className="h-4 w-4/5" />
@@ -910,22 +978,23 @@ const Exercises = () => {
           : filteredExercises.map((ex) => {
               const isOwn = ex.usuario_id === user?.id;
               const IconComponent = getExerciseIcon(ex as { musculos_involucrados?: string[] | null });
-              const groupIconSrc = getExerciseGroupIconSrc(ex as { musculos_involucrados?: string[] | null });
               const mediaUrl = ex.gif_url || ex.imagen;
               const level = difficultyToLevel(ex.dificultad);
+              const favSource = exerciseFavoriteSource(ex);
+              const favored = user ? isFavorite(favSource, ex.id) : false;
               return (
                 <Card
-                  key={ex.id}
+                  key={`${favSource}:${ex.id}`}
                   className={cn(
-                    "flex h-full w-full max-w-none cursor-pointer flex-col overflow-hidden rounded-xl border border-border/20 shadow-none transition-colors",
+                    "flex h-full w-full max-w-none cursor-pointer flex-col overflow-hidden rounded-xl border shadow-none transition-colors",
                     isOwn
-                      ? "bg-primary/5 border-primary/30 hover:border-primary/50"
-                      : "bg-card hover:border-primary/50",
+                      ? "border-primary/30 bg-primary/10 hover:border-primary/50"
+                      : "border-border/40 bg-secondary hover:border-primary/50",
                   )}
                   onClick={() => setSelectedExercise(ex)}
                 >
                   <CardContent className="flex flex-1 flex-col p-0">
-                    <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-muted">
+                    <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-white">
                       {mediaUrl ? (
                         <img
                           src={mediaUrl}
@@ -941,13 +1010,34 @@ const Exercises = () => {
                         </div>
                       )}
 
-                      {groupIconSrc && (
-                        <img
-                          src={groupIconSrc}
-                          alt=""
-                          className="absolute right-2 top-2 h-6 w-6 opacity-60"
-                          draggable={false}
-                        />
+                      {user && (
+                        <button
+                          type="button"
+                          className={cn(
+                            "touch-styled absolute right-2 top-2 inline-flex items-center justify-center p-0",
+                            favored ? "text-primary" : "text-muted-foreground",
+                          )}
+                          aria-label={favored ? `Quitar ${ex.nombre} de favoritos` : `Guardar ${ex.nombre} en favoritos`}
+                          aria-pressed={favored}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            (e.currentTarget as HTMLButtonElement).blur();
+                            try {
+                              await toggleFavorite({ source: favSource, id: ex.id });
+                            } catch (err: unknown) {
+                              toast({
+                                title: "No se pudo actualizar favoritos",
+                                description: err instanceof Error ? err.message : "Error desconocido",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                        >
+                          <Bookmark
+                            className={cn("h-5 w-5", favored && "fill-current")}
+                            strokeWidth={2}
+                          />
+                        </button>
                       )}
 
                       {isOwn && (
@@ -1080,6 +1170,7 @@ const Exercises = () => {
         open={!!selectedExercise}
         onOpenChange={(open) => !open && setSelectedExercise(null)}
         currentUserId={user?.id}
+        favoriteSource={selectedExercise ? exerciseFavoriteSource(selectedExercise) : undefined}
       />
     </div>
   );

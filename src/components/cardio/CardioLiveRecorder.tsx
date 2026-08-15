@@ -850,7 +850,6 @@ export function CardioLiveRecorder() {
                   showRoutePicker={showRoutePickerBtn}
                   selectedRouteName={selectedRoute?.nombre ?? null}
                   onOpenRoutePicker={() => setRoutesPickerOpen(true)}
-                  onClearSelectedRoute={() => setSelectedRoute(null)}
                   onOpenChange={(next) => {
                     if (!next) requestClose();
                   }}

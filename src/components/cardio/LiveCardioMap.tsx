@@ -23,6 +23,7 @@ import {
 } from "@/lib/mapHeading";
 import { MAP_COLORS } from "@/lib/stravaDarkMapStyle";
 import {
+  firstMapLabelLayerId,
   loadMapBasemapStyle,
   readCardioMapBasemap,
   writeCardioMapBasemap,
@@ -83,64 +84,81 @@ function addRouteLayers(map: MapLibreMap) {
   map.addSource("cardio-route", { type: "geojson", data: lineFeature([]) });
   map.addSource("cardio-start", { type: "geojson", data: pointFeature(null) });
 
-  map.addLayer({
-    id: "cardio-reference-route-casing",
-    type: "line",
-    source: "cardio-reference-route",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": MAP_COLORS.referenceRouteCasing,
-      "line-blur": 0.4,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 5, 16, 9, 20, 13],
-    },
-  });
+  const belowLabels = firstMapLabelLayerId(map.getStyle().layers);
 
-  map.addLayer({
-    id: "cardio-reference-route-line",
-    type: "line",
-    source: "cardio-reference-route",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": MAP_COLORS.referenceRoute,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 3, 16, 6, 20, 9],
-      "line-dasharray": [1.5, 1.25],
+  map.addLayer(
+    {
+      id: "cardio-reference-route-casing",
+      type: "line",
+      source: "cardio-reference-route",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": MAP_COLORS.referenceRouteCasing,
+        "line-blur": 0.4,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 5, 16, 9, 20, 13],
+      },
     },
-  });
+    belowLabels,
+  );
 
-  map.addLayer({
-    id: "cardio-route-casing",
-    type: "line",
-    source: "cardio-route",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": MAP_COLORS.routeCasing,
-      "line-blur": 0.6,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 4, 16, 8, 20, 12],
+  map.addLayer(
+    {
+      id: "cardio-reference-route-line",
+      type: "line",
+      source: "cardio-reference-route",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": MAP_COLORS.referenceRoute,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 3, 16, 6, 20, 9],
+        "line-dasharray": [1.5, 1.25],
+      },
     },
-  });
+    belowLabels,
+  );
 
-  map.addLayer({
-    id: "cardio-route-line",
-    type: "line",
-    source: "cardio-route",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": MAP_COLORS.route,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 11, 2.5, 16, 5, 20, 8],
+  map.addLayer(
+    {
+      id: "cardio-route-casing",
+      type: "line",
+      source: "cardio-route",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": MAP_COLORS.routeCasing,
+        "line-blur": 0.6,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 4, 16, 8, 20, 12],
+      },
     },
-  });
+    belowLabels,
+  );
 
-  map.addLayer({
-    id: "cardio-start-dot",
-    type: "circle",
-    source: "cardio-start",
-    paint: {
-      "circle-radius": 5.5,
-      "circle-color": MAP_COLORS.start,
-      "circle-stroke-width": 2,
-      "circle-stroke-color": "#ffffff",
+  map.addLayer(
+    {
+      id: "cardio-route-line",
+      type: "line",
+      source: "cardio-route",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": MAP_COLORS.route,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 2.5, 16, 5, 20, 8],
+      },
     },
-  });
+    belowLabels,
+  );
+
+  map.addLayer(
+    {
+      id: "cardio-start-dot",
+      type: "circle",
+      source: "cardio-start",
+      paint: {
+        "circle-radius": 5.5,
+        "circle-color": MAP_COLORS.start,
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#ffffff",
+      },
+    },
+    belowLabels,
+  );
 }
 
 /**
