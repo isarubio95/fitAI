@@ -14,6 +14,8 @@ export function favoriteKey(source: ExerciseFavoriteSource, id: string): string 
   return `${source}:${id}`;
 }
 
+const EMPTY_FAVORITE_KEYS = new Set<string>();
+
 async function fetchExerciseFavorites(userId: string): Promise<Set<string>> {
   const { data, error } = await supabase
     .from("ejercicio_favorito")
@@ -44,7 +46,7 @@ export function useExerciseFavorites() {
     queryFn: () => fetchExerciseFavorites(user!.id),
   });
 
-  const favoriteKeys = data ?? new Set<string>();
+  const favoriteKeys = data ?? EMPTY_FAVORITE_KEYS;
 
   const isFavorite = useCallback(
     (source: ExerciseFavoriteSource, id: string) => favoriteKeys.has(favoriteKey(source, id)),

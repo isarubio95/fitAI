@@ -393,8 +393,9 @@ const Routines = () => {
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 flex-col md:max-w-2xl md:mx-auto md:px-8 md:pt-3",
-        "flex-1 bg-card max-md:-mb-24 max-md:pb-24 md:bg-transparent",
+        "flex w-full min-w-0 max-w-2xl flex-1 flex-col overflow-x-hidden bg-background px-0 pt-3 pb-6 mx-auto md:px-8 md:pt-6",
+        "max-md:-mb-24 max-md:pb-24",
+        PAGE_CARD_STACK_GAP,
       )}
     >
       {mobileActionsSlot &&
@@ -471,13 +472,13 @@ const Routines = () => {
         )}
 
       {isLoading ? (
-        <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+        <div className="flex w-full flex-col gap-3 bg-background px-4 md:gap-[11px] md:px-0">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-none border-0 bg-card md:rounded-3xl" />
+            <Skeleton key={i} className="h-28 w-full rounded-xl border border-border/40 bg-card" />
           ))}
         </div>
       ) : !routines?.length ? (
-        <div className="space-y-3 px-6 py-12 text-center md:px-0">
+        <div className="space-y-3 px-4 py-12 text-center md:px-0">
           <Dumbbell className="h-12 w-12 mx-auto text-muted-foreground/50" />
           <p className="text-sm text-muted-foreground">Aún no tienes rutinas creadas.</p>
           <Button onClick={openCreateChoice}>
@@ -487,12 +488,7 @@ const Routines = () => {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sortedRoutines.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-            <div
-              className={cn(
-                "flex w-full flex-col bg-background md:bg-transparent",
-                PAGE_CARD_STACK_GAP,
-              )}
-            >
+            <div className="flex w-full flex-col gap-3 bg-background px-4 md:gap-[11px] md:px-0">
               {sortedRoutines.map((r) => (
                 <SortableRoutineCard
                   key={r.id}

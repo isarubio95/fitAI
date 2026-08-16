@@ -190,7 +190,7 @@ function PredefinedRouteCard({
         type="button"
         disabled={disabled}
         className={cn(
-          "w-full overflow-hidden rounded-xl border text-left transition-colors",
+          "touch-styled w-full overflow-hidden rounded-xl border text-left transition-colors",
           selected
             ? "border-primary/50 bg-primary/10"
             : "border-border/60 bg-muted/30 hover:bg-muted/50",
@@ -252,7 +252,11 @@ function MineRouteCard({
             : "border-border/60 bg-muted/30 hover:bg-muted/50",
         )}
       >
-        <button type="button" className="block w-full overflow-hidden text-left" onClick={onSelect}>
+        <button
+          type="button"
+          className="touch-styled block w-full overflow-hidden text-left"
+          onClick={onSelect}
+        >
           <div className="overflow-hidden rounded-t-[0.7rem]">
             <RouteMapThumb points={points} />
           </div>
@@ -260,7 +264,7 @@ function MineRouteCard({
         <div className="flex items-center gap-2 px-3 py-3">
           <button
             type="button"
-            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+            className="touch-styled flex min-w-0 flex-1 items-center gap-3 text-left"
             onClick={onSelect}
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background/80">
@@ -463,18 +467,18 @@ export function SavedRoutesPickerSheet({
 
   return (
     <>
-      <Drawer open={open} onOpenChange={onOpenChange}>
+      <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
         <DrawerContent
-          side="bottom"
+          side="right"
           className={cn(
-            "z-120 mt-0 flex h-dvh max-h-dvh min-h-0 flex-col gap-0 overflow-hidden rounded-none bg-card p-0",
+            "z-120 flex h-full max-h-dvh w-full max-w-none flex-col gap-0 overflow-hidden border-0 bg-card p-0 shadow-none",
             drawerSafeAreaBottom,
           )}
           overlayClassName="z-120"
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
-          <DrawerHeader className="shrink-0 border-b border-border text-left">
+          <DrawerHeader className="shrink-0 border-b border-border px-4 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
             <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1">
                 <DrawerTitle>Rutas</DrawerTitle>

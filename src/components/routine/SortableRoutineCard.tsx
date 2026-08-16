@@ -88,11 +88,11 @@ export function SortableRoutineCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "overflow-hidden w-full rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20",
+        "w-full overflow-hidden rounded-xl border border-border/40 bg-card shadow-none",
         isDragging && "shadow-lg ring-2 ring-primary/30",
       )}
     >
-      <CardContent className="px-6 py-4">
+      <CardContent className="p-3 px-4">
         {/* Header */}
         <div className="flex items-stretch justify-between gap-3">
           <div className="flex items-start gap-2 flex-1 min-w-0">

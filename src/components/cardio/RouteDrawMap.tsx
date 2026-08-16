@@ -449,7 +449,7 @@ export function RouteDrawMap({
 
       <div
         ref={containerRef}
-        className="route-draw-map-canvas h-full min-h-55 w-full"
+        className="route-draw-map-canvas h-full min-h-0 w-full"
         style={{ background: MAP_COLORS.land }}
       />
 

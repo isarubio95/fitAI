@@ -72,7 +72,7 @@ type Props = {
 
 function MapFallback() {
   return (
-    <div className="flex h-full min-h-55 w-full items-center justify-center bg-muted/30">
+    <div className="flex h-full min-h-0 w-full items-center justify-center bg-muted/30">
       <Loader2 className="h-7 w-7 animate-spin text-primary" />
     </div>
   );
@@ -238,15 +238,15 @@ export function CreateRouteSheet({
   }, [points, createRoute, nombre, defaultDisciplinaId, toast, onCreated, close]);
 
   return (
-    <Drawer open={open} onOpenChange={handleOpenChange}>
+    <Drawer direction="right" open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
-        side="bottom"
-        className="z-130 mt-0 flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden rounded-none bg-card p-0"
+        side="right"
+        className="z-130 flex h-full max-h-dvh w-full max-w-none flex-col gap-0 overflow-hidden border-0 bg-card p-0 shadow-none"
         overlayClassName="z-130"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
-        <DrawerHeader className="shrink-0 border-b border-border/60 text-left">
+        <DrawerHeader className="shrink-0 border-b border-border/60 px-4 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
           <div className="flex items-center gap-2">
             <Button
               type="button"

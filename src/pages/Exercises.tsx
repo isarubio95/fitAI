@@ -466,7 +466,9 @@ const Exercises = () => {
 
   useEffect(() => {
     const target = loadMoreRef.current;
-    if (!target || !hasNextPage) return;
+    // Favoritos se filtra en cliente: el sentinel quedaría siempre visible y
+    // dispararía fetch en bucle. En ese modo hidratamos con el efecto de abajo.
+    if (!target || !hasNextPage || filters.favoritesOnly) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -480,7 +482,18 @@ const Exercises = () => {
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, filteredExercises.length]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, filteredExercises.length, filters.favoritesOnly]);
+
+  // Con favoritos activos, cargar el resto del catálogo en segundo plano (una página
+  // tras otra) sin depender del scroll, para no hacer parpadear el loader.
+  useEffect(() => {
+    if (!filters.favoritesOnly) return;
+    if (!hasNextPage || isFetchingNextPage || isLoading) return;
+    void fetchNextPage();
+  }, [filters.favoritesOnly, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage]);
+
+  const isHydratingFavorites =
+    filters.favoritesOnly && !isLoading && (Boolean(hasNextPage) || isFetchingNextPage);
 
   const handleCreate = async () => {
     if (!user || !newName.trim()) return;
@@ -525,7 +538,7 @@ const Exercises = () => {
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-hidden bg-card px-0 pb-6 mx-auto md:px-8 md:pt-6",
+        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-hidden bg-background px-0 pb-6 mx-auto md:px-8 md:pt-6",
         PAGE_CARD_STACK_GAP,
       )}
     >
@@ -619,7 +632,7 @@ const Exercises = () => {
         )}
 
       <Card className="w-full max-w-none overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-        <CardContent className="space-y-4 px-6 py-4 md:px-6 md:py-6">
+        <CardContent className="space-y-4 px-4 py-4 md:px-6 md:py-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -630,10 +643,11 @@ const Exercises = () => {
             />
           </div>
 
-          {/* Filtros: una sola fila con scroll horizontal */}
+          {/* Filtros: una sola fila con scroll horizontal (sin padding derecho para
+              que el último visible se recorte y se note que hay más). */}
           <div className="flex flex-col gap-3 md:gap-2">
-            <div className="w-full min-w-0">
-              <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-webkit-overflow-scrolling:touch]">
+            <div className="-mr-4 min-w-0 md:-mr-6">
+              <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch] scrollbar-none [&::-webkit-scrollbar]:hidden">
                 {user && (
                   <Button
                     type="button"
@@ -964,13 +978,16 @@ const Exercises = () => {
         </Card>
       )}
 
-      <div className="grid w-full grid-cols-2 gap-3 bg-card px-6 md:gap-[11px] md:px-0">
+      <div className="flex w-full flex-col gap-3 bg-background px-4 pt-2 md:gap-2.75 md:px-0">
         {isLoading || difficultyLoading
           ? Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="w-full overflow-hidden rounded-3xl border border-border/40 bg-secondary">
-                <Skeleton className="aspect-[4/3] w-full rounded-none" />
-                <div className="space-y-2 px-3 py-3">
-                  <Skeleton className="h-4 w-4/5" />
+              <div
+                key={i}
+                className="flex w-full overflow-hidden rounded-xl border border-border/40 bg-card"
+              >
+                <Skeleton className="h-[5.25rem] w-20 shrink-0 rounded-none" />
+                <div className="min-w-0 flex-1 space-y-2 p-3">
+                  <Skeleton className="h-10 w-4/5" />
                   <Skeleton className="h-3 w-1/2" />
                 </div>
               </div>
@@ -986,91 +1003,95 @@ const Exercises = () => {
                 <Card
                   key={`${favSource}:${ex.id}`}
                   className={cn(
-                    "flex h-full w-full max-w-none cursor-pointer flex-col overflow-hidden rounded-xl border shadow-none transition-colors",
-                    isOwn
-                      ? "border-primary/30 bg-primary/10 hover:border-primary/50"
-                      : "border-border/40 bg-secondary hover:border-primary/50",
+                    "w-full max-w-none cursor-pointer overflow-hidden rounded-xl border bg-card shadow-none transition-colors hover:border-primary/50",
+                    isOwn ? "border-primary/30" : "border-border/40",
                   )}
                   onClick={() => setSelectedExercise(ex)}
                 >
-                  <CardContent className="flex flex-1 flex-col p-0">
-                    <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-white">
+                  <CardContent className="flex min-h-[5.25rem] items-stretch p-0">
+                    <div className="relative w-20 shrink-0 self-stretch overflow-hidden bg-white">
                       {mediaUrl ? (
                         <img
                           src={mediaUrl}
                           alt={ex.nombre}
-                          className="h-full w-full object-contain"
+                          className="absolute inset-0 h-full w-full object-contain"
                           loading="lazy"
                           decoding="async"
                           draggable={false}
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <IconComponent className="h-8 w-8 text-muted-foreground/40" />
+                        <div className="flex h-full min-h-[5.25rem] w-full items-center justify-center">
+                          <IconComponent className="h-7 w-7 text-muted-foreground/40" />
                         </div>
-                      )}
-
-                      {user && (
-                        <button
-                          type="button"
-                          className={cn(
-                            "touch-styled absolute right-2 top-2 inline-flex items-center justify-center p-0",
-                            favored ? "text-primary" : "text-muted-foreground",
-                          )}
-                          aria-label={favored ? `Quitar ${ex.nombre} de favoritos` : `Guardar ${ex.nombre} en favoritos`}
-                          aria-pressed={favored}
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            (e.currentTarget as HTMLButtonElement).blur();
-                            try {
-                              await toggleFavorite({ source: favSource, id: ex.id });
-                            } catch (err: unknown) {
-                              toast({
-                                title: "No se pudo actualizar favoritos",
-                                description: err instanceof Error ? err.message : "Error desconocido",
-                                variant: "destructive",
-                              });
-                            }
-                          }}
-                        >
-                          <Bookmark
-                            className={cn("h-5 w-5", favored && "fill-current")}
-                            strokeWidth={2}
-                          />
-                        </button>
-                      )}
-
-                      {isOwn && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute left-2 top-2 h-8 w-8 rounded-full bg-background/75 text-destructive backdrop-blur-sm hover:bg-background"
-                          aria-label={`Eliminar ${ex.nombre}`}
-                          onClick={(e) => { e.stopPropagation(); setDeleteId(ex.id); }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       )}
                     </div>
 
-                    <div className="space-y-1 px-3 py-3">
-                      <div className="flex min-h-[2.75rem] items-start gap-1.5">
-                        <p className="line-clamp-2 text-sm font-semibold leading-snug">{ex.nombre}</p>
-                        {isOwn && <User className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+                    <div className="flex min-w-0 flex-1 items-center gap-3 p-3">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex items-start gap-1.5">
+                          <p className="line-clamp-2 text-sm font-semibold leading-snug">{ex.nombre}</p>
+                          {isOwn && <User className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+                        </div>
+                        <div className="flex min-h-4 min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                          {ex.equipment && (
+                            <span className="truncate capitalize">{ex.equipment}</span>
+                          )}
+                          {ex.equipment && level && (
+                            <span className="shrink-0 text-muted-foreground/50" aria-hidden>
+                              ·
+                            </span>
+                          )}
+                          {level && (
+                            <span className="shrink-0" title={difficultyLabel(level)}>
+                              <DifficultyBars level={level} />
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex min-h-[1rem] min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                        {ex.equipment && (
-                          <span className="truncate capitalize">{ex.equipment}</span>
+
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        {isOwn && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 text-destructive"
+                            aria-label={`Eliminar ${ex.nombre}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteId(ex.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         )}
-                        {ex.equipment && level && (
-                          <span className="shrink-0 text-muted-foreground/50" aria-hidden>
-                            ·
-                          </span>
-                        )}
-                        {level && (
-                          <span className="shrink-0" title={difficultyLabel(level)}>
-                            <DifficultyBars level={level} />
-                          </span>
+                        {user && (
+                          <button
+                            type="button"
+                            className={cn(
+                              "touch-styled inline-flex h-9 w-9 items-center justify-center",
+                              favored ? "text-primary" : "text-muted-foreground",
+                            )}
+                            aria-label={favored ? `Quitar ${ex.nombre} de favoritos` : `Guardar ${ex.nombre} en favoritos`}
+                            aria-pressed={favored}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              (e.currentTarget as HTMLButtonElement).blur();
+                              try {
+                                await toggleFavorite({ source: favSource, id: ex.id });
+                              } catch (err: unknown) {
+                                toast({
+                                  title: "No se pudo actualizar favoritos",
+                                  description: err instanceof Error ? err.message : "Error desconocido",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            <Bookmark
+                              className={cn("h-5 w-5", favored && "fill-current")}
+                              strokeWidth={2}
+                            />
+                          </button>
                         )}
                       </div>
                     </div>
@@ -1078,17 +1099,22 @@ const Exercises = () => {
                 </Card>
               );
             })}
-        {!isLoading && !difficultyLoading && !isError && filteredExercises.length === 0 && (
-          <p className="col-span-full text-center text-sm text-muted-foreground py-8">
-            No hay ejercicios que coincidan. Prueba otra búsqueda o revisa en Supabase que existan filas en{" "}
-            <code className="text-xs">tipo_ejercicio</code> y las políticas RLS permitan leerlas.
+        {!isLoading &&
+          !difficultyLoading &&
+          !isError &&
+          !isHydratingFavorites &&
+          filteredExercises.length === 0 && (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No hay ejercicios que coincidan. Prueba otra búsqueda o cambia los filtros.
           </p>
         )}
       </div>
 
-      {!isLoading && !difficultyLoading && hasNextPage && (
+      {!isLoading && !difficultyLoading && (hasNextPage || isHydratingFavorites) && (
         <div ref={loadMoreRef} className="flex items-center justify-center py-2">
-          {isFetchingNextPage && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+          {(isFetchingNextPage || isHydratingFavorites) && (
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          )}
         </div>
       )}
 
