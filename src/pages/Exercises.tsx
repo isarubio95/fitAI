@@ -538,7 +538,7 @@ const Exercises = () => {
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-hidden bg-background px-0 pb-6 mx-auto md:px-8 md:pt-6",
+        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-clip bg-background px-0 pb-6 mx-auto md:px-8 md:pt-6",
         PAGE_CARD_STACK_GAP,
       )}
     >
@@ -631,17 +631,24 @@ const Exercises = () => {
           desktopCreateSlot,
         )}
 
-      <Card className="w-full max-w-none overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-        <CardContent className="space-y-4 px-4 py-4 md:px-6 md:py-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar ejercicio..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-10 h-12"
-            />
-          </div>
+      <div
+        className={cn(
+          // Solapa 2px bajo el header fijo para evitar el hueco subpíxel por el que asoma la lista.
+          "sticky z-30 w-full bg-card",
+          "top-[calc(var(--app-header-height,5rem)-2px)] pt-0.5 md:top-0 md:pt-0",
+        )}
+      >
+        <Card className="w-full max-w-none overflow-hidden rounded-none border-0 border-b border-border/40 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+          <CardContent className="space-y-4 px-4 py-4 md:px-6 md:py-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar ejercicio..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-10 h-12"
+              />
+            </div>
 
           {/* Filtros: una sola fila con scroll horizontal (sin padding derecho para
               que el último visible se recorte y se note que hay más). */}
@@ -962,6 +969,7 @@ const Exercises = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
 
       {isError && (
         <Card className="w-full max-w-none overflow-hidden rounded-none border-0 border-destructive/50 bg-destructive/5 shadow-none md:rounded-3xl md:border md:border-x">

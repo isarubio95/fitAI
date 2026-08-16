@@ -95,6 +95,9 @@ export function CardioLiveRecorder() {
   const [setupDisciplineId, setSetupDisciplineId] = useState<string | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<SelectedCardioRoute | null>(null);
   const [routesPickerOpen, setRoutesPickerOpen] = useState(false);
+  /** Progreso a lo largo de la ruta objetivo; evita saltos de matching GPS. */
+  const routeAlongMRef = useRef<number | null>(null);
+  const routeProgressRouteIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     setAutoPauseEnabled(readCardioAutoPauseEnabled());
@@ -192,6 +195,8 @@ export function CardioLiveRecorder() {
       setSetupDisciplineId(null);
       setSelectedRoute(null);
       setRoutesPickerOpen(false);
+      routeAlongMRef.current = null;
+      routeProgressRouteIdRef.current = null;
       if (pillCloseTimerRef.current != null) {
         window.clearTimeout(pillCloseTimerRef.current);
         pillCloseTimerRef.current = null;
@@ -353,9 +358,21 @@ export function CardioLiveRecorder() {
     step === "summary" && elevationFrozenM != null ? elevationFrozenM : elevationGainLive;
 
   const routeProgress = useMemo(() => {
-    if (!selectedRoute?.points?.length) return null;
+    if (!selectedRoute?.points?.length) {
+      routeAlongMRef.current = null;
+      routeProgressRouteIdRef.current = null;
+      return null;
+    }
+    if (routeProgressRouteIdRef.current !== selectedRoute.id) {
+      routeAlongMRef.current = null;
+      routeProgressRouteIdRef.current = selectedRoute.id;
+    }
     const last = points.length > 0 ? points[points.length - 1] : null;
-    return computeRouteProgress(selectedRoute.points, last);
+    const progress = computeRouteProgress(selectedRoute.points, last, {
+      previousAlongM: routeAlongMRef.current,
+    });
+    if (progress) routeAlongMRef.current = progress.alongM;
+    return progress;
   }, [selectedRoute, points]);
 
   const showRoutePickerBtn =
