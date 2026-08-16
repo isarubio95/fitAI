@@ -282,7 +282,7 @@ const Exercises = () => {
       // cuando en BD viene una cadena combinada (p. ej. "Banco Inclinable, Polea").
       equipments: [],
     },
-    30,
+    15,
   );
   const createExercise = useCreateExercise();
   const deleteExercise = useDeleteExercise();
