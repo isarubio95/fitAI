@@ -315,14 +315,14 @@ export function TrainingLoadWidget() {
           </>
         )}
 
-        <div className="flex flex-wrap justify-between gap-2 pt-1">
+        <div className="flex w-full gap-3 pt-1">
           {RANGE_OPTIONS.map((option) => (
             <button
               key={option.key}
               type="button"
               className={cn(
                 filterPillBase,
-                "h-7 px-4 py-0 text-[13px]",
+                "h-7 min-w-0 flex-1 px-2 py-0 text-center text-[13px]",
                 range === option.key ? filterPillActive : filterPillInactive,
               )}
               onClick={() => setRange(option.key)}
