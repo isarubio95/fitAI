@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { filterButtonActive } from "@/lib/filter-pill-styles";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { resolveExerciseMediaUrl } from "@/lib/exerciseMediaUrl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
@@ -1003,7 +1004,7 @@ const Exercises = () => {
           : filteredExercises.map((ex) => {
               const isOwn = ex.usuario_id === user?.id;
               const IconComponent = getExerciseIcon(ex as { musculos_involucrados?: string[] | null });
-              const mediaUrl = ex.gif_url || ex.imagen;
+              const mediaUrl = resolveExerciseMediaUrl(ex.gif_url || ex.imagen);
               const level = difficultyToLevel(ex.dificultad);
               const favSource = exerciseFavoriteSource(ex);
               const favored = user ? isFavorite(favSource, ex.id) : false;

@@ -18,6 +18,7 @@ import {
 } from "@/hooks/useExerciseFavorites";
 import { useToast } from "@/hooks/use-toast";
 import { fetchExerciseCatalogDetail } from "@/hooks/useExerciseCatalog";
+import { resolveExerciseMediaUrl } from "@/lib/exerciseMediaUrl";
 
 function difficultyToLevel(d: unknown): 1 | 2 | 3 | null {
   if (d == null) return null;
@@ -142,7 +143,7 @@ const ExerciseDetailSheet = ({
 
   if (!detail) return null;
 
-  const mediaUrl = detail.gif_url || detail.imagen;
+  const mediaUrl = resolveExerciseMediaUrl(detail.gif_url || detail.imagen);
   const isOwn = detail.usuario_id && detail.usuario_id === currentUserId;
   const source = resolveFavoriteSource(detail, favoriteSource);
   const canFavorite = !!currentUserId;
