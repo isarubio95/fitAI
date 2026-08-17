@@ -1374,6 +1374,26 @@ export type Database = {
     }
     Functions: {
       delete_user_data: { Args: { p_user_id: string }; Returns: undefined }
+      get_cardio_ruta_preview_points: {
+        Args: { p_ruta_ids: string[]; p_max_points?: number }
+        Returns: {
+          cardio_ruta_id: string
+          elevacion_m: number | null
+          lat: number
+          lng: number
+          orden: number
+        }[]
+      }
+      get_cardio_track_preview_points: {
+        Args: { p_track_ids: string[]; p_max_points?: number }
+        Returns: {
+          cardio_track_id: string
+          elevacion_m: number | null
+          lat: number
+          lng: number
+          orden: number
+        }[]
+      }
       get_exercise_daily_best: {
         Args: { p_tipo_ejercicio_id: string; p_months?: number }
         Returns: {

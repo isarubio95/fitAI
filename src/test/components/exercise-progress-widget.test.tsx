@@ -83,6 +83,27 @@ describe("ExerciseProgressWidget", () => {
     expect(screen.getByText("2/2")).toBeInTheDocument();
   });
 
+  it("no precarga el historial de todos los ejercicios", () => {
+    mockUseExerciseWithHistory.mockReturnValue({
+      data: [
+        { id: "press", name: "Press banca", lastPerformed: "2026-05-01" },
+        { id: "sentadilla", name: "Sentadilla", lastPerformed: "2026-05-02" },
+        { id: "peso-muerto", name: "Peso muerto", lastPerformed: "2026-05-03" },
+      ],
+      isLoading: false,
+    });
+    mockUseExerciseHistory.mockReturnValue({
+      data: {
+        history: [{ date: "2026-05-01", oneRepMax: 100, weight: 80, reps: 8 }],
+        lastRecord: { oneRepMax: 100, weight: 80, reps: 8, date: "2026-05-01" },
+        metric: "1rm",
+      },
+    });
+
+    render(<ExerciseProgressWidget />);
+    expect(mockPrefetchQuery).toHaveBeenCalledTimes(1);
+  });
+
   it("muestra estado vacío cuando no hay historial", () => {
     mockUseExerciseWithHistory.mockReturnValue({
       data: [{ id: "press", name: "Press banca", lastPerformed: "2026-05-01" }],

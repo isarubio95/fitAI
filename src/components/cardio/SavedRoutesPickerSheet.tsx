@@ -1,6 +1,6 @@
 import { Bookmark, Loader2, PencilLine, Plus, Route, Trash2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type RefObject } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Drawer,
   DrawerContent,
@@ -29,7 +29,8 @@ import { CreateRouteSheet, type CreateRouteMode } from "@/components/cardio/Crea
 import { RouteListFiltersBar } from "@/components/cardio/RouteListFiltersBar";
 import { RouteMapThumb } from "@/components/cardio/RouteMapThumb";
 import {
-  routeToSelected,
+  attachCardioRutaPreviews,
+  fetchCardioRutaAsSelected,
   useDeleteSavedCardioRoute,
   useSavedCardioRoutes,
 } from "@/hooks/useSavedCardioRoutes";
@@ -113,6 +114,27 @@ function routeMetaLine(distanceM: number | null | undefined, elevM: number | nul
   return [distance, elev].filter(Boolean).join(" · ") || "Sin métricas";
 }
 
+const ROUTE_THUMB_BOX = "relative min-h-28 w-36 shrink-0 self-stretch overflow-hidden";
+
+function RouteListCardSkeleton() {
+  return (
+    <div className="flex w-full overflow-hidden rounded-xl border border-border/40 bg-card">
+      <Skeleton className="h-28 w-36 shrink-0 rounded-none" />
+      <div className="min-w-0 flex-1 space-y-2 p-3">
+        <Skeleton className="h-10 w-4/5" />
+        <Skeleton className="h-3 w-1/2" />
+      </div>
+    </div>
+  );
+}
+
+function routeListCardClass(selected: boolean) {
+  return cn(
+    "w-full max-w-none overflow-hidden rounded-xl border bg-card shadow-none transition-colors hover:border-primary/50",
+    selected ? "border-primary/50" : "border-border/40",
+  );
+}
+
 function ClearSelectedButton({
   onClear,
   onOpenChange,
@@ -124,7 +146,7 @@ function ClearSelectedButton({
     <Button
       type="button"
       variant="outline"
-      className="h-auto w-full justify-start rounded-xl px-3 py-3"
+      className="h-auto w-full justify-start rounded-xl border-border/40 bg-card px-3 py-3"
       onClick={() => {
         onClear();
         onOpenChange(false);
@@ -186,39 +208,48 @@ function PredefinedRouteCard({
 
   return (
     <li>
-      <button
-        type="button"
-        disabled={disabled}
+      <div
         className={cn(
-          "touch-styled w-full overflow-hidden rounded-xl border text-left transition-colors",
-          selected
-            ? "border-primary/50 bg-primary/10"
-            : "border-border/60 bg-muted/30 hover:bg-muted/50",
+          routeListCardClass(selected),
+          "cursor-pointer",
           disabled && !selecting && "opacity-60",
         )}
-        onClick={onSelect}
+        onClick={disabled ? undefined : onSelect}
       >
-        <div className="relative overflow-hidden rounded-t-[0.7rem]">
-          <RouteMapThumb points={data?.points} loading={isLoading} />
-          {selecting ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/35">
-              <Loader2 className="h-6 w-6 animate-spin text-white" />
+        <div className="flex min-h-28 items-stretch">
+          <div className={ROUTE_THUMB_BOX}>
+            <RouteMapThumb
+              className="absolute inset-0 h-full w-full"
+              points={data?.points}
+              loading={isLoading}
+            />
+            {selecting ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+                <Loader2 className="h-6 w-6 animate-spin text-white" />
+              </div>
+            ) : null}
+          </div>
+          <div className="flex min-w-0 flex-1 items-center p-3">
+            <div className="flex min-w-0 flex-1 items-start gap-3">
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="line-clamp-2 text-sm font-semibold leading-snug">{tour.name}</p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {routeMetaLine(tour.distanceM, tour.elevationUpM)}
+                  {tour.visitors > 0 ? ` · ${tour.visitors} visitas` : ""}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="touch-styled inline-flex size-5 shrink-0 self-start items-center justify-center p-0 text-muted-foreground"
+                aria-label="Guardar ruta"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Bookmark className="size-5" strokeWidth={2} />
+              </button>
             </div>
-          ) : null}
-        </div>
-        <div className="flex items-start gap-3 px-3 py-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background/80">
-            <Bookmark className="h-4 w-4 text-primary" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="line-clamp-2 text-sm font-semibold leading-snug">{tour.name}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-              {routeMetaLine(tour.distanceM, tour.elevationUpM)}
-              {tour.visitors > 0 ? ` · ${tour.visitors} visitas` : ""}
-            </p>
           </div>
         </div>
-      </button>
+      </div>
     </li>
   );
 }
@@ -226,11 +257,15 @@ function PredefinedRouteCard({
 function MineRouteCard({
   route,
   selected,
+  selecting,
+  previewLoading,
   onSelect,
   onDelete,
 }: {
   route: CardioRutaWithPoints;
   selected: boolean;
+  selecting: boolean;
+  previewLoading: boolean;
   onSelect: () => void;
   onDelete: (e: MouseEvent) => void;
 }) {
@@ -244,49 +279,47 @@ function MineRouteCard({
 
   return (
     <li>
-      <div
-        className={cn(
-          "overflow-hidden rounded-xl border transition-colors",
-          selected
-            ? "border-primary/50 bg-primary/10"
-            : "border-border/60 bg-muted/30 hover:bg-muted/50",
-        )}
-      >
-        <button
-          type="button"
-          className="touch-styled block w-full overflow-hidden text-left"
-          onClick={onSelect}
-        >
-          <div className="overflow-hidden rounded-t-[0.7rem]">
-            <RouteMapThumb points={points} />
-          </div>
-        </button>
-        <div className="flex items-center gap-2 px-3 py-3">
+      <div className={routeListCardClass(selected)}>
+        <div className="flex min-h-28 items-stretch">
           <button
             type="button"
-            className="touch-styled flex min-w-0 flex-1 items-center gap-3 text-left"
+            className="touch-styled flex min-h-28 min-w-0 flex-1 items-stretch p-0 text-left"
             onClick={onSelect}
+            disabled={selecting}
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background/80">
-              <Route className="h-4 w-4 text-primary" />
+            <div className={ROUTE_THUMB_BOX}>
+              <RouteMapThumb
+                className="absolute inset-0 h-full w-full"
+                points={points}
+                loading={previewLoading && points.length < 2}
+              />
+              {selecting ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+                  <Loader2 className="h-6 w-6 animate-spin text-white" />
+                </div>
+              ) : null}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-sm font-semibold leading-snug">{route.nombre}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                {routeMetaLine(route.distancia_total_m, route.elevacion_positiva_m)}
-              </p>
+            <div className="flex min-w-0 flex-1 items-center p-3">
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="line-clamp-2 text-sm font-semibold leading-snug">{route.nombre}</p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {routeMetaLine(route.distancia_total_m, route.elevacion_positiva_m)}
+                </p>
+              </div>
             </div>
           </button>
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            className="h-9 w-9 shrink-0"
-            aria-label="Eliminar ruta"
-            onClick={onDelete}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <div className="flex shrink-0 items-center pr-1">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-9 w-9 shrink-0 text-destructive"
+              aria-label="Eliminar ruta"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </li>
@@ -316,6 +349,7 @@ export function SavedRoutesPickerSheet({
   const [tab, setTab] = useState<TabId>("predefined");
   const [filters, setFilters] = useState<RouteListFilters>(DEFAULT_ROUTE_LIST_FILTERS);
   const [loadingPredefinedId, setLoadingPredefinedId] = useState<string | null>(null);
+  const [loadingMineId, setLoadingMineId] = useState<string | null>(null);
   const justCreatedRef = useRef(false);
   const predefinedScrollRef = useRef<HTMLDivElement>(null);
   const mineScrollRef = useRef<HTMLDivElement>(null);
@@ -379,6 +413,23 @@ export function SavedRoutesPickerSheet({
     resetKey: `${disciplinaId ?? "none"}:${open ? "1" : "0"}:${filtersResetKey}`,
   });
 
+  const minePreviewSlice = useMemo(() => {
+    const end = Math.min(minePage.visibleCount + PAGE_SIZE, myRoutesFiltered.length);
+    return myRoutesFiltered.slice(0, end);
+  }, [minePage.visibleCount, myRoutesFiltered]);
+
+  const minePreviewQuery = useQuery({
+    queryKey: ["savedCardioRoutePreviews", minePreviewSlice.map((r) => r.id).join(",")],
+    enabled: open && tab === "mine" && minePreviewSlice.length > 0,
+    staleTime: 10 * 60 * 1000,
+    queryFn: () => attachCardioRutaPreviews(minePreviewSlice),
+  });
+
+  const minePreviewById = useMemo(
+    () => new Map((minePreviewQuery.data ?? []).map((r) => [r.id, r])),
+    [minePreviewQuery.data],
+  );
+
   // Precarga el lote visible + el siguiente (10+10) para que al hacer scroll ya estén las capturas.
   useEffect(() => {
     if (!open || tab !== "predefined" || predefinedFiltered.length === 0) return;
@@ -387,10 +438,9 @@ export function SavedRoutesPickerSheet({
   }, [open, tab, predefinedFiltered, predefinedPage.visibleCount, queryClient]);
 
   useEffect(() => {
-    if (!open || tab !== "mine" || myRoutesFiltered.length === 0) return;
-    const end = Math.min(minePage.visibleCount + PAGE_SIZE, myRoutesFiltered.length);
-    void prefetchMineRouteThumbs(myRoutesFiltered.slice(0, end));
-  }, [open, tab, myRoutesFiltered, minePage.visibleCount]);
+    if (!open || tab !== "mine" || !minePreviewQuery.data?.length) return;
+    void prefetchMineRouteThumbs(minePreviewQuery.data);
+  }, [open, tab, minePreviewQuery.data]);
 
   useEffect(() => {
     if (!open) setFilters(DEFAULT_ROUTE_LIST_FILTERS);
@@ -418,14 +468,26 @@ export function SavedRoutesPickerSheet({
     }
   };
 
-  const onSelectMine = (route: CardioRutaWithPoints) => {
+  const onSelectMine = async (route: CardioRutaWithPoints) => {
     if (selectedRouteId === route.id && onClear) {
       onClear();
       onOpenChange(false);
       return;
     }
-    onSelect(routeToSelected(route));
-    onOpenChange(false);
+    if (loadingMineId) return;
+    setLoadingMineId(route.id);
+    try {
+      onSelect(await fetchCardioRutaAsSelected(route));
+      onOpenChange(false);
+    } catch (err) {
+      toast({
+        title: "No se pudo cargar la ruta",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingMineId(null);
+    }
   };
 
   const onSelectPredefined = async (tour: PredefinedRouteSummary) => {
@@ -471,7 +533,7 @@ export function SavedRoutesPickerSheet({
         <DrawerContent
           side="right"
           className={cn(
-            "z-120 flex h-full max-h-dvh w-full max-w-none flex-col gap-0 overflow-hidden border-0 bg-card p-0 shadow-none",
+            "z-120 flex h-full max-h-dvh w-full max-w-none flex-col gap-0 overflow-hidden border-0 bg-background p-0 shadow-none",
             drawerSafeAreaBottom,
           )}
           overlayClassName="z-120"
@@ -527,8 +589,8 @@ export function SavedRoutesPickerSheet({
                 </div>
               ) : predefinedLoading ? (
                 <div className="space-y-3">
-                  <Skeleton className="h-52 w-full rounded-xl" />
-                  <Skeleton className="h-52 w-full rounded-xl" />
+                  <RouteListCardSkeleton />
+                  <RouteListCardSkeleton />
                 </div>
               ) : predefinedError ? (
                 <p className="py-10 text-center text-sm text-muted-foreground">
@@ -580,8 +642,8 @@ export function SavedRoutesPickerSheet({
             >
               {savedLoading ? (
                 <div className="space-y-3">
-                  <Skeleton className="h-52 w-full rounded-xl" />
-                  <Skeleton className="h-52 w-full rounded-xl" />
+                  <RouteListCardSkeleton />
+                  <RouteListCardSkeleton />
                 </div>
               ) : !myRoutes.length ? (
                 <div className="flex flex-col items-center gap-3 py-10 text-center">
@@ -604,15 +666,20 @@ export function SavedRoutesPickerSheet({
                         <ClearSelectedButton onClear={onClear} onOpenChange={onOpenChange} />
                       </li>
                     ) : null}
-                    {minePage.visible.map((route) => (
+                    {minePage.visible.map((route) => {
+                      const hydrated = minePreviewById.get(route.id) ?? route;
+                      return (
                       <MineRouteCard
                         key={route.id}
-                        route={route}
+                        route={hydrated}
                         selected={route.id === selectedRouteId}
-                        onSelect={() => onSelectMine(route)}
+                        selecting={loadingMineId === route.id}
+                        previewLoading={minePreviewQuery.isFetching}
+                        onSelect={() => void onSelectMine(hydrated)}
                         onDelete={(e) => void onDelete(route.id, e)}
                       />
-                    ))}
+                      );
+                    })}
                   </ul>
                   <InfiniteLoadSentinel
                     rootRef={mineScrollRef}

@@ -214,10 +214,13 @@ export function ExerciseProgressWidget() {
 
   useEffect(() => {
     if (!user?.id || !exercises?.length) return;
-    exercises.forEach((ex) => {
-      void queryClient.prefetchQuery(exerciseHistoryQueryOptions(user.id, ex.id));
-    });
-  }, [exercises, queryClient, user?.id]);
+    const neighborIds = [selectedIndex - 1, selectedIndex + 1]
+      .filter((i) => i >= 0 && i < exercises.length)
+      .map((i) => exercises[i].id);
+    for (const id of neighborIds) {
+      void queryClient.prefetchQuery(exerciseHistoryQueryOptions(user.id, id));
+    }
+  }, [exercises, queryClient, selectedIndex, user?.id]);
   const history = historyData?.history;
   const lastRecord = historyData?.lastRecord;
   const metric: ExerciseProgressMetric = historyData?.metric ?? "1rm";

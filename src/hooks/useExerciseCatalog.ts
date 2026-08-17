@@ -25,6 +25,44 @@ export type ExerciseCatalogItem = CatalogItem | UserItem;
 
 const EMPTY_USUARIO_RESULT: { data: null; error: null } = { data: null, error: null };
 
+const CATALOG_STALE_MS = 30 * 60 * 1000;
+
+/** Listados/lookup: sin gif, imagen ni instrucciones (payload grande). */
+const TIPO_LIST_COLUMNS =
+  "id, nombre, registro_series, tipo, grupo_muscular, dificultad, equipment, musculos_involucrados, body_part:musculos_involucrados";
+const USUARIO_LIST_COLUMNS = `${TIPO_LIST_COLUMNS}, usuario_id, descripcion`;
+
+/** Selector / página de ejercicios: thumbs, sin instructions. */
+const TIPO_THUMB_COLUMNS = `${TIPO_LIST_COLUMNS}, gif_url, imagen`;
+const USUARIO_THUMB_COLUMNS = `${USUARIO_LIST_COLUMNS}, gif_url, imagen`;
+
+function invalidateExerciseCatalog(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["exerciseCatalog"] });
+  queryClient.invalidateQueries({ queryKey: ["exerciseCatalogInfinite"] });
+}
+
+export async function fetchExerciseCatalogDetail(
+  id: string,
+  source: "catalogo" | "usuario",
+): Promise<ExerciseCatalogItem> {
+  if (source === "usuario") {
+    const { data, error } = await supabase
+      .from("usuario_ejercicio")
+      .select("*, body_part:musculos_involucrados")
+      .eq("id", id)
+      .single();
+    if (error) throw error;
+    return { ...(data as UsuarioEjercicioRow), __source: "usuario" };
+  }
+  const { data, error } = await supabase
+    .from("tipo_ejercicio")
+    .select("*, body_part:musculos_involucrados")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return { ...(data as TipoEjercicioRow), __source: "catalogo" };
+}
+
 export function useExerciseCatalogInfinite(filters?: ExerciseCatalogFilters, pageSize = 30) {
   const { user } = useAuth();
   const q = (filters?.q ?? "").trim();
@@ -35,14 +73,14 @@ export function useExerciseCatalogInfinite(filters?: ExerciseCatalogFilters, pag
   return useInfiniteQuery({
     queryKey: ["exerciseCatalogInfinite", q, tipos, grupos, equipments, user?.id, pageSize],
     initialPageParam: 0,
-    staleTime: 5 * 60 * 1000,
+    staleTime: CATALOG_STALE_MS,
     queryFn: async ({ pageParam }) => {
       const offset = Number(pageParam ?? 0);
 
       // Catálogo (FitCron/sistema) paginado
       let queryCatalogo = supabase
         .from("tipo_ejercicio")
-        .select("*, body_part:musculos_involucrados")
+        .select(TIPO_THUMB_COLUMNS)
         .order("nombre")
         .range(offset, offset + pageSize - 1);
 
@@ -56,7 +94,7 @@ export function useExerciseCatalogInfinite(filters?: ExerciseCatalogFilters, pag
       // Ejercicios del usuario: normalmente son pocos; los traemos en la primera página
       let queryUsuario = supabase
         .from("usuario_ejercicio")
-        .select("*, body_part:musculos_involucrados")
+        .select(USUARIO_THUMB_COLUMNS)
         .order("nombre");
 
       if (q) {
@@ -100,18 +138,18 @@ export function useExerciseCatalog(search?: string) {
 
   return useQuery({
     queryKey: ["exerciseCatalog", search, user?.id],
-    staleTime: 5 * 60 * 1000, // 5 minutos: catálogo cambia poco
+    staleTime: CATALOG_STALE_MS,
     queryFn: async (): Promise<ExerciseCatalogItem[]> => {
       // Catálogo (FitCron/sistema)
       let queryCatalogo = supabase
         .from("tipo_ejercicio")
-        .select("*, body_part:musculos_involucrados")
+        .select(TIPO_LIST_COLUMNS)
         .order("nombre");
 
       // Ejercicios del usuario (privados)
       let queryUsuario = supabase
         .from("usuario_ejercicio")
-        .select("*, body_part:musculos_involucrados")
+        .select(USUARIO_LIST_COLUMNS)
         .order("nombre");
 
       if (search) {
@@ -181,7 +219,7 @@ export function useCreateExercise() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["exerciseCatalog"] });
+      invalidateExerciseCatalog(queryClient);
     },
   });
 }
@@ -195,7 +233,7 @@ export function useDeleteExercise() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["exerciseCatalog"] });
+      invalidateExerciseCatalog(queryClient);
     },
   });
 }

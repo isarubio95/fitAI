@@ -20,7 +20,7 @@ type Props = {
 function ThumbPlaceholder({ className, label }: { className?: string; label?: string }) {
   return (
     <div
-      className={cn("relative flex h-44 w-full items-center justify-center overflow-hidden", className)}
+      className={cn("relative flex h-full w-full items-center justify-center overflow-hidden", className)}
       aria-hidden
     >
       <div className="map-route-skeleton absolute inset-0" />
@@ -74,7 +74,7 @@ export function RouteMapThumb({ points, loading = false, className }: Props) {
   return (
     <div
       className={cn(
-        "pointer-events-none h-44 w-full overflow-hidden rounded-t-xl [transform:translateZ(0)]",
+        "pointer-events-none h-full w-full overflow-hidden",
         className,
       )}
       style={{ background: MAP_COLORS.land }}
@@ -85,7 +85,7 @@ export function RouteMapThumb({ points, loading = false, className }: Props) {
       ) : snapshot ? (
         <img src={snapshot} alt="" className="h-full w-full object-cover" draggable={false} />
       ) : (
-        <Skeleton className="h-44 w-full rounded-none" />
+        <Skeleton className="h-full w-full rounded-none" />
       )}
     </div>
   );

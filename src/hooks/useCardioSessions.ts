@@ -24,6 +24,17 @@ type CardioSessionInput = {
   bloques: CardioBlockInput[];
 };
 
+/** Listados / calendario: métricas del track sin puntos GPS. */
+export const CARDIO_SESSION_LIST_SELECT = `
+  *,
+  cardio_disciplina(*),
+  cardio_bloque(*),
+  cardio_sesion_running(*),
+  cardio_sesion_cycling(*),
+  cardio_track(*)
+`;
+
+/** Detalle / editor: incluye el GPS completo. */
 export const CARDIO_SESSION_SELECT = `
   *,
   cardio_disciplina(*),
@@ -78,7 +89,7 @@ export function useCardioSessions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cardio_sesion")
-        .select(CARDIO_SESSION_SELECT)
+        .select(CARDIO_SESSION_LIST_SELECT)
         .eq("usuario_id", user!.id)
         .not("fecha_fin", "is", null)
         .order("fecha_inicio", { ascending: false })
@@ -121,7 +132,7 @@ export function useCardioHistory(profileUserId?: string, opts?: { onlyPublic?: b
     queryFn: async (): Promise<CardioSesionWithDetails[]> => {
       let q = supabase
         .from("cardio_sesion")
-        .select(CARDIO_SESSION_SELECT)
+        .select(CARDIO_SESSION_LIST_SELECT)
         .eq("usuario_id", id!)
         .not("fecha_fin", "is", null)
         .order("fecha_inicio", { ascending: false })
@@ -148,7 +159,7 @@ export function useMonthCardioSessions(month: Date) {
     queryFn: async (): Promise<CardioSesionWithDetails[]> => {
       const { data, error } = await supabase
         .from("cardio_sesion")
-        .select(CARDIO_SESSION_SELECT)
+        .select(CARDIO_SESSION_LIST_SELECT)
         .eq("usuario_id", user!.id)
         .not("fecha_fin", "is", null)
         .gte("fecha_inicio", from)

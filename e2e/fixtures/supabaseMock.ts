@@ -421,6 +421,9 @@ async function handlePost(
     case "cardio_sesion_cycling":
       return json(route, 201, returnRep ? { id: `${table}-1`, ...row } : null);
 
+    case "rpc":
+      return json(route, 200, []);
+
     default:
       return json(route, 201, returnRep ? { id: `${table}-1`, ...row } : null);
   }

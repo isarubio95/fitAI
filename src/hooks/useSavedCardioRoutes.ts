@@ -12,12 +12,9 @@ import {
 } from "@/lib/cardioSessionDisplay";
 import { elevationGainM, formatCardioDistanceM } from "@/lib/cardioFormat";
 import { polylineLengthM } from "@/lib/cardioRouteProgress";
-import type { CardioRutaWithPoints, SelectedCardioRoute } from "@/types/cardio";
+import type { CardioRutaWithPoints, SelectedCardioRoute, CardioRutaPunto } from "@/types/cardio";
 
-const CARDIO_RUTA_SELECT = `
-  *,
-  cardio_ruta_punto(*)
-`;
+const RUTA_THUMB_MAX_POINTS = 120;
 
 function sortRoutePoints(route: CardioRutaWithPoints): CardioRutaWithPoints {
   const puntos = [...(route.cardio_ruta_punto ?? [])].sort((a, b) => a.orden - b.orden);
@@ -32,6 +29,71 @@ export function routeToSelected(route: CardioRutaWithPoints): SelectedCardioRout
     distancia_total_m: sorted.distancia_total_m,
     elevacion_positiva_m: sorted.elevacion_positiva_m,
     points: (sorted.cardio_ruta_punto ?? []).map((p) => ({
+      lat: p.lat,
+      lng: p.lng,
+      elevacion_m: p.elevacion_m,
+    })),
+  };
+}
+
+function toRutaPunto(
+  rutaId: string,
+  row: { orden: number; lat: number; lng: number; elevacion_m: number | null },
+): CardioRutaPunto {
+  return {
+    id: `${rutaId}:${row.orden}`,
+    cardio_ruta_id: rutaId,
+    orden: row.orden,
+    lat: row.lat,
+    lng: row.lng,
+    elevacion_m: row.elevacion_m,
+  };
+}
+
+/** Muestreo de puntos para thumbs del listado (máx. ~120). */
+export async function attachCardioRutaPreviews(
+  routes: CardioRutaWithPoints[],
+  maxPoints = RUTA_THUMB_MAX_POINTS,
+): Promise<CardioRutaWithPoints[]> {
+  const rutaIds = [...new Set(routes.map((r) => r.id))];
+  if (rutaIds.length === 0) return routes;
+
+  const { data, error } = await supabase.rpc("get_cardio_ruta_preview_points", {
+    p_ruta_ids: rutaIds,
+    p_max_points: maxPoints,
+  });
+  if (error) throw error;
+
+  const byRuta = new Map<string, CardioRutaPunto[]>();
+  for (const row of data ?? []) {
+    const list = byRuta.get(row.cardio_ruta_id) ?? [];
+    list.push(toRutaPunto(row.cardio_ruta_id, row));
+    byRuta.set(row.cardio_ruta_id, list);
+  }
+
+  return routes.map((route) => {
+    const puntos = byRuta.get(route.id);
+    if (!puntos?.length) return route;
+    return { ...route, cardio_ruta_punto: puntos };
+  });
+}
+
+/** GPS completo de una ruta (seguir en el mapa). */
+export async function fetchCardioRutaAsSelected(
+  route: CardioRutaWithPoints,
+): Promise<SelectedCardioRoute> {
+  const { data, error } = await supabase
+    .from("cardio_ruta_punto")
+    .select("orden, lat, lng, elevacion_m")
+    .eq("cardio_ruta_id", route.id)
+    .order("orden");
+  if (error) throw error;
+  return {
+    id: route.id,
+    nombre: route.nombre,
+    distancia_total_m: route.distancia_total_m,
+    elevacion_positiva_m: route.elevacion_positiva_m,
+    points: (data ?? []).map((p) => ({
       lat: p.lat,
       lng: p.lng,
       elevacion_m: p.elevacion_m,
@@ -79,11 +141,11 @@ export function useSavedCardioRoutes() {
     queryFn: async (): Promise<CardioRutaWithPoints[]> => {
       const { data, error } = await supabase
         .from("cardio_ruta")
-        .select(CARDIO_RUTA_SELECT)
+        .select("*")
         .eq("usuario_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []).map((row) => sortRoutePoints(row as CardioRutaWithPoints));
+      return (data ?? []) as CardioRutaWithPoints[];
     },
   });
 }

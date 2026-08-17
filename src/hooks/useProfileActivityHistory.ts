@@ -1,7 +1,9 @@
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
 import { useCardioHistory } from "@/hooks/useCardioSessions";
+import { attachCardioTrackPreviews } from "@/lib/attachCardioTrackPreviews";
 import { mergeDatedFeedEntries } from "@/lib/communityFeedMerge";
 import type { ActividadWithDetails } from "@/types/workout";
 import type { CardioSesionWithDetails } from "@/lib/cardioSessionDisplay";
@@ -66,8 +68,35 @@ export function useProfileActivityHistory(profileUserId?: string, limit = 5) {
     };
   }, [workouts, cardio, limit]);
 
+  const previewSessions = useMemo(
+    () => items.filter((i): i is ProfileActivityCardioItem => i.type === "cardio").map((i) => i.session),
+    [items],
+  );
+  const previewKey = previewSessions.map((s) => s.id).join(",");
+
+  const previewsQuery = useQuery({
+    queryKey: ["profileCardioPreviews", id, previewKey],
+    enabled: !!id && previewSessions.length > 0,
+    queryFn: () => attachCardioTrackPreviews(previewSessions),
+  });
+
+  const previewById = useMemo(
+    () => new Map((previewsQuery.data ?? []).map((s) => [s.id, s])),
+    [previewsQuery.data],
+  );
+
+  const displayItems = useMemo(
+    () =>
+      items.map((item) => {
+        if (item.type !== "cardio") return item;
+        const hydrated = previewById.get(item.session.id);
+        return hydrated ? { ...item, session: hydrated } : item;
+      }),
+    [items, previewById],
+  );
+
   return {
-    items,
+    items: displayItems,
     totalCount,
     isLoading: workoutsQuery.isLoading || cardioQuery.isLoading,
   };

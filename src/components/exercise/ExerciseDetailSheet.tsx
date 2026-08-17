@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Drawer,
   DrawerContent,
@@ -16,6 +17,7 @@ import {
   type ExerciseFavoriteSource,
 } from "@/hooks/useExerciseFavorites";
 import { useToast } from "@/hooks/use-toast";
+import { fetchExerciseCatalogDetail } from "@/hooks/useExerciseCatalog";
 
 function difficultyToLevel(d: unknown): 1 | 2 | 3 | null {
   if (d == null) return null;
@@ -119,14 +121,32 @@ const ExerciseDetailSheet = ({
 }: ExerciseDetailSheetProps) => {
   const { toast } = useToast();
   const { isFavorite, toggleFavorite } = useExerciseFavorites();
+  const [detail, setDetail] = useState<ExerciseDetail | null>(exercise);
 
-  if (!exercise) return null;
+  useEffect(() => {
+    setDetail(exercise);
+    if (!open || !exercise) return;
+    const source = resolveFavoriteSource(exercise, favoriteSource);
+    let cancelled = false;
+    void fetchExerciseCatalogDetail(exercise.id, source)
+      .then((row) => {
+        if (!cancelled) setDetail(row);
+      })
+      .catch(() => {
+        /* el listado ya muestra nombre; el gif/instrucciones quedan opcionales */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [exercise, favoriteSource, open]);
 
-  const mediaUrl = exercise.gif_url || exercise.imagen;
-  const isOwn = exercise.usuario_id && exercise.usuario_id === currentUserId;
-  const source = resolveFavoriteSource(exercise, favoriteSource);
+  if (!detail) return null;
+
+  const mediaUrl = detail.gif_url || detail.imagen;
+  const isOwn = detail.usuario_id && detail.usuario_id === currentUserId;
+  const source = resolveFavoriteSource(detail, favoriteSource);
   const canFavorite = !!currentUserId;
-  const favored = canFavorite && isFavorite(source, exercise.id);
+  const favored = canFavorite && isFavorite(source, detail.id);
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -142,7 +162,7 @@ const ExerciseDetailSheet = ({
               {mediaUrl ? (
                 <img
                   src={mediaUrl}
-                  alt={exercise.nombre}
+                  alt={detail.nombre}
                   className="w-full h-full object-contain bg-muted"
                   loading="lazy"
                 />
@@ -159,7 +179,7 @@ const ExerciseDetailSheet = ({
               <DrawerHeader className="p-0">
                 <div className="flex items-center justify-between gap-3">
                   <DrawerTitle className="min-w-0 flex-1 text-left text-xl leading-snug">
-                    {exercise.nombre}
+                    {detail.nombre}
                   </DrawerTitle>
                   <div className="flex shrink-0 items-center gap-2 self-center">
                     {canFavorite && (
@@ -171,14 +191,14 @@ const ExerciseDetailSheet = ({
                         )}
                         aria-label={
                           favored
-                            ? `Quitar ${exercise.nombre} de favoritos`
-                            : `Guardar ${exercise.nombre} en favoritos`
+                            ? `Quitar ${detail.nombre} de favoritos`
+                            : `Guardar ${detail.nombre} en favoritos`
                         }
                         aria-pressed={favored}
                         onClick={async (e) => {
                           (e.currentTarget as HTMLButtonElement).blur();
                           try {
-                            await toggleFavorite({ source, id: exercise.id });
+                            await toggleFavorite({ source, id: detail.id });
                           } catch (err: unknown) {
                             toast({
                               title: "No se pudo actualizar favoritos",
@@ -199,7 +219,7 @@ const ExerciseDetailSheet = ({
                         variant="outline"
                         size="sm"
                         className="gap-1.5"
-                        onClick={() => onEdit(exercise)}
+                        onClick={() => onEdit(detail)}
                       >
                         <Pencil className="h-3.5 w-3.5" /> Editar
                       </Button>
@@ -209,41 +229,41 @@ const ExerciseDetailSheet = ({
               </DrawerHeader>
 
               {/* Metadatos en líneas separadas */}
-              {(exercise.body_part || exercise.equipment || exercise.tipo || exercise.grupo_muscular || exercise.dificultad) && (
+              {(detail.body_part || detail.equipment || detail.tipo || detail.grupo_muscular || detail.dificultad) && (
                 <div className="rounded-2xl bg-background p-4 space-y-2.5">
-                  {difficultyToLevel(exercise.dificultad) && (
+                  {difficultyToLevel(detail.dificultad) && (
                     <MetaRow label="Dificultad">
-                      <DifficultyBars level={difficultyToLevel(exercise.dificultad)!} />
+                      <DifficultyBars level={difficultyToLevel(detail.dificultad)!} />
                     </MetaRow>
                   )}
-                  {exercise.tipo && (
+                  {detail.tipo && (
                     <MetaRow label="Tipo">
                       <span className="inline-flex items-center gap-2">
                         <Dumbbell className="h-4 w-4 text-primary" />
-                        <span className="capitalize">{exercise.tipo}</span>
+                        <span className="capitalize">{detail.tipo}</span>
                       </span>
                     </MetaRow>
                   )}
-                  {exercise.grupo_muscular && (
+                  {detail.grupo_muscular && (
                     <MetaRow label="Grupo">
                       <span className="inline-flex items-center gap-2">
                         <Layers className="h-4 w-4 text-primary" />
-                        <span className="capitalize">{exercise.grupo_muscular}</span>
+                        <span className="capitalize">{detail.grupo_muscular}</span>
                       </span>
                     </MetaRow>
                   )}
-                  {exercise.equipment && (
+                  {detail.equipment && (
                     <MetaRow label="Equipamiento">
                       <span className="inline-flex items-center gap-2">
                         <Wrench className="h-4 w-4 text-primary" />
-                        <span className="capitalize">{exercise.equipment}</span>
+                        <span className="capitalize">{detail.equipment}</span>
                       </span>
                     </MetaRow>
                   )}
-                  {exercise.body_part && (
+                  {detail.body_part && (
                     <MetaRow label="Músculos">
                       <div className="flex flex-wrap gap-2">
-                        {(Array.isArray(exercise.body_part) ? exercise.body_part : [exercise.body_part]).map((part) => (
+                        {(Array.isArray(detail.body_part) ? detail.body_part : [detail.body_part]).map((part) => (
                           <Badge key={part} variant="secondary" className="capitalize">
                             💪 {part}
                           </Badge>
@@ -255,11 +275,11 @@ const ExerciseDetailSheet = ({
               )}
 
               {/* Instructions */}
-              {exercise.instructions && exercise.instructions.length > 0 && (
+              {detail.instructions && detail.instructions.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="font-semibold text-sm">Instrucciones</h3>
                   <ol className="space-y-2.5 list-none">
-                    {exercise.instructions.map((step, i) => (
+                    {detail.instructions.map((step, i) => (
                       <li key={i} className="flex gap-3 text-sm leading-relaxed">
                         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
                           {i + 1}

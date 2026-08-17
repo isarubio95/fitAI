@@ -2,7 +2,8 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { hydrateActividadesWithDetails } from "./useWorkouts";
-import { CARDIO_SESSION_SELECT } from "./useCardioSessions";
+import { CARDIO_SESSION_LIST_SELECT } from "./useCardioSessions";
+import { attachCardioTrackPreviews } from "@/lib/attachCardioTrackPreviews";
 import {
   mergeDatedFeedEntries,
   nextFeedCursorFromItems,
@@ -82,7 +83,7 @@ async function fetchCommunityFeedPage(
 
   let cardioQuery = supabase
     .from("cardio_sesion")
-    .select(CARDIO_SESSION_SELECT)
+    .select(CARDIO_SESSION_LIST_SELECT)
     .eq("es_publica", true)
     .not("fecha_fin", "is", null)
     .neq("usuario_id", userId)
@@ -123,6 +124,12 @@ async function fetchCommunityFeedPage(
     pageSize,
   );
 
+  const cardioInPage = merged
+    .filter((m) => m.source === "b")
+    .map((m) => m.entry.payload);
+  const hydratedCardio = await attachCardioTrackPreviews(cardioInPage);
+  const cardioById = new Map(hydratedCardio.map((s) => [s.id, s]));
+
   const userIds = Array.from(
     new Set(
       merged.map((m) =>
@@ -142,7 +149,7 @@ async function fetchCommunityFeedPage(
         fecha: workout.fecha,
       };
     }
-    const session = m.entry.payload;
+    const session = cardioById.get(m.entry.payload.id) ?? m.entry.payload;
     return {
       type: "cardio" as const,
       session,
