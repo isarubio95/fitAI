@@ -56,8 +56,12 @@ const CHART = {
   /** Altura total del ResponsiveContainer (px). */
   height: 190,
 
-  /** Margen interno del AreaChart. `left` negativo acerca el área al borde. */
-  margin: { top: 20, right: 0, left: -8, bottom: 0 },
+  /**
+   * Margen interno del AreaChart.
+   * `right` aplica a línea, punto y guías para que no se salgan.
+   * `left` negativo acerca el área al borde.
+   */
+  margin: { top: 20, right: 8, left: -8, bottom: 0 },
 
   /** Eje Y: ancho reservado para los números (px). */
   yAxisWidth: 36,
@@ -309,7 +313,7 @@ export function ExerciseProgressWidget() {
 
   return (
     <Card className="w-full min-w-0 overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-      <CardHeader className="space-y-0 px-6 pt-8 pb-4">
+      <CardHeader className="px-6 pt-8 pb-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">
             <CardTitle asChild className="text-base font-bold">
@@ -403,8 +407,10 @@ export function ExerciseProgressWidget() {
             </button>
           </div>
         </div>
+      </CardHeader>
+      <CardContent className="min-w-0 px-6 pt-0">
         {/* w-0 min-w-full: el select no puede ensanchar al padre con nombres largos */}
-        <div className="mt-3 w-0 min-w-full max-w-full overflow-hidden">
+        <div className="w-0 min-w-full max-w-full overflow-hidden pb-4">
           <Select
             value={selectedExercise?.id}
             onValueChange={(val) => {
@@ -429,8 +435,6 @@ export function ExerciseProgressWidget() {
             </SelectContent>
           </Select>
         </div>
-      </CardHeader>
-      <CardContent className="min-w-0 px-6 pt-0">
         <div
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
@@ -522,8 +526,13 @@ export function ExerciseProgressWidget() {
                       fill: "hsl(var(--primary))",
                       strokeWidth: CHART.strokeWidth,
                       stroke: "hsl(var(--background))",
+                      clipDot: false,
                     }}
-                    activeDot={{ r: CHART.activeDotRadius, fill: "hsl(var(--primary))" }}
+                    activeDot={{
+                      r: CHART.activeDotRadius,
+                      fill: "hsl(var(--primary))",
+                      clipDot: false,
+                    }}
                   />
                   {displayPoint && (
                     <ReferenceLine
