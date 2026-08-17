@@ -64,26 +64,22 @@ export function SettingsDrawer() {
         </DrawerHeader>
 
         <div className="mt-3 flex-1 space-y-6 overflow-y-auto px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          {/* Color de acento y apariencia */}
           <div className={settingsSectionCardClass}>
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <SunMoon className="h-4 w-4 text-muted-foreground" />
+              Apariencia
+            </p>
+            <Select value={theme} onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-200 bg-popover">
+                <SelectItem value="system">Automático (Sistema)</SelectItem>
+                <SelectItem value="light">Claro</SelectItem>
+                <SelectItem value="dark">Oscuro</SelectItem>
+              </SelectContent>
+            </Select>
             <ColorThemeSelector />
-
-            <div className="space-y-3">
-              <p className="flex items-center gap-2 text-sm font-medium">
-                <SunMoon className="h-4 w-4 text-muted-foreground" />
-                Apariencia
-              </p>
-              <Select value={theme} onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}>
-                <SelectTrigger className="w-full bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="z-200 bg-popover">
-                  <SelectItem value="system">Automático (Sistema)</SelectItem>
-                  <SelectItem value="light">Claro</SelectItem>
-                  <SelectItem value="dark">Oscuro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {/* Notificaciones */}
