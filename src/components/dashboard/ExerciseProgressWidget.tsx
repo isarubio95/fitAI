@@ -28,18 +28,25 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
-  type TooltipContentProps,
   usePlotArea,
   useXAxisScale,
   XAxis,
   YAxis,
 } from "recharts";
-import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 import { addDays, format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { chartAxis } from "@/lib/chart-colors";
+import {
+  ChartScrubStat,
+  ChartScrubSummary,
+  ChartScrubSync,
+  CHART_SCRUB_CURSOR,
+  CHART_SCRUB_TOOLTIP_WRAPPER,
+} from "@/components/dashboard/chartScrub";
 
 /**
  * ── Medidas del gráfico de Fuerza Máxima ──────────────────────────────────────
@@ -50,7 +57,7 @@ const CHART = {
   height: 190,
 
   /** Margen interno del AreaChart. `left` negativo acerca el área al borde. */
-  margin: { top: 5, right: 5, left: -8, bottom: 0 },
+  margin: { top: 20, right: 0, left: -8, bottom: 0 },
 
   /** Eje Y: ancho reservado para los números (px). */
   yAxisWidth: 36,
@@ -64,13 +71,10 @@ const CHART = {
   /**
    * Eje X — padding de las etiquetas (custom; no mueve línea/puntos).
    * - left: espacio extra de la 1.ª etiqueta hacia la derecha.
+   * - right: espacio extra de la última etiqueta hacia la izquierda.
    * - top: separación entre el área del gráfico y las fechas.
-   * Nativo equivalente: `padding.left` (mueve el área) y `tickMargin` (si ticks nativos).
    */
-  xLabelPad: { left: 22, top: 24 },
-
-  /** Eje X: padding nativo de la escala a la derecha (sí desplaza un poco el área). */
-  xScalePadRight: 12,
+  xLabelPad: { left: 22, right: 22, top: 24 },
 
   /** Tamaño de fuente de ticks/etiquetas (px). */
   tickFontSize: 11,
@@ -173,7 +177,7 @@ function EqualSpacedXLabels({
   if (!Number.isFinite(xStart) || !Number.isFinite(xEnd)) return null;
 
   const left = xStart + CHART.xLabelPad.left;
-  const right = xEnd;
+  const right = xEnd - CHART.xLabelPad.right;
   const y = plotArea.y + plotArea.height;
 
   return (
@@ -241,6 +245,18 @@ export function ExerciseProgressWidget() {
   }, [history]);
 
   const xTicks = useMemo(() => getEvenXTicks(chartData.length), [chartData.length]);
+  const lastPoint = chartData[chartData.length - 1];
+  const lastIndex = chartData.length > 0 ? chartData.length - 1 : undefined;
+  const [scrubPoint, setScrubPoint] = useState<ChartHistoryPoint | null>(null);
+  const handleScrubPoint = useCallback((point: ChartHistoryPoint | undefined) => {
+    setScrubPoint(point ?? null);
+  }, []);
+
+  useEffect(() => {
+    setScrubPoint(null);
+  }, [selectedExercise?.id]);
+
+  const displayPoint = scrubPoint ?? lastPoint;
 
   // Swipe handling
   const touchStartX = useRef(0);
@@ -293,7 +309,7 @@ export function ExerciseProgressWidget() {
 
   return (
     <Card className="w-full min-w-0 overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-      <CardHeader className="px-6 pt-8 pb-4">
+      <CardHeader className="space-y-0 px-6 pt-8 pb-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">
             <CardTitle asChild className="text-base font-bold">
@@ -387,82 +403,6 @@ export function ExerciseProgressWidget() {
             </button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="min-w-0 px-6 pt-0">
-        <div
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-          className="touch-pan-y"
-        >
-          {historyData === undefined ? (
-            <div className="h-44 py-2" aria-hidden />
-          ) : !history || history.length === 0 ? (
-            <div className="py-2">
-              <div className="flex items-center justify-center h-44 text-sm text-muted-foreground text-center px-4">
-                Sigue entrenando para ver tu progreso 💪
-              </div>
-            </div>
-          ) : (
-            <div className="py-2">
-              <ResponsiveContainer width="100%" height={CHART.height}>
-                <AreaChart data={chartData} margin={{ ...CHART.margin }}>
-                  <defs>
-                    <linearGradient id="progressGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    stroke="hsl(var(--border))"
-                    strokeOpacity={0.45}
-                    vertical={false}
-                    horizontal
-                  />
-                  <XAxis
-                    type="number"
-                    dataKey="x"
-                    domain={[0, Math.max(0, chartData.length - 1)]}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={false}
-                    height={X_AXIS_HEIGHT}
-                    ticks={xTicks}
-                    padding={{ left: 0, right: CHART.xScalePadRight }}
-                  />
-                  <YAxis
-                    width={CHART.yAxisWidth}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: CHART.tickFontSize }}
-                    domain={yScale.domain}
-                    ticks={yScale.ticks}
-                    interval={0}
-                    tickFormatter={(v) => formatProgressValue(v as number)}
-                  />
-                  <Tooltip content={(props) => <CustomTooltip {...props} metric={metric} />} />
-                  <Area
-                    type="monotone"
-                    dataKey="oneRepMax"
-                    isAnimationActive={false}
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={CHART.strokeWidth}
-                    fill="url(#progressGradient)"
-                    dot={{
-                      r: CHART.dotRadius,
-                      fill: "hsl(var(--primary))",
-                      strokeWidth: CHART.strokeWidth,
-                      stroke: "hsl(var(--background))",
-                    }}
-                    activeDot={{ r: CHART.activeDotRadius, fill: "hsl(var(--primary))" }}
-                  />
-                  <EqualSpacedXLabels chartData={chartData} xTicks={xTicks} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-
         {/* w-0 min-w-full: el select no puede ensanchar al padre con nombres largos */}
         <div className="mt-3 w-0 min-w-full max-w-full overflow-hidden">
           <Select
@@ -489,30 +429,118 @@ export function ExerciseProgressWidget() {
             </SelectContent>
           </Select>
         </div>
+      </CardHeader>
+      <CardContent className="min-w-0 px-6 pt-0">
+        <div
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          className="touch-pan-y"
+        >
+          {historyData === undefined ? (
+            <div className="h-44" aria-hidden />
+          ) : !history || history.length === 0 ? (
+            <div className="flex items-center justify-center h-44 text-sm text-muted-foreground text-center px-4">
+              Sigue entrenando para ver tu progreso 💪
+            </div>
+          ) : (
+            <div>
+              {displayPoint && (
+                <ChartScrubSummary date={displayPoint.tooltipDate ?? displayPoint.date}>
+                  {metric === "reps" ? (
+                    <ChartScrubStat
+                      label="Máx. reps"
+                      value={`${formatProgressValue(displayPoint.oneRepMax)} reps`}
+                      color="hsl(var(--primary))"
+                    />
+                  ) : (
+                    <ChartScrubStat
+                      label="1RM"
+                      value={`${formatProgressValue(displayPoint.oneRepMax)} kg`}
+                      color="hsl(var(--primary))"
+                    />
+                  )}
+                  <ChartScrubStat label="Serie" value={formatRealSet(displayPoint.weight, displayPoint.reps)} />
+                </ChartScrubSummary>
+              )}
+              <ResponsiveContainer width="100%" height={CHART.height}>
+                <AreaChart
+                  key={selectedExercise?.id}
+                  data={chartData}
+                  margin={{ ...CHART.margin }}
+                >
+                  <defs>
+                    <linearGradient id="progressGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    stroke={chartAxis.grid}
+                    vertical={false}
+                    horizontal
+                    horizontalValues={yScale.ticks}
+                  />
+                  <XAxis
+                    type="number"
+                    dataKey="x"
+                    domain={[0, Math.max(0, chartData.length - 1)]}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={false}
+                    height={X_AXIS_HEIGHT}
+                    ticks={xTicks}
+                    padding={{ left: 0, right: 0 }}
+                  />
+                  <YAxis
+                    width={CHART.yAxisWidth}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: CHART.tickFontSize }}
+                    domain={yScale.domain}
+                    ticks={yScale.ticks}
+                    interval={0}
+                    tickFormatter={(v) => formatProgressValue(v as number)}
+                  />
+                  <Tooltip
+                    active
+                    defaultIndex={lastIndex}
+                    cursor={false}
+                    isAnimationActive={false}
+                    wrapperStyle={CHART_SCRUB_TOOLTIP_WRAPPER}
+                    content={<ChartScrubSync onPoint={handleScrubPoint} />}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="oneRepMax"
+                    isAnimationActive={false}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={CHART.strokeWidth}
+                    fill="url(#progressGradient)"
+                    dot={{
+                      r: CHART.dotRadius,
+                      fill: "hsl(var(--primary))",
+                      strokeWidth: CHART.strokeWidth,
+                      stroke: "hsl(var(--background))",
+                    }}
+                    activeDot={{ r: CHART.activeDotRadius, fill: "hsl(var(--primary))" }}
+                  />
+                  {displayPoint && (
+                    <ReferenceLine
+                      x={displayPoint.x}
+                      stroke={CHART_SCRUB_CURSOR.stroke}
+                      strokeWidth={CHART_SCRUB_CURSOR.strokeWidth}
+                      strokeOpacity={CHART_SCRUB_CURSOR.strokeOpacity}
+                      ifOverflow="visible"
+                    />
+                  )}
+                  <EqualSpacedXLabels chartData={chartData} xTicks={xTicks} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
-  );
-}
-
-function CustomTooltip({
-  active,
-  payload,
-  metric,
-}: TooltipContentProps<ValueType, NameType> & { metric: ExerciseProgressMetric }) {
-  if (!active || !payload?.length) return null;
-  const data = payload[0].payload as ChartHistoryPoint;
-  const when = data.tooltipDate ?? data.date;
-  return (
-    <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md text-popover-foreground">
-      <p className="font-medium">
-        {format(new Date(when), "d MMM yyyy", { locale: es })}
-      </p>
-      {metric === "reps" ? (
-        <p className="text-primary font-semibold">{formatProgressValue(data.oneRepMax)} reps</p>
-      ) : (
-        <p className="text-primary font-semibold">1RM: {formatProgressValue(data.oneRepMax)} kg</p>
-      )}
-      <p className="text-muted-foreground">Real: {formatRealSet(data.weight, data.reps)}</p>
-    </div>
   );
 }

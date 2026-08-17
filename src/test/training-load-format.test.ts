@@ -3,6 +3,7 @@ import {
   formatMonthAbbrev,
   formatTrainingLoadXTick,
   getTrainingLoadXTicks,
+  getTrainingLoadYScale,
 } from "@/components/dashboard/training-load/format";
 
 function buildDates(start: string, count: number): string[] {
@@ -81,5 +82,35 @@ describe("getTrainingLoadXTicks", () => {
       "2026-04-01",
       "2026-06-01",
     ]);
+  });
+});
+
+describe("getTrainingLoadYScale", () => {
+  it("siempre devuelve 5 ticks equiespaciados incluyendo el 0", () => {
+    const { ticks, domain } = getTrainingLoadYScale(330);
+    expect(ticks).toHaveLength(5);
+    expect(ticks[0]).toBe(0);
+    expect(ticks[4]).toBe(domain[1]);
+
+    const step = ticks[1] - ticks[0];
+    expect(step).toBeGreaterThan(0);
+    for (let i = 1; i < ticks.length; i += 1) {
+      expect(ticks[i] - ticks[i - 1]).toBe(step);
+    }
+  });
+
+  it("sube el techo cuando los valores son altos", () => {
+    const low = getTrainingLoadYScale(40);
+    const high = getTrainingLoadYScale(330);
+    expect(high.domain[1]).toBeGreaterThan(low.domain[1]);
+    expect(high.domain[1]).toBeGreaterThanOrEqual(330);
+    expect(low.ticks).toEqual([0, 20, 40, 60, 80]);
+    expect(high.ticks).toEqual([0, 100, 200, 300, 400]);
+  });
+
+  it("con valores vacíos o cero sigue mostrando 5 líneas desde 0", () => {
+    const { ticks, domain } = getTrainingLoadYScale(0);
+    expect(ticks).toEqual([0, 1, 2, 3, 4]);
+    expect(domain).toEqual([0, 4]);
   });
 });

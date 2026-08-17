@@ -78,7 +78,7 @@ describe("TrainingLoadWidget", () => {
     expect(screen.getAllByText("42").length).toBeGreaterThan(0);
     expect(screen.getByText("Tu forma hoy")).toBeInTheDocument();
     expect(screen.getAllByText("−8").length).toBeGreaterThan(0);
-    expect(screen.getByText((content) => content.includes("Últimos 7 días"))).toBeInTheDocument();
+    expect(screen.queryByText((content) => content.includes("Últimos 7 días"))).not.toBeInTheDocument();
   });
 
   it("usa caché local cuando no hay respuesta de red", () => {
@@ -152,5 +152,19 @@ describe("TrainingLoadWidget", () => {
       "aria-pressed",
       "false",
     );
+  });
+
+  it("muestra el resumen del último día encima del gráfico", () => {
+    mockUseTrainingLoad.mockReturnValue({
+      data: SAMPLE_DATA,
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TrainingLoadWidget />);
+    expect(screen.getByText(/2 abr\.? 2026/i)).toBeInTheDocument();
+    expect(screen.getByText("Carga")).toBeInTheDocument();
+    expect(screen.getByText("120 (F 70 · C 50)")).toBeInTheDocument();
+    expect(screen.getByText(/−8 · Óptimo/)).toBeInTheDocument();
   });
 });

@@ -20,6 +20,35 @@ export function formatAxisValue(value: number): string {
   return rounded < 0 ? `${MINUS}${Math.abs(rounded)}` : `${rounded}`;
 }
 
+const Y_TICK_COUNT = 5;
+const Y_HEADROOM = 1.08;
+
+/** Paso redondo (1, 2, 5 × 10ⁿ) que cubre al menos `value`. */
+function niceCeilStep(value: number): number {
+  const v = Math.max(1, value);
+  const exponent = Math.floor(Math.log10(v));
+  const magnitude = 10 ** exponent;
+  const fraction = v / magnitude;
+  const niceFraction = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
+  return niceFraction * magnitude;
+}
+
+/**
+ * Escala Y del gráfico Fitness/Fatiga: siempre `tickCount` marcas (incluye 0),
+ * con el mismo intervalo numérico y visual. El máximo crece o encoge con los datos.
+ */
+export function getTrainingLoadYScale(
+  maxValue: number,
+  tickCount = Y_TICK_COUNT,
+): { domain: [number, number]; ticks: number[] } {
+  const divisions = Math.max(1, tickCount - 1);
+  const paddedMax = Math.max(0, maxValue) * Y_HEADROOM;
+  const step = niceCeilStep(paddedMax / divisions);
+  const maxDomain = step * divisions;
+  const ticks = Array.from({ length: divisions + 1 }, (_, i) => i * step);
+  return { domain: [0, maxDomain], ticks };
+}
+
 /** Abreviatura de mes capitalizada (p. ej. "Ago"). */
 export function formatMonthAbbrev(date: Date): string {
   const raw = format(date, "MMM", { locale: es });

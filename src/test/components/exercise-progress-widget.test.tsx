@@ -40,6 +40,7 @@ vi.mock("recharts", () => ({
   YAxis: () => null,
   Tooltip: () => null,
   Area: () => null,
+  ReferenceLine: () => null,
   useXAxisScale: () => undefined,
   usePlotArea: () => undefined,
 }));
@@ -134,6 +135,26 @@ describe("ExerciseProgressWidget", () => {
     fireEvent.click(screen.getByLabelText("Qué es la fuerza máxima"));
     expect(screen.getByText("¿Qué es el máximo de reps?")).toBeInTheDocument();
     expect(screen.getByText("Máximo: 12 reps")).toBeInTheDocument();
+  });
+
+  it("muestra el resumen del último punto encima del gráfico", () => {
+    mockUseExerciseWithHistory.mockReturnValue({
+      data: [{ id: "press", name: "Press banca", lastPerformed: "2026-05-01" }],
+      isLoading: false,
+    });
+    mockUseExerciseHistory.mockReturnValue({
+      data: {
+        history: [{ date: "2026-05-01", oneRepMax: 100, weight: 80, reps: 8 }],
+        lastRecord: { oneRepMax: 100, weight: 80, reps: 8, date: "2026-05-01" },
+        metric: "1rm",
+      },
+    });
+
+    render(<ExerciseProgressWidget />);
+    expect(screen.getByText(/1 may\.? 2026/i)).toBeInTheDocument();
+    expect(screen.getByText("1RM")).toBeInTheDocument();
+    expect(screen.getByText("100 kg")).toBeInTheDocument();
+    expect(screen.getByText("80kg × 8 reps")).toBeInTheDocument();
   });
 });
 
