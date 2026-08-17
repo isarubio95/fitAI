@@ -4,7 +4,7 @@ import { Browser } from "@capacitor/browser";
 import { supabase } from "@/integrations/supabase/client";
 
 /** Esquema personalizado registrado en AndroidManifest para volver a la app tras OAuth. */
-export const NATIVE_AUTH_CALLBACK = "com.fitai.app://auth-callback";
+export const NATIVE_AUTH_CALLBACK = "com.trackgym.app://auth-callback";
 
 export const isNativeApp = () => Capacitor.isNativePlatform();
 

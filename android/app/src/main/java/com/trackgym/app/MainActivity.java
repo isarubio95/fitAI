@@ -1,4 +1,4 @@
-package com.fitai.app;
+package com.trackgym.app;
 
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;

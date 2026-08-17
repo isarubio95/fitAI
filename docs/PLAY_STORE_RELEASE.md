@@ -44,7 +44,13 @@ Si falla con `JAVA_HOME is not set`, configura una ruta valida de JDK en Windows
 
 Despues, abre una terminal nueva y vuelve a ejecutar el comando.
 
-## 4) Subir a Play Console
+## 4) Identidad de la app
+
+- `applicationId` / package: `com.trackgym.app`
+- Deep link OAuth: `com.trackgym.app://auth-callback`
+- En Supabase Auth → Redirect URLs, añade esa URL personalizada.
+
+## 5) Subir a Play Console
 
 1. Crea la app en Play Console.
 2. Completa Store Listing (nombre, descripcion, icono, screenshots).
@@ -52,13 +58,13 @@ Despues, abre una terminal nueva y vuelve a ejecutar el comando.
 4. Sube el `.aab` en `Testing > Closed testing`.
 5. Corrige avisos de pre-lanzamiento y luego promueve a produccion.
 
-## 5) Buenas practicas
+## 6) Buenas practicas
 
 - Incrementar `versionCode` en cada release.
 - Mantener `versionName` semantico (ej. `0.1.1`, `0.2.0`).
 - Probar login, rutas principales y flujos con red lenta antes de publicar.
 
-## 6) Health Connect (FC post-entreno)
+## 7) Health Connect (FC post-entreno)
 
 La app lee **frecuencia cardiaca** desde Health Connect al guardar cardio live si no hubo sensor BLE.
 

@@ -1,4 +1,4 @@
-package com.fitai.app;
+package com.trackgym.app;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

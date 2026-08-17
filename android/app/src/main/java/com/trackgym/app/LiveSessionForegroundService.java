@@ -1,4 +1,4 @@
-package com.fitai.app;
+package com.trackgym.app;
 
 import android.app.Notification;
 import android.app.Service;
@@ -24,12 +24,12 @@ import java.util.Map;
  * While resting, ticks every second so the emptying rest bar matches the in-app drawer.
  */
 public class LiveSessionForegroundService extends Service {
-    public static final String ACTION_START = "com.fitai.app.live.START";
-    public static final String ACTION_UPDATE = "com.fitai.app.live.UPDATE";
-    public static final String ACTION_STOP = "com.fitai.app.live.STOP";
-    public static final String ACTION_STOP_ALL = "com.fitai.app.live.STOP_ALL";
-    public static final String ACTION_TRACK_START = "com.fitai.app.live.TRACK_START";
-    public static final String ACTION_TRACK_STOP = "com.fitai.app.live.TRACK_STOP";
+    public static final String ACTION_START = "com.trackgym.app.live.START";
+    public static final String ACTION_UPDATE = "com.trackgym.app.live.UPDATE";
+    public static final String ACTION_STOP = "com.trackgym.app.live.STOP";
+    public static final String ACTION_STOP_ALL = "com.trackgym.app.live.STOP_ALL";
+    public static final String ACTION_TRACK_START = "com.trackgym.app.live.TRACK_START";
+    public static final String ACTION_TRACK_STOP = "com.trackgym.app.live.TRACK_STOP";
 
     private static final Map<String, LiveSessionState> ACTIVE = new HashMap<>();
 
@@ -330,7 +330,7 @@ public class LiveSessionForegroundService extends Service {
         if (trackingWakeLock == null) {
             PowerManager pm = getSystemService(PowerManager.class);
             if (pm == null) return;
-            trackingWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "fitai:cardio-track");
+            trackingWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "trackgym:cardio-track");
             trackingWakeLock.setReferenceCounted(false);
         }
         if (!trackingWakeLock.isHeld()) {
