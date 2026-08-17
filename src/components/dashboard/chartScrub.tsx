@@ -27,7 +27,7 @@ export function ChartScrubSummary({
   return (
     <div className="mb-2.5 min-h-13" aria-live="polite">
       <p className="text-[12px] font-medium text-muted-foreground">{formatScrubDate(date)}</p>
-      <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1">{children}</div>
+      <div className="mt-1 flex flex-wrap gap-x-7 gap-y-1">{children}</div>
     </div>
   );
 }
