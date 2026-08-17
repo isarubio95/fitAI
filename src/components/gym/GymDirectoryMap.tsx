@@ -12,7 +12,6 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { MapBasemapControl } from "@/components/cardio/MapBasemapControl";
 import {
-  firstMapLabelLayerId,
   loadMapBasemapStyle,
   readCardioMapBasemap,
   writeCardioMapBasemap,
@@ -67,11 +66,9 @@ function gymsToCollection(gyms: GimnasioCatalogItem[]): FeatureCollection {
 function addLayerIfMissing(
   map: MapLibreMap,
   layer: Parameters<MapLibreMap["addLayer"]>[0],
-  beforeId?: string,
 ) {
   if (map.getLayer(layer.id)) return;
-  const before = beforeId && map.getLayer(beforeId) ? beforeId : undefined;
-  map.addLayer(layer, before);
+  map.addLayer(layer);
 }
 
 function ensureOpenFreeMapGlyphs(map: MapLibreMap) {
@@ -81,8 +78,6 @@ function ensureOpenFreeMapGlyphs(map: MapLibreMap) {
 }
 
 function addGymLayers(map: MapLibreMap) {
-  if (!map.isStyleLoaded()) return;
-
   ensureOpenFreeMapGlyphs(map);
 
   if (!map.getSource(SOURCE_ID)) {
@@ -92,62 +87,49 @@ function addGymLayers(map: MapLibreMap) {
       cluster: true,
       clusterMaxZoom: 14,
       clusterRadius: 48,
+      generateId: true,
     });
   }
 
-  const beforeId = firstMapLabelLayerId(map.getStyle().layers);
-
-  addLayerIfMissing(
-    map,
-    {
-      id: LAYER_CLUSTERS,
-      type: "circle",
-      source: SOURCE_ID,
-      filter: ["has", "point_count"],
-      paint: {
-        "circle-color": "#059669",
-        "circle-opacity": 0.88,
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "rgba(255,255,255,0.7)",
-        "circle-radius": ["step", ["get", "point_count"], 16, 10, 20, 50, 26],
-      },
+  addLayerIfMissing(map, {
+    id: LAYER_CLUSTERS,
+    type: "circle",
+    source: SOURCE_ID,
+    filter: ["has", "point_count"],
+    paint: {
+      "circle-color": "#10b981",
+      "circle-opacity": 0.92,
+      "circle-stroke-width": 2,
+      "circle-stroke-color": "#ffffff",
+      "circle-radius": ["step", ["get", "point_count"], 18, 10, 22, 50, 28],
     },
-    beforeId,
-  );
+  });
 
-  addLayerIfMissing(
-    map,
-    {
-      id: LAYER_POINTS,
-      type: "circle",
-      source: SOURCE_ID,
-      filter: ["!", ["has", "point_count"]],
-      paint: {
-        "circle-color": "#10b981",
-        "circle-radius": 7,
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "#ffffff",
-      },
+  addLayerIfMissing(map, {
+    id: LAYER_POINTS,
+    type: "circle",
+    source: SOURCE_ID,
+    filter: ["!", ["has", "point_count"]],
+    paint: {
+      "circle-color": "#10b981",
+      "circle-radius": 8,
+      "circle-stroke-width": 2,
+      "circle-stroke-color": "#ffffff",
     },
-    beforeId,
-  );
+  });
 
-  addLayerIfMissing(
-    map,
-    {
-      id: LAYER_SELECTED,
-      type: "circle",
-      source: SOURCE_ID,
-      filter: ["==", ["get", "id"], ""],
-      paint: {
-        "circle-color": "#34d399",
-        "circle-radius": 10,
-        "circle-stroke-width": 3,
-        "circle-stroke-color": "#ffffff",
-      },
+  addLayerIfMissing(map, {
+    id: LAYER_SELECTED,
+    type: "circle",
+    source: SOURCE_ID,
+    filter: ["==", ["get", "id"], ""],
+    paint: {
+      "circle-color": "#34d399",
+      "circle-radius": 11,
+      "circle-stroke-width": 3,
+      "circle-stroke-color": "#ffffff",
     },
-    beforeId,
-  );
+  });
 
   try {
     addLayerIfMissing(map, {
@@ -159,6 +141,7 @@ function addGymLayers(map: MapLibreMap) {
         "text-field": ["get", "point_count_abbreviated"],
         "text-font": CLUSTER_TEXT_FONT,
         "text-size": 12,
+        "text-allow-overlap": true,
       },
       paint: {
         "text-color": "#ffffff",
@@ -170,7 +153,6 @@ function addGymLayers(map: MapLibreMap) {
 }
 
 function syncGymsOnMap(map: MapLibreMap, gyms: GimnasioCatalogItem[]) {
-  if (!map.isStyleLoaded()) return;
   addGymLayers(map);
   const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
   source?.setData(gymsToCollection(gyms));
@@ -201,13 +183,14 @@ export function GymDirectoryMap({
     let cancelled = false;
     let map: MapLibreMap | null = null;
     let raf = 0;
-    let readyTimer = 0;
-    let markedReady = false;
 
-    const markReady = () => {
-      if (cancelled || !map || markedReady) return;
-      markedReady = true;
-      syncGymsOnMap(map, gymsRef.current);
+    const paintGyms = () => {
+      if (cancelled || !map) return;
+      try {
+        syncGymsOnMap(map, gymsRef.current);
+      } catch {
+        return;
+      }
       setReady(true);
       map.resize();
     };
@@ -234,15 +217,8 @@ export function GymDirectoryMap({
       map.touchZoomRotate.disableRotation();
       map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
-      map.once("style.load", markReady);
-      map.once("load", markReady);
-      readyTimer = window.setTimeout(() => {
-        if (!map?.isStyleLoaded()) {
-          setReady(true);
-          return;
-        }
-        markReady();
-      }, 2500);
+      map.on("load", paintGyms);
+      map.on("style.load", paintGyms);
 
       map.on("click", LAYER_CLUSTERS, (event: MapLayerMouseEvent) => {
         const feature = event.features?.[0];
@@ -282,7 +258,6 @@ export function GymDirectoryMap({
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
-      window.clearTimeout(readyTimer);
       map?.remove();
       if (mapRef.current === map) mapRef.current = null;
       map = null;
@@ -320,7 +295,11 @@ export function GymDirectoryMap({
     if (!ready) return;
     const map = mapRef.current;
     if (!map) return;
-    syncGymsOnMap(map, gyms);
+    try {
+      syncGymsOnMap(map, gyms);
+    } catch {
+      /* el estilo puede estar recargándose */
+    }
   }, [gyms, ready]);
 
   useEffect(() => {
