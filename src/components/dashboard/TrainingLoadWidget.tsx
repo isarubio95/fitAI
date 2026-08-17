@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CHART_AREA_OPACITY, chartAxis, chartColors } from "@/lib/chart-colors";
+import { CHART_AREA_OPACITY, chartAxis, chartColors, chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
 import { cn } from "@/lib/utils";
 import { useTrainingLoad, type TrainingLoadData, type TrainingLoadPoint } from "@/hooks/useTrainingLoad";
@@ -52,11 +52,7 @@ type RangeKey = (typeof RANGE_OPTIONS)[number]["key"];
 const TRAINING_LOAD_RANGE_STORAGE_KEY = "gym-log.training-load.range";
 const TRAINING_LOAD_DATA_STORAGE_KEY = "gym-log.training-load.data.v2";
 const TRAINING_LOAD_EXPLAIN_STORAGE_KEY = "gym-log.training-load.explain-mode";
-const Y_AXIS_WIDTH = 40;
-const AXIS_TICK = { fill: chartAxis.tick, fontSize: 12 };
 const X_AXIS_HEIGHT = 28;
-/** Compensa el sesgo a la izquierda de las etiquetas custom del eje X. */
-const X_TICK_DX = 34;
 
 function isValidRangeKey(value: string): value is RangeKey {
   return RANGE_OPTIONS.some((option) => option.key === value);
@@ -128,7 +124,7 @@ function DayAxisTick({
 
   return (
     <text
-      x={xNum + X_TICK_DX}
+      x={xNum}
       y={yNum + 12}
       textAnchor="middle"
       fill={chartAxis.tick}
@@ -319,7 +315,7 @@ export function TrainingLoadWidget() {
           </>
         )}
 
-        <div className="flex flex-wrap justify-around gap-2 pt-1">
+        <div className="flex flex-wrap justify-between gap-2 pt-1">
           {RANGE_OPTIONS.map((option) => (
             <button
               key={option.key}
@@ -367,10 +363,11 @@ export function TrainingLoadWidget() {
               <ComposedChart
                 key={range}
                 data={chartData}
-                margin={{ top: 12, right: 12, left: 0, bottom: 0 }}
+                margin={{ top: 12, right: chartYAxis.marginRight, left: 0, bottom: 0 }}
               >
                 <CartesianGrid
                   stroke={chartAxis.grid}
+                  strokeOpacity={chartAxis.gridOpacity}
                   vertical={false}
                   horizontal
                   horizontalValues={yScale.ticks}
@@ -387,14 +384,16 @@ export function TrainingLoadWidget() {
                 />
                 <YAxis
                   type="number"
+                  orientation={chartYAxis.orientation}
                   domain={yScale.domain}
                   ticks={yScale.ticks}
                   interval={0}
                   allowDecimals={false}
                   axisLine={false}
                   tickLine={false}
-                  tick={AXIS_TICK}
-                  width={Y_AXIS_WIDTH}
+                  tickMargin={0}
+                  tick={<ChartYAxisTick fontSize={12} />}
+                  width={chartYAxis.width}
                   tickFormatter={formatAxisValue}
                 />
                 <Tooltip

@@ -7,8 +7,8 @@ import type { NameType, ValueType } from "recharts/types/component/DefaultToolti
 /** Cursor vertical estilo Strava: siempre visible con `defaultIndex` + `active`. */
 export const CHART_SCRUB_CURSOR = {
   stroke: "hsl(var(--foreground))",
-  strokeWidth: 1,
-  strokeOpacity: 0.35,
+  strokeWidth: 1.25,
+  strokeOpacity: 0.5,
 } as const;
 
 export const CHART_SCRUB_TOOLTIP_WRAPPER: CSSProperties = { display: "none" };

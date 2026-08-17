@@ -8,6 +8,7 @@ import {
   Activity, Weight, Layers, Trophy, Star,
 } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
+import { chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
 import {
   format, startOfWeek, subWeeks, isBefore, addWeeks,
   startOfMonth, endOfMonth, subMonths,
@@ -221,9 +222,9 @@ const WorkoutHistory = () => {
               <Skeleton className="h-44 w-full rounded-none md:rounded-lg" />
             </div>
           ) : (
-            <div className="-ml-4 py-2">
+            <div className="py-2">
               <ResponsiveContainer width="100%" height={176}>
-                <AreaChart data={weeklyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <AreaChart data={weeklyData} margin={{ top: 5, right: chartYAxis.marginRight, left: 5, bottom: 0 }}>
                   <defs>
                     <linearGradient id="weeklyConsistencyGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
@@ -245,10 +246,13 @@ const WorkoutHistory = () => {
                     padding={{ left: 20, right: 20 }}
                   />
                   <YAxis
+                    orientation={chartYAxis.orientation}
+                    width={chartYAxis.width}
                     allowDecimals={false}
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    tickMargin={0}
+                    tick={<ChartYAxisTick />}
                     interval={0}
                   />
                   <Tooltip content={(props) => <WeeklyConsistencyTooltip {...props} />} />

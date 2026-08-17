@@ -39,7 +39,7 @@ import {
 import { addDays, format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
-import { chartAxis } from "@/lib/chart-colors";
+import { chartAxis, chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
 import {
   ChartScrubStat,
   ChartScrubSummary,
@@ -58,10 +58,9 @@ const CHART = {
 
   /**
    * Margen interno del AreaChart.
-   * `right` aplica a línea, punto y guías para que no se salgan.
-   * `left` negativo acerca el área al borde.
+   * `left` 0 alinea el área con el texto de encima; `right` evita que las cifras se salgan.
    */
-  margin: { top: 20, right: 8, left: -8, bottom: 0 },
+  margin: { top: 20, right: chartYAxis.marginRight, left: 0, bottom: 0 },
 
   /** Eje Y: ancho reservado para los números (px). */
   yAxisWidth: 36,
@@ -481,6 +480,7 @@ export function ExerciseProgressWidget() {
                   </defs>
                   <CartesianGrid
                     stroke={chartAxis.grid}
+                    strokeOpacity={chartAxis.gridOpacity}
                     vertical={false}
                     horizontal
                     horizontalValues={yScale.ticks}
@@ -497,10 +497,12 @@ export function ExerciseProgressWidget() {
                     padding={{ left: 0, right: 0 }}
                   />
                   <YAxis
+                    orientation={chartYAxis.orientation}
                     width={CHART.yAxisWidth}
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: CHART.tickFontSize }}
+                    tickMargin={0}
+                    tick={<ChartYAxisTick fontSize={CHART.tickFontSize} axisWidth={CHART.yAxisWidth} />}
                     domain={yScale.domain}
                     ticks={yScale.ticks}
                     interval={0}

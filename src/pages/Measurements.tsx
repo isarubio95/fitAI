@@ -22,6 +22,7 @@ import {
   drawerSafeAreaBottom,
 } from "@/components/ui/drawer";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
+import { chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -248,7 +249,7 @@ const Measurements = () => {
           <CardContent className="px-6 py-8">
             <h2 className="text-sm font-semibold mb-3">Evolución del peso</h2>
             <ChartContainer config={chartConfig} className="aspect-2/1 w-full">
-              <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+              <AreaChart data={chartData} margin={{ top: 4, right: chartYAxis.marginRight, bottom: 0, left: 4 }}>
                 <defs>
                   <linearGradient id="pesoGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
@@ -258,9 +259,12 @@ const Measurements = () => {
                 <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/40" />
                 <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={11} />
                 <YAxis
+                  orientation={chartYAxis.orientation}
+                  width={chartYAxis.width}
                   tickLine={false}
                   axisLine={false}
-                  fontSize={11}
+                  tickMargin={0}
+                  tick={<ChartYAxisTick />}
                   domain={[(min: number) => Math.floor(min - 1), (max: number) => Math.ceil(max + 1)]}
                 />
                 <ChartTooltip content={(props) => <ChartTooltipContent {...props} />} />
