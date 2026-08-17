@@ -1,5 +1,5 @@
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
-import { loadStravaDarkMapStyle } from "@/lib/stravaDarkMapStyle";
+import { loadStravaDarkMapStyle, remapOpenFreeMapSpriteIcons } from "@/lib/stravaDarkMapStyle";
 
 /** Basemap del mapa cardio: calles, satélite o híbrido (satélite + etiquetas). */
 export type MapBasemapId = "map" | "satellite" | "hybrid";
@@ -136,6 +136,8 @@ function loadHybridMapStyle(): Promise<StyleSpecification> {
         if (!openmaptiles || !base.glyphs) {
           throw new Error("Hybrid style missing openmaptiles/glyphs");
         }
+
+        remapOpenFreeMapSpriteIcons(base);
 
         const roadLayers = (base.layers ?? [])
           .filter((layer) => HYBRID_ROAD_LAYER_IDS.has(layer.id))

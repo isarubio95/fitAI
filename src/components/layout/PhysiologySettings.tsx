@@ -11,7 +11,7 @@ import { resolveMaxHeartRate, type PhysioProfile } from "@/lib/trainingLoad";
 import { cn } from "@/lib/utils";
 
 const settingsSectionCardClass = cn(
-  "space-y-4 rounded-xl border border-border/60 bg-secondary/40 p-4",
+  "space-y-4 rounded-xl border border-border/60 bg-card p-4",
 );
 
 type PhysioForm = {

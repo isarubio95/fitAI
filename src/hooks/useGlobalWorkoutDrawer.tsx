@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import type { ExerciseFormData } from "@/types/workout";
+import type { SelectedGimnasio } from "@/types/gimnasio";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useToast } from "@/hooks/use-toast";
 import { toastActiveWorkoutBlocked } from "@/lib/activeWorkoutGuard";
@@ -15,11 +16,12 @@ interface DrawerState {
   plannedId?: string;
   /** Origen de la revelación circular (pill «en curso», botón iniciar rutina, etc.). */
   pillOrigin?: PillCircleOrigin;
+  initialGimnasio?: SelectedGimnasio | null;
 }
 
 interface GlobalWorkoutDrawerContextType {
   state: DrawerState;
-  openNew: (date?: string) => void;
+  openNew: (date?: string, gimnasio?: SelectedGimnasio | null) => void;
   openEdit: (workoutId: string) => void;
   openFromTemplate: (
     title: string,
@@ -68,7 +70,7 @@ export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode 
   }, [activeWorkout, toast, openActiveWorkout]);
 
   const openNew = useCallback(
-    (date?: string) => {
+    (date?: string, gimnasio?: SelectedGimnasio | null) => {
       if (blockIfActiveWorkout()) return;
       setState({
         open: true,
@@ -78,6 +80,7 @@ export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode 
         templateTitle: undefined,
         templateRoutineIcon: undefined,
         plannedId: undefined,
+        initialGimnasio: gimnasio ?? null,
       });
     },
     [blockIfActiveWorkout],

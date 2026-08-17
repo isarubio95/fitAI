@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, BarChart3, LogOut, ClipboardList, Plus, Users } from "lucide-react";
+import { Home, BarChart3, LogOut, ClipboardList, Plus, Users, MapPin } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,7 @@ const navItems = [
   { to: "/routines", icon: ClipboardList, label: "Rutinas" },
   { to: "/community", icon: Users, label: "Comunidad" },
   { to: "/evolution", icon: BarChart3, label: "Evolución" },
+  { to: "/gimnasios", icon: MapPin, label: "Gimnasios" },
 ];
 
 export function DesktopSidebar() {

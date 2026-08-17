@@ -20,6 +20,7 @@ import CardioRoutines from "./pages/CardioRoutines";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DeleteAccount from "./pages/DeleteAccount";
+import Gyms from "./pages/Gyms";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => {
                     <Route path="/history" element={<WorkoutHistory />} />
                     <Route path="/evolution" element={<Evolution />} />
                     <Route path="/cardio-routines" element={<CardioRoutines />} />
+                    <Route path="/gimnasios" element={<Gyms />} />
                     <Route path="/logros" element={<Navigate to="/" replace />} />
                   </Route>
                   <Route path="*" element={<NotFound />} />

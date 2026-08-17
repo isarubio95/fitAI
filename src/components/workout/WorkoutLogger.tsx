@@ -48,6 +48,8 @@ import {
   type RoutineIconKey,
 } from "@/lib/routineIcons";
 import { buildWorkoutRoutineSnapshot, type WorkoutRoutineSnapshot } from "@/lib/workoutToRoutine";
+import { persistActividadGimnasio, fetchLastGimnasioForUser, GIMNASIOS_QUERY_KEY } from "@/hooks/useGimnasios";
+import type { SelectedGimnasio } from "@/types/gimnasio";
 import { getDefaultWorkoutTitle } from "@/lib/defaultWorkoutTitle";
 import { completePlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { startOfMonth } from "date-fns";
@@ -72,7 +74,7 @@ import {
 
 export function WorkoutLogger() {
   const { state, setOpen, close, openActiveWorkout } = useGlobalWorkoutDrawer();
-  const { open, workoutId, defaultDate, templateExercises, templateTitle, templateRoutineIcon, plannedId, pillOrigin } = state;
+  const { open, workoutId, defaultDate, templateExercises, templateTitle, templateRoutineIcon, plannedId, pillOrigin, initialGimnasio } = state;
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -89,6 +91,7 @@ export function WorkoutLogger() {
   const [fecha, setFecha] = useState(defaultDate || new Date().toISOString().slice(0, 10));
   const [exercises, setExercises] = useState<ExerciseFormData[]>([]);
   const [esPublica, setEsPublica] = useState(false);
+  const [gimnasio, setGimnasio] = useState<SelectedGimnasio | null>(null);
   const [saving, setSaving] = useState(false);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -147,8 +150,8 @@ export function WorkoutLogger() {
   const hasRecordedWork = countRecordedSets(exercises) > 0;
   const hasUnsavedChanges = useMemo(() => {
     if (!isEditingCompletedWorkout || editBaseline === null) return false;
-    return serializeWorkoutFormSnapshot(titulo, fecha, exercises, workoutIcon, esPublica) !== editBaseline;
-  }, [isEditingCompletedWorkout, editBaseline, titulo, fecha, exercises, workoutIcon, esPublica]);
+    return serializeWorkoutFormSnapshot(titulo, fecha, exercises, workoutIcon, esPublica, gimnasio?.id ?? null) !== editBaseline;
+  }, [isEditingCompletedWorkout, editBaseline, titulo, fecha, exercises, workoutIcon, esPublica, gimnasio?.id]);
   const canSubmitPrimaryAction = isEditingCompletedWorkout
     ? hasRecordedWork && hasUnsavedChanges
     : hasRecordedWork;
@@ -207,6 +210,11 @@ export function WorkoutLogger() {
       setWorkoutIcon(hydratedIcon);
       const hydratedEsPublica = !!(existingWorkout as { es_publica?: boolean }).es_publica;
       setEsPublica(hydratedEsPublica);
+      const hydratedGym: SelectedGimnasio | null =
+        existingWorkout.gimnasio_id && existingWorkout.gimnasio_nombre
+          ? { id: existingWorkout.gimnasio_id, nombre: existingWorkout.gimnasio_nombre }
+          : null;
+      setGimnasio(hydratedGym);
       setStartedFromRoutine(
         !existingWorkout.fecha_fin && wasWorkoutStartedFromRoutine(existingWorkout.id),
       );
@@ -218,6 +226,7 @@ export function WorkoutLogger() {
               hydratedExercises,
               hydratedIcon,
               hydratedEsPublica,
+              hydratedGym?.id ?? null,
             )
           : null,
       );
@@ -263,8 +272,9 @@ export function WorkoutLogger() {
       setFecha(defaultDate || new Date().toISOString().slice(0, 10));
       setStartedFromRoutine(false);
       setEsPublica(false);
+      setGimnasio(initialGimnasio ?? null);
     }
-  }, [open, workoutId, activeWorkoutId, defaultDate, templateExercises]);
+  }, [open, workoutId, activeWorkoutId, defaultDate, templateExercises, initialGimnasio]);
 
   // Reset activeWorkoutId when drawer closes
   useEffect(() => {
@@ -275,6 +285,7 @@ export function WorkoutLogger() {
       setEditBaseline(null);
       setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
       setEsPublica(false);
+      setGimnasio(null);
     }
   }, [open]);
 
@@ -399,6 +410,7 @@ export function WorkoutLogger() {
       // planificado, lo que dejaba el contador a 0:00 al entrenar por la mañana).
       // La fecha "de calendario" se conserva en el estado y se guarda al finalizar.
       const startedAtMs = Date.now();
+      const gym = initialGimnasio ?? (await fetchLastGimnasioForUser(user.id).catch(() => null));
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
         .insert({
@@ -407,6 +419,8 @@ export function WorkoutLogger() {
           usuario_id: user.id,
           es_publica: false,
           icono: templateIcon,
+          gimnasio_id: gym?.id ?? null,
+          gimnasio_nombre: gym?.nombre ?? null,
         })
         .select("id")
         .single();
@@ -471,6 +485,7 @@ export function WorkoutLogger() {
       setFecha(plannedDate || new Date().toISOString().slice(0, 10));
       setExercises(updatedExercises);
       setEsPublica(false);
+      setGimnasio(gym);
       setStartedFromRoutine(true);
       markWorkoutStartedFromRoutine(actividad.id);
       invalidateActiveWorkoutQueries();
@@ -503,6 +518,7 @@ export function WorkoutLogger() {
       const now = new Date();
       const startedAtMs = now.getTime();
       const defaultTitle = getDefaultWorkoutTitle(now);
+      const gym = initialGimnasio ?? (await fetchLastGimnasioForUser(user.id).catch(() => null));
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
         .insert({
@@ -511,6 +527,8 @@ export function WorkoutLogger() {
           usuario_id: user.id,
           es_publica: false,
           icono: DEFAULT_ROUTINE_ICON_KEY,
+          gimnasio_id: gym?.id ?? null,
+          gimnasio_nombre: gym?.nombre ?? null,
         })
         .select("id")
         .single();
@@ -521,6 +539,7 @@ export function WorkoutLogger() {
       setExercises([]);
       setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
       setFecha(defaultDate || now.toISOString().slice(0, 10));
+      setGimnasio(gym);
       setStartedFromRoutine(false);
       clearWorkoutStartedFromRoutine(actividad.id);
       invalidateActiveWorkoutQueries();
@@ -890,6 +909,21 @@ export function WorkoutLogger() {
     [effectiveWorkoutId],
   );
 
+  const handleGimnasioChange = useCallback(
+    async (gym: SelectedGimnasio | null) => {
+      setGimnasio(gym);
+      if (effectiveWorkoutId) {
+        try {
+          await persistActividadGimnasio(effectiveWorkoutId, gym);
+          void queryClient.invalidateQueries({ queryKey: GIMNASIOS_QUERY_KEY });
+        } catch {
+          // Se guardará al finalizar
+        }
+      }
+    },
+    [effectiveWorkoutId, queryClient],
+  );
+
   const handleViewExerciseDetails = useCallback(
     (exercise: ExerciseFormData) => {
       const catalogId = exercise.tipo_ejercicio_id ?? exercise.usuario_ejercicio_id;
@@ -1063,6 +1097,8 @@ export function WorkoutLogger() {
               fecha_fin: endIso,
               icono: workoutIcon,
               es_publica: false,
+              gimnasio_id: gimnasio?.id ?? null,
+              gimnasio_nombre: gimnasio?.nombre ?? null,
             })
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
@@ -1117,6 +1153,8 @@ export function WorkoutLogger() {
               fecha: new Date(fecha).toISOString(),
               icono: workoutIcon,
               es_publica: esPublica,
+              gimnasio_id: gimnasio?.id ?? null,
+              gimnasio_nombre: gimnasio?.nombre ?? null,
             })
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
@@ -1170,6 +1208,8 @@ export function WorkoutLogger() {
         usuario_id: user!.id,
         es_publica: false,
         icono: workoutIcon,
+        gimnasio_id: gimnasio?.id ?? null,
+        gimnasio_nombre: gimnasio?.nombre ?? null,
       })
       .select("id")
       .single();
@@ -1403,6 +1443,9 @@ export function WorkoutLogger() {
                   isEditingCompletedWorkout={isEditingCompletedWorkout}
                   esPublica={esPublica}
                   onEsPublicaChange={setEsPublica}
+                  gimnasio={gimnasio}
+                  onGimnasioChange={(gym) => void handleGimnasioChange(gym)}
+                  gymDisabled={creatingActive}
                 />
 
                 {isActiveWorkout && hrMonitor.available && (

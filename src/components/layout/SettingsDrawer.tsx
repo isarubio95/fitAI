@@ -20,13 +20,13 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { Bell, Settings } from "lucide-react";
+import { Bell, MapPin, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { cn } from "@/lib/utils";
 
 const settingsSectionCardClass = cn(
-  "space-y-4 rounded-xl border border-border/60 bg-secondary/40 p-4",
+  "space-y-4 rounded-xl border border-border/60 bg-card p-4",
 );
 
 export function SettingsDrawer() {
@@ -56,7 +56,7 @@ export function SettingsDrawer() {
 
       <DrawerContent
         side="right"
-        className="flex h-full w-full flex-col border-0 bg-card p-0 shadow-none"
+        className="flex h-full w-full flex-col border-0 bg-background p-0 shadow-none"
       >
         <DrawerHeader className="px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
           <DrawerTitle className="text-lg">Ajustes</DrawerTitle>
@@ -121,6 +121,15 @@ export function SettingsDrawer() {
           </div>
 
           <PhysiologySettings />
+
+          <Link
+            to="/gimnasios"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 rounded-xl border border-border/60 bg-card px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            Gimnasios de España
+          </Link>
 
           <div className="border-t border-border/40 pt-5">
             <nav

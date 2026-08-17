@@ -87,7 +87,34 @@ type MutableLayer = {
   layout?: Record<string, unknown>;
 };
 
+/**
+ * OpenFreeMap dark (OSM Liberty) pide iconos Maki con guión (`circle-11`),
+ * pero el sprite de OFM usa guión bajo (`circle_11`). Sin este alias, MapLibre
+ * falla al pintar ciudades por debajo de zoom 9 (p. ej. el mapa de gimnasios).
+ */
+const SPRITE_ICON_ALIASES: Record<string, string> = {
+  "circle-11": "circle_11",
+};
+
+function remapSpriteIconName(value: unknown): unknown {
+  if (typeof value === "string") return SPRITE_ICON_ALIASES[value] ?? value;
+  if (Array.isArray(value)) return value.map(remapSpriteIconName);
+  return value;
+}
+
+/** Reescribe `icon-image` para que coincida con el sprite de OpenFreeMap. */
+export function remapOpenFreeMapSpriteIcons(style: StyleSpecification): StyleSpecification {
+  const layers = style.layers as unknown as MutableLayer[] | undefined;
+  if (!layers) return style;
+  for (const layer of layers) {
+    if (layer.layout?.["icon-image"] == null) continue;
+    layer.layout["icon-image"] = remapSpriteIconName(layer.layout["icon-image"]);
+  }
+  return style;
+}
+
 function applyStravaPalette(style: StyleSpecification): StyleSpecification {
+  remapOpenFreeMapSpriteIcons(style);
   const layers = style.layers as unknown as MutableLayer[];
 
   for (const layer of layers) {

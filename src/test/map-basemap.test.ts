@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { StyleSpecification } from "maplibre-gl";
 import {
   CARDIO_MAP_BASEMAP_STORAGE_KEY,
   firstMapLabelLayerId,
@@ -6,6 +7,7 @@ import {
   readCardioMapBasemap,
   writeCardioMapBasemap,
 } from "@/lib/mapBasemap";
+import { remapOpenFreeMapSpriteIcons } from "@/lib/stravaDarkMapStyle";
 
 afterEach(() => {
   localStorage.removeItem(CARDIO_MAP_BASEMAP_STORAGE_KEY);
@@ -50,6 +52,10 @@ describe("mapBasemap", () => {
     expect(ids).toContain("place_city");
     expect(ids).toContain("highway_name_other");
     expect(ids).not.toContain("road_oneway");
+    const city = style.layers?.find((layer) => layer.id === "place_city") as
+      | { layout?: { "icon-image"?: unknown } }
+      | undefined;
+    expect(JSON.stringify(city?.layout?.["icon-image"] ?? "")).not.toContain("circle-11");
   });
 
   it("finds the first place label so routes sit under localities, not roads", () => {
@@ -66,6 +72,34 @@ describe("mapBasemap", () => {
     expect(firstMapLabelLayerId([{ id: "esri", type: "raster" }])).toBeUndefined();
     expect(firstMapLabelLayerId([{ id: "water_name", type: "symbol" }])).toBeUndefined();
     expect(firstMapLabelLayerId(undefined)).toBeUndefined();
+  });
+
+  it("aliases Liberty hyphen icons to OpenFreeMap sprite names", () => {
+    const style = {
+      version: 8,
+      sources: {},
+      layers: [
+        {
+          id: "place_city",
+          type: "symbol",
+          source: "openmaptiles",
+          layout: { "icon-image": ["step", ["zoom"], "circle-11", 9, ""] },
+        },
+        {
+          id: "road_oneway",
+          type: "symbol",
+          source: "openmaptiles",
+          layout: { "icon-image": "oneway" },
+        },
+      ],
+    } as StyleSpecification;
+
+    remapOpenFreeMapSpriteIcons(style);
+
+    const city = style.layers[0] as { layout: { "icon-image": unknown } };
+    const oneway = style.layers[1] as { layout: { "icon-image": unknown } };
+    expect(city.layout["icon-image"]).toEqual(["step", ["zoom"], "circle_11", 9, ""]);
+    expect(oneway.layout["icon-image"]).toBe("oneway");
   });
 
   it("hybrid style places route anchor before locality labels and after roads", async () => {

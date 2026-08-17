@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 
-const LAST_UPDATED = "6 de agosto de 2026";
+const LAST_UPDATED = "17 de agosto de 2026";
 
 export default function PrivacyPolicy() {
   const { user } = useAuth();
@@ -52,13 +52,15 @@ export default function PrivacyPolicy() {
                 </li>
                 <li>
                   <strong className="text-foreground">Datos de entrenamiento:</strong> rutinas, ejercicios,
-                  series, pesos, repeticiones, duraciones, historial de entrenos y métricas de progreso.
+                  series, pesos, repeticiones, duraciones, historial de entrenos, métricas de progreso y, si
+                  lo indicas, el gimnasio donde entrenaste (nombre y ubicación del centro).
                 </li>
                 <li>
                   <strong className="text-foreground">Datos de cardio y ubicación:</strong> si utilizas
                   funciones de cardio en vivo, podemos registrar rutas GPS, distancia, ritmo y duración de la
                   sesión. Si conectas un sensor de frecuencia cardíaca por Bluetooth, podemos registrar tu FC
-                  durante el entrenamiento y asociarla a esa sesión.
+                  durante el entrenamiento y asociarla a esa sesión. Al buscar gimnasios cercanos usamos tu
+                  ubicación puntual; no se guarda un track GPS de esa búsqueda.
                 </li>
                 <li>
                   <strong className="text-foreground">Datos de uso:</strong> información técnica básica sobre
@@ -80,6 +82,10 @@ export default function PrivacyPolicy() {
                 <li>Permitir el registro, planificación y seguimiento de tus entrenamientos.</li>
                 <li>Mostrar estadísticas, evolución y recomendaciones personalizadas.</li>
                 <li>Ofrecer funciones de comunidad cuando las habilites.</li>
+                <li>
+                  Mostrar el gimnasio asociado a un entrenamiento público en el feed de la comunidad, si
+                  decides publicarlo.
+                </li>
                 <li>Mejorar la seguridad, el rendimiento y la experiencia de la aplicación.</li>
                 <li>Atender consultas o incidencias relacionadas con el servicio.</li>
               </ul>

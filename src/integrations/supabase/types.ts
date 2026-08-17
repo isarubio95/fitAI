@@ -23,6 +23,8 @@ export type Database = {
           fc_media: number | null
           fecha: string
           fecha_fin: string | null
+          gimnasio_id: string | null
+          gimnasio_nombre: string | null
           icono: string | null
           id: string
           titulo: string
@@ -36,6 +38,8 @@ export type Database = {
           fc_media?: number | null
           fecha?: string
           fecha_fin?: string | null
+          gimnasio_id?: string | null
+          gimnasio_nombre?: string | null
           icono?: string | null
           id?: string
           titulo: string
@@ -49,12 +53,22 @@ export type Database = {
           fc_media?: number | null
           fecha?: string
           fecha_fin?: string | null
+          gimnasio_id?: string | null
+          gimnasio_nombre?: string | null
           icono?: string | null
           id?: string
           titulo?: string
           usuario_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "actividad_gimnasio_id_fkey"
+            columns: ["gimnasio_id"]
+            isOneToOne: false
+            referencedRelation: "gimnasio"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       actividad_fc_sample: {
         Row: {
@@ -837,6 +851,59 @@ export type Database = {
           {
             foreignKeyName: "ejercicio_favorito_usuario_id_fkey"
             columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gimnasio: {
+        Row: {
+          brand: string | null
+          ciudad: string | null
+          created_at: string
+          created_by: string | null
+          direccion: string | null
+          id: string
+          lat: number
+          lng: number
+          nombre: string
+          osm_id: number | null
+          osm_type: string | null
+          source: string
+        }
+        Insert: {
+          brand?: string | null
+          ciudad?: string | null
+          created_at?: string
+          created_by?: string | null
+          direccion?: string | null
+          id?: string
+          lat: number
+          lng: number
+          nombre: string
+          osm_id?: number | null
+          osm_type?: string | null
+          source?: string
+        }
+        Update: {
+          brand?: string | null
+          ciudad?: string | null
+          created_at?: string
+          created_by?: string | null
+          direccion?: string | null
+          id?: string
+          lat?: number
+          lng?: number
+          nombre?: string
+          osm_id?: number | null
+          osm_type?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gimnasio_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "perfil"
             referencedColumns: ["id"]

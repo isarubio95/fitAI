@@ -7,12 +7,14 @@ export function serializeWorkoutFormSnapshot(
   exercises: ExerciseFormData[],
   icono: RoutineIconKey,
   esPublica: boolean,
+  gimnasioId: string | null = null,
 ): string {
   return JSON.stringify({
     titulo: titulo.trim(),
     fecha,
     icono,
     esPublica,
+    gimnasioId,
     exercises: exercises.map((ex) => ({
       id: ex.id ?? null,
       tipo_ejercicio_id: ex.tipo_ejercicio_id ?? null,

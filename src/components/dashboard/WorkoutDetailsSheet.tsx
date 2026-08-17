@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer } from "@/components/ui/chart";
-import { Check, ListPlus, Trophy } from "lucide-react";
+import { Check, ListPlus, MapPin, Trophy } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import { MUSCLE_GROUPS, MUSCLE_GROUP_ICON_SRC } from "@/constants/muscleGroups";
@@ -458,6 +458,9 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
             ) : (
               <DrawerDescription>
                 {workout.fecha ? format(new Date(workout.fecha), "d MMM yyyy", { locale: es }) : ""}
+                {workout.gimnasio_nombre
+                  ? `${workout.fecha ? " · " : ""}${workout.gimnasio_nombre}`
+                  : ""}
               </DrawerDescription>
             )}
           </DrawerHeader>
@@ -596,6 +599,12 @@ function WorkoutCompactSummary({
           <p className={!hideDate && workout.fecha ? "mt-0.5" : undefined}>{statsLabel}</p>
         </div>
       </div>
+      {workout.gimnasio_nombre ? (
+        <p className="flex min-w-0 items-center gap-1.5 text-xs leading-none text-muted-foreground">
+          <MapPin className="h-3 w-3 shrink-0" aria-hidden strokeWidth={1.75} />
+          <span className="truncate">{workout.gimnasio_nombre}</span>
+        </p>
+      ) : null}
       {totalSets === 0 ? (
         <p className="text-xs text-muted-foreground">Sin series registradas.</p>
       ) : visibleGroups.length > 0 ? (
@@ -776,6 +785,9 @@ export function WorkoutDetailsContent({
               <DrawerTitle className="text-xl">{workout.titulo}</DrawerTitle>
               <DrawerDescription>
                 {workout.fecha ? format(new Date(workout.fecha), "d MMM yyyy", { locale: es }) : ""}
+                {workout.gimnasio_nombre
+                  ? `${workout.fecha ? " · " : ""}${workout.gimnasio_nombre}`
+                  : ""}
               </DrawerDescription>
             </DrawerHeader>
           ) : null}
