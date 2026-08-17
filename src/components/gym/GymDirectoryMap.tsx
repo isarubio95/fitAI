@@ -48,17 +48,58 @@ type Props = {
 function gymsToCollection(gyms: GimnasioCatalogItem[]): FeatureCollection {
   return {
     type: "FeatureCollection",
-    features: gyms.map((gym) => ({
-      type: "Feature",
-      id: gym.id,
-      properties: {
-        id: gym.id,
-        nombre: gym.nombre,
-        ciudad: gym.ciudad,
-      },
-      geometry: { type: "Point", coordinates: [gym.lng, gym.lat] },
-    })),
+    features: gyms.flatMap((gym) => {
+      if (!Number.isFinite(gym.lat) || !Number.isFinite(gym.lng)) return [];
+      return [
+        {
+          type: "Feature" as const,
+          id: gym.id,
+          properties: { id: gym.id },
+          geometry: { type: "Point" as const, coordinates: [gym.lng, gym.lat] },
+        },
+      ];
+    }),
   };
+}
+
+/** Espera un frame y un tamaño real: evita WebGL 0×0 y el doble mount de Strict Mode. */
+function waitForMapContainer(element: HTMLElement, isCancelled: () => boolean): Promise<boolean> {
+  return new Promise((resolve) => {
+    let raf = 0;
+    let observer: ResizeObserver | null = null;
+    let settled = false;
+
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      cancelAnimationFrame(raf);
+      observer?.disconnect();
+      resolve(ok);
+    };
+
+    const tryReady = () => {
+      if (isCancelled()) {
+        finish(false);
+        return true;
+      }
+      if (element.clientWidth > 0 && element.clientHeight > 0) {
+        finish(true);
+        return true;
+      }
+      return false;
+    };
+
+    raf = requestAnimationFrame(function tick() {
+      if (tryReady()) return;
+      if (typeof ResizeObserver !== "undefined" && !observer) {
+        observer = new ResizeObserver(() => {
+          tryReady();
+        });
+        observer.observe(element);
+      }
+      raf = requestAnimationFrame(tick);
+    });
+  });
 }
 
 function ensureOpenFreeMapGlyphs(map: MapLibreMap) {
@@ -167,15 +208,23 @@ export function GymDirectoryMap({
   const didAutoLocate = useRef(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
+
     let cancelled = false;
+    let map: MapLibreMap | null = null;
 
-    void loadMapBasemapStyle(basemapRef.current).then((style) => {
-      const container = containerRef.current;
-      if (cancelled || !container) return;
+    const isCancelled = () => cancelled;
 
-      const map = new MapLibreMap({
-        container,
+    void (async () => {
+      const [sized, style] = await Promise.all([
+        waitForMapContainer(container, isCancelled),
+        loadMapBasemapStyle(basemapRef.current),
+      ]);
+      if (!sized || cancelled || !containerRef.current) return;
+
+      map = new MapLibreMap({
+        container: containerRef.current,
         style,
         center: SPAIN_CENTER,
         zoom: SPAIN_ZOOM,
@@ -189,7 +238,7 @@ export function GymDirectoryMap({
       map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
       map.on("load", () => {
-        if (cancelled) return;
+        if (cancelled || !map) return;
         addGymLayers(map);
         (map.getSource(SOURCE_ID) as GeoJSONSource | undefined)?.setData(gymsToCollection(gymsRef.current));
         setReady(true);
@@ -199,13 +248,13 @@ export function GymDirectoryMap({
       map.on("click", LAYER_CLUSTERS, (event: MapLayerMouseEvent) => {
         const feature = event.features?.[0];
         const clusterId = feature?.properties?.cluster_id;
-        const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
-        if (clusterId == null || !source || typeof source.getClusterExpansionZoom !== "function") return;
+        const source = map?.getSource(SOURCE_ID) as GeoJSONSource | undefined;
+        if (!map || clusterId == null || !source || typeof source.getClusterExpansionZoom !== "function") return;
         void Promise.resolve(source.getClusterExpansionZoom(clusterId)).then((zoom) => {
           if (zoom == null || !feature?.geometry || feature.geometry.type !== "Point") return;
-          map.easeTo({
+          map?.easeTo({
             center: feature.geometry.coordinates as [number, number],
-            zoom: typeof zoom === "number" ? zoom : map.getZoom() + 1,
+            zoom: typeof zoom === "number" ? zoom : (map?.getZoom() ?? 0) + 1,
           });
         });
       });
@@ -218,24 +267,24 @@ export function GymDirectoryMap({
       });
 
       map.on("mouseenter", LAYER_CLUSTERS, () => {
-        map.getCanvas().style.cursor = "pointer";
+        if (map) map.getCanvas().style.cursor = "pointer";
       });
       map.on("mouseleave", LAYER_CLUSTERS, () => {
-        map.getCanvas().style.cursor = "";
+        if (map) map.getCanvas().style.cursor = "";
       });
       map.on("mouseenter", LAYER_POINTS, () => {
-        map.getCanvas().style.cursor = "pointer";
+        if (map) map.getCanvas().style.cursor = "pointer";
       });
       map.on("mouseleave", LAYER_POINTS, () => {
-        map.getCanvas().style.cursor = "";
+        if (map) map.getCanvas().style.cursor = "";
       });
-    });
+    })();
 
     return () => {
       cancelled = true;
-      mapRef.current?.remove();
-      mapRef.current = null;
-      setReady(false);
+      map?.remove();
+      if (mapRef.current === map) mapRef.current = null;
+      map = null;
     };
   }, []);
 

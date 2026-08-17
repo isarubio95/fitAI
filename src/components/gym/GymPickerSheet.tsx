@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Check, MapPin, Plus, Search, X } from "lucide-react";
 import {
   Drawer,
@@ -15,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GymAddSheet } from "@/components/gym/GymAddSheet";
+import { GymDirectoryDrawer } from "@/components/gym/GymDirectoryDrawer";
 import { useGimnasiosCatalog, useLastGimnasio } from "@/hooks/useGimnasios";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
 import { formatGymDistance, formatGimnasioListTitle, duplicateGymNames, rankGimnasios } from "@/lib/gimnasioSearch";
@@ -29,12 +29,12 @@ type Props = {
 };
 
 export function GymPickerSheet({ open, onOpenChange, selected, onSelect }: Props) {
-  const navigate = useNavigate();
   const { data: gyms = [], isLoading } = useGimnasiosCatalog();
   const { data: lastGym } = useLastGimnasio();
   const { point: origin, request: requestLocation } = useBrowserLocation(open);
   const [query, setQuery] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
 
   const duplicateNames = useMemo(() => duplicateGymNames(gyms), [gyms]);
 
@@ -150,10 +150,7 @@ export function GymPickerSheet({ open, onOpenChange, selected, onSelect }: Props
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => {
-                  onOpenChange(false);
-                  navigate("/gimnasios");
-                }}
+                onClick={() => setMapOpen(true)}
               >
                 <MapPin className="h-4 w-4" />
                 Ver mapa
@@ -179,6 +176,16 @@ export function GymPickerSheet({ open, onOpenChange, selected, onSelect }: Props
         open={addOpen}
         onOpenChange={setAddOpen}
         onCreated={(gym) => handleSelect(gym)}
+      />
+      <GymDirectoryDrawer
+        open={mapOpen}
+        onOpenChange={setMapOpen}
+        onPick={(gym) => {
+          onSelect(gym);
+          setMapOpen(false);
+          onOpenChange(false);
+          setQuery("");
+        }}
       />
     </>
   );

@@ -17,12 +17,21 @@ const navItems = [
   { to: "/evolution", icon: BarChart3, label: "Evolución" },
 ];
 
-export function BottomNav() {
+export function BottomNav({
+  skipInsetSync = false,
+  locationOverride,
+  onNavigate,
+}: {
+  skipInsetSync?: boolean;
+  locationOverride?: string;
+  onNavigate?: () => void;
+}) {
   const location = useLocation();
   const { openNew } = useGlobalWorkoutDrawer();
   const { openLiveSetup } = useGlobalCardioDrawer();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+  const activePath = locationOverride ?? location.pathname;
 
   useBackCloseLayer({
     open: isMenuOpen,
@@ -36,7 +45,7 @@ export function BottomNav() {
   // estable aunque el usuario tenga el tamaño de fuente del sistema aumentado.
   useEffect(() => {
     const nav = navRef.current;
-    if (!nav) return;
+    if (!nav || skipInsetSync) return;
 
     const updateBottomNavInset = () => {
       const rect = nav.getBoundingClientRect();
@@ -53,7 +62,7 @@ export function BottomNav() {
       observer.disconnect();
       window.removeEventListener("resize", updateBottomNavInset);
     };
-  }, []);
+  }, [skipInsetSync]);
 
   // Cerrar el menú si se hace click fuera de la barra de navegación
   useEffect(() => {
@@ -131,7 +140,13 @@ export function BottomNav() {
             return (
               <div key="add-button" className="flex flex-1 flex-col items-center justify-center gap-1.5">
                 <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  onClick={() => {
+                    if (onNavigate) {
+                      onNavigate();
+                      return;
+                    }
+                    setIsMenuOpen(!isMenuOpen);
+                  }}
                   className="touch-styled group flex flex-col items-center justify-center gap-1.5 focus:outline-none"
                 >
                   <div className={cn(
@@ -155,30 +170,29 @@ export function BottomNav() {
 
           // Renderizado normal de los NavLinks
           const { to, icon: Icon, label } = item;
+          const isItemActive = to === "/" ? activePath === "/" : activePath.startsWith(to!);
           return (
             <NavLink
               key={to}
               to={to!}
               end={to === "/"}
               onClick={() => {
+                onNavigate?.();
                 if (location.pathname === to) window.scrollTo(0, 0);
               }}
-              className={({ isActive }) =>
-                cn(
-                  "touch-styled group flex flex-1 flex-col items-center justify-center gap-1.5",
-                  "transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.86] active:duration-100 active:ease-out",
-                  "focus:outline-none"
-                )
-              }
+              className={cn(
+                "touch-styled group flex flex-1 flex-col items-center justify-center gap-1.5",
+                "transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.86] active:duration-100 active:ease-out",
+                "focus:outline-none"
+              )}
             >
-              {({ isActive }) => (
-                <>
+              <>
                   <div className="relative">
                     <Icon
-                      key={isActive ? "active" : "inactive"}
+                      key={isItemActive ? "active" : "inactive"}
                       className={cn(
                         "h-6 w-6 transition-all duration-300 ease-out",
-                        isActive
+                        isItemActive
                           ? "nav-icon-pop text-primary stroke-[2px] drop-shadow-[0_0_12px_rgba(var(--primary),0.6)]"
                           : "text-muted-foreground stroke-[2px] group-hover:text-foreground"
                       )}
@@ -187,13 +201,12 @@ export function BottomNav() {
                   <span
                     className={cn(
                       "text-[10px] font-medium tracking-wide transition-colors duration-300",
-                      isActive ? "text-primary" : "text-muted-foreground"
+                      isItemActive ? "text-primary" : "text-muted-foreground"
                     )}
                   >
                     {label}
                   </span>
-                </>
-              )}
+              </>
             </NavLink>
           );
         })}

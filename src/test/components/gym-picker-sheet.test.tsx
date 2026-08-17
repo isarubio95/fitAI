@@ -15,6 +15,10 @@ vi.mock("@/components/gym/GymAddSheet", () => ({
   GymAddSheet: () => null,
 }));
 
+vi.mock("@/components/gym/GymDirectoryDrawer", () => ({
+  GymDirectoryDrawer: () => null,
+}));
+
 vi.mock("@/hooks/useGimnasios", () => ({
   useGimnasiosCatalog: mockUseGimnasiosCatalog,
   useLastGimnasio: mockUseLastGimnasio,

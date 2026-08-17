@@ -22,9 +22,17 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (gym: GimnasioCatalogItem) => void;
+  overlayClassName?: string;
+  contentClassName?: string;
 };
 
-export function GymAddSheet({ open, onOpenChange, onCreated }: Props) {
+export function GymAddSheet({
+  open,
+  onOpenChange,
+  onCreated,
+  overlayClassName,
+  contentClassName,
+}: Props) {
   const { toast } = useToast();
   const createGym = useCreateGimnasio();
   const [nombre, setNombre] = useState("");
@@ -72,7 +80,10 @@ export function GymAddSheet({ open, onOpenChange, onCreated }: Props) {
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerContent className="flex max-h-[92lvh] flex-col">
+      <DrawerContent
+        overlayClassName={overlayClassName}
+        className={cn("flex max-h-[92lvh] flex-col", contentClassName)}
+      >
         <DrawerHeader className="text-left">
           <DrawerTitle>Añadir gimnasio</DrawerTitle>
           <DrawerDescription>
