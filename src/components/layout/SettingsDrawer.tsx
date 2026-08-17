@@ -20,7 +20,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { Bell, MapPin, Settings } from "lucide-react";
+import { Bell, MapPin, Settings, SunMoon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { cn } from "@/lib/utils";
@@ -64,22 +64,26 @@ export function SettingsDrawer() {
         </DrawerHeader>
 
         <div className="mt-3 flex-1 space-y-6 overflow-y-auto px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          {/* Color de acento */}
-          <ColorThemeSelector />
+          {/* Color de acento y apariencia */}
+          <div className={settingsSectionCardClass}>
+            <ColorThemeSelector />
 
-          {/* Apariencia (tema claro/oscuro) */}
-          <div className="space-y-3">
-            <p className="text-sm font-medium flex items-center gap-2">Apariencia</p>
-            <Select value={theme} onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="z-200 bg-popover">
-                <SelectItem value="system">Automático (Sistema)</SelectItem>
-                <SelectItem value="light">Claro</SelectItem>
-                <SelectItem value="dark">Oscuro</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-3">
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <SunMoon className="h-4 w-4 text-muted-foreground" />
+                Apariencia
+              </p>
+              <Select value={theme} onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}>
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-200 bg-popover">
+                  <SelectItem value="system">Automático (Sistema)</SelectItem>
+                  <SelectItem value="light">Claro</SelectItem>
+                  <SelectItem value="dark">Oscuro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Notificaciones */}

@@ -25,10 +25,10 @@ export function ColorThemeSelector() {
             type="button"
             onClick={() => setAccentColor(opt.value)}
             className={cn(
-              "size-9 rounded-full border-2 ring-2 ring-background transition-all shrink-0",
+              "size-9 rounded-full border-2 ring-2 ring-card transition-all shrink-0",
               opt.className,
               accentColor === opt.value
-                ? "border-foreground ring-offset-2 ring-offset-background ring-foreground/30 scale-110"
+                ? "border-foreground ring-offset-2 ring-offset-card ring-foreground/30 scale-110"
                 : "border-transparent hover:scale-105 hover:opacity-90"
             )}
             title={opt.label}
