@@ -18,6 +18,7 @@ import {
   writeCardioMapBasemap,
   type MapBasemapId,
 } from "@/lib/mapBasemap";
+import { MAP_COLORS } from "@/lib/stravaDarkMapStyle";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
 import type { GimnasioCatalogItem } from "@/types/gimnasio";
 import { cn } from "@/lib/utils";
@@ -49,57 +50,28 @@ function gymsToCollection(gyms: GimnasioCatalogItem[]): FeatureCollection {
   return {
     type: "FeatureCollection",
     features: gyms.flatMap((gym) => {
-      if (!Number.isFinite(gym.lat) || !Number.isFinite(gym.lng)) return [];
+      const lat = Number(gym.lat);
+      const lng = Number(gym.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
       return [
         {
           type: "Feature" as const,
-          id: gym.id,
           properties: { id: gym.id },
-          geometry: { type: "Point" as const, coordinates: [gym.lng, gym.lat] },
+          geometry: { type: "Point" as const, coordinates: [lng, lat] },
         },
       ];
     }),
   };
 }
 
-/** Espera un frame y un tamaño real: evita WebGL 0×0 y el doble mount de Strict Mode. */
-function waitForMapContainer(element: HTMLElement, isCancelled: () => boolean): Promise<boolean> {
-  return new Promise((resolve) => {
-    let raf = 0;
-    let observer: ResizeObserver | null = null;
-    let settled = false;
-
-    const finish = (ok: boolean) => {
-      if (settled) return;
-      settled = true;
-      cancelAnimationFrame(raf);
-      observer?.disconnect();
-      resolve(ok);
-    };
-
-    const tryReady = () => {
-      if (isCancelled()) {
-        finish(false);
-        return true;
-      }
-      if (element.clientWidth > 0 && element.clientHeight > 0) {
-        finish(true);
-        return true;
-      }
-      return false;
-    };
-
-    raf = requestAnimationFrame(function tick() {
-      if (tryReady()) return;
-      if (typeof ResizeObserver !== "undefined" && !observer) {
-        observer = new ResizeObserver(() => {
-          tryReady();
-        });
-        observer.observe(element);
-      }
-      raf = requestAnimationFrame(tick);
-    });
-  });
+function addLayerIfMissing(
+  map: MapLibreMap,
+  layer: Parameters<MapLibreMap["addLayer"]>[0],
+  beforeId?: string,
+) {
+  if (map.getLayer(layer.id)) return;
+  const before = beforeId && map.getLayer(beforeId) ? beforeId : undefined;
+  map.addLayer(layer, before);
 }
 
 function ensureOpenFreeMapGlyphs(map: MapLibreMap) {
@@ -109,21 +81,24 @@ function ensureOpenFreeMapGlyphs(map: MapLibreMap) {
 }
 
 function addGymLayers(map: MapLibreMap) {
-  if (map.getSource(SOURCE_ID)) return;
+  if (!map.isStyleLoaded()) return;
 
   ensureOpenFreeMapGlyphs(map);
 
-  map.addSource(SOURCE_ID, {
-    type: "geojson",
-    data: gymsToCollection([]),
-    cluster: true,
-    clusterMaxZoom: 14,
-    clusterRadius: 48,
-  });
+  if (!map.getSource(SOURCE_ID)) {
+    map.addSource(SOURCE_ID, {
+      type: "geojson",
+      data: gymsToCollection([]),
+      cluster: true,
+      clusterMaxZoom: 14,
+      clusterRadius: 48,
+    });
+  }
 
   const beforeId = firstMapLabelLayerId(map.getStyle().layers);
 
-  map.addLayer(
+  addLayerIfMissing(
+    map,
     {
       id: LAYER_CLUSTERS,
       type: "circle",
@@ -140,22 +115,8 @@ function addGymLayers(map: MapLibreMap) {
     beforeId,
   );
 
-  map.addLayer({
-    id: LAYER_CLUSTER_COUNT,
-    type: "symbol",
-    source: SOURCE_ID,
-    filter: ["has", "point_count"],
-    layout: {
-      "text-field": ["get", "point_count_abbreviated"],
-      "text-font": CLUSTER_TEXT_FONT,
-      "text-size": 12,
-    },
-    paint: {
-      "text-color": "#ffffff",
-    },
-  });
-
-  map.addLayer(
+  addLayerIfMissing(
+    map,
     {
       id: LAYER_POINTS,
       type: "circle",
@@ -171,7 +132,8 @@ function addGymLayers(map: MapLibreMap) {
     beforeId,
   );
 
-  map.addLayer(
+  addLayerIfMissing(
+    map,
     {
       id: LAYER_SELECTED,
       type: "circle",
@@ -186,6 +148,32 @@ function addGymLayers(map: MapLibreMap) {
     },
     beforeId,
   );
+
+  try {
+    addLayerIfMissing(map, {
+      id: LAYER_CLUSTER_COUNT,
+      type: "symbol",
+      source: SOURCE_ID,
+      filter: ["has", "point_count"],
+      layout: {
+        "text-field": ["get", "point_count_abbreviated"],
+        "text-font": CLUSTER_TEXT_FONT,
+        "text-size": 12,
+      },
+      paint: {
+        "text-color": "#ffffff",
+      },
+    });
+  } catch {
+    /* sin glifos el recuento no pinta; los círculos sí */
+  }
+}
+
+function syncGymsOnMap(map: MapLibreMap, gyms: GimnasioCatalogItem[]) {
+  if (!map.isStyleLoaded()) return;
+  addGymLayers(map);
+  const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
+  source?.setData(gymsToCollection(gyms));
 }
 
 export function GymDirectoryMap({
@@ -208,20 +196,29 @@ export function GymDirectoryMap({
   const didAutoLocate = useRef(false);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    if (!containerRef.current) return;
 
     let cancelled = false;
     let map: MapLibreMap | null = null;
+    let raf = 0;
+    let readyTimer = 0;
+    let markedReady = false;
 
-    const isCancelled = () => cancelled;
+    const markReady = () => {
+      if (cancelled || !map || markedReady) return;
+      markedReady = true;
+      syncGymsOnMap(map, gymsRef.current);
+      setReady(true);
+      map.resize();
+    };
 
     void (async () => {
-      const [sized, style] = await Promise.all([
-        waitForMapContainer(container, isCancelled),
-        loadMapBasemapStyle(basemapRef.current),
-      ]);
-      if (!sized || cancelled || !containerRef.current) return;
+      const style = await loadMapBasemapStyle(basemapRef.current);
+      if (cancelled) return;
+      await new Promise<void>((resolve) => {
+        raf = requestAnimationFrame(() => resolve());
+      });
+      if (cancelled || !containerRef.current) return;
 
       map = new MapLibreMap({
         container: containerRef.current,
@@ -237,13 +234,15 @@ export function GymDirectoryMap({
       map.touchZoomRotate.disableRotation();
       map.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
-      map.on("load", () => {
-        if (cancelled || !map) return;
-        addGymLayers(map);
-        (map.getSource(SOURCE_ID) as GeoJSONSource | undefined)?.setData(gymsToCollection(gymsRef.current));
-        setReady(true);
-        map.resize();
-      });
+      map.once("style.load", markReady);
+      map.once("load", markReady);
+      readyTimer = window.setTimeout(() => {
+        if (!map?.isStyleLoaded()) {
+          setReady(true);
+          return;
+        }
+        markReady();
+      }, 2500);
 
       map.on("click", LAYER_CLUSTERS, (event: MapLayerMouseEvent) => {
         const feature = event.features?.[0];
@@ -282,6 +281,8 @@ export function GymDirectoryMap({
 
     return () => {
       cancelled = true;
+      cancelAnimationFrame(raf);
+      window.clearTimeout(readyTimer);
       map?.remove();
       if (mapRef.current === map) mapRef.current = null;
       map = null;
@@ -300,8 +301,7 @@ export function GymDirectoryMap({
       if (mapRef.current !== map || basemapRef.current !== id) return;
       map.once("style.load", () => {
         if (mapRef.current !== map) return;
-        addGymLayers(map);
-        (map.getSource(SOURCE_ID) as GeoJSONSource | undefined)?.setData(gymsToCollection(gymsRef.current));
+        syncGymsOnMap(map, gymsRef.current);
         setReady(true);
       });
       map.setStyle(style);
@@ -320,7 +320,7 @@ export function GymDirectoryMap({
     if (!ready) return;
     const map = mapRef.current;
     if (!map) return;
-    (map.getSource(SOURCE_ID) as GeoJSONSource | undefined)?.setData(gymsToCollection(gyms));
+    syncGymsOnMap(map, gyms);
   }, [gyms, ready]);
 
   useEffect(() => {
@@ -349,10 +349,60 @@ export function GymDirectoryMap({
   }, [userPoint]);
 
   return (
-    <div className={cn("relative overflow-hidden bg-muted", className)}>
-      <div ref={containerRef} className="absolute inset-0" />
+    <div className={cn("relative h-full min-h-0 w-full overflow-hidden bg-muted", className)}>
+      <style>{`
+        .gym-directory-map-canvas { background: ${MAP_COLORS.land}; }
+        .gym-directory-map-canvas,
+        .gym-directory-map-canvas .maplibregl-canvas-container,
+        .gym-directory-map-canvas .maplibregl-canvas {
+          width: 100% !important;
+          height: 100% !important;
+        }
+        .gym-directory-map-canvas .maplibregl-canvas { outline: none; }
+        .gym-directory-map-canvas .maplibregl-ctrl-bottom-right {
+          margin: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+        }
+        .gym-directory-map-canvas .maplibregl-ctrl-attrib {
+          background: transparent !important;
+          color: rgba(255, 255, 255, 0.28);
+          font-size: 8px;
+          line-height: 1.2;
+          padding: 1px 3px 0 0 !important;
+          margin: 0 !important;
+          box-shadow: none;
+          opacity: 0.4;
+          max-width: none;
+          white-space: nowrap;
+        }
+        .gym-directory-map-canvas .maplibregl-ctrl-attrib,
+        .gym-directory-map-canvas .maplibregl-ctrl-attrib * {
+          white-space: nowrap !important;
+        }
+        .gym-directory-map-canvas .maplibregl-ctrl-attrib:hover,
+        .gym-directory-map-canvas .maplibregl-ctrl-attrib:focus-within {
+          opacity: 0.75;
+          color: rgba(255, 255, 255, 0.55);
+        }
+        .gym-directory-map-canvas .maplibregl-ctrl-attrib a {
+          color: inherit;
+          text-decoration: none;
+        }
+        .gym-directory-map-canvas .maplibregl-ctrl-attrib-button {
+          background-color: transparent !important;
+          width: 14px;
+          height: 14px;
+          opacity: 0.45;
+        }
+        .gym-directory-map-canvas .maplibregl-ctrl-attrib.maplibregl-compact {
+          min-height: 14px;
+          padding: 0;
+        }
+      `}</style>
+      <div ref={containerRef} className="gym-directory-map-canvas absolute inset-0 h-full w-full" />
       {!ready ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/40">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-background/20">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : null}
@@ -367,7 +417,7 @@ export function GymDirectoryMap({
         type="button"
         onClick={() => requestLocation()}
         className={cn(
-          "absolute right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full",
+          "touch-styled absolute right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full",
           "border border-white/15 bg-[#1a1f21]/90 text-white shadow-lg backdrop-blur-sm",
           "transition-colors active:scale-95",
         )}

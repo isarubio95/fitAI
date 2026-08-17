@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Loader2, MapPin, Search } from "lucide-react";
 import { GymDirectoryMap } from "@/components/gym/GymDirectoryMap";
-import { GymAddSheet } from "@/components/gym/GymAddSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGimnasiosCatalog } from "@/hooks/useGimnasios";
@@ -10,24 +9,21 @@ import { formatGymDistance, formatGimnasioListTitle, duplicateGymNames, rankGimn
 import type { GimnasioCatalogItem, SelectedGimnasio } from "@/types/gimnasio";
 
 export const gymDirectoryPageHeightClass =
-  "h-[calc(100dvh-var(--app-header-height,5rem)-var(--app-bottom-nav-inset,5.5rem))] min-h-0 overflow-hidden md:h-[calc(100dvh-3rem)]";
+  "relative min-h-0 overflow-hidden h-[calc(100dvh-8rem)] md:h-[calc(100dvh-3rem)]";
 
 type Props = {
   actionLabel?: string;
   onGymAction: (gym: SelectedGimnasio) => void;
-  elevatedLayers?: boolean;
 };
 
 export function GymDirectoryExplorer({
   actionLabel = "Entrenar aquí",
   onGymAction,
-  elevatedLayers = false,
 }: Props) {
   const { data: gyms = [], isLoading } = useGimnasiosCatalog();
   const { point: origin } = useBrowserLocation(true);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<GimnasioCatalogItem | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
 
   const duplicateNames = useMemo(() => duplicateGymNames(gyms), [gyms]);
 
@@ -49,7 +45,7 @@ export function GymDirectoryExplorer({
   };
 
   return (
-    <div data-vaul-no-drag className="relative h-full min-h-0 flex-1">
+    <div data-vaul-no-drag className="relative h-full min-h-0 w-full">
       <GymDirectoryMap
         gyms={gyms}
         selectedId={selected?.id ?? null}
@@ -58,19 +54,16 @@ export function GymDirectoryExplorer({
       />
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 pt-3 md:px-4 md:pt-4">
-        <div className="pointer-events-auto mx-auto flex max-w-lg items-center gap-2">
-          <div className="relative min-w-0 flex-1">
+        <div className="pointer-events-auto mx-auto max-w-lg">
+          <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar gimnasio o ciudad"
-              className="h-12 border-border/60 bg-card/95 pl-9 shadow-md backdrop-blur-sm"
+              placeholder="Buscar por nombre o ciudad"
+              className="h-12 pl-9"
             />
           </div>
-          <Button variant="secondary" className="h-12 shrink-0 shadow-md" onClick={() => setAddOpen(true)}>
-            Añadir
-          </Button>
         </div>
         {suggestions.length > 0 ? (
           <ul className="pointer-events-auto mx-auto mt-2 max-w-lg overflow-hidden rounded-xl border border-border/60 bg-card/95 shadow-md backdrop-blur-sm">
@@ -129,14 +122,6 @@ export function GymDirectoryExplorer({
           </div>
         </div>
       ) : null}
-
-      <GymAddSheet
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        onCreated={(gym) => setSelected(gym)}
-        overlayClassName={elevatedLayers ? "z-[90]" : undefined}
-        contentClassName={elevatedLayers ? "z-[95]" : undefined}
-      />
     </div>
   );
 }

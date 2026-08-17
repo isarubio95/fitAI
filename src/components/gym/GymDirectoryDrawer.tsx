@@ -62,7 +62,6 @@ export function GymDirectoryDrawer({ open, onOpenChange, onPick }: Props) {
             >
               <div className={gymDirectoryPageHeightClass}>
                 <GymDirectoryExplorer
-                  elevatedLayers
                   onGymAction={(gym) => {
                     onPick(gym);
                     close();
