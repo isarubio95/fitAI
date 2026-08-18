@@ -50,7 +50,7 @@ export function HeartRatePanel({
             <p className="text-[12px] text-amber-600 dark:text-amber-400">Sin señal</p>
           ) : (
             <p className="text-[12px] text-muted-foreground">
-              Bandas y relojes Bluetooth con sensor de pulso.
+              Bandas y relojes Bluetooth
             </p>
           )}
           {deviceName ? (

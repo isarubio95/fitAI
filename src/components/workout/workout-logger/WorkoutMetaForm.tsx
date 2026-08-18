@@ -13,7 +13,7 @@ import {
 import type { SelectedGimnasio } from "@/types/gimnasio";
 import { cn } from "@/lib/utils";
 import { MapPin } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 type WorkoutMetaFormProps = {
   hideWorkoutDate: boolean;
@@ -31,6 +31,7 @@ type WorkoutMetaFormProps = {
   gimnasio: SelectedGimnasio | null;
   onGimnasioChange: (value: SelectedGimnasio | null) => void;
   gymDisabled?: boolean;
+  children?: ReactNode;
 };
 
 export function WorkoutMetaForm({
@@ -49,6 +50,7 @@ export function WorkoutMetaForm({
   gimnasio,
   onGimnasioChange,
   gymDisabled = false,
+  children,
 }: WorkoutMetaFormProps) {
   const [gymPickerOpen, setGymPickerOpen] = useState(false);
   return (
@@ -94,6 +96,7 @@ export function WorkoutMetaForm({
             </div>
           )}
         </div>
+        {children}
         {!isActiveWorkout && (
           <div className="space-y-1.5">
             <Label htmlFor="gimnasio">Gimnasio</Label>

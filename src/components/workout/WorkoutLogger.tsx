@@ -15,7 +15,6 @@ import {
   pillCircleTransitionStyleForBottomSheet,
   type PillCirclePhase,
 } from "@/lib/pillCircleTransition";
-import { Card, CardContent } from "@/components/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Flag, Check } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
@@ -1450,29 +1449,25 @@ export function WorkoutLogger() {
                   gimnasio={gimnasio}
                   onGimnasioChange={(gym) => void handleGimnasioChange(gym)}
                   gymDisabled={creatingActive}
-                />
-
-                {isActiveWorkout && hrMonitor.available && (
-                  <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
-                    <CardContent className="px-6 py-3">
-                      <HeartRatePanel
-                        className="rounded-none border-0 bg-transparent p-0"
-                        bpm={hrMonitor.bpm}
-                        connected={hrMonitor.connected}
-                        connection={hrMonitor.connection}
-                        deviceName={hrMonitor.deviceName}
-                        zone={hrMonitor.zone}
-                        connecting={hrMonitor.connecting}
-                        error={hrMonitor.error}
-                        onConnectClick={() => {
-                          if (hrMonitor.connected) void hrMonitor.disconnect();
-                          else if (hrMonitor.device) void hrMonitor.reconnect();
-                          else void hrMonitor.connect();
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
+                >
+                  {isActiveWorkout && hrMonitor.available ? (
+                    <HeartRatePanel
+                      className="border-0 bg-background"
+                      bpm={hrMonitor.bpm}
+                      connected={hrMonitor.connected}
+                      connection={hrMonitor.connection}
+                      deviceName={hrMonitor.deviceName}
+                      zone={hrMonitor.zone}
+                      connecting={hrMonitor.connecting}
+                      error={hrMonitor.error}
+                      onConnectClick={() => {
+                        if (hrMonitor.connected) void hrMonitor.disconnect();
+                        else if (hrMonitor.device) void hrMonitor.reconnect();
+                        else void hrMonitor.connect();
+                      }}
+                    />
+                  ) : null}
+                </WorkoutMetaForm>
 
                 <WorkoutExerciseList
                   exercises={exercises}

@@ -96,7 +96,10 @@ export function BottomNav({
       <nav
         ref={navRef}
         data-app-bottom-nav
-        className="fixed inset-x-0 bottom-0 z-50 w-full pb-[env(safe-area-inset-bottom)] md:hidden"
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-50 w-full pb-(--app-safe-area-bottom,env(safe-area-inset-bottom,0px)) md:hidden",
+          topBarSurface,
+        )}
       >
         {/* MENÚ DESPLEGABLE DE ACCIONES (fuera del contenedor con overflow-hidden) */}
       <div
@@ -128,12 +131,7 @@ export function BottomNav({
       </div>
 
       {/* BARRA DE NAVEGACIÓN */}
-      <div
-        className={cn(
-          "relative flex items-center justify-around border-t border-border/50 p-2",
-          topBarSurface,
-        )}
-      >
+      <div className="relative flex items-center justify-around border-t border-border/50 p-2">
         {navItems.map((item, index) => {
           // Renderizado del botón central +
           if (item.type === "add") {

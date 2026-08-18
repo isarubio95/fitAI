@@ -1,44 +1,58 @@
 import { useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 
-function readEnvSafeAreaTop(): number {
+function readEnvSafeArea(side: "top" | "bottom"): number {
+  const padding = side === "top" ? "padding-top" : "padding-bottom";
+  const inset = side === "top" ? "safe-area-inset-top" : "safe-area-inset-bottom";
   const probe = document.createElement("div");
   probe.style.cssText =
-    "position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:constant(safe-area-inset-top);padding-top:env(safe-area-inset-top);";
+    `position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;${padding}:constant(${inset});${padding}:env(${inset});`;
   document.documentElement.appendChild(probe);
-  const inset = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+  const style = getComputedStyle(probe);
+  const value = parseFloat(side === "top" ? style.paddingTop : style.paddingBottom) || 0;
   probe.remove();
-  return inset;
+  return value;
 }
 
-/** Estima la altura de la barra de estado cuando env(safe-area-inset-top) es 0 (Android WebView). */
-function estimateNativeStatusBarHeight(): number {
+function systemFontScale(): number {
   const span = document.createElement("span");
   span.style.cssText = "position:fixed;visibility:hidden;font-size:16px;line-height:1;";
   span.textContent = "X";
   document.body.appendChild(span);
   const textScale = span.getBoundingClientRect().height / 16;
   span.remove();
-
-  // ~24sp de altura base en Android; crece con el tamaño de fuente del sistema.
-  return Math.round(24 * Math.max(textScale, 1));
+  return Math.max(textScale, 1);
 }
 
-function resolveSafeAreaTop(): number {
-  const envInset = readEnvSafeAreaTop();
+/** Estima la altura de la barra de estado cuando env(safe-area-inset-top) es 0 (Android WebView). */
+function estimateNativeStatusBarHeight(): number {
+  // ~24sp de altura base en Android; crece con el tamaño de fuente del sistema.
+  return Math.round(24 * systemFontScale());
+}
+
+/** Estima la barra de navegación / gesto cuando env(safe-area-inset-bottom) es 0. */
+function estimateNativeNavBarHeight(): number {
+  // ~48dp de navigationBar en Android (3 botones); en gesto sobra color, no hueco.
+  return Math.round(48 * systemFontScale());
+}
+
+function resolveSafeArea(side: "top" | "bottom"): number {
+  const envInset = readEnvSafeArea(side);
   if (envInset > 0) return envInset;
   if (!Capacitor.isNativePlatform()) return 0;
-  return estimateNativeStatusBarHeight();
+  return side === "top" ? estimateNativeStatusBarHeight() : estimateNativeNavBarHeight();
 }
 
 /**
- * Expone la zona segura superior como --app-safe-area-top para que el padding
- * se adapte al escalado de fuente del sistema (p. ej. drawer de perfil).
+ * Expone las zonas seguras como --app-safe-area-top / --app-safe-area-bottom
+ * para que el chrome (header, bottom nav, drawers) cubra notch y barra de gesto.
  */
 export function useSafeAreaInsetsSync() {
   useEffect(() => {
     const sync = () => {
-      document.documentElement.style.setProperty("--app-safe-area-top", `${resolveSafeAreaTop()}px`);
+      const root = document.documentElement.style;
+      root.setProperty("--app-safe-area-top", `${resolveSafeArea("top")}px`);
+      root.setProperty("--app-safe-area-bottom", `${resolveSafeArea("bottom")}px`);
     };
 
     sync();
