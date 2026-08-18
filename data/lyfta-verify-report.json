@@ -1,0 +1,758 @@
+{
+  "scrapedAt": "2026-08-18T09:46:50.589Z",
+  "verifiedAt": "2026-08-18T09:48:59.380Z",
+  "source": "https://www.lyfta.app/exercises",
+  "lyftaTotal": 4880,
+  "trackGymTipos": 750,
+  "mapAliases": 1474,
+  "mapped": 1240,
+  "coveragePct": 25.4,
+  "exact": 796,
+  "equipmentPrefix": 132,
+  "token": 312,
+  "unmatched": 3640,
+  "byBodyPart": [
+    {
+      "grupo": "Back",
+      "total": 657,
+      "mapped": 175,
+      "unmatched": 482,
+      "pct": 26.6
+    },
+    {
+      "grupo": "Hips",
+      "total": 627,
+      "mapped": 118,
+      "unmatched": 509,
+      "pct": 18.8
+    },
+    {
+      "grupo": "Waist",
+      "total": 576,
+      "mapped": 120,
+      "unmatched": 456,
+      "pct": 20.8
+    },
+    {
+      "grupo": "Chest",
+      "total": 455,
+      "mapped": 153,
+      "unmatched": 302,
+      "pct": 33.6
+    },
+    {
+      "grupo": "Shoulders",
+      "total": 438,
+      "mapped": 145,
+      "unmatched": 293,
+      "pct": 33.1
+    },
+    {
+      "grupo": "Thighs",
+      "total": 342,
+      "mapped": 58,
+      "unmatched": 284,
+      "pct": 17
+    },
+    {
+      "grupo": "Quadriceps",
+      "total": 327,
+      "mapped": 106,
+      "unmatched": 221,
+      "pct": 32.4
+    },
+    {
+      "grupo": "Triceps",
+      "total": 277,
+      "mapped": 99,
+      "unmatched": 178,
+      "pct": 35.7
+    },
+    {
+      "grupo": "Biceps",
+      "total": 263,
+      "mapped": 110,
+      "unmatched": 153,
+      "pct": 41.8
+    },
+    {
+      "grupo": "Forearms",
+      "total": 192,
+      "mapped": 57,
+      "unmatched": 135,
+      "pct": 29.7
+    },
+    {
+      "grupo": "Calves",
+      "total": 186,
+      "mapped": 26,
+      "unmatched": 160,
+      "pct": 14
+    },
+    {
+      "grupo": "Plyometrics",
+      "total": 117,
+      "mapped": 9,
+      "unmatched": 108,
+      "pct": 7.7
+    },
+    {
+      "grupo": "Cardio",
+      "total": 117,
+      "mapped": 39,
+      "unmatched": 78,
+      "pct": 33.3
+    },
+    {
+      "grupo": "Hamstrings",
+      "total": 77,
+      "mapped": 10,
+      "unmatched": 67,
+      "pct": 13
+    },
+    {
+      "grupo": "Upper Arms",
+      "total": 64,
+      "mapped": 13,
+      "unmatched": 51,
+      "pct": 20.3
+    },
+    {
+      "grupo": "Neck",
+      "total": 47,
+      "mapped": 2,
+      "unmatched": 45,
+      "pct": 4.3
+    },
+    {
+      "grupo": "Weightlifting",
+      "total": 37,
+      "mapped": 0,
+      "unmatched": 37,
+      "pct": 0
+    },
+    {
+      "grupo": "Yoga",
+      "total": 26,
+      "mapped": 0,
+      "unmatched": 26,
+      "pct": 0
+    },
+    {
+      "grupo": "Sin grupo",
+      "total": 25,
+      "mapped": 0,
+      "unmatched": 25,
+      "pct": 0
+    },
+    {
+      "grupo": "Full body",
+      "total": 16,
+      "mapped": 0,
+      "unmatched": 16,
+      "pct": 0
+    },
+    {
+      "grupo": "Stretching",
+      "total": 14,
+      "mapped": 0,
+      "unmatched": 14,
+      "pct": 0
+    }
+  ],
+  "notables": [
+    {
+      "name": "Bench Press",
+      "status": "equipment_prefix",
+      "par": "press banca con barra",
+      "query": "barbell Bench Press"
+    },
+    {
+      "name": "Full Squat",
+      "status": "equipment_prefix",
+      "par": "sentadilla profunda con barra",
+      "query": "barbell Full Squat"
+    },
+    {
+      "name": "Deadlift",
+      "status": "token",
+      "par": "peso muerto con barra",
+      "query": "Deadlift"
+    },
+    {
+      "name": "Incline Bench Press",
+      "status": "equipment_prefix",
+      "par": "press inclinado con barra",
+      "query": "barbell Incline Bench Press"
+    },
+    {
+      "name": "Dumbbell Bench Press",
+      "status": "exact",
+      "par": "press banca con mancuernas",
+      "query": "Dumbbell Bench Press"
+    },
+    {
+      "name": "Barbell Curl",
+      "status": "exact",
+      "par": "curl en supinacion con barra",
+      "query": "Barbell Curl"
+    },
+    {
+      "name": "Push-up",
+      "status": "unmatched",
+      "par": null,
+      "query": null
+    },
+    {
+      "name": "Lateral Raise",
+      "status": "equipment_prefix",
+      "par": "elevaciones laterales neutras con mancuernas",
+      "query": "dumbbell Lateral Raise"
+    },
+    {
+      "name": "Triceps Pushdown",
+      "status": "unmatched",
+      "par": null,
+      "query": null
+    },
+    {
+      "name": "Bent Over Row",
+      "status": "equipment_prefix",
+      "par": "remo en pronacion con barra",
+      "query": "barbell Bent Over Row"
+    }
+  ],
+  "sampleExact": [
+    {
+      "lyfta": "Alternate Heel Touchers",
+      "par": "alternate heel touchers"
+    },
+    {
+      "lyfta": "Alternate Heel Touchers",
+      "par": "alternate heel touchers"
+    },
+    {
+      "lyfta": "Alternate Lateral Pulldown",
+      "par": "jalon aislado en polea alta"
+    },
+    {
+      "lyfta": "Alternate Punching",
+      "par": "alternate punching"
+    },
+    {
+      "lyfta": "Alternate Punching",
+      "par": "alternate punching"
+    },
+    {
+      "lyfta": "Archer Pull up",
+      "par": "archer pull up"
+    },
+    {
+      "lyfta": "Archer Push up",
+      "par": "archer push up"
+    },
+    {
+      "lyfta": "Assault Bike Run",
+      "par": "air bike (assault bike)"
+    },
+    {
+      "lyfta": "Assisted Pistol Squat with Bed Sheet",
+      "par": "sentadilla aislada asistida con cuerda"
+    },
+    {
+      "lyfta": "Back And Forth Step",
+      "par": "salto con desplazamiento lateral cruzado"
+    },
+    {
+      "lyfta": "Back Extension on Exercise Ball",
+      "par": "hiperextensiones en fitball"
+    },
+    {
+      "lyfta": "Backwards Run",
+      "par": "backwards run"
+    },
+    {
+      "lyfta": "Band Alternate Incline Chest Press with Twist",
+      "par": "press frontal inclinado con bandas"
+    },
+    {
+      "lyfta": "Band Alternate Lat Pulldown with Twist",
+      "par": "remo inclinado alterno con bandas"
+    },
+    {
+      "lyfta": "Band Alternate Low Row wtih Twist",
+      "par": "remo declinado alterno con bandas"
+    },
+    {
+      "lyfta": "Band alternating biceps curl",
+      "par": "curl en supinacion alterno con bandas"
+    },
+    {
+      "lyfta": "Band Behind Neck Shoulder Press",
+      "par": "press militar trasero con bandas"
+    },
+    {
+      "lyfta": "Band Bench Press",
+      "par": "press banca con bandas"
+    },
+    {
+      "lyfta": "Band Biceps Curl",
+      "par": "curl en supinacion con bandas"
+    },
+    {
+      "lyfta": "Band Biceps Curl",
+      "par": "curl en supinacion con bandas"
+    },
+    {
+      "lyfta": "Band bicycle crunch",
+      "par": "crunch cruzado con bandas"
+    },
+    {
+      "lyfta": "Band concentration curl",
+      "par": "curl en supinacion concentrado con banda"
+    },
+    {
+      "lyfta": "Band Fixed Back Close Grip Pulldown",
+      "par": "jalon neutro con bandas"
+    },
+    {
+      "lyfta": "Band Fixed Back Underhand Pulldown",
+      "par": "jalon en supinacion con bandas"
+    },
+    {
+      "lyfta": "Band front lateral raise",
+      "par": "elevacion lateral aislada con banda"
+    }
+  ],
+  "sampleEquipmentPrefix": [
+    {
+      "lyfta": "Alternate Biceps Curl",
+      "query": "dumbbell Alternate Biceps Curl",
+      "par": "curl con giro alterno con mancuernas"
+    },
+    {
+      "lyfta": "Alternate Biceps Curl",
+      "query": "dumbbell Alternate Biceps Curl",
+      "par": "curl con giro alterno con mancuernas"
+    },
+    {
+      "lyfta": "Alternate Triceps Extension",
+      "query": "cable Alternate Triceps Extension",
+      "par": "extension concentrada en polea baja"
+    },
+    {
+      "lyfta": "Arnold Press",
+      "query": "dumbbell Arnold Press",
+      "par": "press arnold con mancuernas"
+    },
+    {
+      "lyfta": "Behind Back Finger Curl",
+      "query": "barbell Behind Back Finger Curl",
+      "par": "curl vertical de dedos con barra"
+    },
+    {
+      "lyfta": "Bench Press",
+      "query": "barbell Bench Press",
+      "par": "press banca con barra"
+    },
+    {
+      "lyfta": "Bench Squat",
+      "query": "dumbbell Bench Squat",
+      "par": "media sentadilla con mancuernas"
+    },
+    {
+      "lyfta": "Bench Squat",
+      "query": "barbell Bench Squat",
+      "par": "media sentadilla con barra"
+    },
+    {
+      "lyfta": "Bent Arm Pullover",
+      "query": "barbell Bent Arm Pullover",
+      "par": "pullover con barra"
+    },
+    {
+      "lyfta": "Bent Over Row",
+      "query": "barbell Bent Over Row",
+      "par": "remo en pronacion con barra"
+    },
+    {
+      "lyfta": "Bent Over Row",
+      "query": "dumbbell Bent Over Row",
+      "par": "remo neutro con mancuernas"
+    },
+    {
+      "lyfta": "Close Grip Curl",
+      "query": "cable Close Grip Curl",
+      "par": "curl en supinacion cerrado en polea baja"
+    },
+    {
+      "lyfta": "Close Grip Preacher Curl",
+      "query": "ez barbell Close Grip Preacher Curl",
+      "par": "curl en supinacion cerrado en banco scott con barra z"
+    },
+    {
+      "lyfta": "Concentration Curl",
+      "query": "cable Concentration Curl",
+      "par": "curl concentrado cerrado en polea baja"
+    },
+    {
+      "lyfta": "Cross Body Hammer Curl",
+      "query": "dumbbell Cross Body Hammer Curl",
+      "par": "curl en martillo alterno con mancuernas"
+    },
+    {
+      "lyfta": "Cross Body Hammer Curl",
+      "query": "dumbbell Cross Body Hammer Curl",
+      "par": "curl en martillo alterno con mancuernas"
+    },
+    {
+      "lyfta": "Curl",
+      "query": "ez barbell Curl",
+      "par": "curl en supinacion con barra z"
+    },
+    {
+      "lyfta": "Curl with Multipurpose V bar",
+      "query": "cable Curl with Multipurpose V bar",
+      "par": "curl en v en polea baja"
+    },
+    {
+      "lyfta": "Decline Bench Press",
+      "query": "dumbbell Decline Bench Press",
+      "par": "press declinado con mancuernas"
+    },
+    {
+      "lyfta": "Decline Bent Arm Pullover",
+      "query": "barbell Decline Bent Arm Pullover",
+      "par": "pullover declinado cerrado con barra"
+    },
+    {
+      "lyfta": "Decline Close Grip To Skull Press",
+      "query": "barbell Decline Close Grip To Skull Press",
+      "par": "press frances declinado con barra"
+    },
+    {
+      "lyfta": "Decline Fly",
+      "query": "dumbbell Decline Fly",
+      "par": "aperturas declinadas con mancuernas"
+    },
+    {
+      "lyfta": "Decline Hammer Press",
+      "query": "dumbbell Decline Hammer Press",
+      "par": "press declinado neutro con mancuernas"
+    },
+    {
+      "lyfta": "Decline Triceps Extension",
+      "query": "dumbbell Decline Triceps Extension",
+      "par": "extension declinada con mancuernas"
+    },
+    {
+      "lyfta": "Drag Curl",
+      "query": "cable Drag Curl",
+      "par": "curl en supinacion retraido en polea baja"
+    }
+  ],
+  "sampleToken": [
+    {
+      "lyfta": "Air bike",
+      "par": "air bike (assault bike)"
+    },
+    {
+      "lyfta": "Air Bike",
+      "par": "air bike (assault bike)"
+    },
+    {
+      "lyfta": "Assisted Chin-up",
+      "par": "dominada en supinacion"
+    },
+    {
+      "lyfta": "Assisted Pull up",
+      "par": "dominada"
+    },
+    {
+      "lyfta": "Assisted Pull-up",
+      "par": "dominada"
+    },
+    {
+      "lyfta": "Band Chest Fly",
+      "par": "aperturas con bandas"
+    },
+    {
+      "lyfta": "Band high fly",
+      "par": "aperturas con bandas"
+    },
+    {
+      "lyfta": "Band high fly",
+      "par": "aperturas con bandas"
+    },
+    {
+      "lyfta": "Band Incline Bench Press",
+      "par": "press banca con bandas"
+    },
+    {
+      "lyfta": "Band lateral raise",
+      "par": "elevaciones laterales con banda"
+    },
+    {
+      "lyfta": "Band Lateral Raise",
+      "par": "elevaciones laterales con banda"
+    },
+    {
+      "lyfta": "Band Low Chest Fly",
+      "par": "aperturas con bandas"
+    },
+    {
+      "lyfta": "Band low fly",
+      "par": "aperturas con bandas"
+    },
+    {
+      "lyfta": "Band middle fly",
+      "par": "aperturas con bandas"
+    },
+    {
+      "lyfta": "Band Split Squat",
+      "par": "sentadilla con banda"
+    },
+    {
+      "lyfta": "Band squat row",
+      "par": "sentadilla con banda"
+    },
+    {
+      "lyfta": "Band Squat Twist",
+      "par": "sentadilla con banda"
+    },
+    {
+      "lyfta": "Band standing incline chest press",
+      "par": "press frontal inclinado con bandas"
+    },
+    {
+      "lyfta": "Band step-up",
+      "par": "step up con banda"
+    },
+    {
+      "lyfta": "Band twisting overhead press",
+      "par": "press militar con bandas"
+    },
+    {
+      "lyfta": "Bar Band Kneeling Incline Press",
+      "par": "press frontal inclinado con bandas"
+    },
+    {
+      "lyfta": "Bar Band Split Squat",
+      "par": "sentadilla con banda"
+    },
+    {
+      "lyfta": "Bar Band Squat",
+      "par": "sentadilla con banda"
+    },
+    {
+      "lyfta": "Barbell Banded Bench Squat",
+      "par": "sentadilla con barra"
+    },
+    {
+      "lyfta": "Barbell Banded Romanian Deadlift",
+      "par": "peso muerto con barra"
+    }
+  ],
+  "sampleUnmatched": [
+    {
+      "lyfta": "1 to 2 Jump Box",
+      "equipment": "Body weight",
+      "bodyPart": "Plyometrics"
+    },
+    {
+      "lyfta": "2 to 1 Jump Box",
+      "equipment": "Body weight",
+      "bodyPart": "Plyometrics"
+    },
+    {
+      "lyfta": "3 4 Sit up",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "3/4 Sit-up",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "45 degree Bycicle Twisting Crunch",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "45 degree hyperextension",
+      "equipment": "Body weight",
+      "bodyPart": "Back"
+    },
+    {
+      "lyfta": "45 degree hyperextension",
+      "equipment": "Body weight",
+      "bodyPart": "Hips"
+    },
+    {
+      "lyfta": "45 degree one leg hyperextension",
+      "equipment": "Body weight",
+      "bodyPart": "Hips"
+    },
+    {
+      "lyfta": "45 Degree Side Bend",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "45 degree twisting hyperextension",
+      "equipment": "Body weight",
+      "bodyPart": "Hips"
+    },
+    {
+      "lyfta": "45 degrees Back Extension",
+      "equipment": "Body weight",
+      "bodyPart": "Hips"
+    },
+    {
+      "lyfta": "45 degrees Side Bend",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "90 Degree Heel Touch",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "A brief introduction",
+      "equipment": "Body weight",
+      "bodyPart": "Hips"
+    },
+    {
+      "lyfta": "Ab Roller Crunch",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "Abdominal 4 points",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "Abdominal Stretch",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "Abduction Of One Leg Flexion Stretch",
+      "equipment": "Body weight",
+      "bodyPart": "Thighs"
+    },
+    {
+      "lyfta": "Abductors",
+      "equipment": "Body weight",
+      "bodyPart": "Hips"
+    },
+    {
+      "lyfta": "Above Head Chest Stretch",
+      "equipment": "Body weight",
+      "bodyPart": "Chest"
+    },
+    {
+      "lyfta": "Above Head Chest Stretch",
+      "equipment": "Body weight",
+      "bodyPart": "Chest"
+    },
+    {
+      "lyfta": "Across Chest Shoulder Stretch",
+      "equipment": "Body weight",
+      "bodyPart": "Shoulders"
+    },
+    {
+      "lyfta": "Adduction Hand With Elbow Extended Stretch",
+      "equipment": "Body weight",
+      "bodyPart": "Forearms"
+    },
+    {
+      "lyfta": "Adduction Of Arm In Back Stretch",
+      "equipment": "Body weight",
+      "bodyPart": "Back"
+    },
+    {
+      "lyfta": "Adductor Longus",
+      "equipment": "Body weight",
+      "bodyPart": "Hips"
+    },
+    {
+      "lyfta": "Adductor stretch",
+      "equipment": "Body weight",
+      "bodyPart": "Hips"
+    },
+    {
+      "lyfta": "Adductor Stretch",
+      "equipment": "Body weight",
+      "bodyPart": "Hips"
+    },
+    {
+      "lyfta": "Aerial Squat",
+      "equipment": "Body weight",
+      "bodyPart": "Quadriceps, Thighs"
+    },
+    {
+      "lyfta": "Air Squat",
+      "equipment": "Body weight",
+      "bodyPart": "Thighs"
+    },
+    {
+      "lyfta": "Air Squat",
+      "equipment": "Body weight",
+      "bodyPart": "Thighs"
+    },
+    {
+      "lyfta": "Air Twisting Crunch",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "All Fours Squad Stretch",
+      "equipment": "Body weight",
+      "bodyPart": "Thighs"
+    },
+    {
+      "lyfta": "All Fours Squad Stretch",
+      "equipment": "Body weight",
+      "bodyPart": "Thighs"
+    },
+    {
+      "lyfta": "Alternate Biceps Curl",
+      "equipment": "Band",
+      "bodyPart": "Biceps, Upper Arms"
+    },
+    {
+      "lyfta": "Alternate Heel Touch Side Kick Squat",
+      "equipment": "Body weight",
+      "bodyPart": "Quadriceps, Thighs"
+    },
+    {
+      "lyfta": "Alternate Leg Raise",
+      "equipment": "Body weight",
+      "bodyPart": "Hips"
+    },
+    {
+      "lyfta": "Alternate Leg Raise with Head-up",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "Alternate Lying Floor Leg Raise",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    },
+    {
+      "lyfta": "Alternate Lying Floor Leg Raise",
+      "equipment": "Body weight",
+      "bodyPart": "Hips, Waist"
+    },
+    {
+      "lyfta": "Alternate Oblique Crunch",
+      "equipment": "Body weight",
+      "bodyPart": "Waist"
+    }
+  ]
+}

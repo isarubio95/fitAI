@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FileUp, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { matchExerciseByName } from "@/lib/matchExerciseByName";
 import type { TablesInsert } from "@/integrations/supabase/types";
 
 type ParsedRow = {
@@ -136,11 +137,13 @@ export function ImportRoutineFromCsvDialog({ open, onOpenChange }: Props) {
   const findTipoEjercicioId = useCallback(
     (nombre: string): string | null => {
       if (!catalog?.length) return null;
-      const n = nombre.trim().toLowerCase();
-      const exact = catalog.find((e) => e.nombre.trim().toLowerCase() === n);
-      if (exact) return exact.id;
-      const partial = catalog.find((e) => e.nombre.trim().toLowerCase().includes(n) || n.includes(e.nombre.trim().toLowerCase()));
-      return partial?.id ?? null;
+      const match = matchExerciseByName(
+        nombre,
+        catalog
+          .filter((e) => e.__source === "catalogo")
+          .map((e) => ({ id: e.id, nombre: e.nombre, source: e.__source })),
+      );
+      return match?.id ?? null;
     },
     [catalog]
   );

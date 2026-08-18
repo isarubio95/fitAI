@@ -27,6 +27,8 @@ export type Database = {
           gimnasio_nombre: string | null
           icono: string | null
           id: string
+          origen: string | null
+          origen_externo_id: string | null
           titulo: string
           usuario_id: string
         }
@@ -42,6 +44,8 @@ export type Database = {
           gimnasio_nombre?: string | null
           icono?: string | null
           id?: string
+          origen?: string | null
+          origen_externo_id?: string | null
           titulo: string
           usuario_id?: string
         }
@@ -57,6 +61,8 @@ export type Database = {
           gimnasio_nombre?: string | null
           icono?: string | null
           id?: string
+          origen?: string | null
+          origen_externo_id?: string | null
           titulo?: string
           usuario_id?: string
         }
@@ -955,6 +961,38 @@ export type Database = {
         }
         Relationships: []
       }
+      lyfta_ejercicio_map: {
+        Row: {
+          auto_matched: boolean
+          lyfta_id: string
+          lyfta_nombre: string
+          tipo_ejercicio_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_matched?: boolean
+          lyfta_id: string
+          lyfta_nombre: string
+          tipo_ejercicio_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_matched?: boolean
+          lyfta_id?: string
+          lyfta_nombre?: string
+          tipo_ejercicio_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lyfta_ejercicio_map_tipo_ejercicio_id_fkey"
+            columns: ["tipo_ejercicio_id"]
+            isOneToOne: false
+            referencedRelation: "tipo_ejercicio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medidas: {
         Row: {
           brazo: number | null
@@ -1080,6 +1118,8 @@ export type Database = {
           nivel: string | null
           nombre: string
           orden: number | null
+          origen: string | null
+          origen_externo_id: string | null
           usuario_id: string | null
         }
         Insert: {
@@ -1093,6 +1133,8 @@ export type Database = {
           nivel?: string | null
           nombre: string
           orden?: number | null
+          origen?: string | null
+          origen_externo_id?: string | null
           usuario_id?: string | null
         }
         Update: {
@@ -1106,6 +1148,8 @@ export type Database = {
           nivel?: string | null
           nombre?: string
           orden?: number | null
+          origen?: string | null
+          origen_externo_id?: string | null
           usuario_id?: string | null
         }
         Relationships: []

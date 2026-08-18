@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 
-const LAST_UPDATED = "17 de agosto de 2026";
+const LAST_UPDATED = "18 de agosto de 2026";
 
 export default function PrivacyPolicy() {
   const { user } = useAuth();
@@ -54,6 +54,11 @@ export default function PrivacyPolicy() {
                   <strong className="text-foreground">Datos de entrenamiento:</strong> rutinas, ejercicios,
                   series, pesos, repeticiones, duraciones, historial de entrenos, métricas de progreso y, si
                   lo indicas, el gimnasio donde entrenaste (nombre y ubicación del centro).
+                </li>
+                <li>
+                  <strong className="text-foreground">Importación desde Lyfta:</strong> si pegas tu API key
+                  de Lyfta en Ajustes, usamos esa clave solo en esa petición para leer tu historial y/o
+                  rutinas y copiarlos a tu cuenta. No almacenamos la API key.
                 </li>
                 <li>
                   <strong className="text-foreground">Datos de cardio y ubicación:</strong> si utilizas
@@ -109,7 +114,8 @@ export default function PrivacyPolicy() {
               <ul className="list-disc space-y-1 pl-5">
                 <li>
                   <strong className="text-foreground">Supabase:</strong> autenticación, base de datos y
-                  almacenamiento de la información de la aplicación.
+                  almacenamiento de la información de la aplicación. También actúa de puente puntual para
+                  leer tu historial de Lyfta cuando importas datos (la API key no se guarda).
                 </li>
                 <li>
                   <strong className="text-foreground">Google:</strong> inicio de sesión con cuenta de Google,

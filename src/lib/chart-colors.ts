@@ -20,7 +20,7 @@ export const CHART_AREA_OPACITY = 0.16;
 export const chartAxis = {
   tick: "hsl(var(--muted-foreground))",
   grid: "hsl(var(--foreground))",
-  gridOpacity: 0.18,
+  gridOpacity: 0.32,
   surface: "hsl(var(--card))",
 } as const;
 

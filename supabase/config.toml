@@ -1,1 +1,4 @@
 project_id = "ugbhwarfkaeobaycxlwp"
+
+[functions.lyfta-proxy]
+verify_jwt = true

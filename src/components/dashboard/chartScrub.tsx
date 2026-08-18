@@ -8,7 +8,7 @@ import type { NameType, ValueType } from "recharts/types/component/DefaultToolti
 export const CHART_SCRUB_CURSOR = {
   stroke: "hsl(var(--foreground))",
   strokeWidth: 1.25,
-  strokeOpacity: 0.5,
+  strokeOpacity: 1,
 } as const;
 
 export const CHART_SCRUB_TOOLTIP_WRAPPER: CSSProperties = { display: "none" };
@@ -25,7 +25,7 @@ export function ChartScrubSummary({
   children: ReactNode;
 }) {
   return (
-    <div className="mb-2.5 min-h-13" aria-live="polite">
+    <div className="mb-3 min-h-13" aria-live="polite">
       <p className="text-[12px] font-medium text-muted-foreground">{formatScrubDate(date)}</p>
       <div className="mt-1 flex flex-wrap gap-x-7 gap-y-1">{children}</div>
     </div>

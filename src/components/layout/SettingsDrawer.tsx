@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { ColorThemeSelector } from "@/components/ColorThemeSelector";
 import { PhysiologySettings } from "@/components/layout/PhysiologySettings";
+import { LyftaImportSettings } from "@/components/layout/LyftaImportSettings";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -131,6 +132,8 @@ export function SettingsDrawer() {
           <Suspense fallback={null}>
             <DefaultGymSettings />
           </Suspense>
+
+          <LyftaImportSettings resetToken={open} />
 
           <div className="border-t border-border/40 pt-5">
             <nav
