@@ -20,7 +20,7 @@ function bottomInsetPx(): number {
     const h = nav.getBoundingClientRect().height;
     return h + EDGE_PX;
   }
-  return 80 + 24 + EDGE_PX;
+  return 80 + EDGE_PX;
 }
 
 function minTopPx(mode: DraggablePillBoundsMode): number {

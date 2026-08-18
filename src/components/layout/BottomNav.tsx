@@ -4,7 +4,7 @@ import { Home, BarChart3, ClipboardList, Plus, Users } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
-import { floatingGlassSurface } from "@/lib/surface-styles";
+import { topBarSurface } from "@/lib/surface-styles";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
@@ -96,7 +96,7 @@ export function BottomNav({
       <nav
         ref={navRef}
         data-app-bottom-nav
-        className="fixed bottom-3 left-1/2 z-50 w-[min(96vw,29rem)] -translate-x-1/2 pb-[calc(env(safe-area-inset-bottom)*0.55)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 w-full pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {/* MENÚ DESPLEGABLE DE ACCIONES (fuera del contenedor con overflow-hidden) */}
       <div
@@ -130,15 +130,15 @@ export function BottomNav({
       {/* BARRA DE NAVEGACIÓN */}
       <div
         className={cn(
-          "relative flex items-center justify-around overflow-hidden rounded-4xl px-2 py-2",
-          floatingGlassSurface,
+          "relative flex items-center justify-around border-t border-border/50 p-2",
+          topBarSurface,
         )}
       >
         {navItems.map((item, index) => {
           // Renderizado del botón central +
           if (item.type === "add") {
             return (
-              <div key="add-button" className="flex flex-1 flex-col items-center justify-center gap-1.5">
+              <div key="add-button" className="flex flex-1 flex-col items-center justify-center gap-1">
                 <button
                   onClick={() => {
                     if (onNavigate) {
@@ -147,7 +147,7 @@ export function BottomNav({
                     }
                     setIsMenuOpen(!isMenuOpen);
                   }}
-                  className="touch-styled group flex flex-col items-center justify-center gap-1.5 focus:outline-none"
+                  className="touch-styled group flex flex-col items-center justify-center gap-1 focus:outline-none"
                 >
                   <div className={cn(
                     "flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.82] active:duration-100 active:ease-out",
@@ -158,7 +158,9 @@ export function BottomNav({
                   <span
                     className={cn(
                       "text-[10px] font-medium tracking-wide transition-colors duration-300",
-                      isMenuOpen ? "text-primary" : "text-muted-foreground"
+                      isMenuOpen
+                        ? "text-foreground"
+                        : "text-muted-foreground dark:text-foreground"
                     )}
                   >
                     Registrar
@@ -181,7 +183,7 @@ export function BottomNav({
                 if (location.pathname === to) window.scrollTo(0, 0);
               }}
               className={cn(
-                "touch-styled group flex flex-1 flex-col items-center justify-center gap-1.5",
+                "touch-styled group flex flex-1 flex-col items-center justify-center gap-1",
                 "transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.86] active:duration-100 active:ease-out",
                 "focus:outline-none"
               )}
@@ -191,17 +193,19 @@ export function BottomNav({
                     <Icon
                       key={isItemActive ? "active" : "inactive"}
                       className={cn(
-                        "h-6 w-6 transition-all duration-300 ease-out",
+                        "h-6 w-6 stroke-[2px] transition-all duration-300 ease-out",
                         isItemActive
-                          ? "nav-icon-pop text-primary stroke-[2px] drop-shadow-[0_0_12px_rgba(var(--primary),0.6)]"
-                          : "text-muted-foreground stroke-[2px] group-hover:text-foreground"
+                          ? "nav-icon-pop text-foreground"
+                          : "text-muted-foreground dark:text-foreground group-hover:text-foreground"
                       )}
                     />
                   </div>
                   <span
                     className={cn(
                       "text-[10px] font-medium tracking-wide transition-colors duration-300",
-                      isItemActive ? "text-primary" : "text-muted-foreground"
+                      isItemActive
+                        ? "text-foreground"
+                        : "text-muted-foreground dark:text-foreground"
                     )}
                   >
                     {label}
