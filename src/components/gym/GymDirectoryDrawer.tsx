@@ -16,9 +16,17 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPick: (gym: SelectedGimnasio) => void;
+  overlayClassName?: string;
+  contentClassName?: string;
 };
 
-export function GymDirectoryDrawer({ open, onOpenChange, onPick }: Props) {
+export function GymDirectoryDrawer({
+  open,
+  onOpenChange,
+  onPick,
+  overlayClassName,
+  contentClassName,
+}: Props) {
   const close = () => onOpenChange(false);
 
   return (
@@ -31,8 +39,11 @@ export function GymDirectoryDrawer({ open, onOpenChange, onPick }: Props) {
     >
       <DrawerContent
         side="right"
-        overlayClassName="z-[80]"
-        className="z-[85] inset-0 h-lvh w-full max-w-none flex-col border-0 bg-background p-0"
+        overlayClassName={overlayClassName ?? "z-[80]"}
+        className={cn(
+          "inset-0 h-lvh w-full max-w-none flex-col border-0 bg-background p-0",
+          contentClassName ?? "z-[85]",
+        )}
       >
         <DrawerTitle className="sr-only">Gimnasios</DrawerTitle>
         {open ? (

@@ -48,7 +48,7 @@ import {
   type RoutineIconKey,
 } from "@/lib/routineIcons";
 import { buildWorkoutRoutineSnapshot, type WorkoutRoutineSnapshot } from "@/lib/workoutToRoutine";
-import { persistActividadGimnasio, fetchLastGimnasioForUser, GIMNASIOS_QUERY_KEY } from "@/hooks/useGimnasios";
+import { persistActividadGimnasio, fetchPrefillGimnasioForUser, GIMNASIOS_QUERY_KEY } from "@/hooks/useGimnasios";
 import type { SelectedGimnasio } from "@/types/gimnasio";
 import { getDefaultWorkoutTitle } from "@/lib/defaultWorkoutTitle";
 import { completePlannedRoutine } from "@/hooks/useWorkoutPlan";
@@ -410,7 +410,7 @@ export function WorkoutLogger() {
       // planificado, lo que dejaba el contador a 0:00 al entrenar por la mañana).
       // La fecha "de calendario" se conserva en el estado y se guarda al finalizar.
       const startedAtMs = Date.now();
-      const gym = initialGimnasio ?? (await fetchLastGimnasioForUser(user.id).catch(() => null));
+      const gym = initialGimnasio ?? (await fetchPrefillGimnasioForUser(user.id));
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
         .insert({
@@ -518,7 +518,7 @@ export function WorkoutLogger() {
       const now = new Date();
       const startedAtMs = now.getTime();
       const defaultTitle = getDefaultWorkoutTitle(now);
-      const gym = initialGimnasio ?? (await fetchLastGimnasioForUser(user.id).catch(() => null));
+      const gym = initialGimnasio ?? (await fetchPrefillGimnasioForUser(user.id));
       const { data: actividad, error: actError } = await supabase
         .from("actividad")
         .insert({

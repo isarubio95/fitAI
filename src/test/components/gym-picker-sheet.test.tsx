@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 
-const { mockUseGimnasiosCatalog, mockUseLastGimnasio, mockUseBrowserLocation, mockUseCreateGimnasio } =
+const { mockUseGimnasiosCatalog, mockUseDefaultGimnasio, mockUseLastGimnasio, mockUseBrowserLocation, mockUseCreateGimnasio } =
   vi.hoisted(() => ({
     mockUseGimnasiosCatalog: vi.fn(),
+    mockUseDefaultGimnasio: vi.fn(),
     mockUseLastGimnasio: vi.fn(),
     mockUseBrowserLocation: vi.fn(),
     mockUseCreateGimnasio: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock("@/components/gym/GymDirectoryDrawer", () => ({
 
 vi.mock("@/hooks/useGimnasios", () => ({
   useGimnasiosCatalog: mockUseGimnasiosCatalog,
+  useDefaultGimnasio: mockUseDefaultGimnasio,
   useLastGimnasio: mockUseLastGimnasio,
   useCreateGimnasio: mockUseCreateGimnasio,
 }));
@@ -48,6 +50,7 @@ describe("GymPickerSheet", () => {
       denied: false,
       request: vi.fn(),
     });
+    mockUseDefaultGimnasio.mockReturnValue({ data: null });
     mockUseLastGimnasio.mockReturnValue({
       data: { id: "g-last", nombre: "Gimnasio de siempre" },
     });
@@ -108,5 +111,34 @@ describe("GymPickerSheet", () => {
     });
     expect(screen.getByText("Basic-Fit (Calle Mayor 12)")).toBeInTheDocument();
     expect(screen.queryByText("Gimnasio de siempre")).not.toBeInTheDocument();
+  });
+
+  it("marca el último usado cuando no hay gimnasio por defecto", () => {
+    render(
+      wrap(
+        <GymPickerSheet open onOpenChange={vi.fn()} selected={null} onSelect={vi.fn()} />,
+      ),
+    );
+
+    expect(screen.getByText(/Último/)).toBeInTheDocument();
+    expect(screen.queryByText(/Por defecto/)).not.toBeInTheDocument();
+  });
+
+  it("prioriza el gimnasio por defecto y muestra el badge", () => {
+    mockUseDefaultGimnasio.mockReturnValue({
+      data: { id: "g-near", nombre: "Basic-Fit (Calle Mayor 12)" },
+    });
+
+    render(
+      wrap(
+        <GymPickerSheet open onOpenChange={vi.fn()} selected={null} onSelect={vi.fn()} />,
+      ),
+    );
+
+    const items = screen.getAllByRole("button");
+    const gymButtons = items.filter((el) => el.textContent?.includes("Madrid"));
+    expect(gymButtons[0]).toHaveTextContent("Basic-Fit (Calle Mayor 12)");
+    expect(gymButtons[0]).toHaveTextContent("Por defecto");
+    expect(screen.getByText(/Último/)).toBeInTheDocument();
   });
 });

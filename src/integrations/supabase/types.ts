@@ -1012,6 +1012,8 @@ export type Database = {
           fc_reposo: number | null
           fecha_nacimiento: string | null
           ftp_w: number | null
+          gimnasio_id: string | null
+          gimnasio_nombre: string | null
           id: string
           nivel: number
           racha_actual: number
@@ -1028,6 +1030,8 @@ export type Database = {
           fc_reposo?: number | null
           fecha_nacimiento?: string | null
           ftp_w?: number | null
+          gimnasio_id?: string | null
+          gimnasio_nombre?: string | null
           id?: string
           nivel?: number
           racha_actual?: number
@@ -1044,6 +1048,8 @@ export type Database = {
           fc_reposo?: number | null
           fecha_nacimiento?: string | null
           ftp_w?: number | null
+          gimnasio_id?: string | null
+          gimnasio_nombre?: string | null
           id?: string
           nivel?: number
           racha_actual?: number
@@ -1052,7 +1058,15 @@ export type Database = {
           username?: string | null
           xp_total?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "perfil_gimnasio_id_fkey"
+            columns: ["gimnasio_id"]
+            isOneToOne: false
+            referencedRelation: "gimnasio"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rutina: {
         Row: {

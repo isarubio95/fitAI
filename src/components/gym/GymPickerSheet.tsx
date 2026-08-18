@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GymAddSheet } from "@/components/gym/GymAddSheet";
 import { GymDirectoryDrawer } from "@/components/gym/GymDirectoryDrawer";
-import { useGimnasiosCatalog, useLastGimnasio } from "@/hooks/useGimnasios";
+import { useGimnasiosCatalog, useDefaultGimnasio, useLastGimnasio } from "@/hooks/useGimnasios";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
 import { formatGymDistance, formatGimnasioListTitle, duplicateGymNames, rankGimnasios } from "@/lib/gimnasioSearch";
 import type { GimnasioCatalogItem, SelectedGimnasio } from "@/types/gimnasio";
@@ -26,10 +26,24 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   selected: SelectedGimnasio | null;
   onSelect: (gym: SelectedGimnasio | null) => void;
+  overlayClassName?: string;
+  contentClassName?: string;
+  nestedOverlayClassName?: string;
+  nestedContentClassName?: string;
 };
 
-export function GymPickerSheet({ open, onOpenChange, selected, onSelect }: Props) {
+export function GymPickerSheet({
+  open,
+  onOpenChange,
+  selected,
+  onSelect,
+  overlayClassName,
+  contentClassName,
+  nestedOverlayClassName,
+  nestedContentClassName,
+}: Props) {
   const { data: gyms = [], isLoading } = useGimnasiosCatalog();
+  const { data: defaultGym } = useDefaultGimnasio();
   const { data: lastGym } = useLastGimnasio();
   const { point: origin, request: requestLocation } = useBrowserLocation(open);
   const [query, setQuery] = useState("");
@@ -38,15 +52,17 @@ export function GymPickerSheet({ open, onOpenChange, selected, onSelect }: Props
 
   const duplicateNames = useMemo(() => duplicateGymNames(gyms), [gyms]);
 
+  const pinnedId = defaultGym?.id ?? lastGym?.id ?? null;
+
   const ranked = useMemo(
     () =>
       rankGimnasios(gyms, {
         query,
         origin,
-        recentId: lastGym?.id ?? null,
+        recentId: pinnedId,
         limit: 50,
       }),
-    [gyms, query, origin, lastGym?.id],
+    [gyms, query, origin, pinnedId],
   );
 
   const handleSelect = (gym: GimnasioCatalogItem) => {
@@ -67,7 +83,10 @@ export function GymPickerSheet({ open, onOpenChange, selected, onSelect }: Props
           onOpenChange(next);
         }}
       >
-        <DrawerContent className="flex max-h-[92lvh] flex-col overflow-hidden">
+        <DrawerContent
+          overlayClassName={overlayClassName}
+          className={cn("flex max-h-[92lvh] flex-col overflow-hidden", contentClassName)}
+        >
           <div className={cn("shrink-0 border-b border-border/20 bg-card", drawerSheetRadiusTop)}>
             <DrawerHeader className="text-left">
               <DrawerTitle>Gimnasio</DrawerTitle>
@@ -105,7 +124,10 @@ export function GymPickerSheet({ open, onOpenChange, selected, onSelect }: Props
               <ul className="space-y-1">
                 {ranked.map((gym) => {
                   const isSelected = selected?.id === gym.id;
-                  const isRecent = lastGym?.id === gym.id && !isSelected;
+                  const isDefault = defaultGym?.id === gym.id && !isSelected;
+                  const isRecent =
+                    lastGym?.id === gym.id && lastGym?.id !== defaultGym?.id && !isSelected;
+                  const pinLabel = isDefault ? "Por defecto" : isRecent ? "Último" : null;
                   return (
                     <li key={gym.id}>
                       <button
@@ -127,7 +149,7 @@ export function GymPickerSheet({ open, onOpenChange, selected, onSelect }: Props
                             {formatGimnasioListTitle(gym, duplicateNames)}
                           </span>
                           <span className="block truncate text-xs text-muted-foreground">
-                            {[gym.ciudad, formatGymDistance(gym.distanceKm), isRecent ? "Último" : null]
+                            {[gym.ciudad, formatGymDistance(gym.distanceKm), pinLabel]
                               .filter(Boolean)
                               .join(" · ")}
                           </span>
@@ -176,6 +198,8 @@ export function GymPickerSheet({ open, onOpenChange, selected, onSelect }: Props
         open={addOpen}
         onOpenChange={setAddOpen}
         onCreated={(gym) => handleSelect(gym)}
+        overlayClassName={nestedOverlayClassName}
+        contentClassName={nestedContentClassName}
       />
       <GymDirectoryDrawer
         open={mapOpen}
@@ -186,6 +210,8 @@ export function GymPickerSheet({ open, onOpenChange, selected, onSelect }: Props
           onOpenChange(false);
           setQuery("");
         }}
+        overlayClassName={nestedOverlayClassName}
+        contentClassName={nestedContentClassName}
       />
     </>
   );

@@ -22,6 +22,24 @@ export async function fetchLastGimnasioForUser(userId: string): Promise<Selected
   return { id: data.gimnasio_id, nombre: data.gimnasio_nombre };
 }
 
+export async function fetchDefaultGimnasioForUser(userId: string): Promise<SelectedGimnasio | null> {
+  const { data, error } = await supabase
+    .from("perfil")
+    .select("gimnasio_id, gimnasio_nombre")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data?.gimnasio_id || !data.gimnasio_nombre) return null;
+  return { id: data.gimnasio_id, nombre: data.gimnasio_nombre };
+}
+
+/** Prefill de un entreno nuevo: default de Ajustes, si no el último usado. */
+export async function fetchPrefillGimnasioForUser(userId: string): Promise<SelectedGimnasio | null> {
+  const defaultGym = await fetchDefaultGimnasioForUser(userId).catch(() => null);
+  if (defaultGym) return defaultGym;
+  return fetchLastGimnasioForUser(userId).catch(() => null);
+}
+
 export function useGimnasiosCatalog() {
   const { user } = useAuth();
   return useQuery({
@@ -48,6 +66,18 @@ export function useLastGimnasio() {
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<SelectedGimnasio | null> => {
       return fetchLastGimnasioForUser(user!.id);
+    },
+  });
+}
+
+export function useDefaultGimnasio() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: [...GIMNASIOS_QUERY_KEY, "default", user?.id],
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async (): Promise<SelectedGimnasio | null> => {
+      return fetchDefaultGimnasioForUser(user!.id);
     },
   });
 }
@@ -103,5 +133,19 @@ export async function persistActividadGimnasio(
       gimnasio_nombre: gym?.nombre ?? null,
     })
     .eq("id", actividadId);
+  if (error) throw error;
+}
+
+export async function persistDefaultGimnasio(
+  userId: string,
+  gym: SelectedGimnasio | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from("perfil")
+    .update({
+      gimnasio_id: gym?.id ?? null,
+      gimnasio_nombre: gym?.nombre ?? null,
+    })
+    .eq("id", userId);
   if (error) throw error;
 }

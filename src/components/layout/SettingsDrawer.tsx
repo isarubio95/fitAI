@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
@@ -20,13 +20,18 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { Bell, MapPin, Settings, SunMoon } from "lucide-react";
+import { Bell, Settings, SunMoon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { cn } from "@/lib/utils";
 
 const settingsSectionCardClass = cn(
   "space-y-4 rounded-xl border border-border/60 bg-card p-4",
+);
+
+/** Lazy: DefaultGymSettings → GymPickerSheet → GymDirectoryDrawer → SettingsDrawer. */
+const DefaultGymSettings = lazy(() =>
+  import("@/components/layout/DefaultGymSettings").then((m) => ({ default: m.DefaultGymSettings })),
 );
 
 export function SettingsDrawer() {
@@ -123,14 +128,9 @@ export function SettingsDrawer() {
 
           <PhysiologySettings />
 
-          <Link
-            to="/gimnasios"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2 rounded-xl border border-border/60 bg-card px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
-          >
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            Gimnasios de España
-          </Link>
+          <Suspense fallback={null}>
+            <DefaultGymSettings />
+          </Suspense>
 
           <div className="border-t border-border/40 pt-5">
             <nav
