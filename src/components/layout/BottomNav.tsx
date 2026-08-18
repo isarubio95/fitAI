@@ -193,18 +193,18 @@ export function BottomNav({
                     <Icon
                       key={isItemActive ? "active" : "inactive"}
                       className={cn(
-                        "h-6 w-6 stroke-[2px] transition-all duration-300 ease-out",
+                        "h-6 w-6 stroke-[2px] transition-colors duration-200 ease-out",
                         isItemActive
-                          ? "nav-icon-pop text-foreground"
+                          ? "nav-icon-pop text-primary"
                           : "text-muted-foreground dark:text-foreground group-hover:text-foreground"
                       )}
                     />
                   </div>
                   <span
                     className={cn(
-                      "text-[10px] font-medium tracking-wide transition-colors duration-300",
+                      "text-[10px] font-medium tracking-wide transition-colors duration-200",
                       isItemActive
-                        ? "text-foreground"
+                        ? "text-primary"
                         : "text-muted-foreground dark:text-foreground"
                     )}
                   >
