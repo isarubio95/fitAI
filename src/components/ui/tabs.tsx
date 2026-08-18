@@ -40,12 +40,16 @@ interface AnimatedTabsListProps extends React.ComponentPropsWithoutRef<typeof Ta
   variant?: "pill" | "underline";
 }
 
+const INDICATOR_TRANSITION = { duration: 0.24, ease: [0.22, 1, 0.36, 1] } as const;
+
 const AnimatedTabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   AnimatedTabsListProps
 >(({ className, value, variant = "pill", children, ...props }, ref) => {
   const listRef = React.useRef<React.ElementRef<typeof TabsPrimitive.List>>(null);
   const [indicator, setIndicator] = React.useState({ left: 0, width: 0 });
+  /** Evita animar el primer colocamiento al montar (p. ej. al abrir el dashboard). */
+  const canAnimateRef = React.useRef(false);
 
   const updateIndicator = React.useCallback(() => {
     const list = listRef.current;
@@ -53,6 +57,8 @@ const AnimatedTabsList = React.forwardRef<
 
     const activeEl = list.querySelector<HTMLElement>('[data-state="active"]');
     if (!activeEl) return;
+
+    let next: { left: number; width: number };
 
     if (variant === "underline") {
       // Ancho intermedio: más que el texto, menos que el trigger completo.
@@ -64,22 +70,25 @@ const AnimatedTabsList = React.forwardRef<
       const tabWidth = activeEl.offsetWidth;
       const width = Math.min(tabWidth * 0.58, Math.max(textWidth * 2.35, 52));
       const textCenter = textRect.left - listRect.left + textWidth / 2;
-      setIndicator({
-        left: textCenter - width / 2,
-        width,
-      });
-      return;
+      next = { left: textCenter - width / 2, width };
+    } else {
+      next = { left: activeEl.offsetLeft, width: activeEl.offsetWidth };
     }
 
-    setIndicator({
-      left: activeEl.offsetLeft,
-      width: activeEl.offsetWidth,
-    });
+    setIndicator((prev) =>
+      prev.left === next.left && prev.width === next.width ? prev : next,
+    );
   }, [variant]);
 
   React.useLayoutEffect(() => {
     updateIndicator();
   }, [value, children, updateIndicator]);
+
+  React.useEffect(() => {
+    if (indicator.width > 0) {
+      canAnimateRef.current = true;
+    }
+  }, [indicator.width]);
 
   React.useEffect(() => {
     const list = listRef.current;
@@ -117,21 +126,23 @@ const AnimatedTabsList = React.forwardRef<
           <motion.span
             aria-hidden="true"
             className="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-foreground"
+            initial={false}
             animate={{
               left: indicator.left,
               width: indicator.width,
             }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            transition={canAnimateRef.current ? INDICATOR_TRANSITION : { duration: 0 }}
           />
         ) : (
           <motion.span
             aria-hidden="true"
             className="pointer-events-none absolute bottom-1 top-1 rounded-full bg-background shadow-xs"
+            initial={false}
             animate={{
               left: indicator.left,
               width: indicator.width,
             }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            transition={canAnimateRef.current ? INDICATOR_TRANSITION : { duration: 0 }}
           />
         ))}
       {children}

@@ -27,6 +27,9 @@ function DismissButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+const notificationCardClass =
+  "rounded-xl border border-border/60 bg-card px-3 py-3 text-left";
+
 function NotificationRow({
   item,
   onDismiss,
@@ -38,11 +41,7 @@ function NotificationRow({
 }) {
   if (isNewFollowerNotification(item)) {
     return (
-      <div
-        className={cn(
-          "rounded-xl border border-primary/20 bg-primary/8 px-3 py-3 text-left dark:border-primary/25 dark:bg-primary/5",
-        )}
-      >
+      <div className={notificationCardClass}>
         <NewFollowerNotificationContent
           seguidorId={item.seguidorId}
           username={item.username}
@@ -58,11 +57,7 @@ function NotificationRow({
 
   if (isSocialInteractionNotification(item)) {
     return (
-      <div
-        className={cn(
-          "rounded-xl border border-primary/20 bg-primary/8 px-3 py-3 text-left dark:border-primary/25 dark:bg-primary/5",
-        )}
-      >
+      <div className={notificationCardClass}>
         <SocialInteractionNotificationContent
           interaction={item.interaction}
           targetType={item.targetType}
@@ -71,7 +66,6 @@ function NotificationRow({
           username={item.username}
           avatarUrl={item.avatarUrl}
           texto={item.texto}
-          createdAt={item.createdAt}
           onAfterOpenProfile={onAfterPrimaryAction}
           trailing={
             item.dismissable ? <DismissButton onClick={() => onDismiss(item.id)} /> : null
@@ -82,13 +76,7 @@ function NotificationRow({
   }
 
   return (
-    <div
-      className={cn(
-        "rounded-xl border border-border/60 bg-muted/30 px-3 py-3 text-left",
-        item.kind === "action" &&
-          "border-primary/20 bg-primary/8 dark:border-primary/25 dark:bg-primary/5",
-      )}
-    >
+    <div className={notificationCardClass}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold leading-tight">{item.title}</p>
@@ -147,7 +135,7 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
         <DrawerContent
           side="right"
           overlayClassName="z-[110]"
-          className="z-[115] flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-card p-0 shadow-none"
+          className="z-[115] flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none"
         >
           <DrawerHeader className="shrink-0 border-b border-border/60 px-6 pb-4 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
             <DrawerTitle className="text-lg">Notificaciones</DrawerTitle>

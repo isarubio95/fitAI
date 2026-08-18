@@ -45,6 +45,7 @@ export type ActivitySocialStatsProps = {
   likeCount: number;
   liked: boolean;
   commentCount: number;
+  commented: boolean;
   onToggleLike: () => void | Promise<void>;
   isTogglingLike?: boolean;
   /** Si true, el panel de comentarios empieza abierto. */
@@ -59,6 +60,7 @@ export function ActivitySocialActions({
   likeCount,
   liked,
   commentCount,
+  commented,
   onToggleLike,
   isTogglingLike = false,
   defaultCommentsOpen = false,
@@ -84,6 +86,11 @@ export function ActivitySocialActions({
     kind === "cardio" ? cardioComments : gymComments;
 
   const displayCommentCount = commentsMounted && comments.length > 0 ? comments.length : commentCount;
+  const commentedFromList =
+    commentsMounted && !isLoading && user
+      ? comments.some((c) => c.usuario_id === user.id)
+      : null;
+  const hasCommented = commentedFromList ?? commented;
 
   const handleToggleLike = (e: MouseEvent) => {
     e.stopPropagation();
@@ -154,7 +161,7 @@ export function ActivitySocialActions({
           aria-label={commentsOpen ? "Ocultar comentarios" : "Ver comentarios"}
           onClick={handleToggleComments}
         >
-          <MessageCircle className="h-[1.15rem] w-[1.15rem]" />
+          <MessageCircle className={cn("h-[1.15rem] w-[1.15rem]", hasCommented && "fill-current")} />
           <span className="tabular-nums text-sm font-medium">{displayCommentCount}</span>
         </Button>
       </div>

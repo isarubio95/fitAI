@@ -94,25 +94,27 @@ export function WorkoutMetaForm({
             </div>
           )}
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="gimnasio">Gimnasio</Label>
-          <button
-            type="button"
-            id="gimnasio"
-            disabled={gymDisabled}
-            onClick={() => setGymPickerOpen(true)}
-            className={cn(
-              "flex h-12 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-left text-base md:text-sm",
-              "focus-visible:border-emerald-500/30 focus-visible:outline-none",
-              gymDisabled && "cursor-not-allowed opacity-50",
-            )}
-          >
-            <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className={cn("min-w-0 flex-1 truncate", !gimnasio && "text-muted-foreground")}>
-              {gimnasio?.nombre ?? "Dónde has entrenado (opcional)"}
-            </span>
-          </button>
-        </div>
+        {!isActiveWorkout && (
+          <div className="space-y-1.5">
+            <Label htmlFor="gimnasio">Gimnasio</Label>
+            <button
+              type="button"
+              id="gimnasio"
+              disabled={gymDisabled}
+              onClick={() => setGymPickerOpen(true)}
+              className={cn(
+                "flex h-12 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-left text-base md:text-sm",
+                "focus-visible:border-emerald-500/30 focus-visible:outline-none",
+                gymDisabled && "cursor-not-allowed opacity-50",
+              )}
+            >
+              <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className={cn("min-w-0 flex-1 truncate", !gimnasio && "text-muted-foreground")}>
+                {gimnasio?.nombre ?? "Dónde has entrenado (opcional)"}
+              </span>
+            </button>
+          </div>
+        )}
         {isEditingCompletedWorkout && (
           <>
             <RoutineIconPicker
@@ -136,12 +138,14 @@ export function WorkoutMetaForm({
           </>
         )}
       </CardContent>
-      <GymPickerSheet
-        open={gymPickerOpen}
-        onOpenChange={setGymPickerOpen}
-        selected={gimnasio}
-        onSelect={onGimnasioChange}
-      />
+      {!isActiveWorkout && (
+        <GymPickerSheet
+          open={gymPickerOpen}
+          onOpenChange={setGymPickerOpen}
+          selected={gimnasio}
+          onSelect={onGimnasioChange}
+        />
+      )}
     </Card>
   );
 }

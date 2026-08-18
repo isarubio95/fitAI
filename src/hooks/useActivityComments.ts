@@ -19,26 +19,40 @@ export type ActivityComment = {
   author: ActivityCommentAuthor;
 };
 
+export type ActivityCommentCountsState = {
+  commentCounts: Record<string, number>;
+  commentedIds: Set<string>;
+};
+
+function emptyCommentCountsState(): ActivityCommentCountsState {
+  return { commentCounts: {}, commentedIds: new Set() };
+}
+
 function sortedIdsKey(ids: string[]): string {
   return [...ids].sort().join(",");
 }
 
-async function fetchCommentCounts(actividadIds: string[]): Promise<Record<string, number>> {
-  const counts: Record<string, number> = {};
-  for (const id of actividadIds) counts[id] = 0;
-  if (actividadIds.length === 0) return counts;
+async function fetchCommentCounts(
+  userId: string,
+  actividadIds: string[],
+): Promise<ActivityCommentCountsState> {
+  const commentCounts: Record<string, number> = {};
+  const commentedIds = new Set<string>();
+  for (const id of actividadIds) commentCounts[id] = 0;
+  if (actividadIds.length === 0) return { commentCounts, commentedIds };
 
   const { data, error } = await supabase
     .from("actividad_comentario")
-    .select("actividad_id")
+    .select("actividad_id, usuario_id")
     .in("actividad_id", actividadIds);
 
   if (error) throw error;
 
   for (const row of data ?? []) {
-    counts[row.actividad_id] = (counts[row.actividad_id] ?? 0) + 1;
+    commentCounts[row.actividad_id] = (commentCounts[row.actividad_id] ?? 0) + 1;
+    if (row.usuario_id === userId) commentedIds.add(row.actividad_id);
   }
-  return counts;
+  return { commentCounts, commentedIds };
 }
 
 /** Conteos de comentarios en batch para las cards del feed. */
@@ -51,13 +65,16 @@ export function useActivityCommentCounts(actividadIds: string[]) {
   );
 
   const { data } = useQuery({
-    queryKey: ["activityCommentCounts", idsKey],
+    queryKey: ["activityCommentCounts", user?.id, idsKey],
     enabled: !!user && stableIds.length > 0,
     staleTime: 30 * 1000,
-    queryFn: () => fetchCommentCounts(stableIds),
+    queryFn: () => fetchCommentCounts(user!.id, stableIds),
   });
 
-  return { commentCounts: data ?? {} };
+  return {
+    commentCounts: data?.commentCounts ?? emptyCommentCountsState().commentCounts,
+    commentedIds: data?.commentedIds ?? emptyCommentCountsState().commentedIds,
+  };
 }
 
 async function fetchActivityComments(actividadId: string): Promise<ActivityComment[]> {

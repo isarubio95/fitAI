@@ -11,6 +11,7 @@ type Props = {
   connecting: boolean;
   error: string | null;
   onConnectClick: () => void;
+  className?: string;
 };
 
 export function HeartRatePanel({
@@ -22,41 +23,43 @@ export function HeartRatePanel({
   connecting,
   error,
   onConnectClick,
+  className,
 }: Props) {
+  const hasBpm = connected && bpm != null;
+
   return (
-    <div className="rounded-2xl border border-border bg-muted/30 p-3">
-      <div className="flex items-center gap-3">
-        <div
+    <div className={cn("rounded-2xl border border-border bg-card px-4 py-3", className)}>
+      <div className="flex items-center gap-4">
+        <Heart
           className={cn(
-            "flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
-            connected ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" : "bg-muted text-muted-foreground",
+            "h-6 w-6 shrink-0",
+            connected ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground",
+            hasBpm && "animate-pulse",
           )}
-        >
-          <Heart className={cn("h-5 w-5", connected && bpm != null && "animate-pulse")} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pulsaciones</p>
-          <p className="mt-0.5 font-mono text-2xl font-semibold tabular-nums">
-            {connected && bpm != null ? (
-              <>
-                {bpm}
-                <span className="ml-1 text-sm font-medium text-muted-foreground">bpm</span>
-              </>
-            ) : connecting ? (
-              <span className="text-base font-medium text-muted-foreground">Conectando…</span>
-            ) : connection === "disconnected" ? (
-              <span className="text-base font-medium text-amber-600 dark:text-amber-400">Sin señal</span>
-            ) : (
-              <span className="text-base font-medium text-muted-foreground">—</span>
-            )}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">
-            {connected && deviceName
-              ? `${deviceName}${zone != null ? ` · Zona ${zone}` : ""}`
-              : deviceName
-                ? deviceName
-                : "Sensor Bluetooth"}
-          </p>
+        />
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <p className="text-sm font-medium">Pulsaciones</p>
+          {hasBpm ? (
+            <p className="font-mono text-2xl font-semibold tabular-nums">
+              {bpm}
+              <span className="ml-1 text-sm font-medium text-muted-foreground">bpm</span>
+            </p>
+          ) : connecting ? (
+            <p className="text-[12px] text-muted-foreground">Conectando…</p>
+          ) : connection === "disconnected" ? (
+            <p className="text-[12px] text-amber-600 dark:text-amber-400">Sin señal</p>
+          ) : (
+            <p className="text-[12px] text-muted-foreground">
+              Bandas y relojes Bluetooth con sensor de pulso.
+            </p>
+          )}
+          {deviceName ? (
+            <p className="truncate text-[12px] text-muted-foreground">
+              {connected
+                ? `${deviceName}${zone != null ? ` · Zona ${zone}` : ""}`
+                : deviceName}
+            </p>
+          ) : null}
         </div>
         <Button
           type="button"

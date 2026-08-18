@@ -78,19 +78,21 @@ export default function Community() {
   );
   const { likeCounts, likedIds, toggleLike, isToggling: isTogglingLike } =
     useActivityLikes(feedActividadIds);
-  const { commentCounts } = useActivityCommentCounts(feedActividadIds);
+  const { commentCounts, commentedIds } = useActivityCommentCounts(feedActividadIds);
   const {
     likeCounts: cardioLikeCounts,
     likedIds: cardioLikedIds,
     toggleLike: toggleCardioLike,
     isToggling: isTogglingCardioLike,
   } = useCardioSessionLikes(feedCardioIds);
-  const { commentCounts: cardioCommentCounts } = useCardioSessionCommentCounts(feedCardioIds);
+  const { commentCounts: cardioCommentCounts, commentedIds: cardioCommentedIds } =
+    useCardioSessionCommentCounts(feedCardioIds);
 
   const socialFor = (actividadId: string): WorkoutFeedCardSocial => ({
     likeCount: likeCounts[actividadId] ?? 0,
     liked: likedIds.has(actividadId),
     commentCount: commentCounts[actividadId] ?? 0,
+    commented: commentedIds.has(actividadId),
     onToggleLike: () => toggleLike(actividadId),
     isTogglingLike: isTogglingLike.has(actividadId),
   });
@@ -99,6 +101,7 @@ export default function Community() {
     likeCount: cardioLikeCounts[sessionId] ?? 0,
     liked: cardioLikedIds.has(sessionId),
     commentCount: cardioCommentCounts[sessionId] ?? 0,
+    commented: cardioCommentedIds.has(sessionId),
     onToggleLike: () => toggleCardioLike(sessionId),
     isTogglingLike: isTogglingCardioLike.has(sessionId),
   });
@@ -189,11 +192,11 @@ export default function Community() {
                   )}
                 >
                   {isFollowing ? (
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-3">
                       <UserCheck className="h-4 w-4" /> Siguiendo
                     </span>
                   ) : (
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-3">
                       <UserPlus className="h-4 w-4" /> Seguir
                     </span>
                   )}

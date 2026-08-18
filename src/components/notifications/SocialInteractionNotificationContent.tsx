@@ -3,7 +3,6 @@ import { Heart, MessageCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
-import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
 import {
   socialInteractionAuthorName,
   socialInteractionCommentPreview,
@@ -28,7 +27,6 @@ type Props = {
   username: string | null;
   avatarUrl: string | null;
   texto: string | null;
-  createdAt: string;
   /** Pills del dashboard: avatar algo más pequeño. */
   compact?: boolean;
   onAfterOpenProfile?: () => void;
@@ -45,7 +43,6 @@ export function SocialInteractionNotificationContent({
   username,
   avatarUrl,
   texto,
-  createdAt,
   compact,
   onAfterOpenProfile,
   className,
@@ -54,7 +51,6 @@ export function SocialInteractionNotificationContent({
   const { openUserProfile } = useProfileDrawer();
   const avatar = useUserAvatar([avatarUrl]);
   const displayName = socialInteractionAuthorName(username);
-  const when = formatActivityRelativeDate(createdAt);
 
   const HeaderIcon = interaction === "like" ? Heart : MessageCircle;
   const commentPreview = socialInteractionCommentPreview(texto);
@@ -76,9 +72,6 @@ export function SocialInteractionNotificationContent({
         <HeaderIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
         <p className="min-w-0 flex-1 text-sm font-semibold leading-tight">
           {socialInteractionTitle(interaction)}
-          {when ? (
-            <span className="font-normal text-muted-foreground"> · {when}</span>
-          ) : null}
         </p>
         {trailing ? <div className="-mr-1 -mt-0.5 flex shrink-0">{trailing}</div> : null}
       </div>

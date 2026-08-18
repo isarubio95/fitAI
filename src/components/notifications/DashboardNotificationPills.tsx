@@ -57,7 +57,6 @@ function Pill({ item, onDismiss }: { item: InAppNotificationItem; onDismiss: (id
           username={item.username}
           avatarUrl={item.avatarUrl}
           texto={item.texto}
-          createdAt={item.createdAt}
           trailing={
             item.dismissable ? <DismissButton onClick={() => onDismiss(item.id)} /> : null
           }

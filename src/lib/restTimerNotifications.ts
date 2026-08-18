@@ -10,6 +10,44 @@ const EXACT_ALARM_PROMPT_KEY = "fitai-exact-alarm-prompted";
 let channelReady = false;
 let appListenerRegistered = false;
 let pendingEndTimeMs: number | null = null;
+let workoutDrawerOpen = false;
+let appIsActive = true;
+let scheduleGeneration = 0;
+let scheduleInFlight = false;
+
+/**
+ * El aviso de descanso no debe saltar si el usuario ya está mirando el
+ * entrenamiento activo: ahí se ve RestProgressBar.
+ */
+export function shouldDeliverRestFinishedNotification(
+  drawerOpen: boolean,
+  appActive: boolean,
+): boolean {
+  return !(drawerOpen && appActive);
+}
+
+export function isWorkoutDrawerOpen(): boolean {
+  return workoutDrawerOpen;
+}
+
+export function setWorkoutDrawerOpen(open: boolean): void {
+  if (workoutDrawerOpen === open) return;
+  workoutDrawerOpen = open;
+  syncScheduledRestNotification();
+}
+
+function shouldDeliverNow(): boolean {
+  return shouldDeliverRestFinishedNotification(workoutDrawerOpen, appIsActive);
+}
+
+function syncScheduledRestNotification() {
+  if (!pendingEndTimeMs || pendingEndTimeMs <= Date.now()) return;
+  if (shouldDeliverNow()) {
+    void scheduleRestTimerNotification(pendingEndTimeMs);
+    return;
+  }
+  void cancelScheduledNotificationOnly();
+}
 
 async function ensureChannel() {
   if (!Capacitor.isNativePlatform() || channelReady) return;
@@ -28,14 +66,32 @@ async function ensureChannel() {
   }
 }
 
+async function cancelScheduledNotificationOnly(): Promise<void> {
+  scheduleGeneration += 1;
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    await LocalNotifications.cancel({ notifications: [{ id: REST_TIMER_NOTIFICATION_ID }] });
+  } catch {
+    // ignore
+  }
+}
+
 function registerAppStateListener() {
   if (!Capacitor.isNativePlatform() || appListenerRegistered) return;
   appListenerRegistered = true;
 
+  void App.getState()
+    .then((state) => {
+      appIsActive = state.isActive;
+      syncScheduledRestNotification();
+    })
+    .catch(() => {
+      // ignore
+    });
+
   void App.addListener("appStateChange", ({ isActive }) => {
-    if (!isActive && pendingEndTimeMs && pendingEndTimeMs > Date.now()) {
-      void scheduleRestTimerNotification(pendingEndTimeMs);
-    }
+    appIsActive = isActive;
+    syncScheduledRestNotification();
   });
 }
 
@@ -85,52 +141,69 @@ export async function scheduleRestTimerNotification(endTimeMs: number): Promise<
     pendingEndTimeMs = null;
     return;
   }
-  if (!Capacitor.isNativePlatform()) return;
   if (endTimeMs <= Date.now()) return;
 
   pendingEndTimeMs = endTimeMs;
   registerAppStateListener();
 
-  const ready = await ensureRestTimerNotificationsReady();
-  if (!ready) {
-    console.warn("Permisos de alarma exacta no concedidos; el aviso de descanso puede retrasarse.");
+  if (!Capacitor.isNativePlatform()) return;
+
+  if (!shouldDeliverNow()) {
+    await cancelScheduledNotificationOnly();
+    return;
   }
 
+  if (scheduleInFlight) return;
+  scheduleInFlight = true;
+  const token = scheduleGeneration;
   try {
-    await ensureChannel();
-    await LocalNotifications.cancel({ notifications: [{ id: REST_TIMER_NOTIFICATION_ID }] });
-
-    const result = await LocalNotifications.schedule({
-      notifications: [
-        {
-          id: REST_TIMER_NOTIFICATION_ID,
-          title: "¡Descanso terminado!",
-          body: "Hora de tu siguiente serie.",
-          channelId: CHANNEL_ID,
-          smallIcon: "ic_stat_notification",
-          schedule: {
-            at: new Date(endTimeMs),
-            allowWhileIdle: true,
-          },
-        },
-      ],
-    });
-
-    const scheduled = result.notifications.some((n) => n.id === REST_TIMER_NOTIFICATION_ID);
-    if (!scheduled) {
-      console.warn("La notificación de descanso no quedó programada.");
+    const ready = await ensureRestTimerNotificationsReady();
+    if (!ready) {
+      console.warn("Permisos de alarma exacta no concedidos; el aviso de descanso puede retrasarse.");
     }
-  } catch (error) {
-    console.warn("No se pudo programar la notificación de descanso:", error);
+
+    if (token !== scheduleGeneration || !shouldDeliverNow()) return;
+
+    try {
+      await ensureChannel();
+      await LocalNotifications.cancel({ notifications: [{ id: REST_TIMER_NOTIFICATION_ID }] });
+
+      if (token !== scheduleGeneration || !shouldDeliverNow()) return;
+
+      const result = await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: REST_TIMER_NOTIFICATION_ID,
+            title: "¡Descanso terminado!",
+            body: "Hora de tu siguiente serie.",
+            channelId: CHANNEL_ID,
+            smallIcon: "ic_stat_notification",
+            schedule: {
+              at: new Date(endTimeMs),
+              allowWhileIdle: true,
+            },
+          },
+        ],
+      });
+
+      if (token !== scheduleGeneration || !shouldDeliverNow()) {
+        await cancelScheduledNotificationOnly();
+        return;
+      }
+
+      const scheduled = result.notifications.some((n) => n.id === REST_TIMER_NOTIFICATION_ID);
+      if (!scheduled) {
+        console.warn("La notificación de descanso no quedó programada.");
+      }
+    } catch (error) {
+      console.warn("No se pudo programar la notificación de descanso:", error);
+    }
+  } finally {
+    scheduleInFlight = false;
   }
 }
 
 export async function cancelRestTimerNotification(): Promise<void> {
   pendingEndTimeMs = null;
-  if (!Capacitor.isNativePlatform()) return;
-  try {
-    await LocalNotifications.cancel({ notifications: [{ id: REST_TIMER_NOTIFICATION_ID }] });
-  } catch {
-    // ignore
-  }
+  await cancelScheduledNotificationOnly();
 }

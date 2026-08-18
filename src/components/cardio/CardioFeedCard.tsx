@@ -207,6 +207,7 @@ export function CardioFeedCardBody({
             likeCount={social.likeCount}
             liked={social.liked}
             commentCount={social.commentCount}
+            commented={social.commented}
             onToggleLike={social.onToggleLike}
             isTogglingLike={social.isTogglingLike}
             defaultCommentsOpen={social.defaultCommentsOpen}

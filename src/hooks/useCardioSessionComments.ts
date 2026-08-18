@@ -3,32 +3,45 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeActivityCommentText } from "@/lib/activitySocial";
 import { useAuth } from "./useAuth";
-import type { ActivityComment, ActivityCommentAuthor } from "./useActivityComments";
+import type {
+  ActivityComment,
+  ActivityCommentAuthor,
+  ActivityCommentCountsState,
+} from "./useActivityComments";
 
 export type CardioSessionComment = Omit<ActivityComment, "actividad_id"> & {
   cardio_sesion_id: string;
 };
 
+function emptyCommentCountsState(): ActivityCommentCountsState {
+  return { commentCounts: {}, commentedIds: new Set() };
+}
+
 function sortedIdsKey(ids: string[]): string {
   return [...ids].sort().join(",");
 }
 
-async function fetchCommentCounts(sessionIds: string[]): Promise<Record<string, number>> {
-  const counts: Record<string, number> = {};
-  for (const id of sessionIds) counts[id] = 0;
-  if (sessionIds.length === 0) return counts;
+async function fetchCommentCounts(
+  userId: string,
+  sessionIds: string[],
+): Promise<ActivityCommentCountsState> {
+  const commentCounts: Record<string, number> = {};
+  const commentedIds = new Set<string>();
+  for (const id of sessionIds) commentCounts[id] = 0;
+  if (sessionIds.length === 0) return { commentCounts, commentedIds };
 
   const { data, error } = await supabase
     .from("cardio_sesion_comentario")
-    .select("cardio_sesion_id")
+    .select("cardio_sesion_id, usuario_id")
     .in("cardio_sesion_id", sessionIds);
 
   if (error) throw error;
 
   for (const row of data ?? []) {
-    counts[row.cardio_sesion_id] = (counts[row.cardio_sesion_id] ?? 0) + 1;
+    commentCounts[row.cardio_sesion_id] = (commentCounts[row.cardio_sesion_id] ?? 0) + 1;
+    if (row.usuario_id === userId) commentedIds.add(row.cardio_sesion_id);
   }
-  return counts;
+  return { commentCounts, commentedIds };
 }
 
 /** Conteos de comentarios en batch para cards de cardio. */
@@ -41,13 +54,16 @@ export function useCardioSessionCommentCounts(sessionIds: string[]) {
   );
 
   const { data } = useQuery({
-    queryKey: ["cardioSessionCommentCounts", idsKey],
+    queryKey: ["cardioSessionCommentCounts", user?.id, idsKey],
     enabled: !!user && stableIds.length > 0,
     staleTime: 30 * 1000,
-    queryFn: () => fetchCommentCounts(stableIds),
+    queryFn: () => fetchCommentCounts(user!.id, stableIds),
   });
 
-  return { commentCounts: data ?? {} };
+  return {
+    commentCounts: data?.commentCounts ?? emptyCommentCountsState().commentCounts,
+    commentedIds: data?.commentedIds ?? emptyCommentCountsState().commentedIds,
+  };
 }
 
 async function fetchCardioSessionComments(sessionId: string): Promise<CardioSessionComment[]> {

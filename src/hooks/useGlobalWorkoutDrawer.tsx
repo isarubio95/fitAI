@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { ExerciseFormData } from "@/types/workout";
 import type { SelectedGimnasio } from "@/types/gimnasio";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useToast } from "@/hooks/use-toast";
 import { toastActiveWorkoutBlocked } from "@/lib/activeWorkoutGuard";
+import { setWorkoutDrawerOpen } from "@/lib/restTimerNotifications";
 import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 
 interface DrawerState {
@@ -154,6 +155,11 @@ export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode 
   const close = useCallback(() => {
     setState(INITIAL);
   }, []);
+
+  useEffect(() => {
+    setWorkoutDrawerOpen(state.open);
+    return () => setWorkoutDrawerOpen(false);
+  }, [state.open]);
 
   return (
     <GlobalWorkoutDrawerContext.Provider

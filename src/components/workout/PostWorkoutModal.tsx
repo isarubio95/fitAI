@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { GymPickerSheet } from "@/components/gym/GymPickerSheet";
 import { cn } from "@/lib/utils";
 import {
   COMMUNITY_PUBLISH_HINT_OFF,
   COMMUNITY_PUBLISH_HINT_ON,
 } from "@/lib/communityFeedVisibility";
-import { Zap, Dumbbell, ArrowUp, CheckCircle2, Flame, ListPlus, Trophy } from "lucide-react";
+import { Zap, Dumbbell, ArrowUp, CheckCircle2, Flame, ListPlus, Trophy, MapPin } from "lucide-react";
 import type { XPBreakdown } from "@/hooks/useGamification";
 import type { LogroRow } from "@/hooks/useLogros";
 import { LogroMedal } from "@/components/logros/LogroMedal";
@@ -25,6 +27,14 @@ import type { WorkoutRoutineSnapshot } from "@/lib/workoutToRoutine";
 import { workoutSnapshotToRoutineFormSnapshot } from "@/lib/workoutToRoutine";
 import { RoutineForm } from "@/components/routine/RoutineForm";
 import { supabase } from "@/integrations/supabase/client";
+import { GIMNASIOS_QUERY_KEY, persistActividadGimnasio } from "@/hooks/useGimnasios";
+import type { SelectedGimnasio } from "@/types/gimnasio";
+
+/** Encima del AlertDialog (z-50) para que el picker y el mapa no queden detrás. */
+const PICKER_OVERLAY_CLASS = "z-[120]";
+const PICKER_CONTENT_CLASS = "z-[125]";
+const NESTED_OVERLAY_CLASS = "z-[130]";
+const NESTED_CONTENT_CLASS = "z-[135]";
 
 interface PostWorkoutModalProps {
   open: boolean;
@@ -34,6 +44,8 @@ interface PostWorkoutModalProps {
   nuevosLogros?: LogroRow[];
   /** Actividad recién finalizada; permite publicar desde este modal. */
   workoutId?: string | null;
+  /** Gimnasio asociado al finalizar (p. ej. el prefill del perfil). */
+  initialGimnasio?: SelectedGimnasio | null;
 }
 
 const easeOut = [0.22, 1, 0.36, 1] as const;
@@ -79,12 +91,17 @@ export function PostWorkoutModal({
   routineSnapshot = null,
   nuevosLogros = [],
   workoutId = null,
+  initialGimnasio = null,
 }: PostWorkoutModalProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [routineFormOpen, setRoutineFormOpen] = useState(false);
   const [esPublica, setEsPublica] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [gimnasio, setGimnasio] = useState<SelectedGimnasio | null>(null);
+  const [gymPickerOpen, setGymPickerOpen] = useState(false);
+  const [savingGym, setSavingGym] = useState(false);
+  const canPersistWorkout = !!workoutId && workoutId !== "manual";
 
   useEffect(() => {
     if (open && breakdown) {
@@ -97,7 +114,14 @@ export function PostWorkoutModal({
       setRoutineFormOpen(false);
       setEsPublica(false);
       setPublishing(false);
+      setGimnasio(null);
+      setGymPickerOpen(false);
+      setSavingGym(false);
+      return;
     }
+    setGimnasio(initialGimnasio ?? null);
+    // Solo al abrir: el drawer del entreno resetea el gym al cerrarse.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const persistPublicacion = async (value: boolean) => {
@@ -116,6 +140,23 @@ export function PostWorkoutModal({
       setEsPublica(!value);
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const persistGimnasio = async (gym: SelectedGimnasio | null) => {
+    const previous = gimnasio;
+    setGimnasio(gym);
+    if (!workoutId || workoutId === "manual") return;
+    setSavingGym(true);
+    try {
+      await persistActividadGimnasio(workoutId, gym);
+      void queryClient.invalidateQueries({ queryKey: GIMNASIOS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
+      queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
+    } catch {
+      setGimnasio(previous);
+    } finally {
+      setSavingGym(false);
     }
   };
 
@@ -183,7 +224,18 @@ export function PostWorkoutModal({
   return (
     <>
       <AlertDialog open={open}>
-        <AlertDialogContent className="text-center overflow-hidden">
+        <AlertDialogContent
+          className="text-center overflow-hidden"
+          onFocusOutside={(e) => {
+            if (gymPickerOpen) e.preventDefault();
+          }}
+          onPointerDownOutside={(e) => {
+            if (gymPickerOpen) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if (gymPickerOpen) e.preventDefault();
+          }}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -291,26 +343,52 @@ export function PostWorkoutModal({
               )}
             </div>
 
-            {workoutId && workoutId !== "manual" && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.35, ease: easeOut }}
-                className="my-2 flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5 text-left"
-              >
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-sm font-medium">Publicar en comunidad</p>
-                  <p className="text-[12px] text-muted-foreground">
-                    {esPublica ? COMMUNITY_PUBLISH_HINT_ON : COMMUNITY_PUBLISH_HINT_OFF}
-                  </p>
-                </div>
-                <Switch
-                  checked={esPublica}
-                  onCheckedChange={onPublicarChange}
-                  disabled={publishing}
-                  aria-label="Publicar en comunidad"
-                />
-              </motion.div>
+            {canPersistWorkout && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.38, duration: 0.35, ease: easeOut }}
+                  className="my-2 space-y-1.5 text-left"
+                >
+                  <Label htmlFor="post-workout-gimnasio">Gimnasio</Label>
+                  <button
+                    type="button"
+                    id="post-workout-gimnasio"
+                    disabled={savingGym}
+                    onClick={() => setGymPickerOpen(true)}
+                    className={cn(
+                      "flex h-12 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-left text-base md:text-sm",
+                      "focus-visible:border-emerald-500/30 focus-visible:outline-none",
+                      savingGym && "cursor-not-allowed opacity-50",
+                    )}
+                  >
+                    <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className={cn("min-w-0 flex-1 truncate", !gimnasio && "text-muted-foreground")}>
+                      {gimnasio?.nombre ?? "Dónde has entrenado (opcional)"}
+                    </span>
+                  </button>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.35, ease: easeOut }}
+                  className="my-2 flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5 text-left"
+                >
+                  <div className="min-w-0 space-y-0.5">
+                    <p className="text-sm font-medium">Publicar en comunidad</p>
+                    <p className="text-[12px] text-muted-foreground">
+                      {esPublica ? COMMUNITY_PUBLISH_HINT_ON : COMMUNITY_PUBLISH_HINT_OFF}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={esPublica}
+                    onCheckedChange={onPublicarChange}
+                    disabled={publishing}
+                    aria-label="Publicar en comunidad"
+                  />
+                </motion.div>
+              </>
             )}
 
             <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:justify-center sm:space-x-0">
@@ -338,6 +416,17 @@ export function PostWorkoutModal({
           </motion.div>
         </AlertDialogContent>
       </AlertDialog>
+
+      <GymPickerSheet
+        open={gymPickerOpen}
+        onOpenChange={setGymPickerOpen}
+        selected={gimnasio}
+        onSelect={(gym) => void persistGimnasio(gym)}
+        overlayClassName={PICKER_OVERLAY_CLASS}
+        contentClassName={PICKER_CONTENT_CLASS}
+        nestedOverlayClassName={NESTED_OVERLAY_CLASS}
+        nestedContentClassName={NESTED_CONTENT_CLASS}
+      />
 
       <RoutineForm
         open={routineFormOpen}

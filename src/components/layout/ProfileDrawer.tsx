@@ -276,19 +276,21 @@ function ProfileDrawerSheet() {
   }, [lastWorkouts]);
   const { likeCounts, likedIds, toggleLike, isToggling: isTogglingLike } =
     useActivityLikes(publicWorkoutIds);
-  const { commentCounts } = useActivityCommentCounts(publicWorkoutIds);
+  const { commentCounts, commentedIds } = useActivityCommentCounts(publicWorkoutIds);
   const {
     likeCounts: cardioLikeCounts,
     likedIds: cardioLikedIds,
     toggleLike: toggleCardioLike,
     isToggling: isTogglingCardioLike,
   } = useCardioSessionLikes(publicCardioIds);
-  const { commentCounts: cardioCommentCounts } = useCardioSessionCommentCounts(publicCardioIds);
+  const { commentCounts: cardioCommentCounts, commentedIds: cardioCommentedIds } =
+    useCardioSessionCommentCounts(publicCardioIds);
 
   const socialFor = (actividadId: string): WorkoutFeedCardSocial => ({
     likeCount: likeCounts[actividadId] ?? 0,
     liked: likedIds.has(actividadId),
     commentCount: commentCounts[actividadId] ?? 0,
+    commented: commentedIds.has(actividadId),
     onToggleLike: () => toggleLike(actividadId),
     isTogglingLike: isTogglingLike.has(actividadId),
   });
@@ -297,6 +299,7 @@ function ProfileDrawerSheet() {
     likeCount: cardioLikeCounts[sessionId] ?? 0,
     liked: cardioLikedIds.has(sessionId),
     commentCount: cardioCommentCounts[sessionId] ?? 0,
+    commented: cardioCommentedIds.has(sessionId),
     onToggleLike: () => toggleCardioLike(sessionId),
     isTogglingLike: isTogglingCardioLike.has(sessionId),
   });

@@ -15,6 +15,7 @@ import {
   pillCircleTransitionStyleForBottomSheet,
   type PillCirclePhase,
 } from "@/lib/pillCircleTransition";
+import { Card, CardContent } from "@/components/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Flag, Check } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
@@ -104,6 +105,7 @@ export function WorkoutLogger() {
   const [postWorkoutRoutineSnapshot, setPostWorkoutRoutineSnapshot] = useState<WorkoutRoutineSnapshot | null>(null);
   const [postWorkoutLogros, setPostWorkoutLogros] = useState<LogroRow[]>([]);
   const [postWorkoutId, setPostWorkoutId] = useState<string | null>(null);
+  const [postWorkoutGimnasio, setPostWorkoutGimnasio] = useState<SelectedGimnasio | null>(null);
   const [showPostWorkout, setShowPostWorkout] = useState(false);
   const calculateAndAwardXP = useCalculateAndAwardXP();
   const removeXP = useRemoveWorkoutXP();
@@ -1137,6 +1139,7 @@ export function WorkoutLogger() {
             setPostWorkoutLogros(logrosResult.nuevos);
             setPostWorkoutData(breakdown);
             setPostWorkoutId(effectiveWorkoutId);
+            setPostWorkoutGimnasio(gimnasio);
             setShowPostWorkout(true);
           } catch {
             // XP failed silently, still close
@@ -1178,6 +1181,7 @@ export function WorkoutLogger() {
           setPostWorkoutLogros(logrosResult.nuevos);
           setPostWorkoutData(breakdown);
           setPostWorkoutId(createdId);
+          setPostWorkoutGimnasio(gimnasio);
           setShowPostWorkout(true);
         } catch {
           // silent
@@ -1378,7 +1382,7 @@ export function WorkoutLogger() {
         ...(pillAnim.phase !== "settled"
           ? {
               "transition-style": pillCircleTransitionAttr(pillAnim.phase),
-              style: pillCircleTransitionStyleForBottomSheet(pillAnim.origin, 0.92, pillAnim.phase),
+              style: pillCircleTransitionStyleForBottomSheet(pillAnim.origin, 1, pillAnim.phase),
             }
           : { style: { clipPath: "none" } }),
       }
@@ -1393,13 +1397,13 @@ export function WorkoutLogger() {
         shouldScaleBackground={false}
       >
         <DrawerContent
-          className="h-[92lvh] max-h-[92lvh] min-h-0 overflow-hidden p-0"
+          className="mt-0 h-lvh max-h-lvh min-h-0 overflow-hidden rounded-none p-0"
           {...pillCircleProps}
         >
           <div data-workout-drawer-surface className="relative isolate flex h-full min-h-0 flex-col overflow-hidden">
             <DrawerHeader
               data-active-workout-sheet-header
-              className="relative z-10 shrink-0 border-b border-border bg-card px-6 text-left"
+              className="relative z-10 shrink-0 border-b border-border bg-card px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left"
             >
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between gap-3">
@@ -1449,22 +1453,25 @@ export function WorkoutLogger() {
                 />
 
                 {isActiveWorkout && hrMonitor.available && (
-                  <div className="px-4 pt-1">
-                    <HeartRatePanel
-                      bpm={hrMonitor.bpm}
-                      connected={hrMonitor.connected}
-                      connection={hrMonitor.connection}
-                      deviceName={hrMonitor.deviceName}
-                      zone={hrMonitor.zone}
-                      connecting={hrMonitor.connecting}
-                      error={hrMonitor.error}
-                      onConnectClick={() => {
-                        if (hrMonitor.connected) void hrMonitor.disconnect();
-                        else if (hrMonitor.device) void hrMonitor.reconnect();
-                        else void hrMonitor.connect();
-                      }}
-                    />
-                  </div>
+                  <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
+                    <CardContent className="px-6 py-3">
+                      <HeartRatePanel
+                        className="rounded-none border-0 bg-transparent p-0"
+                        bpm={hrMonitor.bpm}
+                        connected={hrMonitor.connected}
+                        connection={hrMonitor.connection}
+                        deviceName={hrMonitor.deviceName}
+                        zone={hrMonitor.zone}
+                        connecting={hrMonitor.connecting}
+                        error={hrMonitor.error}
+                        onConnectClick={() => {
+                          if (hrMonitor.connected) void hrMonitor.disconnect();
+                          else if (hrMonitor.device) void hrMonitor.reconnect();
+                          else void hrMonitor.connect();
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
                 )}
 
                 <WorkoutExerciseList
@@ -1545,11 +1552,13 @@ export function WorkoutLogger() {
           setPostWorkoutRoutineSnapshot(null);
           setPostWorkoutLogros([]);
           setPostWorkoutId(null);
+          setPostWorkoutGimnasio(null);
         }}
         breakdown={postWorkoutData}
         routineSnapshot={postWorkoutRoutineSnapshot}
         nuevosLogros={postWorkoutLogros}
         workoutId={postWorkoutId}
+        initialGimnasio={postWorkoutGimnasio}
       />
 
       <ExerciseDetailSheet
