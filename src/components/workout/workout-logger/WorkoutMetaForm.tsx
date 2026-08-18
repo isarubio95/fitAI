@@ -6,6 +6,10 @@ import { WorkoutLeadingRoutineIcon } from "@/components/dashboard/WorkoutDetails
 import { RoutineIconPicker, WorkoutIconPickerTrigger } from "@/components/routine/RoutineIconPicker";
 import { GymPickerSheet } from "@/components/gym/GymPickerSheet";
 import type { RoutineIconKey } from "@/lib/routineIcons";
+import {
+  COMMUNITY_PUBLISH_HINT_OFF,
+  COMMUNITY_PUBLISH_HINT_ON,
+} from "@/lib/communityFeedVisibility";
 import type { SelectedGimnasio } from "@/types/gimnasio";
 import { cn } from "@/lib/utils";
 import { MapPin } from "lucide-react";
@@ -120,9 +124,7 @@ export function WorkoutMetaForm({
               <div className="min-w-0 space-y-0.5">
                 <p className="text-sm font-medium">Publicar en comunidad</p>
                 <p className="text-[12px] text-muted-foreground">
-                  {esPublica
-                    ? "Este entreno se verá en el feed público."
-                    : "Este entreno se mantendrá privado."}
+                  {esPublica ? COMMUNITY_PUBLISH_HINT_ON : COMMUNITY_PUBLISH_HINT_OFF}
                 </p>
               </div>
               <Switch

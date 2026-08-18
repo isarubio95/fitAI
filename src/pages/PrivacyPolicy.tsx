@@ -88,8 +88,8 @@ export default function PrivacyPolicy() {
                 <li>Mostrar estadísticas, evolución y recomendaciones personalizadas.</li>
                 <li>Ofrecer funciones de comunidad cuando las habilites.</li>
                 <li>
-                  Mostrar el gimnasio asociado a un entrenamiento público en el feed de la comunidad, si
-                  decides publicarlo.
+                  Mostrar el gimnasio asociado a un entrenamiento publicado en el feed de quienes te
+                  siguen, si decides publicarlo.
                 </li>
                 <li>Mejorar la seguridad, el rendimiento y la experiencia de la aplicación.</li>
                 <li>Atender consultas o incidencias relacionadas con el servicio.</li>

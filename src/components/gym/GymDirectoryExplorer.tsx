@@ -1,12 +1,15 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Loader2, MapPin, Search } from "lucide-react";
-import { GymDirectoryMap } from "@/components/gym/GymDirectoryMap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGimnasiosCatalog } from "@/hooks/useGimnasios";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
 import { formatGymDistance, formatGimnasioListTitle, duplicateGymNames, rankGimnasios } from "@/lib/gimnasioSearch";
 import type { GimnasioCatalogItem, SelectedGimnasio } from "@/types/gimnasio";
+
+const GymDirectoryMap = lazy(() =>
+  import("@/components/gym/GymDirectoryMap").then((m) => ({ default: m.GymDirectoryMap })),
+);
 
 export const gymDirectoryPageHeightClass =
   "relative min-h-0 overflow-hidden h-[calc(100dvh-8rem)] md:h-[calc(100dvh-3rem)]";
@@ -46,12 +49,14 @@ export function GymDirectoryExplorer({
 
   return (
     <div data-vaul-no-drag className="relative h-full min-h-0 w-full">
-      <GymDirectoryMap
-        gyms={gyms}
-        selectedId={selected?.id ?? null}
-        onSelect={setSelected}
-        className="absolute inset-0"
-      />
+      <Suspense fallback={<div className="map-route-skeleton absolute inset-0" aria-hidden />}>
+        <GymDirectoryMap
+          gyms={gyms}
+          selectedId={selected?.id ?? null}
+          onSelect={setSelected}
+          className="absolute inset-0"
+        />
+      </Suspense>
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 pt-3 md:px-4 md:pt-4">
         <div className="pointer-events-auto mx-auto max-w-lg">

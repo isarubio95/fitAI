@@ -9,7 +9,6 @@ import {
   getRouteThumbSnapshot,
   routeThumbCacheKey,
 } from "@/lib/routeMapThumbCache";
-import { prefetchRouteThumbSnapshot } from "@/lib/routeMapThumbRenderer";
 import type { CardioRutaWithPoints, SelectedCardioRoute } from "@/types/cardio";
 
 const GPX_STALE_MS = 1000 * 60 * 60;
@@ -35,6 +34,7 @@ export async function prefetchPredefinedRouteThumbs(
   tours: PredefinedRouteSummary[],
   queryClient: QueryClient,
 ): Promise<void> {
+  const { prefetchRouteThumbSnapshot } = await import("@/lib/routeMapThumbRenderer");
   await Promise.all(
     tours.map(async (tour) => {
       try {
@@ -55,6 +55,7 @@ export async function prefetchPredefinedRouteThumbs(
 }
 
 export async function prefetchMineRouteThumbs(routes: CardioRutaWithPoints[]): Promise<void> {
+  const { prefetchRouteThumbSnapshot } = await import("@/lib/routeMapThumbRenderer");
   await Promise.all(
     routes.map(async (route) => {
       const points = pointsFromMine(route);

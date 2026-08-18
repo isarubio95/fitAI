@@ -13,6 +13,10 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import {
+  COMMUNITY_PUBLISH_HINT_OFF,
+  COMMUNITY_PUBLISH_HINT_ON,
+} from "@/lib/communityFeedVisibility";
 import { Zap, Dumbbell, ArrowUp, CheckCircle2, Flame, ListPlus, Trophy } from "lucide-react";
 import type { XPBreakdown } from "@/hooks/useGamification";
 import type { LogroRow } from "@/hooks/useLogros";
@@ -297,9 +301,7 @@ export function PostWorkoutModal({
                 <div className="min-w-0 space-y-0.5">
                   <p className="text-sm font-medium">Publicar en comunidad</p>
                   <p className="text-[12px] text-muted-foreground">
-                    {esPublica
-                      ? "Este entreno se verá en el feed público."
-                      : "Este entreno se mantendrá privado."}
+                    {esPublica ? COMMUNITY_PUBLISH_HINT_ON : COMMUNITY_PUBLISH_HINT_OFF}
                   </p>
                 </div>
                 <Switch

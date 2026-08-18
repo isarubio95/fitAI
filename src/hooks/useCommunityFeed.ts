@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
@@ -9,6 +10,7 @@ import {
   nextFeedCursorFromItems,
   type DatedFeedEntry,
 } from "@/lib/communityFeedMerge";
+import { communityFeedAuthorIds } from "@/lib/communityFeedVisibility";
 import type { Actividad, ActividadWithDetails } from "@/types/workout";
 import type { CardioSesionWithDetails } from "@/lib/cardioSessionDisplay";
 
@@ -68,16 +70,20 @@ async function fetchProfilesByIds(userIds: string[]) {
 }
 
 async function fetchCommunityFeedPage(
-  userId: string,
+  authorIds: string[],
   cursor: string | null,
   pageSize: number,
 ): Promise<{ items: CommunityFeedItem[]; cursor: string | null; hasMore: boolean }> {
+  if (authorIds.length === 0) {
+    return { items: [], cursor: null, hasMore: false };
+  }
+
   let gymQuery = supabase
     .from("actividad")
     .select("*")
     .eq("es_publica", true)
     .not("fecha_fin", "is", null)
-    .neq("usuario_id", userId)
+    .in("usuario_id", authorIds)
     .order("fecha", { ascending: false })
     .limit(pageSize);
 
@@ -86,7 +92,7 @@ async function fetchCommunityFeedPage(
     .select(CARDIO_SESSION_LIST_SELECT)
     .eq("es_publica", true)
     .not("fecha_fin", "is", null)
-    .neq("usuario_id", userId)
+    .in("usuario_id", authorIds)
     .order("fecha_inicio", { ascending: false })
     .order("orden", { referencedTable: "cardio_bloque", ascending: true })
     .limit(pageSize);
@@ -170,15 +176,25 @@ async function fetchCommunityFeedPage(
   };
 }
 
-export function useCommunityFeed(pageSize = COMMUNITY_FEED_PAGE_SIZE) {
+export function useCommunityFeed(
+  followingIds: Set<string>,
+  options?: { enabled?: boolean; pageSize?: number },
+) {
   const { user } = useAuth();
+  const pageSize = options?.pageSize ?? COMMUNITY_FEED_PAGE_SIZE;
+  const authorIds = useMemo(
+    () => communityFeedAuthorIds(followingIds, user?.id),
+    [followingIds, user?.id],
+  );
+  const followsReady = options?.enabled ?? true;
+
   return useInfiniteQuery({
-    queryKey: ["communityFeed", pageSize],
+    queryKey: ["communityFeed", user?.id, pageSize, authorIds],
     staleTime: 60 * 1000,
-    enabled: !!user,
+    enabled: !!user && followsReady,
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
-      return fetchCommunityFeedPage(user!.id, pageParam, pageSize);
+      return fetchCommunityFeedPage(authorIds, pageParam, pageSize);
     },
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.cursor : undefined),
   });

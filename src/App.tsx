@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,17 +11,18 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { RestTimerProvider } from "@/components/workout/RestTimerProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Library from "./pages/Library";
-import Community from "./pages/Community";
-import WorkoutHistory from "./pages/WorkoutHistory";
-import Evolution from "./pages/Evolution";
-import CardioRoutines from "./pages/CardioRoutines";
-import NotFound from "./pages/NotFound";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import DeleteAccount from "./pages/DeleteAccount";
-import Gyms from "./pages/Gyms";
+
+const Auth = lazy(() => import("./pages/Auth"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Library = lazy(() => import("./pages/Library"));
+const Community = lazy(() => import("./pages/Community"));
+const WorkoutHistory = lazy(() => import("./pages/WorkoutHistory"));
+const Evolution = lazy(() => import("./pages/Evolution"));
+const CardioRoutines = lazy(() => import("./pages/CardioRoutines"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
+const Gyms = lazy(() => import("./pages/Gyms"));
 
 const queryClient = new QueryClient();
 
@@ -37,23 +39,25 @@ const App = () => {
               <SpeedInsights />
               <BrowserRouter>
                 <ScrollToTop />
-                <Routes>
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/privacidad" element={<PrivacyPolicy />} />
-                  <Route path="/eliminar-cuenta" element={<DeleteAccount />} />
-                  <Route element={<AppLayout />}>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/routines" element={<Library />} />
-                    <Route path="/exercises" element={<Navigate to="/routines?tab=ejercicios" replace />} />
-                    <Route path="/community" element={<Community />} />
-                    <Route path="/history" element={<WorkoutHistory />} />
-                    <Route path="/evolution" element={<Evolution />} />
-                    <Route path="/cardio-routines" element={<CardioRoutines />} />
-                    <Route path="/gimnasios" element={<Gyms />} />
-                    <Route path="/logros" element={<Navigate to="/" replace />} />
-                  </Route>
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <Suspense fallback={null}>
+                  <Routes>
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/privacidad" element={<PrivacyPolicy />} />
+                    <Route path="/eliminar-cuenta" element={<DeleteAccount />} />
+                    <Route element={<AppLayout />}>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/routines" element={<Library />} />
+                      <Route path="/exercises" element={<Navigate to="/routines?tab=ejercicios" replace />} />
+                      <Route path="/community" element={<Community />} />
+                      <Route path="/history" element={<WorkoutHistory />} />
+                      <Route path="/evolution" element={<Evolution />} />
+                      <Route path="/cardio-routines" element={<CardioRoutines />} />
+                      <Route path="/gimnasios" element={<Gyms />} />
+                      <Route path="/logros" element={<Navigate to="/" replace />} />
+                    </Route>
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
               </BrowserRouter>
             </TooltipProvider>
           </RestTimerProvider>

@@ -8,7 +8,7 @@ export function useFollows() {
   const queryClient = useQueryClient();
   const [toggling, setToggling] = useState<Set<string>>(new Set());
 
-  const { data } = useQuery({
+  const { data, isFetched } = useQuery({
     queryKey: ["follows", user?.id],
     enabled: !!user,
     queryFn: async (): Promise<{ seguido_id: string }[]> => {
@@ -66,6 +66,7 @@ export function useFollows() {
 
   return {
     followingIds,
+    isFetched,
     toggleFollow: (targetId: string) => toggleFollow.mutateAsync(targetId),
     isToggling: toggling,
   };

@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { communityFeedEmptyMessage } from "@/lib/communityFeedVisibility";
 import { cn } from "@/lib/utils";
 
 function feedItemKey(item: CommunityFeedItem) {
@@ -44,14 +45,15 @@ export default function Community() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const { data: searchResults = [], isLoading: searching } = useUserSearch(usernameQuery);
-  const { followingIds, toggleFollow, isToggling } = useFollows();
+  const { followingIds, toggleFollow, isToggling, isFetched: followsFetched } = useFollows();
   const {
     data,
-    isLoading: loadingFeed,
+    isLoading: loadingFeedQuery,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useCommunityFeed();
+  } = useCommunityFeed(followingIds, { enabled: followsFetched });
+  const loadingFeed = !followsFetched || loadingFeedQuery;
   const { openMyProfile, openUserProfile } = useProfileDrawer();
 
   const showSearchPanel = searching || usernameQuery.trim().length > 0;
@@ -314,7 +316,9 @@ export default function Community() {
           </div>
 
           {!showSearchPanel && !loadingFeed && normalizedFeed.length === 0 && (
-            <p className="px-6 py-6 text-center text-sm text-muted-foreground">Todavía no hay entrenos publicados.</p>
+            <p className="px-6 py-6 text-center text-sm text-muted-foreground">
+              {communityFeedEmptyMessage(followingIds.size)}
+            </p>
           )}
 
           {!showSearchPanel && loadingFeed && normalizedFeed.length === 0 && (

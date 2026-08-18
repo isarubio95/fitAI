@@ -6,7 +6,6 @@ import {
   routeThumbCacheKey,
   subscribeRouteThumbCache,
 } from "@/lib/routeMapThumbCache";
-import { requestRouteThumbSnapshot } from "@/lib/routeMapThumbRenderer";
 import { MAP_COLORS } from "@/lib/stravaDarkMapStyle";
 import { cn } from "@/lib/utils";
 
@@ -61,10 +60,14 @@ export function RouteMapThumb({ points, loading = false, className }: Props) {
     if (!readyForMap || snapshot) return;
 
     let cancelled = false;
-    void requestRouteThumbSnapshot(cacheKey, mapPoints, () => cancelled, "high").then((url) => {
-      if (cancelled || !url) return;
-      setSnapshot(url);
-    });
+    void import("@/lib/routeMapThumbRenderer")
+      .then(({ requestRouteThumbSnapshot }) =>
+        requestRouteThumbSnapshot(cacheKey, mapPoints, () => cancelled, "high"),
+      )
+      .then((url) => {
+        if (cancelled || !url) return;
+        setSnapshot(url);
+      });
 
     return () => {
       cancelled = true;

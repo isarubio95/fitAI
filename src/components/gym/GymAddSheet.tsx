@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import {
   Drawer,
   DrawerContent,
@@ -11,12 +11,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GymPinMap } from "@/components/gym/GymPinMap";
 import { useCreateGimnasio } from "@/hooks/useGimnasios";
 import { useToast } from "@/hooks/use-toast";
 import type { GeoPoint } from "@/lib/gimnasioSearch";
 import type { GimnasioCatalogItem } from "@/types/gimnasio";
 import { cn } from "@/lib/utils";
+
+const GymPinMap = lazy(() =>
+  import("@/components/gym/GymPinMap").then((m) => ({ default: m.GymPinMap })),
+);
 
 type Props = {
   open: boolean;
@@ -113,7 +116,11 @@ export function GymAddSheet({
           </div>
           <div className="space-y-1.5">
             <Label>Ubicación</Label>
-            {open ? <GymPinMap value={pin} onChange={setPin} className="h-56 w-full" /> : null}
+            {open ? (
+              <Suspense fallback={<div className="map-route-skeleton h-56 w-full rounded-xl" aria-hidden />}>
+                <GymPinMap value={pin} onChange={setPin} className="h-56 w-full" />
+              </Suspense>
+            ) : null}
             <p className="text-[11px] text-muted-foreground">Toca el mapa o arrastra el pin.</p>
           </div>
         </div>

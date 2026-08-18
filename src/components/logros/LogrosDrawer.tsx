@@ -123,7 +123,8 @@ export function LogrosDrawer({ open, onOpenChange, userId, isSelf, username }: L
     <Drawer direction="left" open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         side="left"
-        className="flex h-full max-h-dvh w-full max-w-none flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
+        overlayClassName="z-[120]"
+        className="z-[125] flex h-full max-h-dvh w-full max-w-none flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
       >
         <div className={cn("min-h-0 flex-1 overflow-y-auto bg-card dark:bg-transparent", drawerSafeAreaBottom)}>
           <DrawerHeader className="bg-card px-6 pb-1 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left dark:bg-transparent">

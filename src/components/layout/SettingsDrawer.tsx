@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { ColorThemeSelector } from "@/components/ColorThemeSelector";
 import { PhysiologySettings } from "@/components/layout/PhysiologySettings";
-import { LyftaImportSettings } from "@/components/layout/LyftaImportSettings";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -33,6 +32,10 @@ const settingsSectionCardClass = cn(
 /** Lazy: DefaultGymSettings → GymPickerSheet → GymDirectoryDrawer → SettingsDrawer. */
 const DefaultGymSettings = lazy(() =>
   import("@/components/layout/DefaultGymSettings").then((m) => ({ default: m.DefaultGymSettings })),
+);
+
+const LyftaImportSettings = lazy(() =>
+  import("@/components/layout/LyftaImportSettings").then((m) => ({ default: m.LyftaImportSettings })),
 );
 
 export function SettingsDrawer() {
@@ -133,7 +136,9 @@ export function SettingsDrawer() {
             <DefaultGymSettings />
           </Suspense>
 
-          <LyftaImportSettings resetToken={open} />
+          <Suspense fallback={null}>
+            <LyftaImportSettings resetToken={open} />
+          </Suspense>
 
           <div className="border-t border-border/40 pt-5">
             <nav

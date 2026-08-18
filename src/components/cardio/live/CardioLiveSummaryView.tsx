@@ -5,6 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
+  COMMUNITY_PUBLISH_HINT_OFF,
+  COMMUNITY_PUBLISH_HINT_ON,
+} from "@/lib/communityFeedVisibility";
+import {
   formatCardioDistanceM,
   formatCardioDuration,
   formatCardioElevationM,
@@ -109,9 +113,7 @@ export function CardioLiveSummaryView({
         <div className="min-w-0 space-y-0.5">
           <p className="text-sm font-medium">Publicar en comunidad</p>
           <p className="text-[12px] text-muted-foreground">
-            {esPublica
-              ? "Este entreno se verá en el feed público."
-              : "Este entreno se mantendrá privado."}
+            {esPublica ? COMMUNITY_PUBLISH_HINT_ON : COMMUNITY_PUBLISH_HINT_OFF}
           </p>
         </div>
         <Switch

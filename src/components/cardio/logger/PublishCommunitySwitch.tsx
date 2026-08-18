@@ -1,4 +1,8 @@
 import { Switch } from "@/components/ui/switch";
+import {
+  COMMUNITY_PUBLISH_HINT_OFF,
+  COMMUNITY_PUBLISH_HINT_ON,
+} from "@/lib/communityFeedVisibility";
 
 type PublishCommunitySwitchProps = {
   esPublica: boolean;
@@ -11,7 +15,7 @@ export function PublishCommunitySwitch({ esPublica, onCheckedChange }: PublishCo
       <div className="min-w-0 space-y-0.5">
         <p className="text-sm font-medium">Publicar en comunidad</p>
         <p className="text-[12px] text-muted-foreground">
-          {esPublica ? "Este entreno se verá en el feed público." : "Este entreno se mantendrá privado."}
+          {esPublica ? COMMUNITY_PUBLISH_HINT_ON : COMMUNITY_PUBLISH_HINT_OFF}
         </p>
       </div>
       <Switch checked={esPublica} onCheckedChange={onCheckedChange} aria-label="Publicar en comunidad" />

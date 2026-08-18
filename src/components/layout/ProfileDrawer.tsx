@@ -16,7 +16,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Trophy, ChevronRight, Pencil, Loader2 } from "lucide-react";
 import { LogroMedal } from "@/components/logros/LogroMedal";
 import { LogrosDrawer } from "@/components/logros/LogrosDrawer";
@@ -174,12 +173,19 @@ function ProfileDrawerSheet() {
   const profileUserId = targetUserId ?? user?.id ?? "";
   const isViewingSelf = !targetUserId || targetUserId === user?.id;
 
+  const nestedProfileLayerOpen = !!followListMode || logrosOpen;
+
   const handleProfileOpenChange = useCallback(
     (next: boolean) => {
-      if (!next) setLogrosOpen(false);
+      // El overlay de seguidores/logros no debe cerrar el perfil.
+      if (!next && nestedProfileLayerOpen) return;
+      if (!next) {
+        setLogrosOpen(false);
+        setFollowListMode(null);
+      }
       onOpenChange(next);
     },
-    [onOpenChange],
+    [onOpenChange, nestedProfileLayerOpen],
   );
 
   useEffect(() => {
@@ -187,6 +193,7 @@ function ProfileDrawerSheet() {
       setWorkoutDetailsId(null);
       setCardioDetailsId(null);
       setLogrosOpen(false);
+      setFollowListMode(null);
     }
   }, [open]);
 
@@ -342,6 +349,12 @@ function ProfileDrawerSheet() {
         side="left"
         overlayClassName="z-[110]"
         className="z-[115] flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
+        onPointerDownOutside={(e) => {
+          if (nestedProfileLayerOpen) e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          if (nestedProfileLayerOpen) e.preventDefault();
+        }}
       >
         <div className={cn("min-h-0 flex-1 overflow-y-auto bg-card dark:bg-transparent", drawerSafeAreaBottom)}>
           <DrawerHeader className="bg-card px-6 pb-2 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left dark:bg-transparent">
@@ -538,37 +551,6 @@ function ProfileDrawerSheet() {
           </div>
         </div>
 
-        <Dialog open={!!followListMode} onOpenChange={(next) => !next && setFollowListMode(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{followListMode === "seguidores" ? "Seguidores" : "Seguidos"}</DialogTitle>
-            </DialogHeader>
-            <div className="max-h-[50dvh] overflow-y-auto pr-1">
-              {loadingFollowUsers ? (
-                <p className="py-2 text-sm text-muted-foreground">Cargando...</p>
-              ) : followUsers.length === 0 ? (
-                <p className="py-2 text-sm text-muted-foreground">No hay usuarios para mostrar.</p>
-              ) : (
-                <div className="space-y-1">
-                  {followUsers.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="flex w-full items-center gap-3 rounded-md border px-2 py-2 text-left transition-colors hover:bg-muted/50"
-                      onClick={() => {
-                        setFollowListMode(null);
-                        openUserProfile(p.id);
-                      }}
-                    >
-                      <UserAvatar avatarUrl={p.avatar_url} username={p.username} className="h-8 w-8" />
-                      <p className="text-sm font-medium truncate">{p.username ?? "Usuario"}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
       </DrawerContent>
     </Drawer>
 
@@ -587,6 +569,53 @@ function ProfileDrawerSheet() {
       }}
       sessionId={cardioDetailsId}
     />
+
+    <Drawer
+      direction="left"
+      open={!!followListMode}
+      onOpenChange={(next) => {
+        if (!next) setFollowListMode(null);
+      }}
+    >
+      <DrawerContent
+        side="left"
+        overlayClassName="z-[120]"
+        className="z-[125] flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
+      >
+        <div className={cn("min-h-0 flex-1 overflow-y-auto bg-card dark:bg-transparent", drawerSafeAreaBottom)}>
+          <DrawerHeader className="bg-card px-6 pb-2 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left dark:bg-transparent">
+            <DrawerTitle className="text-lg font-semibold">
+              {followListMode === "seguidores" ? "Seguidores" : "Seguidos"}
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="px-6 pb-6">
+            {loadingFollowUsers ? (
+              <p className="py-2 text-sm text-muted-foreground">Cargando...</p>
+            ) : followUsers.length === 0 ? (
+              <p className="py-2 text-sm text-muted-foreground">No hay usuarios para mostrar.</p>
+            ) : (
+              <div className="space-y-1">
+                {followUsers.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-md border px-2 py-2 text-left transition-colors hover:bg-muted/50"
+                    onClick={() => {
+                      setFollowListMode(null);
+                      if (p.id === user?.id) openMyProfile();
+                      else openUserProfile(p.id);
+                    }}
+                  >
+                    <UserAvatar avatarUrl={p.avatar_url} username={p.username} className="h-8 w-8" />
+                    <p className="text-sm font-medium truncate">{p.username ?? "Usuario"}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </DrawerContent>
+    </Drawer>
 
     {!!profileUserId && (
       <LogrosDrawer
