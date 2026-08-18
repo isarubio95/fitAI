@@ -26,10 +26,10 @@ const settingsSectionCardClass = cn(
   "space-y-4 rounded-xl border border-border/60 bg-card p-4",
 );
 
-const SCOPE_OPTIONS: Array<{ value: LyftaImportScope; label: string; hint: string }> = [
-  { value: "history", label: "Historial", hint: "Entrenamientos ya hechos" },
-  { value: "routines", label: "Rutinas", hint: "Plantillas para repetir" },
-  { value: "both", label: "Ambas", hint: "Historial y rutinas" },
+const SCOPE_OPTIONS: Array<{ value: LyftaImportScope; label: string }> = [
+  { value: "history", label: "Historial" },
+  { value: "routines", label: "Rutinas" },
+  { value: "both", label: "Ambas" },
 ];
 
 type Props = {
@@ -64,7 +64,7 @@ export function LyftaImportSettings({ resetToken }: Props) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [apiKey, setApiKey] = useState("");
-  const [scope, setScope] = useState<LyftaImportScope>("both");
+  const [scope, setScope] = useState<LyftaImportScope | "">("");
   const [importing, setImporting] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [progressLabel, setProgressLabel] = useState<string | null>(null);
@@ -81,6 +81,7 @@ export function LyftaImportSettings({ resetToken }: Props) {
   useEffect(() => {
     if (!resetToken) {
       setApiKey("");
+      setScope("");
       setProgressLabel(null);
       setUnmatched([]);
       clearPreparedLyftaImport();
@@ -89,7 +90,13 @@ export function LyftaImportSettings({ resetToken }: Props) {
 
   const reviewing = unmatched.length > 0;
   const canImport =
-    !!user && apiKey.trim().length > 0 && !importing && !catalogLoading && !reviewing && !confirming;
+    !!user &&
+    apiKey.trim().length > 0 &&
+    !!scope &&
+    !importing &&
+    !catalogLoading &&
+    !reviewing &&
+    !confirming;
 
   const invalidateImportedQueries = () => {
     queryClient.invalidateQueries({ queryKey: ["monthWorkouts"] });
@@ -108,9 +115,10 @@ export function LyftaImportSettings({ resetToken }: Props) {
     invalidateImportedQueries();
     toast({
       title: "Importación de Lyfta",
-      description: toastDescription(result, scope),
+      description: scope ? toastDescription(result, scope) : "Importación completada.",
     });
     setApiKey("");
+    setScope("");
     setUnmatched([]);
   };
 
@@ -131,7 +139,7 @@ export function LyftaImportSettings({ resetToken }: Props) {
   };
 
   const onImport = async () => {
-    if (!user || !canImport) return;
+    if (!user || !canImport || !scope) return;
     setImporting(true);
     setProgressLabel("Conectando con Lyfta…");
     try {
@@ -236,25 +244,22 @@ export function LyftaImportSettings({ resetToken }: Props) {
         <RadioGroup
           value={scope}
           onValueChange={(v) => setScope(v as LyftaImportScope)}
-          className="gap-2"
+          className="grid grid-cols-3 gap-1.5"
           aria-label="Qué importar de Lyfta"
         >
           {SCOPE_OPTIONS.map((opt) => (
             <label
               key={opt.value}
               htmlFor={`lyfta-scope-${opt.value}`}
-              className="flex cursor-pointer items-start gap-2 rounded-lg border border-border/50 px-3 py-2"
+              className="flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-border/50 px-1.5 py-2"
             >
               <RadioGroupItem
                 value={opt.value}
                 id={`lyfta-scope-${opt.value}`}
-                className="mt-0.5"
+                className="shrink-0 border-foreground text-foreground"
                 disabled={importing || confirming || reviewing}
               />
-              <span className="min-w-0">
-                <span className="block text-sm font-medium leading-none">{opt.label}</span>
-                <span className="mt-1 block text-xs text-muted-foreground">{opt.hint}</span>
-              </span>
+              <span className="truncate text-sm font-medium leading-none">{opt.label}</span>
             </label>
           ))}
         </RadioGroup>

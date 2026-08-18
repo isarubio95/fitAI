@@ -52,6 +52,11 @@ function wrap(ui: ReactNode) {
   return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
 }
 
+function fillImportForm() {
+  fireEvent.change(screen.getByLabelText("API key"), { target: { value: "lyfta-secret" } });
+  fireEvent.click(screen.getByRole("radio", { name: /^Ambas/ }));
+}
+
 describe("LyftaImportSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -94,18 +99,21 @@ describe("LyftaImportSettings", () => {
     );
     expect(screen.getByLabelText("API key")).toBeTruthy();
     expect(screen.getByLabelText("Qué importar de Lyfta")).toBeTruthy();
-    expect(screen.getByRole("radio", { name: /^Historial/ })).toBeTruthy();
-    expect(screen.getByRole("radio", { name: /^Rutinas/ })).toBeTruthy();
-    expect(screen.getByRole("radio", { name: /^Ambas/ })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^Historial/ })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: /^Rutinas/ })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: /^Ambas/ })).not.toBeChecked();
   });
 
-  it("deshabilita Importar sin API key y lo habilita al pegarla", () => {
+  it("deshabilita Importar sin API key ni alcance y lo habilita al completarlos", () => {
     render(wrap(<LyftaImportSettings resetToken />));
 
     const submit = screen.getByRole("button", { name: "Importar" });
     expect(submit).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText("API key"), { target: { value: "lyfta-secret" } });
+    expect(submit).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("radio", { name: /^Ambas/ }));
     expect(submit).not.toBeDisabled();
   });
 
@@ -122,7 +130,7 @@ describe("LyftaImportSettings", () => {
     });
 
     render(wrap(<LyftaImportSettings resetToken />));
-    fireEvent.change(screen.getByLabelText("API key"), { target: { value: "lyfta-secret" } });
+    fillImportForm();
     fireEvent.click(screen.getByRole("button", { name: "Importar" }));
 
     await waitFor(() => {
@@ -155,7 +163,7 @@ describe("LyftaImportSettings", () => {
     });
 
     render(wrap(<LyftaImportSettings resetToken />));
-    fireEvent.change(screen.getByLabelText("API key"), { target: { value: "lyfta-secret" } });
+    fillImportForm();
     fireEvent.click(screen.getByRole("button", { name: "Importar" }));
 
     await waitFor(() => {
@@ -192,7 +200,7 @@ describe("LyftaImportSettings", () => {
     });
 
     render(wrap(<LyftaImportSettings resetToken />));
-    fireEvent.change(screen.getByLabelText("API key"), { target: { value: "lyfta-secret" } });
+    fillImportForm();
     fireEvent.click(screen.getByRole("button", { name: "Importar" }));
 
     await waitFor(() => {
