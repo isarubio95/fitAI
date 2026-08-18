@@ -25,7 +25,7 @@ export function ChartScrubSummary({
   children: ReactNode;
 }) {
   return (
-    <div className="mb-3 min-h-13" aria-live="polite">
+    <div className="mb-3.5 min-h-13" aria-live="polite">
       <p className="text-[12px] font-medium text-muted-foreground">{formatScrubDate(date)}</p>
       <div className="mt-1 flex flex-wrap gap-x-7 gap-y-1">{children}</div>
     </div>
