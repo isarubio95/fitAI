@@ -583,23 +583,23 @@ function ProfileDrawerSheet() {
         className="z-[125] flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none"
       >
         <div className={cn("min-h-0 flex-1 overflow-y-auto bg-background", drawerSafeAreaBottom)}>
-          <DrawerHeader className="bg-background px-6 pb-2 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
+          <DrawerHeader className="bg-background px-6 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
             <DrawerTitle className="text-lg font-semibold">
               {followListMode === "seguidores" ? "Seguidores" : "Seguidos"}
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-6 pb-6">
+          <div className="mt-3 px-6 pb-6">
             {loadingFollowUsers ? (
               <p className="py-2 text-sm text-muted-foreground">Cargando...</p>
             ) : followUsers.length === 0 ? (
               <p className="py-2 text-sm text-muted-foreground">No hay usuarios para mostrar.</p>
             ) : (
-              <div className="space-y-1">
+              <div className="flex flex-col gap-3">
                 {followUsers.map((p) => (
                   <button
                     key={p.id}
                     type="button"
-                    className="flex w-full items-center gap-3 rounded-md border px-2 py-2 text-left transition-colors hover:bg-muted/50"
+                    className="flex w-full items-center gap-3 rounded-md border bg-card px-2 py-2 text-left transition-colors hover:bg-muted/50"
                     onClick={() => {
                       setFollowListMode(null);
                       if (p.id === user?.id) openMyProfile();
