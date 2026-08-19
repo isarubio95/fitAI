@@ -1,4 +1,5 @@
 import { inferGymTipo, shouldImportOsmTags, tagString } from "./gymOsm.mjs";
+import { fixMojibake } from "./fixMojibake.mjs";
 
 /**
  * @param {Record<string, unknown> | null | undefined} tags
@@ -26,11 +27,18 @@ export function rowFromOsmElement(el, opts = {}) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   if (el.type !== "node" && el.type !== "way" && el.type !== "relation") return null;
 
-  const nombre = tagText(tags, "name", "brand") ?? "Gimnasio";
-  const street = tagText(tags, "addr:street");
+  const nombreRaw = tagText(tags, "name", "brand") ?? "Gimnasio";
+  const nombre = fixMojibake(nombreRaw);
+  const streetRaw = tagText(tags, "addr:street");
+  const street = streetRaw ? fixMojibake(streetRaw) : null;
   const number = tagText(tags, "addr:housenumber");
+  const ciudadRaw = tagText(tags, "addr:city", "addr:town", "addr:municipality") ?? opts.ciudad ?? null;
+  const ciudad = ciudadRaw == null ? null : fixMojibake(ciudadRaw);
+  const brandRaw = tagText(tags, "brand");
+  const brand = brandRaw == null ? null : fixMojibake(brandRaw);
   const direccion =
-    tagText(tags, "addr:full") ?? (street && number ? `${street} ${number}` : street);
+    (tagText(tags, "addr:full") ? fixMojibake(tagText(tags, "addr:full")) : null) ??
+    (street && number ? `${street} ${number}` : street);
 
   return {
     osm_id: el.id,
@@ -39,12 +47,12 @@ export function rowFromOsmElement(el, opts = {}) {
     lat,
     lng,
     direccion: direccion ?? null,
-    ciudad: tagText(tags, "addr:city", "addr:town", "addr:municipality") ?? opts.ciudad ?? null,
-    brand: tagText(tags, "brand"),
+    ciudad,
+    brand,
     source: "osm",
     tipo: inferGymTipo({
       name: nombre,
-      brand: tagText(tags, "brand"),
+      brand,
       operatorType: tagText(tags, "operator:type"),
     }),
   };
@@ -66,27 +74,33 @@ export function rowFromOsmElementByBrand(el, opts) {
 
   const brand = tagText(tags, "brand", "operator", "operator_name") ?? "";
   const nombreRaw = tagText(tags, "name", "brand", "operator") ?? "Gimnasio";
+  const nombre = fixMojibake(nombreRaw);
+  const brandFixed = fixMojibake(brand);
 
-  if (!opts.brandRegex.test(nombreRaw) && !opts.brandRegex.test(brand)) return null;
+  if (!opts.brandRegex.test(nombre) && !opts.brandRegex.test(brandFixed)) return null;
 
   const street = tagText(tags, "addr:street");
   const number = tagText(tags, "addr:housenumber");
   const direccion =
     tagText(tags, "addr:full") ?? (street && number ? `${street} ${number}` : street);
+  const ciudadRaw = tagText(tags, "addr:city", "addr:town", "addr:municipality") ?? opts.ciudad ?? null;
+  const ciudad = ciudadRaw == null ? null : fixMojibake(ciudadRaw);
+  const brandReturnRaw = tagText(tags, "brand");
+  const brandReturn = brandReturnRaw == null ? null : fixMojibake(brandReturnRaw);
 
   return {
     osm_id: el.id,
     osm_type: el.type,
-    nombre: nombreRaw.slice(0, 120),
+    nombre: nombre.slice(0, 120),
     lat,
     lng,
     direccion: direccion ?? null,
-    ciudad: tagText(tags, "addr:city", "addr:town", "addr:municipality") ?? opts.ciudad ?? null,
-    brand: tagText(tags, "brand"),
+    ciudad,
+    brand: brandReturn,
     source: "osm",
     tipo: inferGymTipo({
-      name: nombreRaw,
-      brand: tagText(tags, "brand"),
+      name: nombre,
+      brand: brandReturn,
       operatorType: tagText(tags, "operator:type"),
     }),
   };

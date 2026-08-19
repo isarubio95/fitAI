@@ -85,7 +85,9 @@ export function GymPickerSheet({
       >
         <DrawerContent
           overlayClassName={overlayClassName}
-          className={cn("flex max-h-[92lvh] flex-col overflow-hidden", contentClassName)}
+          // Importante: `max-h` no obliga a ocupar todo el alto cuando hay pocos resultados.
+          // Usamos altura fija para que el sheet se mantenga "completo" siempre.
+          className={cn("flex h-[92lvh] max-h-[92lvh] min-h-0 flex-col overflow-hidden", contentClassName)}
         >
           <div className={cn("shrink-0 border-b border-border/20 bg-card", drawerSheetRadiusTop)}>
             <DrawerHeader className="text-left">

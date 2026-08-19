@@ -1,4 +1,5 @@
 import { normalizeGymName } from "./gymDedup.mjs";
+import { fixMojibake } from "./fixMojibake.mjs";
 
 const MUNICIPAL_RE =
   /\b(centro\s+deportivo\s+municipal|centre\s+esportiu\s+municipal|polideportivo\s+municipal|poliesportiu\s+municipal|gimnasio\s+municipal|gimnas\s+municipal|cem|cdm)\b/;
@@ -15,7 +16,10 @@ const PRIVATE_ORG_RE = /\b(club|federacio|federacion|penya|pena|associacio|asoci
  * @param  {...(string | null | undefined)} parts
  */
 export function isGymLikeFacilityName(...parts) {
-  const text = normalizeGymName(parts.filter(Boolean).join(" "));
+  const fixedParts = parts
+    .filter(Boolean)
+    .map((p) => fixMojibake(typeof p === "string" ? p : String(p)));
+  const text = normalizeGymName(fixedParts.join(" "));
   if (!text) return false;
   if (GYM_CORE_RE.test(text) || isMunicipalFacilityName(text)) return true;
   if (PITCH_ONLY_RE.test(text)) return false;
@@ -26,7 +30,8 @@ export function isGymLikeFacilityName(...parts) {
  * @param {unknown} owner
  */
 export function isPublicLocalOwner(owner) {
-  const text = normalizeGymName(Array.isArray(owner) ? owner.join(" ") : String(owner ?? ""));
+  const raw = Array.isArray(owner) ? owner.join(" ") : String(owner ?? "");
+  const text = normalizeGymName(fixMojibake(raw));
   return /\b(ayuntamiento|udala|administracion local|concello|ajuntament)\b/.test(text);
 }
 
@@ -42,21 +47,28 @@ export function isPublicLocalOwner(owner) {
  * }} input
  */
 export function opendataRow(input) {
-  const nombre = String(input.nombre ?? "").trim();
+  const nombre = fixMojibake(String(input.nombre ?? "").trim());
   const lat = Number(input.lat);
   const lng = Number(input.lng);
   const externalId = String(input.externalId ?? "").trim();
   if (!nombre || !externalId) return null;
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+
+  const direccionRaw = input.direccion == null ? null : String(input.direccion).trim();
+  const direccion = direccionRaw ? fixMojibake(direccionRaw) : null;
+
+  const ciudadRaw = input.ciudad == null ? null : String(input.ciudad).trim();
+  const ciudad = ciudadRaw ? fixMojibake(ciudadRaw) : null;
+
   return {
     provider: input.provider.slice(0, 40),
     external_id: externalId.slice(0, 80),
     nombre: nombre.slice(0, 120),
     lat,
     lng,
-    direccion: input.direccion?.trim() || null,
-    ciudad: (input.ciudad?.trim() || null)?.slice(0, 80) ?? null,
+    direccion: direccion,
+    ciudad: (ciudad?.slice(0, 80) ?? null),
     brand: null,
     source: "opendata",
     tipo: "municipal",
@@ -115,7 +127,10 @@ function ringCentroid(ring) {
  * @param  {...(string | null | undefined)} parts
  */
 export function isMunicipalFacilityName(...parts) {
-  const text = normalizeGymName(parts.filter(Boolean).join(" "));
+  const fixedParts = parts
+    .filter(Boolean)
+    .map((p) => fixMojibake(typeof p === "string" ? p : String(p)));
+  const text = normalizeGymName(fixedParts.join(" "));
   if (!text) return false;
   if (MUNICIPAL_RE.test(text)) return true;
   if (MUNICIPAL_WORD_RE.test(text) && SPORT_SITE_RE.test(text)) return true;

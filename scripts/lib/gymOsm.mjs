@@ -1,4 +1,5 @@
 /** Filtros OSM y tipo de gimnasio para el catálogo de España. */
+import { fixMojibake } from "./fixMojibake.mjs";
 
 export const SPAIN_CCAA = [
   ["ES-AN", "Andalucía"],
@@ -93,7 +94,8 @@ const MUNICIPAL_NAME_RE =
  * @returns {string}
  */
 export function tagString(value) {
-  return typeof value === "string" ? value.trim() : "";
+  if (typeof value !== "string") return "";
+  return fixMojibake(value.trim());
 }
 
 /**
