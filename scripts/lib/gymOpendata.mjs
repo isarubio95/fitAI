@@ -232,6 +232,41 @@ export function euskadiGymsFromJson(payload) {
 }
 
 /**
+ * GeoJSON oficial del censo (todas las localidades de Euskadi).
+ * @param {unknown} geojson
+ */
+export function euskadiGymsFromGeoJson(geojson) {
+  const features = geojson?.features;
+  if (!Array.isArray(features)) return [];
+  const rows = [];
+  const seen = new Set();
+  for (const feature of features) {
+    const props = feature?.properties && typeof feature.properties === "object" ? feature.properties : {};
+    const nombre = String(props.nombre || props.nombrelugar || "").trim();
+    if (!isGymLikeFacilityName(nombre, props.espaciodeportivo)) continue;
+    const point = pointFromGeoJson(feature.geometry);
+    if (!point) continue;
+    const url = String(props.urlamigable || props.urlfisica || "");
+    const fromUrl = url.match(/\/(\d{5,})(?:\/|$)/)?.[1];
+    const id = String(feature.id ?? fromUrl ?? nombre);
+    if (seen.has(id)) continue;
+    const row = opendataRow({
+      provider: "euskadi",
+      externalId: id,
+      nombre,
+      lat: point.lat,
+      lng: point.lng,
+      direccion: String(props.direccion || "").trim() || null,
+      ciudad: String(props.municipio || "").trim() || null,
+    });
+    if (!row) continue;
+    seen.add(id);
+    rows.push(row);
+  }
+  return rows;
+}
+
+/**
  * @param {unknown} geojson
  */
 export function malagaGymsFromGeoJson(geojson) {

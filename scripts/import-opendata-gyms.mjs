@@ -18,6 +18,7 @@ import { addressPatchFromIncoming, findNearbyDuplicate } from "./lib/gymDedup.mj
 import {
   barcelonaGymsFromRecords,
   donostiaGymsFromGeoJson,
+  euskadiGymsFromGeoJson,
   euskadiGymsFromJson,
   madridGymsFromGraph,
   malagaGymsFromGeoJson,
@@ -33,7 +34,10 @@ const DEDUP_METERS = 80;
 const MADRID_URL = "https://datos.madrid.es/egob/catalogo/200186-0-polideportivos.json";
 const BCN_RESOURCE_ID = "1e5279b3-5f66-4614-9138-671c32db17ce";
 const BCN_DATASTORE = `https://opendata-ajuntament.barcelona.cat/data/api/3/action/datastore_search?resource_id=${BCN_RESOURCE_ID}`;
-const EUSKADI_URL = "https://intranet.euskalkirola.com/Content/assets/open_data/instalaciones_open_es.json";
+const EUSKADI_URLS = [
+  "http://intranet.euskalkirola.com/Content/assets/open_data/instalaciones_open_es.json",
+  "https://www.euskadi.eus/contenidos/ds_localizaciones/censo_instalaciones_deportivas/opendata/censo_instalaciones_deportivas.geojson",
+];
 const MALAGA_URL =
   "https://datosabiertos.malaga.eu/recursos/deportes/equipamientos/da_deportesCentrosDeportivos-4326.geojson";
 const VIGO_URL = "https://datos.vigo.org/data/deportes/ins-gimnasios.geojson";
@@ -91,7 +95,17 @@ async function fetchBarcelonaGyms() {
 }
 
 async function fetchEuskadiGyms() {
-  return euskadiGymsFromJson(await fetchJson(EUSKADI_URL));
+  let lastError = null;
+  for (const url of EUSKADI_URLS) {
+    try {
+      const payload = await fetchJson(url);
+      if (Array.isArray(payload)) return euskadiGymsFromJson(payload);
+      if (payload?.features) return euskadiGymsFromGeoJson(payload);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError ?? new Error("No se pudo descargar el censo de Euskadi");
 }
 
 async function fetchMalagaGyms() {
