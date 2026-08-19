@@ -1030,7 +1030,7 @@ const Exercises = () => {
                         />
                       ) : (
                         <div className="flex h-full min-h-[5.25rem] w-full items-center justify-center">
-                          <IconComponent className="h-7 w-7 text-muted-foreground/40" />
+                          <IconComponent className="h-7 w-7 text-muted-foreground/60" />
                         </div>
                       )}
                     </div>

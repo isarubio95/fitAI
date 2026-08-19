@@ -177,7 +177,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
           <div className="p-4 space-y-3">
             {!readyToFetch ? (
               <div className="text-center py-12 space-y-3">
-                <Sparkles className="h-10 w-10 mx-auto text-muted-foreground/40" />
+                <Sparkles className="h-10 w-10 mx-auto text-muted-foreground/60" />
                 <p className="text-sm text-muted-foreground">
                   Selecciona <span className="font-medium text-foreground">nivel</span>,{" "}
                   <span className="font-medium text-foreground">duración</span> y{" "}
@@ -190,7 +190,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
               ))
             ) : source.length === 0 ? (
               <div className="text-center py-12 space-y-2">
-                <Sparkles className="h-10 w-10 mx-auto text-muted-foreground/40" />
+                <Sparkles className="h-10 w-10 mx-auto text-muted-foreground/60" />
                 <p className="text-sm text-muted-foreground">No se encontraron rutinas con esos filtros.</p>
               </div>
             ) : (
