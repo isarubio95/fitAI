@@ -103,10 +103,19 @@ export function haversineMeters(a, b) {
  */
 export function findNearbyDuplicate(candidate, existing, options = {}) {
   const maxMeters = options.maxMeters ?? 80;
+  // Pre-filter by bounding box (1 degree lat ≈ 111 km, so maxMeters/111000 degrees)
+  const latDelta = maxMeters / 111000;
+  const lngDelta = maxMeters / (111000 * Math.cos((candidate.lat * Math.PI) / 180));
+  const minLat = candidate.lat - latDelta;
+  const maxLat = candidate.lat + latDelta;
+  const minLng = candidate.lng - lngDelta;
+  const maxLng = candidate.lng + lngDelta;
   let best = null;
   let bestDistance = Infinity;
   for (const gym of existing) {
     if (!Number.isFinite(gym.lat) || !Number.isFinite(gym.lng)) continue;
+    // Cheap bbox reject before string comparison
+    if (gym.lat < minLat || gym.lat > maxLat || gym.lng < minLng || gym.lng > maxLng) continue;
     if (!namesLookSimilar(candidate.nombre, gym.nombre)) continue;
     const meters = haversineMeters(candidate, gym);
     if (meters <= maxMeters && meters < bestDistance) {

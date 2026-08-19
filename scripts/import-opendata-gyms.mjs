@@ -17,10 +17,12 @@
 import { addressPatchFromIncoming, findNearbyDuplicate } from "./lib/gymDedup.mjs";
 import {
   barcelonaGymsFromRecords,
+  catalunyaGymsFromRecords,
   cordobaGymsFromGeoJson,
   donostiaGymsFromGeoJson,
   euskadiGymsFromGeoJson,
   euskadiGymsFromJson,
+  galiciaGymsFromArcGis,
   madridGymsFromGraph,
   malagaGymsFromGeoJson,
   santaCruzGymsFromGeoJson,
@@ -72,6 +74,9 @@ const CORDOBA_URL =
   "https://datosabiertos.cordoba.es/ckan/dataset/8c732141-6689-4fb5-b61e-76f9ca10ea64/resource/eabfb7bd-a91f-4e42-880b-c4196f365943/download/centros-deportivos.geojson";
 const SANTA_CRUZ_URL =
   "https://www.santacruzdetenerife.es/opendata/dataset/d5325ace-0ae0-4980-b17c-0200a51b3227/resource/b83f8b5a-8eb0-4f89-be2c-b3affbc952d1/download/inst_deportivas.geojson";
+const CATALUNYA_CEEC_URL = "https://analisi.transparenciacatalunya.cat/resource/5zd6-bk6r.json";
+const GALICIA_LAYER =
+  "https://ideg.xunta.gal/meteogalicia/rest/services/PIMA/exposicion/MapServer/33/query";
 
 function env(name, fallbackName) {
   return process.env[name] || (fallbackName ? process.env[fallbackName] : undefined);
@@ -175,6 +180,38 @@ async function fetchSantaCruzGyms() {
   return santaCruzGymsFromGeoJson(await fetchJson(SANTA_CRUZ_URL));
 }
 
+async function fetchCatalunyaGyms() {
+  const records = [];
+  let offset = 0;
+  // Filtramos instalaciones con sala de actividades (sal>0) o pabellón (pav>0)
+  const where = encodeURIComponent("sal>0 OR pav>0");
+  while (true) {
+    const url = `${CATALUNYA_CEEC_URL}?%24limit=${PAGE_SIZE}&%24offset=${offset}&%24where=${where}`;
+    const chunk = await fetchJson(url);
+    if (!Array.isArray(chunk) || chunk.length === 0) break;
+    records.push(...chunk);
+    if (chunk.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+  return catalunyaGymsFromRecords(records);
+}
+
+async function fetchGaliciaGyms() {
+  const features = [];
+  let offset = 0;
+  const pageSize = 2000;
+  while (true) {
+    const url = `${GALICIA_LAYER}?where=1%3D1&outFields=OBJECTID,nombre,provincia&outSR=4326&f=json&resultRecordCount=${pageSize}&resultOffset=${offset}`;
+    const payload = await fetchJson(url);
+    const chunk = payload?.features;
+    if (!Array.isArray(chunk) || chunk.length === 0) break;
+    features.push(...chunk);
+    if (chunk.length < pageSize || !payload.exceededTransferLimit) break;
+    offset += pageSize;
+  }
+  return galiciaGymsFromArcGis({ features });
+}
+
 const SOURCES = [
   { id: "madrid", label: "Madrid (polideportivos municipales)", fetch: fetchMadridGyms },
   { id: "barcelona", label: "Barcelona (CEM municipales)", fetch: fetchBarcelonaGyms },
@@ -186,6 +223,8 @@ const SOURCES = [
   { id: "santacruz", label: "Santa Cruz de Tenerife (instalaciones deportivas)", fetch: fetchSantaCruzGyms },
   { id: "vigo", label: "Vigo (gimnasios municipales)", fetch: fetchVigoGyms },
   { id: "donostia", label: "Donostia / San Sebastián (equipamientos)", fetch: fetchDonostiaGyms },
+  { id: "catalunya", label: "Catalunya (CEEC – censo autonómico, todos los municipios)", fetch: fetchCatalunyaGyms },
+  { id: "galicia", label: "Galicia (IDEG – instalaciones deportivas, todas las provincias)", fetch: fetchGaliciaGyms },
 ];
 
 const SOURCE_IDS = SOURCES.map((s) => s.id);
@@ -252,6 +291,8 @@ async function main() {
 Requiere SUPABASE_SERVICE_ROLE_KEY y VITE_SUPABASE_URL (o SUPABASE_URL).
 Fuentes con coordenadas (CC BY / ODC-BY). El censo autonómico de Andalucía no trae lat/lng y se omite;
 las capitales andaluzas cubiertas aquí son Málaga y Córdoba (más OSM por municipio).
+Catalunya usa el CEEC de la Generalitat (~20K instalaciones con lat/lng, filtradas por sala o pabellón).
+Galicia usa la capa IDEG de la Xunta (~2K puntos).
 `);
     return;
   }

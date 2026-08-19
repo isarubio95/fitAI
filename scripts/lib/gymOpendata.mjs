@@ -552,6 +552,85 @@ export function cordobaGymsFromGeoJson(geojson) {
 }
 
 /**
+ * Cens d'Equipaments Esportius de Catalunya (CEEC).
+ * API Socrata: https://analisi.transparenciacatalunya.cat/resource/5zd6-bk6r.json
+ * Filtramos instalaciones que tengan sala de actividades (sal > 0) o pabellón (pav > 0)
+ * o cuyo nombre contenga términos de gimnasio/fitness.
+ * @param {unknown} records  array de objetos JSON de la API Socrata
+ */
+export function catalunyaGymsFromRecords(records) {
+  if (!Array.isArray(records)) return [];
+  const rows = [];
+  const seen = new Set();
+  for (const item of records) {
+    if (!item || typeof item !== "object") continue;
+    const nombre = String(item.instal_laci || "").trim();
+    if (!nombre) continue;
+    const lat = Number(item.latitud);
+    const lng = Number(item.longitud);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const hasSala = Number(item.sal) > 0;
+    const hasPav = Number(item.pav) > 0;
+    if (!hasSala && !hasPav && !isGymLikeFacilityName(nombre)) continue;
+    const id = String(item.ref_ins || "").trim();
+    if (!id || seen.has(id)) continue;
+    const ciudad = String(item.municipi || "").trim() || null;
+    const row = opendataRow({
+      provider: "catalunya",
+      externalId: id,
+      nombre,
+      lat,
+      lng,
+      direccion: null,
+      ciudad,
+    });
+    if (!row) continue;
+    seen.add(id);
+    rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * Capa ArcGIS de instalaciones deportivas de Galicia (IDEG).
+ * Layer 33: https://ideg.xunta.gal/meteogalicia/rest/services/PIMA/exposicion/MapServer/33
+ * outSR=4326. Solo incluye instalaciones con nombre que suene a gimnasio/polideportivo.
+ * @param {unknown} payload  respuesta JSON de la query ArcGIS
+ */
+export function galiciaGymsFromArcGis(payload) {
+  const features = payload?.features;
+  if (!Array.isArray(features)) return [];
+  const rows = [];
+  const seen = new Set();
+  for (const feature of features) {
+    const attrs = feature?.attributes && typeof feature.attributes === "object" ? feature.attributes : {};
+    const geom = feature?.geometry && typeof feature.geometry === "object" ? feature.geometry : {};
+    const nombre = String(attrs.nombre || "").trim();
+    if (!nombre || !isGymLikeFacilityName(nombre)) continue;
+    const lat = Number(geom.y);
+    const lng = Number(geom.x);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const oid = String(attrs.OBJECTID ?? "").trim();
+    const id = oid || nombre;
+    if (seen.has(id)) continue;
+    const provincia = String(attrs.provincia || "").trim() || null;
+    const row = opendataRow({
+      provider: "galicia",
+      externalId: id,
+      nombre,
+      lat,
+      lng,
+      direccion: null,
+      ciudad: provincia,
+    });
+    if (!row) continue;
+    seen.add(id);
+    rows.push(row);
+  }
+  return rows;
+}
+
+/**
  * @param {unknown} geojson
  */
 export function santaCruzGymsFromGeoJson(geojson) {
