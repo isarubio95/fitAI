@@ -31,8 +31,8 @@
     --popover-foreground: 60 8% 8%;
     --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
-    /* Relleno sólido accesible: verde oscuro suficiente para texto blanco (≥4.5:1). */
-    --primary-solid: 142 71% 45%;
+    /* Relleno sólido accesible: L bajada para superar 4.5:1 con texto blanco. */
+    --primary-solid: 142 71% 32%;
     --secondary: 60 6% 85%;
     --secondary-foreground: 60 8% 8%;
     --muted: 60 7% 87%;
@@ -70,7 +70,7 @@
   :root[data-accent="green"] {
     --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
-    --primary-solid: 142 71% 45%;
+    --primary-solid: 142 71% 32%;
     --accent: 142 71% 45%;
     --accent-foreground: 0 0% 100%;
     --ring: 142 71% 45%;
@@ -81,7 +81,7 @@
   :root[data-accent="orange"] {
     --primary: 24 95% 48%;
     --primary-foreground: 0 0% 100%;
-    --primary-solid: 24 95% 48%;
+    --primary-solid: 24 95% 38%;
     --accent: 24 95% 48%;
     --accent-foreground: 0 0% 100%;
     --ring: 24 95% 48%;
@@ -92,7 +92,7 @@
   :root[data-accent="yellow"] {
     --primary: 38 92% 42%;
     --primary-foreground: 0 0% 100%;
-    --primary-solid: 38 92% 42%;
+    --primary-solid: 38 92% 33%;
     --accent: 38 92% 42%;
     --accent-foreground: 0 0% 100%;
     --ring: 38 92% 42%;
@@ -103,7 +103,7 @@
   :root[data-accent="pink"] {
     --primary: 330 72% 50%;
     --primary-foreground: 0 0% 100%;
-    --primary-solid: 330 72% 50%;
+    --primary-solid: 330 72% 38%;
     --accent: 330 72% 50%;
     --accent-foreground: 0 0% 100%;
     --ring: 330 72% 50%;
@@ -114,7 +114,7 @@
   :root[data-accent="blue"] {
     --primary: 215 92% 54%;
     --primary-foreground: 0 0% 100%;
-    --primary-solid: 215 92% 54%;
+    --primary-solid: 215 92% 40%;
     --accent: 215 92% 54%;
     --accent-foreground: 0 0% 100%;
     --ring: 215 92% 54%;
