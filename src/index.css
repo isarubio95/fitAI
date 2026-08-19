@@ -29,98 +29,98 @@
     --card-foreground: 60 8% 8%;
     --popover: 60 14% 97%;
     --popover-foreground: 60 8% 8%;
-    --primary: 142 71% 45%;
+    --primary: 142 71% 28%;
     --primary-foreground: 0 0% 100%;
     /* Relleno sólido accesible: L bajada para superar 4.5:1 con texto blanco. */
-    --primary-solid: 142 71% 32%;
+    --primary-solid: 142 71% 28%;
     --secondary: 60 6% 85%;
     --secondary-foreground: 60 8% 8%;
     --muted: 60 7% 87%;
     --muted-foreground: 60 5% 30%;
-    --accent: 142 71% 45%;
+    --accent: 142 71% 28%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 73% 42%;
     --destructive-foreground: 0 0% 100%;
-    --success: 88 64% 30%;
+    --success: 88 64% 26%;
     --success-foreground: 88 60% 18%;
     --success-muted: 88 45% 92%;
     --success-border: 88 40% 66%;
     --border: 60 6% 82%;
     --input: 60 6% 82%;
-    --ring: 142 71% 45%;
+    --ring: 142 71% 28%;
     --radius: 0.75rem;
     /* Chrome flotante (header móvil, bottom nav): un escalón por debajo de `--card`. */
     --surface-elevated: 60 8% 90%;
     /* Serie de datos (gráficos): tono compartido, luminosidad adaptada a fondo claro. */
     --chart-fitness: 209 70% 45%;
-    --chart-fatigue: 36 86% 42%;
+    --chart-fatigue: 36 86% 35%;
     --chart-danger: 0 73% 50%;
     --chart-positive: 88 64% 30%;
     --chart-fresh: 160 50% 36%;
     --chart-neutral: 45 8% 45%;
     --sidebar-background: 60 10% 90%;
     --sidebar-foreground: 60 8% 8%;
-    --sidebar-primary: 142 71% 45%;
+    --sidebar-primary: 142 71% 28%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 60 7% 85%;
     --sidebar-accent-foreground: 60 8% 8%;
     --sidebar-border: 60 6% 82%;
-    --sidebar-ring: 142 71% 45%;
+    --sidebar-ring: 142 71% 28%;
   }
   :root[data-accent="green"] {
-    --primary: 142 71% 45%;
+    --primary: 142 71% 28%;
     --primary-foreground: 0 0% 100%;
-    --primary-solid: 142 71% 32%;
-    --accent: 142 71% 45%;
+    --primary-solid: 142 71% 28%;
+    --accent: 142 71% 28%;
     --accent-foreground: 0 0% 100%;
-    --ring: 142 71% 45%;
-    --sidebar-primary: 142 71% 45%;
+    --ring: 142 71% 28%;
+    --sidebar-primary: 142 71% 28%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-ring: 142 71% 45%;
+    --sidebar-ring: 142 71% 28%;
   }
   :root[data-accent="orange"] {
-    --primary: 24 95% 48%;
+    --primary: 24 95% 34%;
     --primary-foreground: 0 0% 100%;
-    --primary-solid: 24 95% 38%;
-    --accent: 24 95% 48%;
+    --primary-solid: 24 95% 34%;
+    --accent: 24 95% 34%;
     --accent-foreground: 0 0% 100%;
-    --ring: 24 95% 48%;
-    --sidebar-primary: 24 95% 48%;
+    --ring: 24 95% 34%;
+    --sidebar-primary: 24 95% 34%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-ring: 24 95% 48%;
+    --sidebar-ring: 24 95% 34%;
   }
   :root[data-accent="yellow"] {
-    --primary: 38 92% 42%;
+    --primary: 38 92% 26%;
     --primary-foreground: 0 0% 100%;
-    --primary-solid: 38 92% 33%;
-    --accent: 38 92% 42%;
+    --primary-solid: 38 92% 26%;
+    --accent: 38 92% 26%;
     --accent-foreground: 0 0% 100%;
-    --ring: 38 92% 42%;
-    --sidebar-primary: 38 92% 42%;
+    --ring: 38 92% 26%;
+    --sidebar-primary: 38 92% 26%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-ring: 38 92% 42%;
+    --sidebar-ring: 38 92% 26%;
   }
   :root[data-accent="pink"] {
-    --primary: 330 72% 50%;
+    --primary: 330 72% 34%;
     --primary-foreground: 0 0% 100%;
-    --primary-solid: 330 72% 38%;
-    --accent: 330 72% 50%;
+    --primary-solid: 330 72% 34%;
+    --accent: 330 72% 34%;
     --accent-foreground: 0 0% 100%;
-    --ring: 330 72% 50%;
-    --sidebar-primary: 330 72% 50%;
+    --ring: 330 72% 34%;
+    --sidebar-primary: 330 72% 34%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-ring: 330 72% 50%;
+    --sidebar-ring: 330 72% 34%;
   }
   :root[data-accent="blue"] {
-    --primary: 215 92% 54%;
+    --primary: 215 92% 36%;
     --primary-foreground: 0 0% 100%;
-    --primary-solid: 215 92% 40%;
-    --accent: 215 92% 54%;
+    --primary-solid: 215 92% 36%;
+    --accent: 215 92% 36%;
     --accent-foreground: 0 0% 100%;
-    --ring: 215 92% 54%;
-    --sidebar-primary: 215 92% 54%;
+    --ring: 215 92% 36%;
+    --sidebar-primary: 215 92% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-ring: 215 92% 54%;
+    --sidebar-ring: 215 92% 36%;
   }
 
   .dark {
