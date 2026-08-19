@@ -81,8 +81,8 @@ describe("PostWorkoutModal", () => {
       ),
     );
 
-    fireEvent.click(screen.getByLabelText("Gimnasio"));
-    fireEvent.click(screen.getByRole("button", { name: "Elegir gym" }));
+    fireEvent.click(screen.getByRole("button", { name: /Gimnasio|Dónde has entrenado/i }));
+    fireEvent.click(screen.getByText("Elegir gym"));
 
     await waitFor(() => {
       expect(mockPersistActividadGimnasio).toHaveBeenCalledWith("act-1", {
@@ -90,7 +90,7 @@ describe("PostWorkoutModal", () => {
         nombre: "Box Centro",
       });
     });
-    expect(screen.getByLabelText("Gimnasio")).toHaveTextContent("Box Centro");
+    expect(await screen.findByRole("button", { name: /Gimnasio|Box Centro/i })).toHaveTextContent("Box Centro");
   });
 
   it("muestra el gimnasio prellenado", async () => {
@@ -106,6 +106,6 @@ describe("PostWorkoutModal", () => {
       ),
     );
 
-    expect(await screen.findByLabelText("Gimnasio")).toHaveTextContent("Basic Fit");
+    expect(await screen.findByRole("button", { name: /Gimnasio|Basic Fit/i })).toHaveTextContent("Basic Fit");
   });
 });
