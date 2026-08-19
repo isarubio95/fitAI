@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { createPortal } from "react-dom";
-import { useLayoutActionSlot } from "@/hooks/useLayoutActionSlot";
 import { useExerciseCatalogInfinite, useCreateExercise, useDeleteExercise } from "@/hooks/useExerciseCatalog";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -43,7 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Dumbbell, User, Trash2, Loader2, ArrowUpDown, ArrowDownAZ, Check, ChevronDown, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, BicepsFlexed, Filter, X, Plus, Bookmark } from "lucide-react";
+import { Search, Dumbbell, User, Trash2, Loader2, ArrowDownAZ, Check, ChevronDown, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, BicepsFlexed, Filter, X, Plus, Bookmark } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
@@ -298,9 +296,6 @@ const Exercises = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<CatalogExercise | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const mobileActionsSlot = useLayoutActionSlot("section-pills-actions-slot", null);
-  const desktopCreateSlot = useLayoutActionSlot(null, "desktop-floating-create-slot");
-  const desktopToolbarSlot = useLayoutActionSlot(null, "desktop-section-toolbar-slot");
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [difficultyLoading, setDifficultyLoading] = useState(false);
   const difficultyLoadingTimerRef = useRef<number | null>(null);
@@ -541,105 +536,31 @@ const Exercises = () => {
       className={cn(
         "flex w-full min-w-0 max-w-2xl flex-col overflow-x-clip bg-background px-0 pb-6 mx-auto md:px-8 md:pt-6",
         PAGE_CARD_STACK_GAP,
+        "max-md:-mb-24 max-md:pb-[calc(var(--app-bottom-nav-inset,5.5rem)+3.5rem)] md:pb-20",
       )}
     >
-      {mobileActionsSlot &&
-        createPortal(
-          <div className="flex items-center gap-2">
-            {!!exercises?.length && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
-                    title={sortOrder === "asc" ? "Orden: A → Z" : "Orden: Z → A"}
-                    aria-label={`Ordenar ejercicios por nombre, ${sortOrder === "asc" ? "A a Z" : "Z a A"}`}
-                  >
-                    <ArrowUpDown />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 bg-popover">
-                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                    <ArrowDownAZ className="h-3.5 w-3.5" /> Ordenar por nombre
-                  </DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setSortOrder("asc")}>
-                    A → Z {sortOrder === "asc" && <Check className="ml-auto h-4 w-4" />}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortOrder("desc")}>
-                    Z → A {sortOrder === "desc" && <Check className="ml-auto h-4 w-4" />}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <Button
-              type="button"
-              variant="new"
-              onClick={() => setCreateOpen(true)}
-              title="Crear ejercicio"
-              aria-label="Nuevo ejercicio"
-            >
-              <span className="whitespace-nowrap">Crear</span>
-              <Plus className="shrink-0" />
-            </Button>
-          </div>,
-          mobileActionsSlot,
-        )}
-      {desktopToolbarSlot &&
-        !!exercises?.length &&
-        createPortal(
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
-                title={sortOrder === "asc" ? "Orden: A → Z" : "Orden: Z → A"}
-                aria-label={`Ordenar ejercicios por nombre, ${sortOrder === "asc" ? "A a Z" : "Z a A"}`}
-              >
-                <ArrowUpDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 bg-popover">
-              <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                <ArrowDownAZ className="h-3.5 w-3.5" /> Ordenar por nombre
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => setSortOrder("asc")}>
-                A → Z {sortOrder === "asc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortOrder("desc")}>
-                Z → A {sortOrder === "desc" && <Check className="ml-auto h-4 w-4" />}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>,
-          desktopToolbarSlot,
-        )}
-      {desktopCreateSlot &&
-        createPortal(
-          <Button
-            type="button"
-            variant="new"
-            onClick={() => setCreateOpen(true)}
-            title="Crear ejercicio"
-            aria-label="Nuevo ejercicio"
-            className="shadow-lg"
-          >
-            <span className="whitespace-nowrap">Crear</span>
-            <Plus className="shrink-0" />
-          </Button>,
-          desktopCreateSlot,
-        )}
+      {user ? (
+        <Button
+          type="button"
+          variant="new"
+          onClick={() => setCreateOpen(true)}
+          title="Crear ejercicio"
+          aria-label="Nuevo ejercicio"
+          className="fixed z-40 right-4 bottom-[calc(var(--app-bottom-nav-inset,5.5rem)+0.5rem)] shadow-lg md:right-8 md:bottom-10"
+        >
+          <span className="whitespace-nowrap">Crear</span>
+          <Plus className="shrink-0" />
+        </Button>
+      ) : null}
 
       <div
         className={cn(
           // Solapa 2px bajo el header fijo para evitar el hueco subpíxel por el que asoma la lista.
-          "sticky z-30 w-full bg-card",
+          "sticky z-30 w-full bg-background",
           "top-[calc(var(--app-header-height,5rem)-2px)] pt-0.5 md:top-0 md:pt-0",
         )}
       >
-        <Card className="w-full max-w-none overflow-hidden rounded-none border-0 border-b border-border/40 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+        <Card className="w-full max-w-none overflow-hidden rounded-none border-0 bg-background shadow-none">
           <CardContent className="space-y-4 px-4 py-4 md:px-6 md:py-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -869,16 +790,111 @@ const Exercises = () => {
                     </Command>
                   </PopoverContent>
                 </Popover>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="filter"
+                      size="sm"
+                      className={cn(
+                        "shrink-0 justify-center gap-2",
+                        sortOrder === "desc" && filterButtonActive,
+                      )}
+                      title={sortOrder === "asc" ? "Orden: A → Z" : "Orden: Z → A"}
+                      aria-label={`Ordenar ejercicios por nombre, ${sortOrder === "asc" ? "A a Z" : "Z a A"}`}
+                    >
+                      <ArrowDownAZ className="h-4 w-4" />
+                      Orden
+                      <ChevronDown className="h-4 w-4 opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-44 bg-popover">
+                    <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                      <ArrowDownAZ className="h-3.5 w-3.5" /> Ordenar por nombre
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setSortOrder("asc")}>
+                      A → Z {sortOrder === "asc" && <Check className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortOrder("desc")}>
+                      Z → A {sortOrder === "desc" && <Check className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
             {anyFilterActive && (
-              <div className="flex w-full min-w-0 justify-start">
-                <Button
+              <div className="flex flex-wrap items-center gap-2">
+                {filters.tipos.map((t) => (
+                  <Badge key={`tipo:${t}`} variant="secondary" className="gap-1">
+                    Tipo: {t}
+                    <X
+                      className="h-3 w-3 cursor-pointer hover:text-destructive"
+                      onClick={() => {
+                        const nextFilters: ExerciseFilters = { ...filters, tipos: filters.tipos.filter((x) => x !== t) };
+                        setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                      }}
+                    />
+                  </Badge>
+                ))}
+                {filters.grupos.map((g) => (
+                  <Badge key={`grupo:${g}`} variant="secondary" className="gap-1">
+                    Grupo: {g}
+                    <X
+                      className="h-3 w-3 cursor-pointer hover:text-destructive"
+                      onClick={() => {
+                        const nextFilters: ExerciseFilters = { ...filters, grupos: filters.grupos.filter((x) => x !== g) };
+                        setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                      }}
+                    />
+                  </Badge>
+                ))}
+                {filters.equipments.map((eq) => (
+                  <Badge key={`eq:${eq}`} variant="secondary" className="gap-1">
+                    Eq: {eq}
+                    <X
+                      className="h-3 w-3 cursor-pointer hover:text-destructive"
+                      onClick={() => {
+                        const nextFilters: ExerciseFilters = {
+                          ...filters,
+                          equipments: filters.equipments.filter((x) => x !== eq),
+                        };
+                        setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                      }}
+                    />
+                  </Badge>
+                ))}
+                {filters.difs.map((d) => (
+                  <Badge key={`dif:${d}`} variant="secondary" className="gap-1">
+                    Dif: {difficultyLabel(d)}
+                    <X
+                      className="h-3 w-3 cursor-pointer hover:text-destructive"
+                      onClick={() => {
+                        const nextFilters: ExerciseFilters = { ...filters, difs: filters.difs.filter((x) => x !== d) };
+                        triggerDifficultyLoading();
+                        setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
+                      }}
+                    />
+                  </Badge>
+                ))}
+                {filters.favoritesOnly && (
+                  <Badge variant="secondary" className="gap-1">
+                    Favoritos
+                    <X
+                      className="h-3 w-3 cursor-pointer hover:text-destructive"
+                      onClick={() => {
+                        const nextFilters: ExerciseFilters = { ...filters, favoritesOnly: false };
+                        setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), {
+                          replace: true,
+                        });
+                      }}
+                    />
+                  </Badge>
+                )}
+                <button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2 text-muted-foreground hover:text-foreground"
+                  className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
                   onClick={() => {
                     const cleared: ExerciseFilters = {
                       q: "",
@@ -891,82 +907,11 @@ const Exercises = () => {
                     setSearchParams(serializeFiltersToSearchParams(searchParams, cleared), { replace: true });
                   }}
                 >
-                  <X className="h-4 w-4" /> Limpiar
-                </Button>
+                  <X className="h-3 w-3" />
+                  Limpiar
+                </button>
               </div>
             )}
-
-          {/* Chips de filtros activos */}
-          {anyFilterActive && (
-            <div className="flex flex-wrap gap-2">
-              {filters.tipos.map((t) => (
-                <Badge key={`tipo:${t}`} variant="secondary" className="gap-1">
-                  Tipo: {t}
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    onClick={() => {
-                      const nextFilters: ExerciseFilters = { ...filters, tipos: filters.tipos.filter((x) => x !== t) };
-                      setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                    }}
-                  />
-                </Badge>
-              ))}
-              {filters.grupos.map((g) => (
-                <Badge key={`grupo:${g}`} variant="secondary" className="gap-1">
-                  Grupo: {g}
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    onClick={() => {
-                      const nextFilters: ExerciseFilters = { ...filters, grupos: filters.grupos.filter((x) => x !== g) };
-                      setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                    }}
-                  />
-                </Badge>
-              ))}
-              {filters.equipments.map((eq) => (
-                <Badge key={`eq:${eq}`} variant="secondary" className="gap-1">
-                  Eq: {eq}
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    onClick={() => {
-                      const nextFilters: ExerciseFilters = {
-                        ...filters,
-                        equipments: filters.equipments.filter((x) => x !== eq),
-                      };
-                      setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                    }}
-                  />
-                </Badge>
-              ))}
-              {filters.difs.map((d) => (
-                <Badge key={`dif:${d}`} variant="secondary" className="gap-1">
-                  Dif: {difficultyLabel(d)}
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    onClick={() => {
-                      const nextFilters: ExerciseFilters = { ...filters, difs: filters.difs.filter((x) => x !== d) };
-                      triggerDifficultyLoading();
-                      setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), { replace: true });
-                    }}
-                  />
-                </Badge>
-              ))}
-              {filters.favoritesOnly && (
-                <Badge variant="secondary" className="gap-1">
-                  Favoritos
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    onClick={() => {
-                      const nextFilters: ExerciseFilters = { ...filters, favoritesOnly: false };
-                      setSearchParams(serializeFiltersToSearchParams(searchParams, nextFilters), {
-                        replace: true,
-                      });
-                    }}
-                  />
-                </Badge>
-              )}
-            </div>
-          )}
           </div>
         </CardContent>
       </Card>
@@ -987,14 +932,14 @@ const Exercises = () => {
         </Card>
       )}
 
-      <div className="flex w-full flex-col gap-3 bg-background px-4 pt-2 md:gap-2.75 md:px-0">
+      <div className="flex w-full flex-col gap-3 bg-background px-4 pt-1 md:gap-2.75 md:px-0">
         {isLoading || difficultyLoading
           ? Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
                 className="flex w-full overflow-hidden rounded-xl border border-border/40 bg-card"
               >
-                <Skeleton className="h-[5.25rem] w-20 shrink-0 rounded-none" />
+                <Skeleton className="h-21 w-20 shrink-0 rounded-none" />
                 <div className="min-w-0 flex-1 space-y-2 p-3">
                   <Skeleton className="h-10 w-4/5" />
                   <Skeleton className="h-3 w-1/2" />

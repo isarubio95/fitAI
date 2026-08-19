@@ -1,6 +1,9 @@
 import { useSearchParams } from "react-router-dom";
-import { filterPillTabsTrigger } from "@/lib/filter-pill-styles";
-import { SECTION_PILLS_LIST, SECTION_PILLS_ROW } from "@/lib/pageStyles";
+import {
+  SECTION_UNDERLINE_TABS_LIST,
+  SECTION_UNDERLINE_TABS_ROW,
+  SECTION_UNDERLINE_TABS_TRIGGER,
+} from "@/lib/pageStyles";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Routines from "@/pages/Routines";
 import Exercises from "@/pages/Exercises";
@@ -20,16 +23,16 @@ export default function Library() {
       }}
       className="flex w-full min-w-0 flex-1 flex-col"
     >
-      <div className={SECTION_PILLS_ROW}>
-        <TabsList className={SECTION_PILLS_LIST}>
-          <TabsTrigger value="rutinas" className={filterPillTabsTrigger}>
+      <div className={SECTION_UNDERLINE_TABS_ROW}>
+        <TabsList className={SECTION_UNDERLINE_TABS_LIST}>
+          <TabsTrigger value="rutinas" className={SECTION_UNDERLINE_TABS_TRIGGER}>
             Rutinas
           </TabsTrigger>
-          <TabsTrigger value="ejercicios" className={filterPillTabsTrigger}>
+          <TabsTrigger value="ejercicios" className={SECTION_UNDERLINE_TABS_TRIGGER}>
             Ejercicios
           </TabsTrigger>
         </TabsList>
-        <div id="desktop-section-toolbar-slot" className="flex shrink-0 items-center gap-2" />
+        <div id="desktop-section-toolbar-slot" className="flex shrink-0 items-center justify-end empty:hidden" />
       </div>
 
       <TabsContent value="rutinas" className="mt-0 flex flex-1 flex-col data-[state=inactive]:hidden">

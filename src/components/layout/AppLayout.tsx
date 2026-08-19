@@ -18,7 +18,7 @@ import { LiveSessionRehydrator } from "@/components/live/LiveSessionRehydrator";
 import { Loader2 } from "lucide-react";
 // import { SwipeableRoutesWrapper } from "./SwipeableRoutesWrapper";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
-import { FLOATING_CREATE_SLOT } from "@/lib/pageStyles";
+import { FLOATING_CREATE_SLOT, SECTION_UNDERLINE_TABS_LIST, sectionUnderlineTabClass } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 import { topBarSurface } from "@/lib/surface-styles";
 import { useQuery } from "@tanstack/react-query";
@@ -220,6 +220,7 @@ export function AppLayout() {
               "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/50 px-4 pb-2 pt-[calc(0.5rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] md:hidden",
               topBarSurface,
               showSectionPills ? "max-md:gap-2" : "gap-0",
+              location.pathname === "/routines" && "max-md:pb-0",
             )}
           >
             <div className="flex items-center justify-between gap-3">
@@ -297,20 +298,16 @@ export function AppLayout() {
                   "overflow-hidden transform-gpu will-change-[max-height,opacity,transform] transition-[max-height,opacity,transform,margin] duration-280 ease-out motion-reduce:transition-none md:hidden",
                   areHeaderPillsCollapsed
                     ? "pointer-events-none -translate-y-1 opacity-0 max-h-0"
-                    : "translate-y-0 opacity-100 max-h-16",
+                    : "translate-y-0 opacity-100 max-h-28",
                 )}
               >
-                <div className="flex min-w-0 items-center gap-2 pb-0.5">
-                  <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+                <div className="flex min-w-0 flex-col">
+                  <div className={cn(SECTION_UNDERLINE_TABS_LIST, "-mx-4 w-[calc(100%+2rem)]")}>
                     <button
                       type="button"
                       onClick={() => setSearchParams({ tab: "rutinas" })}
-                      className={cn(
-                        filterPillBase,
-                        "whitespace-nowrap",
-                        (searchParams.get("tab") || "rutinas") === "rutinas"
-                          ? filterPillActive
-                          : filterPillInactive,
+                      className={sectionUnderlineTabClass(
+                        (searchParams.get("tab") || "rutinas") === "rutinas",
                       )}
                     >
                       Rutinas
@@ -318,18 +315,15 @@ export function AppLayout() {
                     <button
                       type="button"
                       onClick={() => setSearchParams({ tab: "ejercicios" })}
-                      className={cn(
-                        filterPillBase,
-                        "whitespace-nowrap",
-                        searchParams.get("tab") === "ejercicios"
-                          ? filterPillActive
-                          : filterPillInactive,
-                      )}
+                      className={sectionUnderlineTabClass(searchParams.get("tab") === "ejercicios")}
                     >
                       Ejercicios
                     </button>
                   </div>
-                  <div id="section-pills-actions-slot" className="flex shrink-0 items-center" />
+                  <div
+                    id="section-pills-actions-slot"
+                    className="flex shrink-0 items-center justify-end empty:hidden pt-2"
+                  />
                 </div>
               </div>
             )}

@@ -1,6 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { useLayoutActionSlot } from "@/hooks/useLayoutActionSlot";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   DndContext,
@@ -18,7 +16,6 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { useRoutines, useDeleteRoutine, useUpdateRoutineOrder, useDuplicateRoutine, useRoutineLastTrainedByName } from "@/hooks/useRoutines";
-import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Button } from "@/components/ui/button";
@@ -27,6 +24,7 @@ import {
   Plus,
   Dumbbell,
   ArrowUpDown,
+  ChevronDown,
   Calendar,
   ArrowDownAZ,
   Hand,
@@ -136,9 +134,6 @@ const Routines = () => {
   const [sortDir, setSortDir] = useState<SortDir>(() => loadRoutinesSortPreference().sortDir);
 
   const [customOrder, setCustomOrder] = useState<RutinaWithDetails[] | null>(null);
-  const mobileActionsSlot = useLayoutActionSlot("section-pills-actions-slot", null);
-  const desktopCreateSlot = useLayoutActionSlot(null, "desktop-floating-create-slot");
-  const desktopToolbarSlot = useLayoutActionSlot(null, "desktop-section-toolbar-slot");
 
   useEffect(() => {
     if (location.state?.action === "new") {
@@ -335,6 +330,14 @@ const Routines = () => {
     return "Orden manual";
   };
 
+  const sortShortLabel = () => {
+    if (sortMode === "date") return sortDir === "desc" ? "Recientes" : "Antiguas";
+    if (sortMode === "name") return sortDir === "asc" ? "A-Z" : "Z-A";
+    if (sortMode === "lastUsed") return sortDir === "desc" ? "Recién usadas" : "Hace más";
+    if (sortMode === "duration") return sortDir === "asc" ? "Cortas" : "Largas";
+    return "Manual";
+  };
+
   const sortMenuContent = (
     <>
       <DropdownMenuLabel className="flex items-center gap-2 text-xs">
@@ -390,89 +393,57 @@ const Routines = () => {
     </>
   );
 
+  const routineCount = routines?.length ?? 0;
+
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 max-w-2xl flex-1 flex-col overflow-x-hidden bg-background px-0 pt-3 pb-6 mx-auto md:px-8 md:pt-6",
-        "max-md:-mb-24 max-md:pb-24",
-        PAGE_CARD_STACK_GAP,
+        "flex w-full min-w-0 max-w-2xl flex-1 flex-col gap-3 overflow-x-hidden bg-background px-0 pt-3 pb-6 mx-auto md:px-8 md:pt-6",
+        "max-md:-mb-24 max-md:pb-[calc(var(--app-bottom-nav-inset,5.5rem)+3.5rem)] md:pb-20",
       )}
     >
-      {mobileActionsSlot &&
-        createPortal(
-          <div className="flex items-center gap-2">
-            {!!routines?.length && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
-                    title={`Orden: ${sortLabel()}`}
-                    aria-label={`Ordenar rutinas, actual: ${sortLabel()}`}
-                  >
-                    <ArrowUpDown />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-popover">
-                  {sortMenuContent}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <Button
-              type="button"
-              variant="new"
-              onClick={openCreateChoice}
-              title="Crear rutina"
-              aria-label="Nueva rutina"
-            >
-              <span className="whitespace-nowrap">Crear</span>
-              <Plus className="shrink-0" />
-            </Button>
-          </div>,
-          mobileActionsSlot,
-        )}
-      {desktopToolbarSlot &&
-        !!routines?.length &&
-        createPortal(
+      {!isLoading && routineCount > 0 ? (
+        <div className="flex items-center justify-between gap-3 px-4 md:px-0">
+          <p className="text-sm text-muted-foreground">
+            {routineCount} {routineCount === 1 ? "rutina" : "rutinas"}
+          </p>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 type="button"
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
+                variant="secondary"
+                className="h-8 gap-1.5 rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground shadow-none hover:bg-muted hover:text-foreground [&_svg]:size-3.5"
                 title={`Orden: ${sortLabel()}`}
                 aria-label={`Ordenar rutinas, actual: ${sortLabel()}`}
               >
-                <ArrowUpDown />
+                <ArrowUpDown className="size-3.5" />
+                {sortShortLabel()}
+                <ChevronDown className="size-3.5 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-popover">
               {sortMenuContent}
             </DropdownMenuContent>
-          </DropdownMenu>,
-          desktopToolbarSlot,
-        )}
-      {desktopCreateSlot &&
-        createPortal(
-          <Button
-            type="button"
-            variant="new"
-            onClick={openCreateChoice}
-            title="Crear rutina"
-            aria-label="Nueva rutina"
-            className="shadow-lg"
-          >
-            <span className="whitespace-nowrap">Crear</span>
-            <Plus className="shrink-0" />
-          </Button>,
-          desktopCreateSlot,
-        )}
+          </DropdownMenu>
+        </div>
+      ) : null}
+
+      {routineCount > 0 ? (
+        <Button
+          type="button"
+          variant="new"
+          onClick={openCreateChoice}
+          title="Crear rutina"
+          aria-label="Nueva rutina"
+          className="fixed z-40 right-4 bottom-[calc(var(--app-bottom-nav-inset,5.5rem)+0.5rem)] shadow-lg md:right-8 md:bottom-10"
+        >
+          <span className="whitespace-nowrap">Crear</span>
+          <Plus className="shrink-0" />
+        </Button>
+      ) : null}
 
       {isLoading ? (
-        <div className="flex w-full flex-col gap-3 bg-background px-4 md:gap-[11px] md:px-0">
+        <div className="flex w-full flex-col gap-3 bg-background px-4 md:gap-2.75 md:px-0">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-28 w-full rounded-xl border border-border/40 bg-card" />
           ))}
@@ -488,7 +459,7 @@ const Routines = () => {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sortedRoutines.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-            <div className="flex w-full flex-col gap-3 bg-background px-4 md:gap-[11px] md:px-0">
+            <div className="flex w-full flex-col gap-3 bg-background px-4 md:gap-2.75 md:px-0">
               {sortedRoutines.map((r) => (
                 <SortableRoutineCard
                   key={r.id}
@@ -507,7 +478,7 @@ const Routines = () => {
       )}
 
       <Dialog open={createChoiceOpen} onOpenChange={setCreateChoiceOpen}>
-        <DialogContent>
+        <DialogContent className="bg-background text-foreground">
           <DialogHeader>
             <DialogTitle>Nueva rutina</DialogTitle>
             <DialogDescription>Elige cómo quieres crearla.</DialogDescription>
@@ -516,7 +487,7 @@ const Routines = () => {
             <Button
               type="button"
               variant="secondary"
-              className="h-auto justify-start gap-3 py-3 px-4 text-left"
+              className="h-auto justify-start gap-3 bg-card py-3 px-4 text-left text-card-foreground"
               onClick={chooseDesdeCero}
             >
               <PenLine className="h-5 w-5 shrink-0 text-primary" />
@@ -525,7 +496,7 @@ const Routines = () => {
             <Button
               type="button"
               variant="secondary"
-              className="h-auto justify-start gap-3 py-3 px-4 text-left"
+              className="h-auto justify-start gap-3 bg-card py-3 px-4 text-left text-card-foreground"
               onClick={choosePredefined}
             >
               <Sparkles className="h-5 w-5 shrink-0 text-primary" />
@@ -534,7 +505,7 @@ const Routines = () => {
             <Button
               type="button"
               variant="secondary"
-              className="h-auto justify-start gap-3 py-3 px-4 text-left"
+              className="h-auto justify-start gap-3 bg-card py-3 px-4 text-left text-card-foreground"
               onClick={chooseImportCsv}
             >
               <FileSpreadsheet className="h-5 w-5 shrink-0 text-primary" />

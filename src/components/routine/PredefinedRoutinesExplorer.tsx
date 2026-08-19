@@ -93,7 +93,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg w-full h-[90dvh] max-h-[90dvh] p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg h-[90dvh] max-h-[90dvh] p-0 gap-0 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
           <Button
