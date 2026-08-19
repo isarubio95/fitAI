@@ -474,8 +474,9 @@ export function ExerciseProgressWidget() {
                 >
                   <defs>
                     <linearGradient id="progressGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      {/* Mantener el mismo tono hasta el fondo (sin desvanecer). */}
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
