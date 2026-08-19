@@ -40,6 +40,8 @@ type Props = {
   gyms: GimnasioCatalogItem[];
   selectedId?: string | null;
   onSelect: (gym: GimnasioCatalogItem) => void;
+  /** Se dispara cuando se pulsa en el mapa pero no se toca ningún pin/cluster de gimnasio. */
+  onDeselect?: () => void;
   className?: string;
   /** Si true, pide GPS al cargar y centra el mapa. */
   locateOnLoad?: boolean;
@@ -162,6 +164,7 @@ export function GymDirectoryMap({
   gyms,
   selectedId,
   onSelect,
+  onDeselect,
   className,
   locateOnLoad = true,
 }: Props) {
@@ -171,6 +174,8 @@ export function GymDirectoryMap({
   gymsRef.current = gyms;
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const onDeselectRef = useRef(onDeselect);
+  onDeselectRef.current = onDeselect;
   const basemapRef = useRef<MapBasemapId>(readCardioMapBasemap());
   const [basemap, setBasemap] = useState<MapBasemapId>(() => basemapRef.current);
   const [ready, setReady] = useState(false);
@@ -219,6 +224,16 @@ export function GymDirectoryMap({
 
       map.on("load", paintGyms);
       map.on("style.load", paintGyms);
+
+      map.on("click", (event) => {
+        // Si el click no está sobre un cluster ni sobre un punto, cerramos la selección.
+        // (El pin seleccionado también existe como "punto", así que no deselecciona al tocarlo.)
+        const hit = map?.queryRenderedFeatures(event.point, {
+          layers: [LAYER_CLUSTERS, LAYER_POINTS],
+        });
+        if (!hit || hit.length > 0) return;
+        onDeselectRef.current?.();
+      });
 
       map.on("click", LAYER_CLUSTERS, (event: MapLayerMouseEvent) => {
         const feature = event.features?.[0];

@@ -54,6 +54,7 @@ export function GymDirectoryExplorer({
           gyms={gyms}
           selectedId={selected?.id ?? null}
           onSelect={setSelected}
+          onDeselect={() => setSelected(null)}
           className="absolute inset-0"
         />
       </Suspense>
