@@ -115,7 +115,10 @@ export function GymDirectoryExplorer({
             "max-md:bottom-[calc(var(--app-bottom-nav-inset,env(safe-area-inset-bottom,0px))+0.75rem)]",
           )}
         >
-          <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-border/60 bg-card/95 p-4 shadow-lg backdrop-blur-sm">
+          <div
+            className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-border/60 bg-card/95 p-4 shadow-lg backdrop-blur-sm"
+            style={{ fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" }}
+          >
             <p className="text-sm font-semibold leading-snug">
               {formatGimnasioListTitle(selected, duplicateNames)}
             </p>
