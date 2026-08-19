@@ -76,7 +76,39 @@ export function pointFromGeoJson(geom) {
     const lat = Number(coords[1]);
     if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
   }
+  if (type === "MultiPoint" && Array.isArray(coords?.[0]) && coords[0].length >= 2) {
+    const lng = Number(coords[0][0]);
+    const lat = Number(coords[0][1]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  }
+  if (type === "Polygon" && Array.isArray(coords?.[0])) {
+    return ringCentroid(coords[0]);
+  }
+  if (type === "MultiPolygon" && Array.isArray(coords?.[0]?.[0])) {
+    return ringCentroid(coords[0][0]);
+  }
   return null;
+}
+
+/**
+ * @param {unknown[]} ring
+ */
+function ringCentroid(ring) {
+  if (!Array.isArray(ring) || ring.length === 0) return null;
+  let latSum = 0;
+  let lngSum = 0;
+  let n = 0;
+  for (const pair of ring) {
+    if (!Array.isArray(pair) || pair.length < 2) continue;
+    const lng = Number(pair[0]);
+    const lat = Number(pair[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    latSum += lat;
+    lngSum += lng;
+    n += 1;
+  }
+  if (n === 0) return null;
+  return { lat: latSum / n, lng: lngSum / n };
 }
 
 /**
@@ -373,6 +405,173 @@ export function donostiaGymsFromGeoJson(geojson) {
       lng: point.lng,
       direccion: String(props.NomCalle || props.IzenKalea || "").trim() || null,
       ciudad: "Donostia / San Sebastián",
+    });
+    if (row) rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * UTM zona 30N (ETRS89/WGS84) → lat/lng. Usado por Zaragoza y otros catálogos municipales.
+ * @param {number} easting
+ * @param {number} northing
+ */
+export function utmZone30ToWgs84(easting, northing) {
+  const x = easting - 500000;
+  const a = 6378137;
+  const e = 0.081819191;
+  const k0 = 0.9996;
+  const e1 = (1 - Math.sqrt(1 - e * e)) / (1 + Math.sqrt(1 - e * e));
+  const m = northing / k0;
+  const mu =
+    m / (a * (1 - (e * e) / 4 - (3 * e ** 4) / 64 - (5 * e ** 6) / 256));
+  const phi1 =
+    mu +
+    ((3 * e1) / 2 - (27 * e1 ** 3) / 32) * Math.sin(2 * mu) +
+    ((21 * e1 ** 2) / 16 - (55 * e1 ** 4) / 32) * Math.sin(4 * mu) +
+    ((151 * e1 ** 3) / 96) * Math.sin(6 * mu) +
+    ((1097 * e1 ** 4) / 512) * Math.sin(8 * mu);
+  const n1 = a / Math.sqrt(1 - e * e * Math.sin(phi1) ** 2);
+  const t1 = Math.tan(phi1) ** 2;
+  const c1 = (e * e * Math.cos(phi1) ** 2) / (1 - e * e);
+  const r1 = (a * (1 - e * e)) / (1 - e * e * Math.sin(phi1) ** 2) ** 1.5;
+  const d = x / (n1 * k0);
+  const lat =
+    phi1 -
+    ((n1 * Math.tan(phi1)) / r1) *
+      (d ** 2 / 2 -
+        ((5 + 3 * t1 + 10 * c1 - 4 * c1 ** 2 - 9 * c1 * t1) * d ** 4) / 24 +
+        ((61 + 90 * t1 + 298 * c1 + 45 * t1 ** 2 - 252 * (e * e) / (1 - e * e) - 3 * c1 ** 2) *
+          d ** 6) /
+          720);
+  const lon =
+    (d -
+      ((1 + 2 * t1 + c1) * d ** 3) / 6 +
+      ((5 - 2 * c1 + 28 * t1 - 3 * c1 ** 2 + 8 * (e * e) / (1 - e * e) + 24 * t1 ** 2) *
+        d ** 5) /
+        120) /
+    Math.cos(phi1);
+  const lon0 = ((30 - 1) * 6 - 180 + 3) * (Math.PI / 180);
+  return { lat: (lat * 180) / Math.PI, lng: ((lon0 + lon) * 180) / Math.PI };
+}
+
+/**
+ * @param {number} x
+ * @param {number} y
+ */
+export function projectedOrLonLat(x, y) {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  if (Math.abs(y) <= 90 && Math.abs(x) <= 180) return { lat: y, lng: x };
+  return utmZone30ToWgs84(x, y);
+}
+
+function propText(props, ...keys) {
+  if (!props || typeof props !== "object") return "";
+  for (const key of keys) {
+    const value = props[key];
+    if (value == null) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return "";
+}
+
+const OFFICE_RE = /\b(oficinas?|administrativ)\b/;
+
+/**
+ * API REST Zaragoza (categoría 56: centros deportivos). Geometría en UTM30.
+ * @param {unknown} payload
+ */
+export function zaragozaGymsFromCategory(payload) {
+  const items = payload?.equipamiento;
+  if (!Array.isArray(items)) return [];
+  const rows = [];
+  const seen = new Set();
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+    const nombre = String(item.title || "").trim();
+    if (!nombre || OFFICE_RE.test(normalizeGymName(nombre))) continue;
+    if (!isGymLikeFacilityName(nombre) && !/^(cdm|centro deportivo|pabellon)/i.test(nombre)) {
+      continue;
+    }
+    const geom = item.geometry && typeof item.geometry === "object" ? item.geometry : {};
+    const coords = Array.isArray(geom.coordinates) ? geom.coordinates : [];
+    const point = projectedOrLonLat(Number(coords[0]), Number(coords[1]));
+    if (!point) continue;
+    const id = String(item.id ?? "").trim();
+    if (!id || seen.has(id)) continue;
+    const row = opendataRow({
+      provider: "zaragoza",
+      externalId: id,
+      nombre,
+      lat: point.lat,
+      lng: point.lng,
+      direccion: String(item.calle || "").trim() || null,
+      ciudad: "Zaragoza",
+    });
+    if (!row) continue;
+    seen.add(id);
+    rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * @param {unknown} geojson
+ */
+export function cordobaGymsFromGeoJson(geojson) {
+  const features = geojson?.features;
+  if (!Array.isArray(features)) return [];
+  const rows = [];
+  for (const feature of features) {
+    const props = feature?.properties && typeof feature.properties === "object" ? feature.properties : {};
+    const point = pointFromGeoJson(feature.geometry);
+    if (!point) continue;
+    const nombre = propText(props, "name", "NOMBRE", "Nombre");
+    if (!nombre || OFFICE_RE.test(normalizeGymName(nombre))) continue;
+    const tipo = propText(props, "Tipo de Equipamiento");
+    if (
+      !isGymLikeFacilityName(nombre) &&
+      !/\bcd\b/.test(normalizeGymName(nombre)) &&
+      !/instalacion deportiva/i.test(tipo)
+    ) {
+      continue;
+    }
+    const row = opendataRow({
+      provider: "cordoba",
+      externalId: propText(props, "ID", "id") || nombre,
+      nombre,
+      lat: point.lat,
+      lng: point.lng,
+      direccion: propText(props, "Dirección", "DIRECCION", "direccion") || null,
+      ciudad: "Córdoba",
+    });
+    if (row) rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * @param {unknown} geojson
+ */
+export function santaCruzGymsFromGeoJson(geojson) {
+  const features = geojson?.features;
+  if (!Array.isArray(features)) return [];
+  const rows = [];
+  for (const feature of features) {
+    const props = feature?.properties && typeof feature.properties === "object" ? feature.properties : {};
+    const point = pointFromGeoJson(feature.geometry);
+    if (!point) continue;
+    const nombre = propText(props, "NOMBRE", "nombre", "name");
+    if (!isGymLikeFacilityName(nombre)) continue;
+    const row = opendataRow({
+      provider: "santacruz",
+      externalId: propText(props, "GEOCODIGO", "id") || nombre,
+      nombre,
+      lat: Number(props.GRAD_Y) || point.lat,
+      lng: Number(props.GRAD_X) || point.lng,
+      direccion: null,
+      ciudad: "Santa Cruz de Tenerife",
     });
     if (row) rows.push(row);
   }

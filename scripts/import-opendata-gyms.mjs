@@ -17,14 +17,36 @@
 import { addressPatchFromIncoming, findNearbyDuplicate } from "./lib/gymDedup.mjs";
 import {
   barcelonaGymsFromRecords,
+  cordobaGymsFromGeoJson,
   donostiaGymsFromGeoJson,
   euskadiGymsFromGeoJson,
   euskadiGymsFromJson,
   madridGymsFromGraph,
   malagaGymsFromGeoJson,
+  santaCruzGymsFromGeoJson,
   valenciaGymsFromArcGis,
   vigoGymsFromGeoJson,
+  zaragozaGymsFromCategory,
 } from "./lib/gymOpendata.mjs";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+
+function loadEnvFile() {
+  const envPath = path.resolve(".env");
+  if (!existsSync(envPath)) return;
+  for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+    if (!m) continue;
+    const key = m[1];
+    let val = m[2] ?? "";
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    if (!(key in process.env)) process.env[key] = val;
+  }
+}
+
+loadEnvFile();
 
 const UA = "TrackGym/0.1 (gimnasios-opendata; https://github.com/track-gym)";
 const BATCH_SIZE = 200;
@@ -45,6 +67,11 @@ const DONOSTIA_URL =
   "https://www.donostia.eus/datosabiertos/dataset/c1e52b76-6af8-4a1b-b182-dd168f901511/resource/648e5a5a-b60d-4079-bd4d-9e4b8e1092f7/download/kirolekipamenduak.json";
 const VALENCIA_LAYER =
   "https://geoportal.valencia.es/server/rest/services/OPENDATA/SociedadBienestar/MapServer/1/query";
+const ZARAGOZA_URL = "https://www.zaragoza.es/sede/servicio/equipamiento/category/56.json";
+const CORDOBA_URL =
+  "https://datosabiertos.cordoba.es/ckan/dataset/8c732141-6689-4fb5-b61e-76f9ca10ea64/resource/eabfb7bd-a91f-4e42-880b-c4196f365943/download/centros-deportivos.geojson";
+const SANTA_CRUZ_URL =
+  "https://www.santacruzdetenerife.es/opendata/dataset/d5325ace-0ae0-4980-b17c-0200a51b3227/resource/b83f8b5a-8eb0-4f89-be2c-b3affbc952d1/download/inst_deportivas.geojson";
 
 function env(name, fallbackName) {
   return process.env[name] || (fallbackName ? process.env[fallbackName] : undefined);
@@ -136,12 +163,27 @@ async function fetchValenciaGyms() {
   return valenciaGymsFromArcGis({ features });
 }
 
+async function fetchZaragozaGyms() {
+  return zaragozaGymsFromCategory(await fetchJson(ZARAGOZA_URL));
+}
+
+async function fetchCordobaGyms() {
+  return cordobaGymsFromGeoJson(await fetchJson(CORDOBA_URL));
+}
+
+async function fetchSantaCruzGyms() {
+  return santaCruzGymsFromGeoJson(await fetchJson(SANTA_CRUZ_URL));
+}
+
 const SOURCES = [
   { id: "madrid", label: "Madrid (polideportivos municipales)", fetch: fetchMadridGyms },
   { id: "barcelona", label: "Barcelona (CEM municipales)", fetch: fetchBarcelonaGyms },
   { id: "euskadi", label: "Euskadi (censo autonómico, todos los municipios)", fetch: fetchEuskadiGyms },
   { id: "malaga", label: "Málaga (centros deportivos)", fetch: fetchMalagaGyms },
   { id: "valencia", label: "Valencia (instalaciones deportivas)", fetch: fetchValenciaGyms },
+  { id: "zaragoza", label: "Zaragoza (centros deportivos municipales)", fetch: fetchZaragozaGyms },
+  { id: "cordoba", label: "Córdoba (centros deportivos municipales)", fetch: fetchCordobaGyms },
+  { id: "santacruz", label: "Santa Cruz de Tenerife (instalaciones deportivas)", fetch: fetchSantaCruzGyms },
   { id: "vigo", label: "Vigo (gimnasios municipales)", fetch: fetchVigoGyms },
   { id: "donostia", label: "Donostia / San Sebastián (equipamientos)", fetch: fetchDonostiaGyms },
 ];
@@ -208,7 +250,8 @@ async function main() {
     console.log(`Uso: node scripts/import-opendata-gyms.mjs [--dry-run] [--city ${idsHelp}|all]
 
 Requiere SUPABASE_SERVICE_ROLE_KEY y VITE_SUPABASE_URL (o SUPABASE_URL).
-Fuentes con coordenadas (CC BY / ODC-BY). El censo de Andalucía no trae lat/lng y se omite.
+Fuentes con coordenadas (CC BY / ODC-BY). El censo autonómico de Andalucía no trae lat/lng y se omite;
+las capitales andaluzas cubiertas aquí son Málaga y Córdoba (más OSM por municipio).
 `);
     return;
   }

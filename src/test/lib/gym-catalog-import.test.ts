@@ -4,6 +4,8 @@ import {
   shouldImportOsmTags,
   sportsCentreNameMatches,
   sportsHallNameMatches,
+  SPAIN_PROVINCIAL_CAPITALS,
+  capitalOverpassQuery,
 } from "../../../scripts/lib/gymOsm.mjs";
 import { rowFromOsmElement } from "../../../scripts/lib/gymOsmMap.mjs";
 import {
@@ -13,17 +15,29 @@ import {
 } from "../../../scripts/lib/gymDedup.mjs";
 import {
   barcelonaGymsFromRecords,
+  cordobaGymsFromGeoJson,
   donostiaGymsFromGeoJson,
   euskadiGymsFromJson,
   isBarcelonaMunicipalFacility,
   isGymLikeFacilityName,
   madridGymsFromGraph,
   malagaGymsFromGeoJson,
+  santaCruzGymsFromGeoJson,
+  utmZone30ToWgs84,
   valenciaGymsFromArcGis,
   vigoGymsFromGeoJson,
+  zaragozaGymsFromCategory,
 } from "../../../scripts/lib/gymOpendata.mjs";
 
 describe("filtros OSM", () => {
+  it("cubre las 50 capitales de provincia más Ceuta y Melilla", () => {
+    expect(SPAIN_PROVINCIAL_CAPITALS).toHaveLength(52);
+    expect(new Set(SPAIN_PROVINCIAL_CAPITALS.map((c) => c.id)).size).toBe(52);
+    expect(SPAIN_PROVINCIAL_CAPITALS.every((c) => /^\d{5}$/.test(c.ine))).toBe(true);
+    expect(capitalOverpassQuery({ ine: "41091", wikidata: "Q8717" })).toContain(
+      'rel["ine:municipio"="41091"]',
+    );
+  });
   it("importa fitness_centre y amenity=gym", () => {
     expect(shouldImportOsmTags({ leisure: "fitness_centre", name: "McFit" })).toBe(true);
     expect(shouldImportOsmTags({ amenity: "gym", name: "Box" })).toBe(true);
@@ -97,8 +111,7 @@ describe("filtros OSM", () => {
       source: "osm",
       tipo: "municipal",
     });
-    expect(
-      rowFromOsmElement({
+    expect(rowFromOsmElement({
         type: "node",
         id: 1,
         lat: 40,
@@ -106,6 +119,20 @@ describe("filtros OSM", () => {
         tags: { leisure: "sports_centre", name: "Club de Tenis", sport: "tennis" },
       }),
     ).toBeNull();
+  });
+
+  it("rellena la ciudad de la capital si OSM no trae addr:city", () => {
+    const row = rowFromOsmElement(
+      {
+        type: "node",
+        id: 9,
+        lat: 37.39,
+        lon: -5.99,
+        tags: { leisure: "fitness_centre", name: "Basic-Fit Nervión" },
+      },
+      { ciudad: "Sevilla" },
+    );
+    expect(row?.ciudad).toBe("Sevilla");
   });
 });
 
@@ -324,5 +351,61 @@ describe("datos abiertos municipales", () => {
         ],
       })[0],
     ).toMatchObject({ provider: "valencia", ciudad: "Valencia" });
+  });
+
+  it("convierte UTM de Zaragoza y mapea Córdoba y Santa Cruz", () => {
+    const wgs = utmZone30ToWgs84(675333.06, 4611793.81);
+    expect(wgs.lat).toBeGreaterThan(41.6);
+    expect(wgs.lat).toBeLessThan(41.7);
+    expect(wgs.lng).toBeGreaterThan(-1.0);
+    expect(wgs.lng).toBeLessThan(-0.8);
+
+    const zgz = zaragozaGymsFromCategory({
+      equipamiento: [
+        {
+          id: 101,
+          title: "Centro Deportivo Municipal Delicias",
+          calle: "C/ Moreno Alcañiz, 2",
+          geometry: { type: "Point", coordinates: [675333.06, 4611793.81] },
+        },
+        {
+          id: 102,
+          title: "Oficinas administrativas",
+          geometry: { type: "Point", coordinates: [675333.06, 4611793.81] },
+        },
+      ],
+    });
+    expect(zgz).toHaveLength(1);
+    expect(zgz[0]).toMatchObject({ provider: "zaragoza", ciudad: "Zaragoza", external_id: "101" });
+
+    expect(
+      cordobaGymsFromGeoJson({
+        features: [
+          {
+            geometry: { type: "Point", coordinates: [-4.76, 37.88] },
+            properties: { ID: "IMD010", name: "CD El Arcángel", Dirección: "Avda. 1" },
+          },
+          {
+            geometry: { type: "Point", coordinates: [-4.76, 37.88] },
+            properties: { ID: "IMD001", name: "Oficinas Centrales IMDECO" },
+          },
+        ],
+      }).map((r) => r.nombre),
+    ).toEqual(["CD El Arcángel"]);
+
+    expect(
+      santaCruzGymsFromGeoJson({
+        features: [
+          {
+            geometry: { type: "Point", coordinates: [-16.25, 28.46] },
+            properties: { GEOCODIGO: "DEP_010", NOMBRE: "POLIDEPORTIVO MUNICIPAL SALUD ALTA" },
+          },
+          {
+            geometry: { type: "Point", coordinates: [-16.19, 28.51] },
+            properties: { GEOCODIGO: "DEP_003", NOMBRE: "CAMPO DE FUTBOL SAN ANDRES" },
+          },
+        ],
+      }).map((r) => r.nombre),
+    ).toEqual(["POLIDEPORTIVO MUNICIPAL SALUD ALTA"]);
   });
 });

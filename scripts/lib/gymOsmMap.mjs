@@ -15,8 +15,9 @@ export function tagText(tags, ...keys) {
 
 /**
  * @param {{ type?: string, id?: number, lat?: number, lon?: number, center?: { lat?: number, lon?: number }, tags?: Record<string, string> }} el
+ * @param {{ ciudad?: string | null }} [opts]
  */
-export function rowFromOsmElement(el) {
+export function rowFromOsmElement(el, opts = {}) {
   const tags = el.tags ?? {};
   if (!shouldImportOsmTags(tags)) return null;
 
@@ -38,7 +39,7 @@ export function rowFromOsmElement(el) {
     lat,
     lng,
     direccion: direccion ?? null,
-    ciudad: tagText(tags, "addr:city", "addr:town", "addr:municipality"),
+    ciudad: tagText(tags, "addr:city", "addr:town", "addr:municipality") ?? opts.ciudad ?? null,
     brand: tagText(tags, "brand"),
     source: "osm",
     tipo: inferGymTipo({

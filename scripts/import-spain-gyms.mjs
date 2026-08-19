@@ -3,7 +3,8 @@
  *
  * Uso:
  *   node scripts/import-spain-gyms.mjs
- *   node scripts/import-spain-gyms.mjs --ccaa ES-MD
+ *   node scripts/import-spain-gyms.mjs --capitals
+ *   node scripts/import-spain-gyms.mjs --capitals --city sevilla
  *   node scripts/import-spain-gyms.mjs --dry-run
  *
  * Variables:
@@ -12,16 +13,37 @@
  *   OVERPASS_URL (opcional)
  */
 
-import { SPAIN_CCAA, ccaaOverpassQuery } from "./lib/gymOsm.mjs";
+import { SPAIN_CCAA, SPAIN_PROVINCIAL_CAPITALS, capitalOverpassQuery, ccaaOverpassQuery } from "./lib/gymOsm.mjs";
 import { rowFromOsmElement } from "./lib/gymOsmMap.mjs";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+
+function loadEnvFile() {
+  const envPath = path.resolve(".env");
+  if (!existsSync(envPath)) return;
+  for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+    if (!m) continue;
+    const key = m[1];
+    let val = m[2] ?? "";
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    if (!(key in process.env)) process.env[key] = val;
+  }
+}
+
+loadEnvFile();
 
 const DEFAULT_OVERPASS_URLS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
 ];
 const UA = "TrackGym/0.1 (gimnasios-espana; https://github.com/track-gym)";
 const BATCH_SIZE = 400;
 const CCAA_GAP_MS = 1500;
+const CAPITAL_GAP_MS = 4000;
 
 function overpassUrls() {
   if (process.env.OVERPASS_URL) return [process.env.OVERPASS_URL];
@@ -33,13 +55,18 @@ function env(name, fallbackName) {
 }
 
 function parseArgs(argv) {
-  const args = { dryRun: false, help: false, ccaa: null };
+  const args = { dryRun: false, help: false, ccaa: null, capitals: false, city: null };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--dry-run") args.dryRun = true;
     if (arg === "--help" || arg === "-h") args.help = true;
+    if (arg === "--capitals") args.capitals = true;
     if (arg === "--ccaa") {
       args.ccaa = argv[i + 1] ? argv[i + 1].toUpperCase() : null;
+      i += 1;
+    }
+    if (arg === "--city") {
+      args.city = argv[i + 1] ? argv[i + 1].toLowerCase() : null;
       i += 1;
     }
   }
@@ -92,10 +119,10 @@ async function upsertBatch(url, key, rows) {
   }
 }
 
-function collectRows(elements, seen) {
+function collectRows(elements, seen, ciudadFallback) {
   const rows = [];
   for (const el of elements) {
-    const row = rowFromOsmElement(el);
+    const row = rowFromOsmElement(el, { ciudad: ciudadFallback });
     if (!row) continue;
     const key = `${row.osm_type}:${row.osm_id}`;
     if (seen.has(key)) continue;
@@ -108,10 +135,13 @@ function collectRows(elements, seen) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
+    const capitalIds = SPAIN_PROVINCIAL_CAPITALS.map((c) => c.id).join("|");
     console.log(`Uso: node scripts/import-spain-gyms.mjs [--dry-run] [--ccaa ES-MD]
+       node scripts/import-spain-gyms.mjs --capitals [--city ${capitalIds}] [--dry-run]
 
 Requiere SUPABASE_SERVICE_ROLE_KEY y VITE_SUPABASE_URL (o SUPABASE_URL).
-Consulta Overpass por comunidad autónoma (fitness_centre, gym y polideportivos filtrados).
+Sin --capitals consulta Overpass por comunidad autónoma.
+Con --capitals recorre las 50 capitales de provincia + Ceuta y Melilla (más fiable que un CCAA enorme).
 `);
     return;
   }
@@ -122,25 +152,54 @@ Consulta Overpass por comunidad autónoma (fitness_centre, gym y polideportivos 
     throw new Error("Faltan SUPABASE_URL/VITE_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY");
   }
 
-  const ccaaList = args.ccaa
-    ? SPAIN_CCAA.filter(([code]) => code === args.ccaa)
-    : SPAIN_CCAA;
-  if (args.ccaa && ccaaList.length === 0) {
-    throw new Error(`CCAA desconocida: ${args.ccaa}. Usa p. ej. ES-MD, ES-CT, ES-AN.`);
-  }
-
   const seen = new Set();
   const allRows = [];
 
-  for (let i = 0; i < ccaaList.length; i += 1) {
-    const [code, label] = ccaaList[i];
-    console.log(`Consultando Overpass (${code} ${label})…`);
-    const payload = await fetchOverpass(ccaaOverpassQuery(code));
-    const elements = Array.isArray(payload.elements) ? payload.elements : [];
-    const rows = collectRows(elements, seen);
-    allRows.push(...rows);
-    console.log(`  ${elements.length} elementos → ${rows.length} nuevos (${allRows.length} acumulados)`);
-    if (i < ccaaList.length - 1) await sleep(CCAA_GAP_MS);
+  if (args.capitals) {
+    const capitals = args.city
+      ? SPAIN_PROVINCIAL_CAPITALS.filter((c) => c.id === args.city)
+      : SPAIN_PROVINCIAL_CAPITALS;
+    if (args.city && capitals.length === 0) {
+      throw new Error(
+        `Capital desconocida: ${args.city}. Usa p. ej. sevilla, zaragoza, palma.`,
+      );
+    }
+    for (let i = 0; i < capitals.length; i += 1) {
+      const capital = capitals[i];
+      console.log(`Consultando Overpass (${capital.name} ${capital.wikidata})…`);
+      try {
+        const payload = await fetchOverpass(capitalOverpassQuery(capital));
+        const elements = Array.isArray(payload.elements) ? payload.elements : [];
+        const rows = collectRows(elements, seen, capital.name);
+        allRows.push(...rows);
+        console.log(
+          `  ${elements.length} elementos → ${rows.length} nuevos (${allRows.length} acumulados)`,
+        );
+      } catch (err) {
+        console.warn(
+          `  Falló ${capital.id}: ${err instanceof Error ? err.message : err}`,
+        );
+      }
+      if (i < capitals.length - 1) await sleep(CAPITAL_GAP_MS);
+    }
+  } else {
+    const ccaaList = args.ccaa
+      ? SPAIN_CCAA.filter(([code]) => code === args.ccaa)
+      : SPAIN_CCAA;
+    if (args.ccaa && ccaaList.length === 0) {
+      throw new Error(`CCAA desconocida: ${args.ccaa}. Usa p. ej. ES-MD, ES-CT, ES-AN.`);
+    }
+
+    for (let i = 0; i < ccaaList.length; i += 1) {
+      const [code, label] = ccaaList[i];
+      console.log(`Consultando Overpass (${code} ${label})…`);
+      const payload = await fetchOverpass(ccaaOverpassQuery(code));
+      const elements = Array.isArray(payload.elements) ? payload.elements : [];
+      const rows = collectRows(elements, seen);
+      allRows.push(...rows);
+      console.log(`  ${elements.length} elementos → ${rows.length} nuevos (${allRows.length} acumulados)`);
+      if (i < ccaaList.length - 1) await sleep(CCAA_GAP_MS);
+    }
   }
 
   console.log(`OSM: ${allRows.length} gimnasios únicos`);
