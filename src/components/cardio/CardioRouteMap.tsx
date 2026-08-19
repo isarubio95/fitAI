@@ -11,6 +11,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 /** Vite empaqueta el worker + shared chunk; sin esto el mapa queda en blanco (404 del worker). */
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { MapBasemapControl } from "@/components/cardio/MapBasemapControl";
+import { useAuth } from "@/hooks/useAuth";
 import {
   firstMapLabelLayerId,
   loadMapBasemapStyle,
@@ -18,12 +19,15 @@ import {
   writeCardioMapBasemap,
   type MapBasemapId,
 } from "@/lib/mapBasemap";
+import {
+  createMapCameraPersister,
+  resolveCardioMapInitialView,
+} from "@/lib/mapCameraStorage";
 import { MAP_COLORS } from "@/lib/stravaDarkMapStyle";
 import { cn } from "@/lib/utils";
 
 setWorkerUrl(maplibreWorkerUrl);
 
-const DEFAULT_CENTER: [number, number] = [-3.7038, 40.4168];
 const FIT_PADDING = 36;
 const FIT_MAX_ZOOM = 16;
 
@@ -37,6 +41,8 @@ type Props = {
   className?: string;
   /** Si false, desactiva pan/zoom (preview en cards). */
   interactive?: boolean;
+  /** Sesión cuyo encuadre se persiste (solo con `interactive`). */
+  cameraKey?: string | null;
 };
 
 function lineFeature(coordinates: [number, number][]): Feature {
@@ -135,7 +141,27 @@ function fitRoute(map: MapLibreMap, coordinates: [number, number][]) {
 /**
  * Mapa estático del recorrido (feed / detalle). Sin follow-user ni marker en vivo.
  */
-export function CardioRouteMap({ points, className, interactive = false }: Props) {
+export function CardioRouteMap({
+  points,
+  className,
+  interactive = false,
+  cameraKey = null,
+}: Props) {
+  const { user } = useAuth();
+  const userIdRef = useRef(user?.id);
+  userIdRef.current = user?.id;
+  const cameraKeyRef = useRef(cameraKey);
+  cameraKeyRef.current = cameraKey;
+  const persistCamera = Boolean(interactive && cameraKey);
+  const cameraPersisterRef = useRef<ReturnType<typeof createMapCameraPersister> | null>(null);
+  if (persistCamera && cameraPersisterRef.current === null) {
+    cameraPersisterRef.current = createMapCameraPersister({
+      getUserId: () => userIdRef.current,
+      screen: "detail",
+      getContextId: () => cameraKeyRef.current ?? "_",
+    });
+  }
+
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const paintedRef = useRef(false);
@@ -147,12 +173,25 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
   const [painted, setPainted] = useState(false);
   const [basemap, setBasemap] = useState<MapBasemapId>(() => basemapRef.current);
 
-  const initialViewRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
+  const skipAutoFitRef = useRef(false);
+
+  const initialViewRef = useRef<{
+    center: [number, number];
+    zoom: number;
+    fromStorage: boolean;
+  } | null>(null);
   if (initialViewRef.current === null) {
     const mid = points.length > 0 ? points[Math.floor(points.length / 2)] : null;
-    initialViewRef.current = mid
-      ? { center: [mid.lng, mid.lat], zoom: 13 }
-      : { center: DEFAULT_CENTER, zoom: 12 };
+    const resolved = resolveCardioMapInitialView({
+      userId: userIdRef.current,
+      screen: "detail",
+      contextId: cameraKey ?? "_",
+      geometry: mid ? { center: [mid.lng, mid.lat], zoom: 13 } : null,
+      preferStored: persistCamera,
+      fallbackZoom: 12,
+    });
+    initialViewRef.current = resolved;
+    skipAutoFitRef.current = persistCamera && resolved.fromStorage;
   }
 
   useEffect(() => {
@@ -177,6 +216,16 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
       mapRef.current = map;
       map.touchZoomRotate.disableRotation();
       map.addControl(new AttributionControl({ compact: true }), "bottom-right");
+      if (persistCamera) {
+        map.on("moveend", (e) => {
+          if ((e as { originalEvent?: Event }).originalEvent) skipAutoFitRef.current = true;
+          cameraPersisterRef.current?.save(map);
+        });
+      } else if (interactive) {
+        map.on("moveend", (e) => {
+          if ((e as { originalEvent?: Event }).originalEvent) skipAutoFitRef.current = true;
+        });
+      }
 
       map.on("load", () => {
         if (cancelled) return;
@@ -188,6 +237,11 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
 
     return () => {
       cancelled = true;
+      if (persistCamera && mapRef.current) {
+        cameraPersisterRef.current?.save(mapRef.current, { immediate: true });
+      } else {
+        cameraPersisterRef.current?.flush();
+      }
       mapRef.current?.remove();
       mapRef.current = null;
       paintedRef.current = false;
@@ -224,6 +278,7 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
       const map = mapRef.current;
       if (!map) return;
       map.resize();
+      if (skipAutoFitRef.current) return;
       const coordinates = pointsRef.current.map((p) => [p.lng, p.lat] as [number, number]);
       if (coordinates.length > 0) fitRoute(map, coordinates);
     });
@@ -242,7 +297,9 @@ export function CardioRouteMap({ points, className, interactive = false }: Props
     (map.getSource("cardio-end") as GeoJSONSource | undefined)?.setData(
       pointFeature(coordinates.length > 1 ? coordinates[coordinates.length - 1] : null),
     );
-    fitRoute(map, coordinates);
+    if (!skipAutoFitRef.current) {
+      fitRoute(map, coordinates);
+    }
 
     if (paintedRef.current) return;
     let cancelled = false;

@@ -15,11 +15,9 @@ Notas sobre el estado actual: hay 3 UIs MapLibre (`CardioRouteMap`, `RouteDrawMa
   - **Por qué:** el usuario espera el mismo gesto en todos los mapas “grandes”; hoy el comportamiento está repartido.
   - **Cómo:** reutilizar el patrón de `Locate` / `LocateFixed`, pedir permiso solo al tocar, y no pelear con `fitBounds` de la ruta (p. ej. un toque centra, otro vuelve al encuadre de la ruta).
 
-- [ ] **Persistir zoom / encuadre por contexto**
+- [x] **Persistir zoom / encuadre por contexto**
   - **Qué:** recordar centro, zoom (y bearing si aplica) al cerrar/reabrir una ruta concreta, o al pausar/retomar una grabación.
-  - **Por qué:** hoy muchos mapas arrancan en Madrid (`DEFAULT_CENTER`) o recalculan fit siempre; se pierde el encuadre que el usuario había ajustado a mano.
-  - **Cómo:** clave en `localStorage` (o estado de sesión) por `routeId` / pantalla (`live` | `draw` | `detail`). Restaurar solo si hay preferencia válida; si no, fallback a `fitBounds` de la polilínea.
-  - **Cuidado:** no persistir encuadres absurdos (zoom 2 del mundo entero) ni mezclar preferencias entre usuarios en el mismo dispositivo si hay multi-cuenta.
+  - **Hecho:** `mapCameraStorage.ts` (claves por `userId` + `live`/`draw`/`detail`); constructor MapLibre usa última cámara/zona en vez de Madrid; detalle interactivo restaura por `sessionId` y no pisa el pan con `fitBounds`.
 
 - [ ] **Feedback al cambiar de basemap**
   - **Qué:** transición visible al pulsar Mapa ↔ Satélite: overlay semitransparente, spinner o fade del canvas mientras `setStyle` carga tiles.

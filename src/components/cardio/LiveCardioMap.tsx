@@ -12,8 +12,13 @@ import "maplibre-gl/dist/maplibre-gl.css";
 /** Vite empaqueta el worker + shared chunk; sin esto el mapa queda en blanco (404 del worker). */
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { CardioGpsPoint } from "@/hooks/useCardioGpsRecorder";
+import { useAuth } from "@/hooks/useAuth";
 import { useDeviceHeading } from "@/hooks/useDeviceHeading";
 import { splitTrackByTimeGaps } from "@/lib/cardioTrackSegments";
+import {
+  createMapCameraPersister,
+  resolveCardioMapInitialView,
+} from "@/lib/mapCameraStorage";
 import {
   courseFromPoints,
   readCardioMapOrientation,
@@ -34,7 +39,6 @@ import { cn } from "@/lib/utils";
 
 setWorkerUrl(maplibreWorkerUrl);
 
-const DEFAULT_CENTER: [number, number] = [-3.7038, 40.4168];
 const FOLLOW_ZOOM = 16;
 /** Grabando se acerca un poco más: se ve mejor el trazado que va creciendo. */
 const RECORDING_ZOOM = 17.3;
@@ -218,6 +222,18 @@ export function LiveCardioMap({
   controlsBottomPx = 12,
   referencePoints,
 }: Props) {
+  const { user } = useAuth();
+  const userIdRef = useRef(user?.id);
+  userIdRef.current = user?.id;
+  const cameraPersisterRef = useRef<ReturnType<typeof createMapCameraPersister> | null>(null);
+  if (cameraPersisterRef.current === null) {
+    cameraPersisterRef.current = createMapCameraPersister({
+      getUserId: () => userIdRef.current,
+      screen: "live",
+      includeBearing: true,
+    });
+  }
+
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
@@ -254,11 +270,18 @@ export function LiveCardioMap({
     return null;
   }, [points, previewPoint]);
 
-  const initialViewRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
+  const initialViewRef = useRef<{
+    center: [number, number];
+    zoom: number;
+    bearing?: number;
+  } | null>(null);
   if (initialViewRef.current === null) {
-    initialViewRef.current = anchor
-      ? { center: anchor, zoom: FOLLOW_ZOOM }
-      : { center: DEFAULT_CENTER, zoom: 12 };
+    initialViewRef.current = resolveCardioMapInitialView({
+      userId: userIdRef.current,
+      screen: "live",
+      geometry: anchor ? { center: anchor, zoom: FOLLOW_ZOOM } : null,
+      fallbackZoom: 12,
+    });
   }
 
   useEffect(() => {
@@ -273,11 +296,13 @@ export function LiveCardioMap({
       const container = containerRef.current;
       if (cancelled || !container) return;
 
+      const initial = initialViewRef.current!;
       const map = new MapLibreMap({
         container,
         style,
-        center: initialViewRef.current!.center,
-        zoom: initialViewRef.current!.zoom,
+        center: initial.center,
+        zoom: initial.zoom,
+        bearing: initial.bearing ?? 0,
         maxZoom: 19,
         attributionControl: false,
         dragRotate: false,
@@ -289,6 +314,7 @@ export function LiveCardioMap({
         new AttributionControl({ compact: true }),
         "bottom-right",
       );
+      map.on("moveend", () => cameraPersisterRef.current?.save(map));
 
       map.on("dragstart", () => setFollowing(false));
       map.on("zoomstart", (e) => {
@@ -310,6 +336,8 @@ export function LiveCardioMap({
 
     return () => {
       cancelled = true;
+      if (mapRef.current) cameraPersisterRef.current?.save(mapRef.current, { immediate: true });
+      else cameraPersisterRef.current?.flush();
       markerRef.current?.remove();
       markerRef.current = null;
       markerElementRef.current = null;
@@ -407,6 +435,14 @@ export function LiveCardioMap({
       markerElementRef.current = element;
       markerRef.current = new Marker({ element }).setLngLat(target).addTo(map);
     }
+
+    cameraPersisterRef.current?.saveView({
+      lng: target[0],
+      lat: target[1],
+      zoom: map.getZoom(),
+      bearing: map.getBearing(),
+      at: Date.now(),
+    });
   }, [anchor, ready]);
 
   // El halo se orienta respecto al mapa: en modo dirección apunta siempre arriba.

@@ -180,7 +180,12 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
               {hasRoute ? (
                 <div className="overflow-hidden">
                   <Suspense fallback={<div className="map-route-skeleton relative h-64 w-full" aria-hidden />}>
-                    <CardioRouteMap points={mapPoints} interactive className="h-64 w-full" />
+                    <CardioRouteMap
+                      points={mapPoints}
+                      interactive
+                      cameraKey={session.id}
+                      className="h-64 w-full"
+                    />
                   </Suspense>
                 </div>
               ) : (

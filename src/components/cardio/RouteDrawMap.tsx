@@ -13,6 +13,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 /** Vite empaqueta el worker + shared chunk; sin esto el mapa queda en blanco (404 del worker). */
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { MapBasemapControl } from "@/components/cardio/MapBasemapControl";
+import { useAuth } from "@/hooks/useAuth";
 import {
   firstMapLabelLayerId,
   loadMapBasemapStyle,
@@ -20,12 +21,15 @@ import {
   writeCardioMapBasemap,
   type MapBasemapId,
 } from "@/lib/mapBasemap";
+import {
+  createMapCameraPersister,
+  resolveCardioMapInitialView,
+} from "@/lib/mapCameraStorage";
 import { MAP_COLORS } from "@/lib/stravaDarkMapStyle";
 import { cn } from "@/lib/utils";
 
 setWorkerUrl(maplibreWorkerUrl);
 
-const DEFAULT_CENTER: [number, number] = [-3.7038, 40.4168];
 const DEFAULT_ZOOM = 14;
 const LOCATE_ZOOM = 16;
 
@@ -157,6 +161,17 @@ export function RouteDrawMap({
   routing = false,
   className,
 }: Props) {
+  const { user } = useAuth();
+  const userIdRef = useRef(user?.id);
+  userIdRef.current = user?.id;
+  const cameraPersisterRef = useRef<ReturnType<typeof createMapCameraPersister> | null>(null);
+  if (cameraPersisterRef.current === null) {
+    cameraPersisterRef.current = createMapCameraPersister({
+      getUserId: () => userIdRef.current,
+      screen: "draw",
+    });
+  }
+
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
@@ -180,10 +195,19 @@ export function RouteDrawMap({
   const onRemoveWaypointRef = useRef(onRemoveWaypoint);
   onRemoveWaypointRef.current = onRemoveWaypoint;
 
-  const initialCenterRef = useRef<[number, number] | null>(null);
-  if (initialCenterRef.current === null) {
+  const initialViewRef = useRef<{
+    center: [number, number];
+    zoom: number;
+    fromStorage: boolean;
+  } | null>(null);
+  if (initialViewRef.current === null) {
     const first = path[0] ?? waypoints[0] ?? null;
-    initialCenterRef.current = first ? [first.lng, first.lat] : DEFAULT_CENTER;
+    initialViewRef.current = resolveCardioMapInitialView({
+      userId: userIdRef.current,
+      screen: "draw",
+      geometry: first ? { center: [first.lng, first.lat], zoom: DEFAULT_ZOOM } : null,
+      fallbackZoom: DEFAULT_ZOOM,
+    });
   }
   const hadInitialPoint = useRef(Boolean(path.length || waypoints.length));
 
@@ -195,11 +219,12 @@ export function RouteDrawMap({
       const container = containerRef.current;
       if (cancelled || !container) return;
 
+      const initial = initialViewRef.current!;
       const map = new MapLibreMap({
         container,
         style,
-        center: initialCenterRef.current!,
-        zoom: DEFAULT_ZOOM,
+        center: initial.center,
+        zoom: initial.zoom,
         maxZoom: 19,
         attributionControl: false,
         dragRotate: false,
@@ -210,6 +235,7 @@ export function RouteDrawMap({
       mapRef.current = map;
       map.touchZoomRotate.disableRotation();
       map.addControl(new AttributionControl({ compact: true }), "bottom-right");
+      map.on("moveend", () => cameraPersisterRef.current?.save(map));
 
       map.on("click", (e) => {
         if (draggingRef.current || ignoreMapClickRef.current) return;
@@ -226,6 +252,8 @@ export function RouteDrawMap({
 
     return () => {
       cancelled = true;
+      if (mapRef.current) cameraPersisterRef.current?.save(mapRef.current, { immediate: true });
+      else cameraPersisterRef.current?.flush();
       for (const marker of markersRef.current) marker.remove();
       markersRef.current = [];
       mapRef.current?.remove();
@@ -270,10 +298,12 @@ export function RouteDrawMap({
       (position) => {
         const map = mapRef.current;
         if (cancelled || !map) return;
+        const restored = initialViewRef.current?.fromStorage;
         map.jumpTo({
           center: [position.coords.longitude, position.coords.latitude],
-          zoom: LOCATE_ZOOM,
+          ...(restored ? {} : { zoom: LOCATE_ZOOM }),
         });
+        cameraPersisterRef.current?.save(map, { immediate: true });
       },
       () => {},
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 300_000 },
@@ -368,6 +398,7 @@ export function RouteDrawMap({
           zoom: LOCATE_ZOOM,
           duration: 500,
         });
+        if (mapRef.current) cameraPersisterRef.current?.save(mapRef.current);
       },
       () => setLocating(false),
       { enableHighAccuracy: true, timeout: 10_000 },
