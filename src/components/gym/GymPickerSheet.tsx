@@ -91,7 +91,7 @@ export function GymPickerSheet({
             <DrawerHeader className="text-left">
               <DrawerTitle>Gimnasio</DrawerTitle>
               <DrawerDescription>
-                Elige dónde entrenas. Listado de España · © OpenStreetMap
+                Elige dónde entrenas. España · OSM y datos municipales
               </DrawerDescription>
             </DrawerHeader>
 

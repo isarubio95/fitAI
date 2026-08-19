@@ -6,7 +6,7 @@ import type { GimnasioCatalogItem, SelectedGimnasio } from "@/types/gimnasio";
 
 export const GIMNASIOS_QUERY_KEY = ["gimnasios"] as const;
 
-const CATALOG_SELECT = "id, nombre, lat, lng, direccion, ciudad, brand, source";
+const CATALOG_SELECT = "id, nombre, lat, lng, direccion, ciudad, brand, source, tipo";
 
 export async function fetchLastGimnasioForUser(userId: string): Promise<SelectedGimnasio | null> {
   const { data, error } = await supabase

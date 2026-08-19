@@ -4,7 +4,7 @@ export type Gimnasio = Tables<"gimnasio">;
 
 export type GimnasioCatalogItem = Pick<
   Gimnasio,
-  "id" | "nombre" | "lat" | "lng" | "direccion" | "ciudad" | "brand" | "source"
+  "id" | "nombre" | "lat" | "lng" | "direccion" | "ciudad" | "brand" | "source" | "tipo"
 >;
 
 export type SelectedGimnasio = {

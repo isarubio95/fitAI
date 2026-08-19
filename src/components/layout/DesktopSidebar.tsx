@@ -19,7 +19,7 @@ import {
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
-  { to: "/routines", icon: ClipboardList, label: "Rutinas" },
+  { to: "/routines", icon: ClipboardList, label: "Biblioteca" },
   { to: "/community", icon: Users, label: "Comunidad" },
   { to: "/evolution", icon: BarChart3, label: "Evolución" },
   { to: "/gimnasios", icon: MapPin, label: "Gimnasios" },

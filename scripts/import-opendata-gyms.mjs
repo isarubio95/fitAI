@@ -1,10 +1,13 @@
 /**
- * Importa centros municipales desde datos abiertos (Madrid, Barcelona) → `gimnasio`.
+ * Importa centros municipales desde datos abiertos → `gimnasio`.
  *
  * Uso:
  *   node scripts/import-opendata-gyms.mjs
- *   node scripts/import-opendata-gyms.mjs --city madrid
+ *   node scripts/import-opendata-gyms.mjs --city euskadi
  *   node scripts/import-opendata-gyms.mjs --dry-run
+ *
+ * No hay un censo nacional geolocalizado: cada fuente cubre su territorio
+ * (ciudad o CCAA). `--city all` recorre todas las fuentes con coordenadas.
  *
  * Variables:
  *   VITE_SUPABASE_URL o SUPABASE_URL
@@ -12,15 +15,32 @@
  */
 
 import { addressPatchFromIncoming, findNearbyDuplicate } from "./lib/gymDedup.mjs";
-import { barcelonaGymsFromRecords, madridGymsFromGraph } from "./lib/gymOpendata.mjs";
+import {
+  barcelonaGymsFromRecords,
+  donostiaGymsFromGeoJson,
+  euskadiGymsFromJson,
+  madridGymsFromGraph,
+  malagaGymsFromGeoJson,
+  valenciaGymsFromArcGis,
+  vigoGymsFromGeoJson,
+} from "./lib/gymOpendata.mjs";
 
 const UA = "TrackGym/0.1 (gimnasios-opendata; https://github.com/track-gym)";
-const MADRID_URL = "https://datos.madrid.es/egob/catalogo/200186-0-polideportivos.json";
-const BCN_RESOURCE_ID = "1e5279b3-5f66-4614-9138-671c32db17ce";
-const BCN_DATASTORE = `https://opendata-ajuntament.barcelona.cat/data/api/3/action/datastore_search?resource_id=${BCN_RESOURCE_ID}`;
 const BATCH_SIZE = 200;
 const PAGE_SIZE = 1000;
 const DEDUP_METERS = 80;
+
+const MADRID_URL = "https://datos.madrid.es/egob/catalogo/200186-0-polideportivos.json";
+const BCN_RESOURCE_ID = "1e5279b3-5f66-4614-9138-671c32db17ce";
+const BCN_DATASTORE = `https://opendata-ajuntament.barcelona.cat/data/api/3/action/datastore_search?resource_id=${BCN_RESOURCE_ID}`;
+const EUSKADI_URL = "https://intranet.euskalkirola.com/Content/assets/open_data/instalaciones_open_es.json";
+const MALAGA_URL =
+  "https://datosabiertos.malaga.eu/recursos/deportes/equipamientos/da_deportesCentrosDeportivos-4326.geojson";
+const VIGO_URL = "https://datos.vigo.org/data/deportes/ins-gimnasios.geojson";
+const DONOSTIA_URL =
+  "https://www.donostia.eus/datosabiertos/dataset/c1e52b76-6af8-4a1b-b182-dd168f901511/resource/648e5a5a-b60d-4079-bd4d-9e4b8e1092f7/download/kirolekipamenduak.json";
+const VALENCIA_LAYER =
+  "https://geoportal.valencia.es/server/rest/services/OPENDATA/SociedadBienestar/MapServer/1/query";
 
 function env(name, fallbackName) {
   return process.env[name] || (fallbackName ? process.env[fallbackName] : undefined);
@@ -69,6 +89,50 @@ async function fetchBarcelonaGyms() {
   }
   return barcelonaGymsFromRecords(records);
 }
+
+async function fetchEuskadiGyms() {
+  return euskadiGymsFromJson(await fetchJson(EUSKADI_URL));
+}
+
+async function fetchMalagaGyms() {
+  return malagaGymsFromGeoJson(await fetchJson(MALAGA_URL));
+}
+
+async function fetchVigoGyms() {
+  return vigoGymsFromGeoJson(await fetchJson(VIGO_URL));
+}
+
+async function fetchDonostiaGyms() {
+  return donostiaGymsFromGeoJson(await fetchJson(DONOSTIA_URL));
+}
+
+async function fetchValenciaGyms() {
+  const features = [];
+  let offset = 0;
+  const where = encodeURIComponent("UPPER(clase) LIKE '%DEPORT%'");
+  while (true) {
+    const url = `${VALENCIA_LAYER}?where=${where}&outFields=equipamien,identifica,clase,objectid&outSR=4326&f=json&resultRecordCount=${PAGE_SIZE}&resultOffset=${offset}`;
+    const payload = await fetchJson(url);
+    const chunk = payload?.features;
+    if (!Array.isArray(chunk) || chunk.length === 0) break;
+    features.push(...chunk);
+    if (chunk.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+  return valenciaGymsFromArcGis({ features });
+}
+
+const SOURCES = [
+  { id: "madrid", label: "Madrid (polideportivos municipales)", fetch: fetchMadridGyms },
+  { id: "barcelona", label: "Barcelona (CEM municipales)", fetch: fetchBarcelonaGyms },
+  { id: "euskadi", label: "Euskadi (censo autonómico, todos los municipios)", fetch: fetchEuskadiGyms },
+  { id: "malaga", label: "Málaga (centros deportivos)", fetch: fetchMalagaGyms },
+  { id: "valencia", label: "Valencia (instalaciones deportivas)", fetch: fetchValenciaGyms },
+  { id: "vigo", label: "Vigo (gimnasios municipales)", fetch: fetchVigoGyms },
+  { id: "donostia", label: "Donostia / San Sebastián (equipamientos)", fetch: fetchDonostiaGyms },
+];
+
+const SOURCE_IDS = SOURCES.map((s) => s.id);
 
 async function fetchExistingCatalog(url, key) {
   const rows = [];
@@ -125,17 +189,18 @@ async function patchGym(url, key, id, patch) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const idsHelp = SOURCE_IDS.join("|");
   if (args.help) {
-    console.log(`Uso: node scripts/import-opendata-gyms.mjs [--dry-run] [--city madrid|barcelona|all]
+    console.log(`Uso: node scripts/import-opendata-gyms.mjs [--dry-run] [--city ${idsHelp}|all]
 
 Requiere SUPABASE_SERVICE_ROLE_KEY y VITE_SUPABASE_URL (o SUPABASE_URL).
-Madrid: polideportivos municipales (CC BY 4.0). Barcelona: CEM / municipales (CC BY 4.0).
+Fuentes con coordenadas (CC BY / ODC-BY). El censo de Andalucía no trae lat/lng y se omite.
 `);
     return;
   }
 
-  if (!["all", "madrid", "barcelona"].includes(args.city)) {
-    throw new Error("Usa --city madrid, barcelona o all");
+  if (args.city !== "all" && !SOURCE_IDS.includes(args.city)) {
+    throw new Error(`Usa --city ${idsHelp} o all`);
   }
 
   const supabaseUrl = env("SUPABASE_URL", "VITE_SUPABASE_URL");
@@ -144,18 +209,17 @@ Madrid: polideportivos municipales (CC BY 4.0). Barcelona: CEM / municipales (CC
     throw new Error("Faltan SUPABASE_URL/VITE_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY");
   }
 
+  const selected = args.city === "all" ? SOURCES : SOURCES.filter((s) => s.id === args.city);
   const incoming = [];
-  if (args.city === "all" || args.city === "madrid") {
-    console.log("Descargando polideportivos de Madrid…");
-    const madrid = await fetchMadridGyms();
-    console.log(`  ${madrid.length} centros municipales`);
-    incoming.push(...madrid);
-  }
-  if (args.city === "all" || args.city === "barcelona") {
-    console.log("Descargando instalaciones municipales de Barcelona…");
-    const barcelona = await fetchBarcelonaGyms();
-    console.log(`  ${barcelona.length} CEM / municipales`);
-    incoming.push(...barcelona);
+  for (const source of selected) {
+    console.log(`Descargando ${source.label}…`);
+    try {
+      const rows = await source.fetch();
+      console.log(`  ${rows.length} centros`);
+      incoming.push(...rows);
+    } catch (err) {
+      console.warn(`  Falló ${source.id}: ${err instanceof Error ? err.message : err}`);
+    }
   }
 
   let existing = [];
@@ -201,7 +265,7 @@ Madrid: polideportivos municipales (CC BY 4.0). Barcelona: CEM / municipales (CC
   for (const item of toPatch) {
     await patchGym(url, serviceKey, item.id, item.patch);
   }
-  console.log("Listo. Atribución: Ayuntamiento de Madrid y Ajuntament de Barcelona (CC BY 4.0).");
+  console.log("Listo. Atribución: portales municipales y Open Data Euskadi (CC BY / ODC-BY).");
 }
 
 main().catch((err) => {

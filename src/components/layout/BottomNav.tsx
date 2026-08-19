@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, BarChart3, ClipboardList, Plus, Users } from "lucide-react";
+import { Home, BarChart3, ClipboardList, CirclePlus, Users } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,7 @@ import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
-  { to: "/routines", icon: ClipboardList, label: "Rutinas" },
+  { to: "/routines", icon: ClipboardList, label: "Biblioteca" },
   { type: "add" },
   { to: "/community", icon: Users, label: "Comunidad" },
   { to: "/evolution", icon: BarChart3, label: "Evolución" },
@@ -131,7 +131,7 @@ export function BottomNav({
       </div>
 
       {/* BARRA DE NAVEGACIÓN */}
-      <div className="relative flex items-center justify-around border-t border-border/50 p-2">
+      <div className="relative flex items-center justify-around border-t border-border/50 px-2 py-2.5">
         {navItems.map((item, index) => {
           // Renderizado del botón central +
           if (item.type === "add") {
@@ -145,19 +145,27 @@ export function BottomNav({
                     }
                     setIsMenuOpen(!isMenuOpen);
                   }}
-                  className="touch-styled group flex flex-col items-center justify-center gap-1 focus:outline-none"
+                  className={cn(
+                    "touch-styled group flex flex-col items-center justify-center gap-1",
+                    "transition-transform duration-200 ease-out active:scale-[0.94] active:duration-100",
+                    "focus:outline-none"
+                  )}
                 >
-                  <div className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform duration-200 ease-out active:scale-[0.94] active:duration-100",
-                    isMenuOpen && "rotate-45 drop-shadow-[0_0_12px_rgba(var(--primary),0.6)]" // Rotación y neón
-                  )}>
-                    <Plus className="h-5 w-5 stroke-[2px]" />
+                  <div className="relative">
+                    <CirclePlus
+                      className={cn(
+                        "h-6 w-6 stroke-[2px] transition-[color,transform] duration-200 ease-out",
+                        isMenuOpen
+                          ? "rotate-45 nav-icon-pop text-primary"
+                          : "text-muted-foreground dark:text-foreground group-hover:text-foreground"
+                      )}
+                    />
                   </div>
                   <span
                     className={cn(
-                      "text-[10px] font-medium tracking-wide transition-colors duration-300",
+                      "text-[10px] font-medium tracking-wide transition-colors duration-200",
                       isMenuOpen
-                        ? "text-foreground"
+                        ? "text-primary"
                         : "text-muted-foreground dark:text-foreground"
                     )}
                   >

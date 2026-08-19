@@ -15,6 +15,7 @@ function gym(partial: Partial<GimnasioCatalogItem> & Pick<GimnasioCatalogItem, "
     ciudad: null,
     brand: null,
     source: "osm",
+    tipo: "unknown",
     ...partial,
   };
 }

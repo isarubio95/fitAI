@@ -67,6 +67,7 @@ describe("GymPickerSheet", () => {
           direccion: "Calle Mayor 12",
           brand: "Basic-Fit",
           source: "osm",
+          tipo: "private",
         },
         {
           id: "g-last",
@@ -77,6 +78,7 @@ describe("GymPickerSheet", () => {
           direccion: null,
           brand: null,
           source: "user",
+          tipo: "unknown",
         },
       ],
     });
@@ -90,6 +92,7 @@ describe("GymPickerSheet", () => {
       ),
     );
 
+    expect(screen.getByText(/España · OSM y datos municipales/)).toBeInTheDocument();
     expect(screen.getByText("Basic-Fit (Calle Mayor 12)")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Basic-Fit (Calle Mayor 12)"));
     expect(onSelect).toHaveBeenCalledWith({

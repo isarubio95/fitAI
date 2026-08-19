@@ -4,8 +4,80 @@ const MUNICIPAL_RE =
   /\b(centro\s+deportivo\s+municipal|centre\s+esportiu\s+municipal|polideportivo\s+municipal|poliesportiu\s+municipal|gimnasio\s+municipal|gimnas\s+municipal|cem|cdm)\b/;
 
 const MUNICIPAL_WORD_RE = /\bmunicipal\b/;
-const SPORT_SITE_RE = /\b(deportiv|esportiv|polideportiv|poliesportiv|gimnas|fitness|musculaci)\w*\b/;
+const SPORT_SITE_RE =
+  /\b(deportiv|esportiv|polideportiv|poliesportiv|gimnas|ximnasi|fitness|musculaci|kiroldeg|pabellon|pavello)\w*\b/;
+const GYM_CORE_RE =
+  /\b(polideportiv|poliesportiv|gimnas|ximnasi|fitness|musculaci|kiroldegi|centro deportivo|centre esportiu|complex esportiu|pabellon|pavello|cem|cdm)/;
+const PITCH_ONLY_RE = /\b(campo de futbol|camp de futbol|pista de tenis|fronton|pilotaleku)\b/;
 const PRIVATE_ORG_RE = /\b(club|federacio|federacion|penya|pena|associacio|asociacion)\b/;
+
+/**
+ * @param  {...(string | null | undefined)} parts
+ */
+export function isGymLikeFacilityName(...parts) {
+  const text = normalizeGymName(parts.filter(Boolean).join(" "));
+  if (!text) return false;
+  if (GYM_CORE_RE.test(text) || isMunicipalFacilityName(text)) return true;
+  if (PITCH_ONLY_RE.test(text)) return false;
+  return false;
+}
+
+/**
+ * @param {unknown} owner
+ */
+export function isPublicLocalOwner(owner) {
+  const text = normalizeGymName(Array.isArray(owner) ? owner.join(" ") : String(owner ?? ""));
+  return /\b(ayuntamiento|udala|administracion local|concello|ajuntament)\b/.test(text);
+}
+
+/**
+ * @param {{
+ *   provider: string,
+ *   externalId: string | number,
+ *   nombre: string,
+ *   lat: number,
+ *   lng: number,
+ *   direccion?: string | null,
+ *   ciudad?: string | null,
+ * }} input
+ */
+export function opendataRow(input) {
+  const nombre = String(input.nombre ?? "").trim();
+  const lat = Number(input.lat);
+  const lng = Number(input.lng);
+  const externalId = String(input.externalId ?? "").trim();
+  if (!nombre || !externalId) return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return {
+    provider: input.provider.slice(0, 40),
+    external_id: externalId.slice(0, 80),
+    nombre: nombre.slice(0, 120),
+    lat,
+    lng,
+    direccion: input.direccion?.trim() || null,
+    ciudad: (input.ciudad?.trim() || null)?.slice(0, 80) ?? null,
+    brand: null,
+    source: "opendata",
+    tipo: "municipal",
+  };
+}
+
+/**
+ * @param {unknown} geom
+ * @returns {{ lat: number, lng: number } | null}
+ */
+export function pointFromGeoJson(geom) {
+  if (!geom || typeof geom !== "object") return null;
+  const type = geom.type;
+  const coords = geom.coordinates;
+  if (type === "Point" && Array.isArray(coords) && coords.length >= 2) {
+    const lng = Number(coords[0]);
+    const lat = Number(coords[1]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  }
+  return null;
+}
 
 /**
  * @param  {...(string | null | undefined)} parts
@@ -122,4 +194,152 @@ export function barcelonaGymsFromRecords(records) {
     }
   }
   return [...byInstitution.values()];
+}
+
+/**
+ * Censo autonómico de Euskadi (todas las localidades vascas).
+ * @param {unknown} payload
+ */
+export function euskadiGymsFromJson(payload) {
+  if (!Array.isArray(payload)) return [];
+  const rows = [];
+  const seen = new Set();
+  for (const item of payload) {
+    if (!item || typeof item !== "object") continue;
+    const nombre = String(item.Nombre || "").trim();
+    const ciudad = String(item.Municipio || "").trim();
+    if (!isGymLikeFacilityName(nombre)) continue;
+
+    const xy = item.Geoposición_XY && typeof item.Geoposición_XY === "object" ? item.Geoposición_XY : {};
+    const lat = Number(xy.X);
+    const lng = Number(xy.Y);
+    const id = item.Codigo == null ? "" : String(item.Codigo);
+    if (seen.has(id)) continue;
+    const row = opendataRow({
+      provider: "euskadi",
+      externalId: id,
+      nombre,
+      lat,
+      lng,
+      direccion: String(item.Direccion || "").trim() || null,
+      ciudad,
+    });
+    if (!row) continue;
+    seen.add(id);
+    rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * @param {unknown} geojson
+ */
+export function malagaGymsFromGeoJson(geojson) {
+  const features = geojson?.features;
+  if (!Array.isArray(features)) return [];
+  const rows = [];
+  for (const feature of features) {
+    const props = feature?.properties && typeof feature.properties === "object" ? feature.properties : {};
+    const point = pointFromGeoJson(feature.geometry);
+    if (!point) continue;
+    const nombre = String(props.NOMBRE || "").trim();
+    const row = opendataRow({
+      provider: "malaga",
+      externalId: props.ID ?? props.FID ?? nombre,
+      nombre,
+      lat: point.lat,
+      lng: point.lng,
+      direccion: String(props.DIRECCION || "").trim() || null,
+      ciudad: "Málaga",
+    });
+    if (row) rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * @param {unknown} geojson
+ */
+export function vigoGymsFromGeoJson(geojson) {
+  const features = geojson?.features;
+  if (!Array.isArray(features)) return [];
+  const rows = [];
+  for (const feature of features) {
+    const props = feature?.properties && typeof feature.properties === "object" ? feature.properties : {};
+    const point = pointFromGeoJson(feature.geometry);
+    if (!point) continue;
+    const nombre = String(props.nombre || "").trim();
+    const row = opendataRow({
+      provider: "vigo",
+      externalId: props.id ?? nombre,
+      nombre,
+      lat: Number(props.lat) || point.lat,
+      lng: Number(props.lon) || point.lng,
+      direccion: String(props.calle || "").trim() || null,
+      ciudad: "Vigo",
+    });
+    if (row) rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * @param {unknown} payload ArcGIS FeatureSet (outSR=4326)
+ */
+export function valenciaGymsFromArcGis(payload) {
+  const features = payload?.features;
+  if (!Array.isArray(features)) return [];
+  const rows = [];
+  const seen = new Set();
+  for (const feature of features) {
+    const attrs = feature?.attributes && typeof feature.attributes === "object" ? feature.attributes : {};
+    const geom = feature?.geometry && typeof feature.geometry === "object" ? feature.geometry : {};
+    const nombre = String(attrs.equipamien || "").trim();
+    const clase = String(attrs.clase || "");
+    if (!/deport/i.test(clase) && !isGymLikeFacilityName(nombre)) continue;
+    if (!isGymLikeFacilityName(nombre) && !/complejo|complex|instalaci/i.test(nombre)) continue;
+    const id = String(attrs.identifica || attrs.objectid || "").trim();
+    if (!id || seen.has(id)) continue;
+    const row = opendataRow({
+      provider: "valencia",
+      externalId: id,
+      nombre,
+      lat: Number(geom.y),
+      lng: Number(geom.x),
+      direccion: null,
+      ciudad: "Valencia",
+    });
+    if (!row) continue;
+    seen.add(id);
+    rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * @param {unknown} geojson
+ */
+export function donostiaGymsFromGeoJson(geojson) {
+  const features = geojson?.features;
+  if (!Array.isArray(features)) return [];
+  const rows = [];
+  for (const feature of features) {
+    const props = feature?.properties && typeof feature.properties === "object" ? feature.properties : {};
+    const point = pointFromGeoJson(feature.geometry);
+    if (!point) continue;
+    const nombre = String(props.NomEdifici || props.IzenEraiki || "").trim();
+    const subtipo = String(props.Subtipo || props.AzpiMota || "");
+    if (!isGymLikeFacilityName(nombre, subtipo)) continue;
+    const row = opendataRow({
+      provider: "donostia",
+      externalId: props.Indizea ?? nombre,
+      nombre,
+      lat: point.lat,
+      lng: point.lng,
+      direccion: String(props.NomCalle || props.IzenKalea || "").trim() || null,
+      ciudad: "Donostia / San Sebastián",
+    });
+    if (row) rows.push(row);
+  }
+  return rows;
 }

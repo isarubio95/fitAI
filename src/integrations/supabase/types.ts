@@ -870,13 +870,16 @@ export type Database = {
           created_at: string
           created_by: string | null
           direccion: string | null
+          external_id: string | null
           id: string
           lat: number
           lng: number
           nombre: string
           osm_id: number | null
           osm_type: string | null
+          provider: string | null
           source: string
+          tipo: string
         }
         Insert: {
           brand?: string | null
@@ -884,13 +887,16 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           direccion?: string | null
+          external_id?: string | null
           id?: string
           lat: number
           lng: number
           nombre: string
           osm_id?: number | null
           osm_type?: string | null
+          provider?: string | null
           source?: string
+          tipo?: string
         }
         Update: {
           brand?: string | null
@@ -898,13 +904,16 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           direccion?: string | null
+          external_id?: string | null
           id?: string
           lat?: number
           lng?: number
           nombre?: string
           osm_id?: number | null
           osm_type?: string | null
+          provider?: string | null
           source?: string
+          tipo?: string
         }
         Relationships: [
           {

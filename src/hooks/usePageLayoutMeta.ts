@@ -11,7 +11,7 @@ export function usePageLayoutMeta() {
       : location.pathname === "/evolution"
         ? "Evolución"
         : location.pathname === "/routines"
-          ? "Rutinas"
+          ? "Biblioteca"
           : location.pathname === "/community"
             ? "Comunidad"
             : location.pathname === "/cardio-routines"

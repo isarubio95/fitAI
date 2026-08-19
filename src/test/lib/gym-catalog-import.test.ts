@@ -13,8 +13,14 @@ import {
 } from "../../../scripts/lib/gymDedup.mjs";
 import {
   barcelonaGymsFromRecords,
+  donostiaGymsFromGeoJson,
+  euskadiGymsFromJson,
   isBarcelonaMunicipalFacility,
+  isGymLikeFacilityName,
   madridGymsFromGraph,
+  malagaGymsFromGeoJson,
+  valenciaGymsFromArcGis,
+  vigoGymsFromGeoJson,
 } from "../../../scripts/lib/gymOpendata.mjs";
 
 describe("filtros OSM", () => {
@@ -241,5 +247,82 @@ describe("datos abiertos municipales", () => {
       nombre: "Centre Esportiu Municipal Can Dragó",
       tipo: "municipal",
     });
+  });
+
+  it("filtra el censo de Euskadi a kiroldegi/gimnasio y usa X/Y como lat/lng", () => {
+    expect(isGymLikeFacilityName("Kiroldegia Municipal")).toBe(true);
+    expect(isGymLikeFacilityName("FRONTÓN MUNICIPAL MENDIBARREN")).toBe(false);
+    const rows = euskadiGymsFromJson([
+      {
+        Codigo: 1,
+        Nombre: "KIROLDEGIA MUNICIPAL",
+        Municipio: "Berriatua",
+        Direccion: "ZEHARBIDE 10",
+        Geoposición_XY: { X: "43.3079", Y: "-2.4671" },
+      },
+      {
+        Codigo: 2,
+        Nombre: "FRONTÓN MUNICIPAL MENDIBARREN",
+        Municipio: "Berriatua",
+        Geoposición_XY: { X: "43.30", Y: "-2.46" },
+      },
+    ]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      provider: "euskadi",
+      ciudad: "Berriatua",
+      lat: 43.3079,
+      lng: -2.4671,
+    });
+  });
+
+  it("mapea GeoJSON de Málaga, Vigo, Donostia y ArcGIS de Valencia", () => {
+    expect(
+      malagaGymsFromGeoJson({
+        features: [
+          {
+            geometry: { type: "Point", coordinates: [-4.42, 36.75] },
+            properties: { ID: 249, NOMBRE: "PISCINA MUNICIPAL", DIRECCION: "AVENIDA 16" },
+          },
+        ],
+      })[0],
+    ).toMatchObject({ provider: "malaga", ciudad: "Málaga", nombre: "PISCINA MUNICIPAL" });
+
+    expect(
+      vigoGymsFromGeoJson({
+        features: [
+          {
+            geometry: { type: "Point", coordinates: [-8.73, 42.23] },
+            properties: { id: 784, nombre: "Ximnasio Municipal do Berbés", calle: "RUA 1", lat: 42.23, lon: -8.73 },
+          },
+        ],
+      }),
+    ).toHaveLength(1);
+
+    expect(
+      donostiaGymsFromGeoJson({
+        features: [
+          {
+            geometry: { type: "Point", coordinates: [-1.97, 43.3] },
+            properties: { NomEdifici: "KIROLDEGIA", Subtipo: "POLIDEPORTIVO", Indizea: "1", NomCalle: "Paseo" },
+          },
+          {
+            geometry: { type: "Point", coordinates: [-1.97, 43.3] },
+            properties: { NomEdifici: "ANOETAKO UDAL ESTADIOA", Subtipo: "CAMPO FUTBOL", Indizea: "2" },
+          },
+        ],
+      }).map((r) => r.nombre),
+    ).toEqual(["KIROLDEGIA"]);
+
+    expect(
+      valenciaGymsFromArcGis({
+        features: [
+          {
+            attributes: { identifica: "3171", equipamien: "COMPLEX ESPORTIU PATRAIX", clase: "Instalaciones deportivas" },
+            geometry: { x: -0.39, y: 39.46 },
+          },
+        ],
+      })[0],
+    ).toMatchObject({ provider: "valencia", ciudad: "Valencia" });
   });
 });
