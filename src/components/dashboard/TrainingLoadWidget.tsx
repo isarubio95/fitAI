@@ -16,7 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CHART_AREA_OPACITY, chartAxis, chartColors, chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
-import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
+import {
+  AnimatedTabsList,
+  pillTabsListClass,
+  pillTabsTriggerClass,
+  Tabs,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useTrainingLoad, type TrainingLoadData, type TrainingLoadPoint } from "@/hooks/useTrainingLoad";
 import {
@@ -52,6 +58,8 @@ type RangeKey = (typeof RANGE_OPTIONS)[number]["key"];
 const TRAINING_LOAD_RANGE_STORAGE_KEY = "gym-log.training-load.range";
 const TRAINING_LOAD_DATA_STORAGE_KEY = "gym-log.training-load.data.v2";
 const X_AXIS_HEIGHT = 28;
+// Altura del gráfico (ResponsiveContainer) para alinear con `ExerciseProgressWidget` (1RM).
+const CHART_HEIGHT = 190;
 
 function isValidRangeKey(value: string): value is RangeKey {
   return RANGE_OPTIONS.some((option) => option.key === value);
@@ -148,6 +156,10 @@ export function TrainingLoadWidget() {
       // ignore
     }
   }, [range]);
+
+  const handleRangeChange = useCallback((value: string) => {
+    if (isValidRangeKey(value)) setRange(value);
+  }, []);
 
   const resolvedData = data?.points?.length ? data : cachedData;
   const showDynamicSkeleton = isFetching && !!resolvedData;
@@ -277,25 +289,22 @@ export function TrainingLoadWidget() {
           </>
         )}
 
-        <div className="flex w-full gap-3 pt-1">
-          {RANGE_OPTIONS.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              className={cn(
-                filterPillBase,
-                "h-7 min-w-0 flex-1 px-2 py-0 text-center text-[13px]",
-                range === option.key ? filterPillActive : filterPillInactive,
-              )}
-              onClick={() => setRange(option.key)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <Tabs value={range} onValueChange={handleRangeChange} className="w-full pt-1">
+          <AnimatedTabsList value={range} className={cn(pillTabsListClass, "w-full")}>
+            {RANGE_OPTIONS.map((option) => (
+              <TabsTrigger
+                key={option.key}
+                value={option.key}
+                className={cn(pillTabsTriggerClass, "min-w-0 flex-1 px-2")}
+              >
+                {option.label}
+              </TabsTrigger>
+            ))}
+          </AnimatedTabsList>
+        </Tabs>
 
         {showDynamicSkeleton ? (
-          <Skeleton className="h-52 w-full" />
+          <Skeleton className="h-[190px] w-full" />
         ) : (
           <>
             {displayRow && (
@@ -321,7 +330,7 @@ export function TrainingLoadWidget() {
                 />
               </ChartScrubSummary>
             )}
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
               <ComposedChart
                 key={range}
                 data={chartData}
