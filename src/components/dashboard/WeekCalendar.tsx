@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   startOfWeek,
   addDays,
-  addWeeks,
-  subWeeks,
   isToday,
   isBefore,
   startOfDay,
@@ -12,7 +10,7 @@ import {
   isSameMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Pencil, Trash2, Eye } from "lucide-react";
+import { Pencil, Trash2, Eye } from "lucide-react";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import {
   CalendarDayCircleContent,
@@ -217,9 +215,6 @@ export function WeekCalendar({
     return () => window.clearTimeout(t);
   }, [editPlanned]);
 
-  const goBack = () => onDateSelect(subWeeks(selectedDate ?? weekStart, 1));
-  const goForward = () => onDateSelect(addWeeks(selectedDate ?? weekStart, 1));
-
   const panelDayKey = expandPanel?.dayKey ?? null;
   const expandedDate = panelDayKey ? new Date(`${panelDayKey}T00:00:00`) : null;
   const expandedWorkouts = panelDayKey ? workoutsByDay.get(panelDayKey) ?? [] : [];
@@ -230,20 +225,6 @@ export function WeekCalendar({
 
   return (
     <div className="w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-4">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goBack}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <h2 className="text-base font-semibold capitalize">
-          {format(weekStart, "d", { locale: es })} -{" "}
-          {format(addDays(weekStart, 6), "d 'de' MMMM", { locale: es })}
-        </h2>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goForward}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
       {/* Day labels */}
       <div className="grid grid-cols-7 text-center text-xs font-medium text-muted-foreground mb-1 px-2">
         {DAY_LABELS.map((d) => (

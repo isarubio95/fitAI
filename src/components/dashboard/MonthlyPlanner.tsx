@@ -8,12 +8,10 @@ import {
   isSameMonth,
   isBefore,
   startOfDay,
-  addMonths,
-  subMonths,
   format,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Pencil, Trash2, Eye } from "lucide-react";
+import { Pencil, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,7 +68,6 @@ function getCardioSessionLabel(session: CardioSesionWithDetails): string {
 
 interface MonthlyPlannerProps {
   month: Date;
-  onMonthChange: (d: Date) => void;
   workouts: ActividadWithDetails[];
   cardioSessions: CardioSesionWithDetails[];
   /** false mientras cargan entrenamientos o cardio desde el padre */
@@ -87,7 +84,6 @@ const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 export function MonthlyPlanner({
   month,
-  onMonthChange,
   workouts,
   cardioSessions,
   activityDataReady = true,
@@ -213,29 +209,6 @@ export function MonthlyPlanner({
 
   return (
     <div className="w-full">
-      {/* Header (padding para que las flechas no queden pegadas a los bordes de la card) */}
-      <div className="flex items-center justify-between mb-4 px-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => onMonthChange(subMonths(month, 1))}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <h2 className="text-base font-semibold capitalize">
-          {format(month, "MMMM yyyy", { locale: es })}
-        </h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => onMonthChange(addMonths(month, 1))}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
       {/* Day labels */}
       <div className="grid grid-cols-7 text-center text-xs font-medium text-muted-foreground mb-1 px-2">
         {DAY_LABELS.map((d) => (

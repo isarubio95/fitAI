@@ -9,9 +9,10 @@ import { useMonthCardioSessionDates, useMonthCardioSessions } from "@/hooks/useC
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Calendar as CalendarIcon, Pencil, ArrowUpDown, GripHorizontal, Check } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Pencil, ArrowUpDown, GripHorizontal, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
 import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
+import { CalendarPeriodPicker } from "@/components/dashboard/CalendarPeriodPicker";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
 import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
@@ -20,7 +21,8 @@ import { AnimatedTabsList, pillTabsListClass, pillTabsTriggerClass, Tabs, TabsTr
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { CardioDetailsSheet } from "@/components/cardio/CardioDetailsSheet";
 import { ProgramWizard, deriveRoutineByDayFromPlanned } from "@/components/dashboard/ProgramWizard";
-import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears } from "date-fns";
+import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears, addMonths, subMonths, addWeeks, subWeeks, addDays } from "date-fns";
+import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
@@ -256,6 +258,38 @@ const Dashboard = () => {
     setCalendarMonth(month);
   };
 
+  const displayedWeekStart = useMemo(
+    () => startOfWeek(selectedDate ?? weekViewStart ?? new Date(), { weekStartsOn: 1 }),
+    [selectedDate, weekViewStart],
+  );
+
+  const calendarPeriodLabel =
+    calendarView === "month"
+      ? format(calendarMonth, "MMMM yyyy", { locale: es })
+      : `${format(displayedWeekStart, "d", { locale: es })} - ${format(addDays(displayedWeekStart, 6), "d 'de' MMMM", { locale: es })}`;
+
+  const goCalendarBack = () => {
+    if (calendarView === "month") {
+      handleMonthChange(subMonths(calendarMonth, 1));
+    } else {
+      handleWeekDaySelect(subWeeks(selectedDate ?? displayedWeekStart, 1));
+    }
+  };
+
+  const goCalendarForward = () => {
+    if (calendarView === "month") {
+      handleMonthChange(addMonths(calendarMonth, 1));
+    } else {
+      handleWeekDaySelect(addWeeks(selectedDate ?? displayedWeekStart, 1));
+    }
+  };
+
+  const selectCalendarWeek = (date: Date) => {
+    setSelectedDate(date);
+    setWeekViewStart(startOfWeek(date, { weekStartsOn: 1 }));
+    setCalendarMonth(startOfMonth(date));
+  };
+
   const openWorkoutDetails = (id: string) => {
     if (isDragMode) return;
     setWorkoutDetailsId(id);
@@ -371,6 +405,44 @@ const Dashboard = () => {
           <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
             <CardHeader className="space-y-3 px-6 pt-8 pb-4">
               <div className="flex w-full flex-row items-center justify-between gap-2">
+                <CalendarPeriodPicker
+                  view={calendarView}
+                  label={calendarPeriodLabel}
+                  month={calendarMonth}
+                  weekStart={displayedWeekStart}
+                  onSelectMonth={handleMonthChange}
+                  onSelectWeek={selectCalendarWeek}
+                />
+                <div className="flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={goCalendarBack}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={goCalendarForward}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="flex w-full flex-row items-center justify-between gap-2">
+                <Tabs value={calendarView} onValueChange={(v) => handleCalendarViewChange(v as "month" | "week")}>
+                  <AnimatedTabsList value={calendarView} className={pillTabsListClass}>
+                    <TabsTrigger value="month" className={pillTabsTriggerClass}>
+                      Mes
+                    </TabsTrigger>
+                    <TabsTrigger value="week" className={pillTabsTriggerClass}>
+                      Semana
+                    </TabsTrigger>
+                  </AnimatedTabsList>
+                </Tabs>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -416,16 +488,6 @@ const Dashboard = () => {
                     </span>
                   </span>
                 </Button>
-                <Tabs value={calendarView} onValueChange={(v) => handleCalendarViewChange(v as "month" | "week")}>
-                  <AnimatedTabsList value={calendarView} className={pillTabsListClass}>
-                    <TabsTrigger value="month" className={pillTabsTriggerClass}>
-                      Mes
-                    </TabsTrigger>
-                    <TabsTrigger value="week" className={pillTabsTriggerClass}>
-                      Semana
-                    </TabsTrigger>
-                  </AnimatedTabsList>
-                </Tabs>
               </div>
             </CardHeader>
             <CardContent className="p-0 pb-5 pt-0">
@@ -441,7 +503,6 @@ const Dashboard = () => {
                     {calendarView === "month" ? (
                       <MonthlyPlanner
                         month={calendarMonth}
-                        onMonthChange={handleMonthChange}
                         workouts={monthWorkouts ?? []}
                         cardioSessions={monthCardioSessions ?? []}
                         activityDataReady={monthCalendarActivityReady}
