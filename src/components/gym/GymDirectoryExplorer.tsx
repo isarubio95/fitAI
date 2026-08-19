@@ -6,6 +6,7 @@ import { useGimnasiosCatalog } from "@/hooks/useGimnasios";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
 import { formatGymDistance, formatGimnasioListTitle, duplicateGymNames, rankGimnasios } from "@/lib/gimnasioSearch";
 import type { GimnasioCatalogItem, SelectedGimnasio } from "@/types/gimnasio";
+import { cn } from "@/lib/utils";
 
 const GymDirectoryMap = lazy(() =>
   import("@/components/gym/GymDirectoryMap").then((m) => ({ default: m.GymDirectoryMap })),
@@ -109,8 +110,10 @@ export function GymDirectoryExplorer({
 
       {selected ? (
         <div
-          className="pointer-events-none absolute inset-x-0 z-20 px-3 pr-16 md:px-4"
-          style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+          className={cn(
+            "pointer-events-none absolute inset-x-0 z-20 px-3 pr-16 md:bottom-3 md:px-4",
+            "max-md:bottom-[calc(var(--app-bottom-nav-inset,env(safe-area-inset-bottom,0px))+0.75rem)]",
+          )}
         >
           <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-border/60 bg-card/95 p-4 shadow-lg backdrop-blur-sm">
             <p className="text-sm font-semibold leading-snug">
