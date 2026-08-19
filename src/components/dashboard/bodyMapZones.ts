@@ -1,8 +1,9 @@
 // Mapa muscular vectorial detallado (coordenadas SVG originales).
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 
-export const FRONT_BODY_MAP_VIEWBOX = "0 0 724 1448";
-export const BACK_BODY_MAP_VIEWBOX = "724 0 724 1448";
+// Recorte compartido (mismo ancho/alto) para que frente y espalda escalen igual.
+export const FRONT_BODY_MAP_VIEWBOX = "45 76 638 1283";
+export const BACK_BODY_MAP_VIEWBOX = "765 76 638 1283";
 
 export type BodyMapZone = {
   group: MainMuscleGroup | null;

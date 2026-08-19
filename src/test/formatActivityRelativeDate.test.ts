@@ -32,6 +32,15 @@ describe("formatActivityRelativeDate", () => {
   it("acepta fechas inválidas", () => {
     expect(formatActivityRelativeDate("invalid")).toBe("");
   });
+
+  it("devuelve formato compacto para badges estrechas", () => {
+    expect(formatActivityRelativeDate(new Date(2026, 5, 27), now, { compact: true })).toBe("hoy");
+    expect(formatActivityRelativeDate(new Date(2026, 5, 26), now, { compact: true })).toBe("ayer");
+    expect(formatActivityRelativeDate(new Date(2026, 5, 21), now, { compact: true })).toBe("hace 6d");
+    expect(formatActivityRelativeDate(new Date(2026, 5, 13), now, { compact: true })).toBe("hace 2 sem");
+    expect(formatActivityRelativeDate(new Date(2026, 4, 27), now, { compact: true })).toBe("hace 1 mes");
+    expect(formatActivityRelativeDate(new Date(2025, 5, 27), now, { compact: true })).toBe("hace 1 a");
+  });
 });
 
 describe("formatActivityAbsoluteDate", () => {

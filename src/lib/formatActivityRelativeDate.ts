@@ -18,6 +18,7 @@ function toValidDate(value: string | Date): Date | null {
 export function formatActivityRelativeDate(
   dateInput: string | Date,
   referenceDate: Date = new Date(),
+  options?: { compact?: boolean },
 ): string {
   const date = toValidDate(dateInput);
   if (!date) return "";
@@ -27,6 +28,23 @@ export function formatActivityRelativeDate(
   const days = differenceInCalendarDays(today, target);
 
   if (days < 0) return "";
+
+  if (options?.compact) {
+    if (days === 0) return "hoy";
+    if (days === 1) return "ayer";
+    if (days < 7) return `hace ${days}d`;
+    if (days < 30) return `hace ${Math.floor(days / 7)} sem`;
+
+    if (days < 365) {
+      const months = differenceInCalendarMonths(today, target);
+      if (months <= 0) return `hace ${Math.floor(days / 7)} sem`;
+      return `hace ${months} mes`;
+    }
+
+    const years = differenceInCalendarYears(today, target);
+    return `hace ${years} a`;
+  }
+
   if (days === 0) return "Hoy";
   if (days === 1) return "Ayer";
   if (days < 7) return `Hace ${days} días`;

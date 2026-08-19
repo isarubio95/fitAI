@@ -15,7 +15,10 @@ export type { MuscleLoadLevel };
 /** Mismo tono que `Skeleton` (`bg-muted`) */
 const SKELETON_FILL = "hsl(var(--muted))";
 
-const BODY_MAP_SVG_CLASS = "max-w-[126px] sm:max-w-[140px]";
+const BODY_MAP_SVG_CLASS = "h-auto w-full max-w-[126px] sm:max-w-[140px]";
+const BODY_MAP_COMPACT_SVG_CLASS = "h-full w-auto max-h-full max-w-full";
+
+export type MuscleBodyMapSize = "default" | "compact";
 
 export interface MuscleBodyMapProps {
   getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
@@ -26,6 +29,7 @@ export interface MuscleBodyMapProps {
   onZoneHover?: (group: MainMuscleGroup, event: React.MouseEvent<SVGPathElement>) => void;
   onZoneLeave?: () => void;
   className?: string;
+  size?: MuscleBodyMapSize;
 }
 
 function zoneFillColor(
@@ -74,10 +78,11 @@ const BodyView = memo(function BodyView({
   const interactive = !isLoading && Boolean(onZoneClick || onZoneHover);
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex h-full min-w-0 items-center justify-center">
       <svg
         viewBox={viewBox}
-        className={cn("h-auto w-full", svgSizeClass)}
+        preserveAspectRatio="xMidYMid meet"
+        className={cn("block", svgSizeClass)}
         role="img"
         aria-label={ariaLabel}
         aria-busy={isLoading}
@@ -119,44 +124,51 @@ export function MuscleBodyMap({
   onZoneHover,
   onZoneLeave,
   className,
+  size = "default",
 }: MuscleBodyMapProps) {
+  const compact = size === "compact";
+  const interactiveClick = compact ? undefined : onZoneClick;
+  const interactiveHover = compact ? undefined : onZoneHover;
+  const interactiveLeave = compact ? undefined : onZoneLeave;
+
   return (
     <div
       className={cn(
-        "flex w-full items-end justify-around",
-        isLoading && "pointer-events-none",
+        "flex w-full min-w-0",
+        compact ? "h-full items-stretch justify-center gap-0.5" : "items-end justify-around",
+        (isLoading || compact) && "pointer-events-none",
         className,
       )}
       data-loading={isLoading || undefined}
     >
-      <div className="flex w-[45%] min-w-0 justify-center">
+      <div className={cn("flex min-w-0 justify-center", compact ? "h-full w-1/2" : "w-[45%]")}>
         <BodyView
           zones={FRONT_ZONES}
           viewBox={FRONT_BODY_MAP_VIEWBOX}
           viewKey="front"
           ariaLabel="Vista frontal del cuerpo"
-          svgSizeClass={BODY_MAP_SVG_CLASS}
+          svgSizeClass={compact ? BODY_MAP_COMPACT_SVG_CLASS : BODY_MAP_SVG_CLASS}
           getLevel={getLevel}
           colors={colors}
           isLoading={isLoading}
-          onZoneClick={onZoneClick}
-          onZoneHover={onZoneHover}
-          onZoneLeave={onZoneLeave}
+          onZoneClick={interactiveClick}
+          onZoneHover={interactiveHover}
+          onZoneLeave={interactiveLeave}
         />
       </div>
-      <div className="flex w-[45%] min-w-0 justify-center">
+      <div className={cn("flex min-w-0 justify-center", compact ? "h-full w-1/2" : "w-[45%]")}>
         <BodyView
           zones={BACK_ZONES}
           viewBox={BACK_BODY_MAP_VIEWBOX}
           viewKey="back"
           ariaLabel="Vista trasera del cuerpo"
-          svgSizeClass={BODY_MAP_SVG_CLASS}
+          svgSizeClass={compact ? BODY_MAP_COMPACT_SVG_CLASS : BODY_MAP_SVG_CLASS}
           getLevel={getLevel}
           colors={colors}
           isLoading={isLoading}
-          onZoneClick={onZoneClick}
-          onZoneHover={onZoneHover}
-          onZoneLeave={onZoneLeave}
+          onZoneClick={interactiveClick}
+          onZoneHover={interactiveHover}
+          onZoneLeave={interactiveLeave}
         />
       </div>
     </div>

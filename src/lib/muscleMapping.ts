@@ -54,6 +54,21 @@ type ExerciseMuscleSource = {
   grupo_muscular?: string | null;
 };
 
+function resolveExerciseMuscleGroups(source: ExerciseMuscleSource | null | undefined): Set<MainMuscleGroup> {
+  const groups = new Set<MainMuscleGroup>();
+  if (!source) return groups;
+
+  for (const muscle of source.musculos_involucrados ?? []) {
+    const group = resolveMainMuscleGroup(muscle);
+    if (group) groups.add(group);
+  }
+  if (groups.size === 0) {
+    const fallback = resolveMainMuscleGroup(source.grupo_muscular);
+    if (fallback) groups.add(fallback);
+  }
+  return groups;
+}
+
 /** Grupos principales de una rutina, ordenados por frecuencia en sus ejercicios. */
 export function summarizeRoutineMuscleGroups(
   exercises: { tipo_ejercicio?: ExerciseMuscleSource | null }[],
@@ -62,19 +77,7 @@ export function summarizeRoutineMuscleGroups(
   const counts = new Map<MainMuscleGroup, number>();
 
   for (const exercise of exercises) {
-    const source = exercise.tipo_ejercicio;
-    if (!source) continue;
-
-    const groups = new Set<MainMuscleGroup>();
-    for (const muscle of source.musculos_involucrados ?? []) {
-      const group = resolveMainMuscleGroup(muscle);
-      if (group) groups.add(group);
-    }
-    if (groups.size === 0) {
-      const fallback = resolveMainMuscleGroup(source.grupo_muscular);
-      if (fallback) groups.add(fallback);
-    }
-    for (const group of groups) {
+    for (const group of resolveExerciseMuscleGroups(exercise.tipo_ejercicio)) {
       counts.set(group, (counts.get(group) ?? 0) + 1);
     }
   }
@@ -83,4 +86,33 @@ export function summarizeRoutineMuscleGroups(
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es"))
     .slice(0, Math.max(0, limit))
     .map(([group]) => group);
+}
+
+export type RoutineMuscleVolume = {
+  groupSets: Record<MainMuscleGroup, number>;
+  maxSets: number;
+};
+
+/** Series objetivo por grupo muscular, para el heatmap de una rutina. */
+export function aggregateRoutineMuscleSets(
+  exercises: Array<{
+    series_objetivo?: number | null;
+    tipo_ejercicio?: ExerciseMuscleSource | null;
+  }>,
+): RoutineMuscleVolume {
+  const groupSets = {} as Record<MainMuscleGroup, number>;
+  let maxSets = 0;
+
+  for (const exercise of exercises) {
+    const sets = Math.max(0, Number(exercise.series_objetivo) || 0);
+    if (sets === 0) continue;
+
+    for (const group of resolveExerciseMuscleGroups(exercise.tipo_ejercicio)) {
+      const next = (groupSets[group] ?? 0) + sets;
+      groupSets[group] = next;
+      if (next > maxSets) maxSets = next;
+    }
+  }
+
+  return { groupSets, maxSets };
 }

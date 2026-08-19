@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,10 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Play, Pencil, Trash2, Copy, Dumbbell, Clock, History, GripVertical, ChevronDown, MoreVertical } from "lucide-react";
+import { WorkoutMuscleMiniMap } from "@/components/dashboard/WorkoutMuscleMiniMap";
 import type { RutinaWithDetails } from "@/types/routine";
 import { formatRitmoSegKmLabel } from "@/types/workout";
 import { cn } from "@/lib/utils";
-import { summarizeRoutineMuscleGroups, resolveMainMuscleGroup } from "@/lib/muscleMapping";
+import {
+  aggregateRoutineMuscleSets,
+} from "@/lib/muscleMapping";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import {
   estimateRoutineDurationMinutes,
@@ -47,18 +50,19 @@ export function SortableRoutineCard({
   const [isOpen, setIsOpen] = useState(false);
   const RoutineTitleIcon = resolveRoutineIcon(r.icono);
   const description = r.descripcion?.trim() || null;
-  const fromExercises = summarizeRoutineMuscleGroups(r.ejercicios);
-  const muscleGroupsLabel =
-    fromExercises.length > 0
-      ? fromExercises.join(" · ")
-      : resolveMainMuscleGroup(r.grupo_muscular) ?? (r.grupo_muscular?.trim() || null);
-  const subtitle = description ?? muscleGroupsLabel;
   const durationLabel = formatEstimatedDurationLabel(
     estimateRoutineDurationMinutes(r.ejercicios),
   );
   const lastTrainedLabel = lastTrainedAt
     ? formatActivityRelativeDate(lastTrainedAt) || "Nunca"
     : "Nunca";
+  const lastTrainedCompactLabel = lastTrainedAt
+    ? formatActivityRelativeDate(lastTrainedAt, new Date(), { compact: true }) || "Nunca"
+    : "Nunca";
+  const { groupSets, maxSets } = useMemo(
+    () => aggregateRoutineMuscleSets(r.ejercicios),
+    [r.ejercicios],
+  );
 
   const {
     attributes,
@@ -92,100 +96,135 @@ export function SortableRoutineCard({
         isDragging && "shadow-lg ring-2 ring-primary/30",
       )}
     >
-      <CardContent className="p-3 px-4">
-        {/* Header */}
-        <div className="flex items-stretch justify-between gap-3">
-          <div className="flex items-start gap-2 flex-1 min-w-0">
-            {isDragMode && (
-              <button
-                {...attributes}
-                {...listeners}
-                className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground p-1 -ml-1"
-              >
-                <GripVertical className="h-5 w-5" />
-              </button>
-            )}
+      <CardContent className={cn("pt-3 px-2 min-[361px]:px-3", isOpen ? "pb-1" : "pb-0")}>
+        <div className="flex items-stretch gap-1">
+          {isDragMode && (
             <button
-              onClick={() => setIsOpen((v) => !v)}
-              className="flex-1 min-w-0 text-left"
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing touch-none self-center text-muted-foreground hover:text-foreground p-1 -ml-1"
             >
-              <h2 className="font-semibold text-base flex items-center gap-2 min-w-0">
-                <RoutineTitleIcon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{r.nombre}</span>
-              </h2>
-              {subtitle && (
-                <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-                  {subtitle}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                <span className="inline-flex items-center gap-1">
-                  <Dumbbell className="h-3 w-3" />
-                  {r.ejercicios.length} ejercicio{r.ejercicios.length !== 1 ? "s" : ""}
-                </span>
-                {durationLabel && (
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {durationLabel}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1">
-                  <History className="h-3 w-3" />
-                  {lastTrainedLabel}
-                </span>
-              </p>
+              <GripVertical className="h-5 w-5" />
             </button>
-          </div>
-          <div className="flex flex-col items-end justify-between shrink-0 -mr-1">
-            <div className="flex items-center gap-0.5">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 text-foreground"
-                aria-label="Iniciar entrenamiento"
-                onClick={(e) => onStart(r, pillCircleOriginFromElement(e.currentTarget))}
+          )}
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex min-w-0 items-center gap-3.5">
+              <button
+                type="button"
+                onClick={() => setIsOpen((v) => !v)}
+                className="flex h-24 w-28 shrink-0 items-center overflow-hidden"
+                aria-label={`Ver ejercicios de ${r.nombre}`}
               >
-                <Play className="h-6 w-6 fill-current" />
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 text-muted-foreground"
-                    aria-label="Más opciones"
+                <div className="h-full w-full pointer-events-none" aria-hidden>
+                  <WorkoutMuscleMiniMap
+                    groupSets={groupSets}
+                    maxSets={maxSets}
+                    size="compact"
+                    className="h-full w-full"
+                  />
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsOpen((v) => !v)}
+                className="min-w-0 flex-1 text-left"
+              >
+                <h2 className="font-semibold text-base flex items-center gap-2 min-w-0">
+                  <RoutineTitleIcon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{r.nombre}</span>
+                </h2>
+                {description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
+                    {description}
+                  </p>
+                )}
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  <Badge
+                    variant="secondary"
+                    className="border-0 bg-muted/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-muted/70"
                   >
-                    <MoreVertical className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="flex w-44 flex-col gap-1 bg-popover">
-                  <DropdownMenuItem onClick={() => onEdit(r.id)}>
-                    <Pencil className="mr-2 h-4 w-4" /> Editar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDuplicate(r)}>
-                    <Copy className="mr-2 h-4 w-4" /> Duplicar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => onDelete(r.id)}
+                    <Dumbbell className="mr-1 h-3 w-3" />
+                    <span className="max-[409px]:hidden">
+                      {r.ejercicios.length} ejercicio{r.ejercicios.length !== 1 ? "s" : ""}
+                    </span>
+                    <span className="min-[410px]:hidden">{r.ejercicios.length} ejs</span>
+                  </Badge>
+                  {durationLabel && (
+                    <Badge
+                      variant="secondary"
+                      className="border-0 bg-muted/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-muted/70"
+                    >
+                      <Clock className="mr-1 h-3 w-3" />
+                      {durationLabel}
+                    </Badge>
+                  )}
+                  <Badge
+                    variant="secondary"
+                    className="border-0 bg-muted/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-muted/70"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <History className="mr-1 h-3 w-3" />
+                    <span className="max-[409px]:hidden">{lastTrainedLabel}</span>
+                    <span className="min-[410px]:hidden">{lastTrainedCompactLabel}</span>
+                  </Badge>
+                </div>
+              </button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground"
-              aria-label={isOpen ? "Ocultar ejercicios" : "Ver ejercicios"}
-              aria-expanded={isOpen}
-              onClick={() => setIsOpen((v) => !v)}
-            >
-              <ChevronDown
-                className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-              />
-            </Button>
+
+            <div className="grid w-full grid-cols-3 items-center -mx-1">
+              <div className="justify-self-start">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-muted-foreground"
+                  aria-label={isOpen ? "Ocultar ejercicios" : "Ver ejercicios"}
+                  aria-expanded={isOpen}
+                  onClick={() => setIsOpen((v) => !v)}
+                >
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                  />
+                </Button>
+              </div>
+              <div className="justify-self-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 text-foreground"
+                  aria-label="Iniciar entrenamiento"
+                  onClick={(e) => onStart(r, pillCircleOriginFromElement(e.currentTarget))}
+                >
+                  <Play className="h-6 w-6 fill-current" />
+                </Button>
+              </div>
+              <div className="justify-self-end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-muted-foreground"
+                      aria-label="Más opciones"
+                    >
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="flex w-44 flex-col gap-1 bg-popover">
+                    <DropdownMenuItem onClick={() => onEdit(r.id)}>
+                      <Pencil className="mr-2 h-4 w-4" /> Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDuplicate(r)}>
+                      <Copy className="mr-2 h-4 w-4" /> Duplicar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => onDelete(r.id)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -195,7 +234,7 @@ export function SortableRoutineCard({
             isOpen ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0"
           }`}
         >
-          <div className="overflow-hidden">
+          <div className="overflow-hidden -mt-2">
             <div className="rounded-lg bg-muted/30 p-3 space-y-0">
               {sortedEjercicios.map((ej, idx) => {
                 const reg = (ej as { registro_series?: string }).registro_series;

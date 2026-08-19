@@ -1,16 +1,22 @@
 import { useCallback, useMemo } from "react";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import { cn } from "@/lib/utils";
-import { MuscleBodyMap } from "./MuscleBodyMap";
+import { MuscleBodyMap, type MuscleBodyMapSize } from "./MuscleBodyMap";
 import { getHeatLevel, heatLevelToLoad } from "./bodyMapPaths";
 
 type WorkoutMuscleMiniMapProps = {
-  groupSets: Record<MainMuscleGroup, number>;
+  groupSets: Partial<Record<MainMuscleGroup, number>>;
   maxSets: number;
   className?: string;
+  size?: MuscleBodyMapSize;
 };
 
-export function WorkoutMuscleMiniMap({ groupSets, maxSets, className }: WorkoutMuscleMiniMapProps) {
+export function WorkoutMuscleMiniMap({
+  groupSets,
+  maxSets,
+  className,
+  size = "default",
+}: WorkoutMuscleMiniMapProps) {
   const effectiveMax = Math.max(1, maxSets);
 
   const getLevel = useCallback(
@@ -28,7 +34,11 @@ export function WorkoutMuscleMiniMap({ groupSets, maxSets, className }: WorkoutM
 
   return (
     <div className={cn(className)} aria-label={ariaLabel} role="img">
-      <MuscleBodyMap getLevel={getLevel} className="w-full" />
+      <MuscleBodyMap
+        getLevel={getLevel}
+        size={size}
+        className={cn("w-full", size === "compact" && "h-full")}
+      />
     </div>
   );
 }
