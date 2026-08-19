@@ -29,7 +29,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-[.toaster]:border-success-border group-[.toaster]:border-l-success group-[.toaster]:bg-success-muted group-[.toaster]:text-success-foreground",
           error:
             "group-[.toaster]:border-destructive group-[.toaster]:border-l-destructive group-[.toaster]:bg-destructive group-[.toaster]:text-destructive-foreground",
-          actionButton: "group-[.toast]:bg-success group-[.toast]:text-white",
+          actionButton: "group-[.toast]:bg-success group-[.toast]:text-success-foreground",
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
       }}
