@@ -118,7 +118,33 @@ async function fetchText(url) {
     const body = await res.text();
     throw new Error(`HTTP ${res.status} ${url}: ${body.slice(0, 400)}`);
   }
-  return res.text();
+
+  // Decodificamos manualmente para evitar que el charset de la respuesta (a veces mal
+  // definido) cause mojibake/reemplazos `�` al usar `res.text()`.
+  const ab = await res.arrayBuffer();
+  const bytes = Buffer.from(ab);
+
+  const headAscii = bytes.slice(0, 1024).toString("ascii");
+  const xmlEncoding = headAscii.match(/<\?xml[^>]*encoding=["']([^"']+)["']/i)?.[1];
+
+  const contentType = res.headers.get("content-type") ?? "";
+  const headerCharset = contentType.match(/charset=([^;]+)/i)?.[1];
+
+  const rawEncoding = xmlEncoding ?? headerCharset;
+  const encoding = (() => {
+    if (!rawEncoding) return "utf-8";
+    const e = String(rawEncoding).trim().toLowerCase();
+    if (e === "utf-8" || e === "utf8") return "utf-8";
+    if (e === "iso-8859-1" || e === "iso8859-1" || e === "latin1" || e === "latin-1") return "windows-1252";
+    if (e === "windows-1252" || e === "cp1252") return "windows-1252";
+    return rawEncoding;
+  })();
+
+  try {
+    return new TextDecoder(encoding).decode(ab);
+  } catch {
+    return new TextDecoder("utf-8").decode(ab);
+  }
 }
 
 async function fetchMadridGyms() {
@@ -267,7 +293,7 @@ async function fetchExistingCatalog(url, key) {
   const page = 1000;
   while (true) {
     const res = await fetch(
-      `${url}/rest/v1/gimnasio?select=id,nombre,lat,lng,direccion,ciudad&offset=${offset}&limit=${page}`,
+      `${url}/rest/v1/gimnasio?select=id,nombre,lat,lng,direccion,ciudad,provider,external_id&offset=${offset}&limit=${page}`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` } },
     );
     if (!res.ok) throw new Error(`Supabase list HTTP ${res.status}: ${(await res.text()).slice(0, 400)}`);
@@ -357,10 +383,23 @@ Galicia usa la capa IDEG de la Xunta (~2K puntos).
     existing = await fetchExistingCatalog(supabaseUrl.replace(/\/$/, ""), serviceKey);
   }
 
+  const existingByProviderExternalId = new Map(
+    existing.map((g) => [`${g.provider}:${g.external_id}`, g]),
+  );
+
   const toInsert = [];
   const toPatch = [];
   let skipped = 0;
   for (const row of incoming) {
+    // Si es el mismo gym (provider+external_id), forzamos upsert para que se actualice el nombre/ciudad.
+    // El dedupe por cercanía puede devolver un "duplicate" y en ese caso solo parchaba dirección.
+    const exactKey = `${row.provider}:${row.external_id}`;
+    if (existingByProviderExternalId.has(exactKey)) {
+      toInsert.push(row);
+      existingByProviderExternalId.set(exactKey, row);
+      continue;
+    }
+
     const duplicate = findNearbyDuplicate(row, existing, { maxMeters: DEDUP_METERS });
     if (duplicate) {
       skipped += 1;
