@@ -63,6 +63,51 @@ export async function fetchExerciseCatalogDetail(
   return { ...(data as TipoEjercicioRow), __source: "catalogo" };
 }
 
+export function useFavoriteExercisesCatalog(favoriteKeys: Set<string>, enabled: boolean) {
+  const sortedKeys = [...favoriteKeys].sort();
+
+  return useQuery({
+    queryKey: ["exerciseFavoritesCatalog", sortedKeys],
+    enabled: enabled && sortedKeys.length > 0,
+    staleTime: CATALOG_STALE_MS,
+    queryFn: async (): Promise<ExerciseCatalogItem[]> => {
+      const catalogIds: string[] = [];
+      const usuarioIds: string[] = [];
+
+      for (const key of sortedKeys) {
+        const sep = key.indexOf(":");
+        if (sep === -1) continue;
+        const source = key.slice(0, sep);
+        const id = key.slice(sep + 1);
+        if (!id) continue;
+        if (source === "catalogo") catalogIds.push(id);
+        else if (source === "usuario") usuarioIds.push(id);
+      }
+
+      const [catRes, usrRes] = await Promise.all([
+        catalogIds.length
+          ? supabase.from("tipo_ejercicio").select(TIPO_THUMB_COLUMNS).in("id", catalogIds)
+          : Promise.resolve({ data: [] as TipoEjercicioRow[], error: null }),
+        usuarioIds.length
+          ? supabase.from("usuario_ejercicio").select(USUARIO_THUMB_COLUMNS).in("id", usuarioIds)
+          : Promise.resolve({ data: [] as UsuarioEjercicioRow[], error: null }),
+      ]);
+
+      if (catRes.error) throw catRes.error;
+      if (usrRes.error) throw usrRes.error;
+
+      return [
+        ...((usrRes.data ?? []) as UsuarioEjercicioRow[]).map(
+          (x): UserItem => ({ ...x, __source: "usuario" as const }),
+        ),
+        ...((catRes.data ?? []) as TipoEjercicioRow[]).map(
+          (x): CatalogItem => ({ ...x, __source: "catalogo" as const }),
+        ),
+      ];
+    },
+  });
+}
+
 export function useExerciseCatalogInfinite(filters?: ExerciseCatalogFilters, pageSize = 30) {
   const { user } = useAuth();
   const q = (filters?.q ?? "").trim();

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useExerciseCatalogInfinite, useCreateExercise, useDeleteExercise } from "@/hooks/useExerciseCatalog";
+import { useExerciseCatalogInfinite, useCreateExercise, useDeleteExercise, useFavoriteExercisesCatalog } from "@/hooks/useExerciseCatalog";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -286,7 +286,8 @@ const Exercises = () => {
   const createExercise = useCreateExercise();
   const deleteExercise = useDeleteExercise();
   const { toast } = useToast();
-  const { isFavorite, toggleFavorite } = useExerciseFavorites();
+  const { isFavorite, toggleFavorite, favoriteKeys } = useExerciseFavorites();
+  const favoritesCatalogQuery = useFavoriteExercisesCatalog(favoriteKeys, filters.favoritesOnly);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -302,11 +303,18 @@ const Exercises = () => {
 
   // Flatten: ejercicios de usuario (solo primera página) + páginas del catálogo
   const exercises = useMemo((): CatalogExercise[] => {
+    if (filters.favoritesOnly) {
+      return (favoritesCatalogQuery.data ?? []) as CatalogExercise[];
+    }
     const pages = data?.pages ?? [];
     const usuario = (pages[0]?.usuario ?? []) as CatalogExercise[];
     const catalogo = pages.flatMap((p) => (p.catalogo ?? []) as CatalogExercise[]);
     return [...usuario, ...catalogo];
-  }, [data]);
+  }, [data, favoritesCatalogQuery.data, filters.favoritesOnly]);
+
+  const catalogLoading = filters.favoritesOnly
+    ? favoriteKeys.size > 0 && favoritesCatalogQuery.isLoading
+    : isLoading;
 
   const tipoOptions = useMemo(
     () => uniqNonEmpty(exercises.map((x) => x.tipo)).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
@@ -462,8 +470,6 @@ const Exercises = () => {
 
   useEffect(() => {
     const target = loadMoreRef.current;
-    // Favoritos se filtra en cliente: el sentinel quedaría siempre visible y
-    // dispararía fetch en bucle. En ese modo hidratamos con el efecto de abajo.
     if (!target || !hasNextPage || filters.favoritesOnly) return;
 
     const observer = new IntersectionObserver(
@@ -479,17 +485,6 @@ const Exercises = () => {
     observer.observe(target);
     return () => observer.disconnect();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, filteredExercises.length, filters.favoritesOnly]);
-
-  // Con favoritos activos, cargar el resto del catálogo en segundo plano (una página
-  // tras otra) sin depender del scroll, para no hacer parpadear el loader.
-  useEffect(() => {
-    if (!filters.favoritesOnly) return;
-    if (!hasNextPage || isFetchingNextPage || isLoading) return;
-    void fetchNextPage();
-  }, [filters.favoritesOnly, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage]);
-
-  const isHydratingFavorites =
-    filters.favoritesOnly && !isLoading && (Boolean(hasNextPage) || isFetchingNextPage);
 
   const handleCreate = async () => {
     if (!user || !newName.trim()) return;
@@ -933,7 +928,7 @@ const Exercises = () => {
       )}
 
       <div className="flex w-full flex-col gap-3 bg-background px-4 pt-1 md:gap-2.75 md:px-0">
-        {isLoading || difficultyLoading
+        {catalogLoading || difficultyLoading
           ? Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
@@ -1053,10 +1048,9 @@ const Exercises = () => {
                 </Card>
               );
             })}
-        {!isLoading &&
+        {!catalogLoading &&
           !difficultyLoading &&
           !isError &&
-          !isHydratingFavorites &&
           filteredExercises.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             No hay ejercicios que coincidan. Prueba otra búsqueda o cambia los filtros.
@@ -1064,9 +1058,9 @@ const Exercises = () => {
         )}
       </div>
 
-      {!isLoading && !difficultyLoading && (hasNextPage || isHydratingFavorites) && (
+      {!catalogLoading && !difficultyLoading && !filters.favoritesOnly && hasNextPage && (
         <div ref={loadMoreRef} className="flex items-center justify-center py-2">
-          {(isFetchingNextPage || isHydratingFavorites) && (
+          {isFetchingNextPage && (
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           )}
         </div>
