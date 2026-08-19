@@ -81,7 +81,7 @@ type CatalogItem = {
   nombre: string;
   usuario_id?: string | null;
   registro_series?: string | null;
-  __source?: string;
+  __source?: "catalogo" | "usuario";
   imagen?: string | null;
   gif_url?: string | null;
   body_part?: string | string[] | null;
@@ -423,7 +423,7 @@ export function ExerciseSelector({
       >
         <div
           className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md active:scale-[0.82] active:duration-100 active:ease-out",
+            "flex h-12 w-12 items-center justify-center rounded-full bg-primary-solid text-primary-foreground shadow-md active:scale-[0.82] active:duration-100 active:ease-out",
             rotationClass,
           )}
         >

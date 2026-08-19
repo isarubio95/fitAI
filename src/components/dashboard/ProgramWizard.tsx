@@ -237,10 +237,10 @@ export function ProgramWizard({
         <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-20 bg-card">
           {/* Stepper */}
           <div className="mb-6 mt-1 flex justify-center items-center gap-2 text-xs">
-            <span className={`px-2 py-1 rounded-full ${step === 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>1</span>
+            <span className={`px-2 py-1 rounded-full ${step === 1 ? "bg-primary-solid text-primary-foreground" : "bg-muted text-muted-foreground"}`}>1</span>
             <span className="text-foreground/70">Rutina por día</span>
             <span className="text-foreground/60">→</span>
-            <span className={`px-2 py-1 rounded-full ${step === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>2</span>
+            <span className={`px-2 py-1 rounded-full ${step === 2 ? "bg-primary-solid text-primary-foreground" : "bg-muted text-muted-foreground"}`}>2</span>
             <span className="text-foreground/70">Duración</span>
           </div>
 
