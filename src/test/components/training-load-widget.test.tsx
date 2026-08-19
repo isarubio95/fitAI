@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
@@ -109,20 +109,7 @@ describe("TrainingLoadWidget", () => {
     expect(screen.getAllByText("30").length).toBeGreaterThan(0);
   });
 
-  it("muestra textos didácticos en la primera visita", () => {
-    mockUseTrainingLoad.mockReturnValue({
-      data: SAMPLE_DATA,
-      isLoading: false,
-      isFetching: false,
-    });
-
-    render(<TrainingLoadWidget />);
-    expect(screen.getByText(/La fatiga se pasa/)).toBeInTheDocument();
-    expect(screen.getByText(/Equilibrio entre entrenar/)).toBeInTheDocument();
-  });
-
-  it("oculta textos didácticos cuando el modo explicación está desactivado", () => {
-    localStorage.setItem("gym-log.training-load.explain-mode", "0");
+  it("no muestra textos didácticos del modo explicación", () => {
     mockUseTrainingLoad.mockReturnValue({
       data: SAMPLE_DATA,
       isLoading: false,
@@ -132,26 +119,6 @@ describe("TrainingLoadWidget", () => {
     render(<TrainingLoadWidget />);
     expect(screen.queryByText(/La fatiga se pasa/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Equilibrio entre entrenar/)).not.toBeInTheDocument();
-  });
-
-  it("permite conmutar el modo explicación y persiste la preferencia", () => {
-    mockUseTrainingLoad.mockReturnValue({
-      data: SAMPLE_DATA,
-      isLoading: false,
-      isFetching: false,
-    });
-
-    render(<TrainingLoadWidget />);
-    const toggle = screen.getByRole("button", { name: "Ocultar explicaciones" });
-    expect(toggle).toHaveAttribute("aria-pressed", "true");
-
-    fireEvent.click(toggle);
-    expect(screen.queryByText(/La fatiga se pasa/)).not.toBeInTheDocument();
-    expect(localStorage.getItem("gym-log.training-load.explain-mode")).toBe("0");
-    expect(screen.getByRole("button", { name: "Mostrar explicaciones" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
   });
 
   it("muestra el resumen del último día encima del gráfico", () => {

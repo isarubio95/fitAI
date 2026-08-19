@@ -17,7 +17,7 @@ const ZONE_ICONS: Record<FormZoneKey, LucideIcon> = {
 };
 
 /** Escala de zonas con el marcador de la forma actual. */
-export function FormScale({ form, explainMode = false }: { form: number; explainMode?: boolean }) {
+export function FormScale({ form }: { form: number }) {
   const zone = getFormZone(form);
   const ZoneIcon = ZONE_ICONS[zone.key];
   const markerPct = formToScalePct(form);
@@ -82,7 +82,6 @@ export function FormScale({ form, explainMode = false }: { form: number; explain
         })}
       </div>
 
-      {explainMode && <p className="mt-2.5 text-[13px] text-muted-foreground">{zone.hint}</p>}
     </div>
   );
 }

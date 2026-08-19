@@ -23,6 +23,7 @@ import {
   euskadiGymsFromGeoJson,
   euskadiGymsFromJson,
   galiciaGymsFromArcGis,
+  riojaGymsFromGml,
   madridGymsFromGraph,
   malagaGymsFromGeoJson,
   santaCruzGymsFromGeoJson,
@@ -77,6 +78,8 @@ const SANTA_CRUZ_URL =
 const CATALUNYA_CEEC_URL = "https://analisi.transparenciacatalunya.cat/resource/5zd6-bk6r.json";
 const GALICIA_LAYER =
   "https://ideg.xunta.gal/meteogalicia/rest/services/PIMA/exposicion/MapServer/33/query";
+const RIOJA_WFS_TYPE = "instalaciones_deportivas";
+const RIOJA_WFS_URL = "https://ogc.larioja.org/wfs/request.php";
 
 function env(name, fallbackName) {
   return process.env[name] || (fallbackName ? process.env[fallbackName] : undefined);
@@ -105,6 +108,17 @@ async function fetchJson(url) {
     throw new Error(`HTTP ${res.status} ${url}: ${body.slice(0, 400)}`);
   }
   return res.json();
+}
+
+async function fetchText(url) {
+  const res = await fetch(url, {
+    headers: { Accept: "application/xml", "User-Agent": UA },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`HTTP ${res.status} ${url}: ${body.slice(0, 400)}`);
+  }
+  return res.text();
 }
 
 async function fetchMadridGyms() {
@@ -212,6 +226,23 @@ async function fetchGaliciaGyms() {
   return galiciaGymsFromArcGis({ features });
 }
 
+async function fetchRiojaGyms() {
+  const rows = [];
+  let startIndex = 0;
+  while (true) {
+    const url = `${RIOJA_WFS_URL}?SERVICE=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=${encodeURIComponent(
+      RIOJA_WFS_TYPE,
+    )}&MAXFEATURES=${PAGE_SIZE}&STARTINDEX=${startIndex}`;
+    const text = await fetchText(url);
+    const chunk = riojaGymsFromGml(text);
+    if (!chunk.length) break;
+    rows.push(...chunk);
+    if (chunk.length < PAGE_SIZE) break;
+    startIndex += chunk.length;
+  }
+  return rows;
+}
+
 const SOURCES = [
   { id: "madrid", label: "Madrid (polideportivos municipales)", fetch: fetchMadridGyms },
   { id: "barcelona", label: "Barcelona (CEM municipales)", fetch: fetchBarcelonaGyms },
@@ -225,6 +256,7 @@ const SOURCES = [
   { id: "donostia", label: "Donostia / San Sebastián (equipamientos)", fetch: fetchDonostiaGyms },
   { id: "catalunya", label: "Catalunya (CEEC – censo autonómico, todos los municipios)", fetch: fetchCatalunyaGyms },
   { id: "galicia", label: "Galicia (IDEG – instalaciones deportivas, todas las provincias)", fetch: fetchGaliciaGyms },
+  { id: "rioja", label: "La Rioja (IDErioja – instalaciones deportivas)", fetch: fetchRiojaGyms },
 ];
 
 const SOURCE_IDS = SOURCES.map((s) => s.id);
@@ -363,7 +395,7 @@ Galicia usa la capa IDEG de la Xunta (~2K puntos).
   for (const item of toPatch) {
     await patchGym(url, serviceKey, item.id, item.patch);
   }
-  console.log("Listo. Atribución: portales municipales y Open Data Euskadi (CC BY / ODC-BY).");
+  console.log("Listo. Atribución: portales municipales y Open Data Euskadi, además de CEEC (Cataluña), IDEG (Galicia) e IDErioja (La Rioja) (CC BY / ODC-BY).");
 }
 
 main().catch((err) => {

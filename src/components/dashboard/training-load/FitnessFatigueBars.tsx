@@ -48,11 +48,9 @@ function BarRow({
 export function FitnessFatigueBars({
   fitness,
   fatigue,
-  explainMode = false,
 }: {
   fitness: number;
   fatigue: number;
-  explainMode?: boolean;
 }) {
   const form = fitness - fatigue;
   const isFatigued = form < 0;
@@ -139,23 +137,6 @@ export function FitnessFatigueBars({
         </div>
       )}
 
-      {explainMode && (
-        <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-          {form === 0 ? (
-            <>Tu fitness y tu fatiga están igualados, así que tu forma es 0.</>
-          ) : isFatigued ? (
-            <>
-              La fatiga se pasa {gapPoints} puntos de tu fitness. Ese sobrante{" "}
-              <span style={{ color: chartColors.danger }}>rojo</span> es tu forma.
-            </>
-          ) : (
-            <>
-              Tu fitness le saca {gapPoints} puntos a la fatiga. Ese margen{" "}
-              <span style={{ color: chartColors.positive }}>verde</span> es tu forma.
-            </>
-          )}
-        </p>
-      )}
     </div>
   );
 }

@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { HelpCircle, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -51,7 +51,6 @@ const RANGE_OPTIONS = [
 type RangeKey = (typeof RANGE_OPTIONS)[number]["key"];
 const TRAINING_LOAD_RANGE_STORAGE_KEY = "gym-log.training-load.range";
 const TRAINING_LOAD_DATA_STORAGE_KEY = "gym-log.training-load.data.v2";
-const TRAINING_LOAD_EXPLAIN_STORAGE_KEY = "gym-log.training-load.explain-mode";
 const X_AXIS_HEIGHT = 28;
 
 function isValidRangeKey(value: string): value is RangeKey {
@@ -94,18 +93,6 @@ function saveCachedTrainingLoadData(payload: TrainingLoadData): void {
   }
 }
 
-function loadSavedExplainMode(): boolean {
-  try {
-    const raw = localStorage.getItem(TRAINING_LOAD_EXPLAIN_STORAGE_KEY);
-    if (raw === "0" || raw === "false") return false;
-    if (raw === "1" || raw === "true") return true;
-  } catch {
-    // ignore
-  }
-  // Primera visita: textos didácticos visibles.
-  return true;
-}
-
 function DayAxisTick({
   x,
   y,
@@ -145,7 +132,7 @@ export function TrainingLoadWidget() {
   const { data, isLoading, isFetching } = useTrainingLoad();
   const [cachedData, setCachedData] = useState<TrainingLoadData | null>(loadCachedTrainingLoadData);
   const [range, setRange] = useState<RangeKey>(loadSavedRange);
-  const [explainMode, setExplainMode] = useState(loadSavedExplainMode);
+  // Nota: se elimina el “modo explicar” del gráfico.
 
   useEffect(() => {
     if (data?.points?.length) {
@@ -161,14 +148,6 @@ export function TrainingLoadWidget() {
       // ignore
     }
   }, [range]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(TRAINING_LOAD_EXPLAIN_STORAGE_KEY, explainMode ? "1" : "0");
-    } catch {
-      // ignore
-    }
-  }, [explainMode]);
 
   const resolvedData = data?.points?.length ? data : cachedData;
   const showDynamicSkeleton = isFetching && !!resolvedData;
@@ -237,56 +216,40 @@ export function TrainingLoadWidget() {
             <h2>Forma y fatiga</h2>
           </CardTitle>
           <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "touch-styled h-7 gap-1 rounded-full px-2 text-[12px] font-medium transition-none",
-                "hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100",
-                explainMode ? "text-primary" : "text-muted-foreground",
-              )}
-              aria-pressed={explainMode}
-              aria-label={explainMode ? "Ocultar explicaciones" : "Mostrar explicaciones"}
-              onClick={() => setExplainMode((prev) => !prev)}
-            >
-              <HelpCircle className="h-4 w-4" aria-hidden />
-              Explicar
-            </Button>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="touch-styled h-6 w-6 rounded-full transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100"
-                  aria-label="Cómo se calcula la forma"
-                >
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72 text-sm" side="bottom" align="end">
-                <p className="mb-1 font-semibold">¿Cómo se calcula?</p>
-                <p className="mb-3 text-muted-foreground">
-                  Modelo Banister/Coggan: cada día suma carga de fuerza (volumen × RIR y FC si hay) y
-                  cardio (TRIMP por FC o TSS por potencia). Fitness acumula a ~42 días; Fatiga a ~7;
-                  Forma = Fitness − Fatiga.
-                </p>
-                <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
-                  <p>
-                    <strong>Fitness:</strong> adaptación a largo plazo (CTL).
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="touch-styled h-6 w-6 rounded-full transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100"
+                    aria-label="Cómo se calcula la forma"
+                  >
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 text-sm" side="bottom" align="end">
+                  <p className="mb-1 font-semibold">¿Cómo se calcula?</p>
+                  <p className="mb-3 text-muted-foreground">
+                    Modelo Banister/Coggan: cada día suma carga de fuerza (volumen × RIR y FC si hay) y
+                    cardio (TRIMP por FC o TSS por potencia). Fitness acumula a ~42 días; Fatiga a ~7;
+                    Forma = Fitness − Fatiga.
                   </p>
-                  <p>
-                    <strong>Fatiga:</strong> cansancio reciente (ATL).
-                  </p>
-                  <p>
-                    <strong>Forma:</strong> frescura relativa; positiva = más fresco.
-                  </p>
-                  <p className="pt-1 text-muted-foreground">
-                    Con sensor de FC, el esfuerzo relativo ≈ Edwards TRIMP (tiempo en zonas).
-                  </p>
-                </div>
-              </PopoverContent>
-            </Popover>
+                  <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
+                    <p>
+                      <strong>Fitness:</strong> adaptación a largo plazo (CTL).
+                    </p>
+                    <p>
+                      <strong>Fatiga:</strong> cansancio reciente (ATL).
+                    </p>
+                    <p>
+                      <strong>Forma:</strong> frescura relativa; positiva = más fresco.
+                    </p>
+                    <p className="pt-1 text-muted-foreground">
+                      Con sensor de FC, el esfuerzo relativo ≈ Edwards TRIMP (tiempo en zonas).
+                    </p>
+                  </div>
+                </PopoverContent>
+              </Popover>
           </div>
         </div>
       </CardHeader>
@@ -303,7 +266,6 @@ export function TrainingLoadWidget() {
             <FitnessFatigueBars
               fitness={totals.fitness}
               fatigue={totals.fatigue}
-              explainMode={explainMode}
             />
             <FormEquation
               fitness={totals.fitness}
@@ -311,7 +273,7 @@ export function TrainingLoadWidget() {
               form={totals.form}
               formColor={zone.color}
             />
-            <FormScale form={totals.form} explainMode={explainMode} />
+            <FormScale form={totals.form} />
           </>
         )}
 

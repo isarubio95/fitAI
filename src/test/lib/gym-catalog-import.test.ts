@@ -22,6 +22,7 @@ import {
   isGymLikeFacilityName,
   madridGymsFromGraph,
   malagaGymsFromGeoJson,
+  riojaGymsFromGml,
   santaCruzGymsFromGeoJson,
   utmZone30ToWgs84,
   valenciaGymsFromArcGis,
@@ -407,5 +408,40 @@ describe("datos abiertos municipales", () => {
         ],
       }).map((r) => r.nombre),
     ).toEqual(["POLIDEPORTIVO MUNICIPAL SALUD ALTA"]);
+  });
+
+  it("parsea GML de IDErioja (EPSG:25830) y crea filas para La Rioja", () => {
+    const xml = `
+      <wfs:FeatureCollection>
+        <gml:featureMember>
+          <ms:instalaciones_deportivas gml:id="inst1">
+            <ms:msGeometry>
+              <gml:Point srsName="EPSG:25830">
+                <gml:pos>582113.420000 4658025.790000</gml:pos>
+              </gml:Point>
+            </ms:msGeometry>
+            <ms:T175_ID>1159264</ms:T175_ID>
+            <ms:T175_NOMBRE>Pista Municipal de Deportes</ms:T175_NOMBRE>
+            <ms:T175_000_INEMUNICIPIO_DENO>Igea</ms:T175_000_INEMUNICIPIO_DENO>
+          </ms:instalaciones_deportivas>
+        </gml:featureMember>
+      </wfs:FeatureCollection>
+    `;
+
+    const rows = riojaGymsFromGml(xml);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      provider: "rioja",
+      external_id: "1159264",
+      nombre: "Pista Municipal de Deportes",
+      ciudad: "Igea",
+      source: "opendata",
+      tipo: "unknown",
+      direccion: null,
+    });
+    expect(rows[0].lat).toBeGreaterThan(41);
+    expect(rows[0].lat).toBeLessThan(43);
+    expect(rows[0].lng).toBeGreaterThan(-3);
+    expect(rows[0].lng).toBeLessThan(-1);
   });
 });

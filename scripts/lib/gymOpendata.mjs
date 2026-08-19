@@ -656,3 +656,79 @@ export function santaCruzGymsFromGeoJson(geojson) {
   }
   return rows;
 }
+
+/**
+ * WFS (OGC) devuelve GML para la capa `instalaciones_deportivas` de IDErioja.
+ * Parseamos un subconjunto mínimo de campos:
+ *  - T175_ID (external_id)
+ *  - T175_NOMBRE (nombre)
+ *  - T175_000_INEMUNICIPIO_DENO (ciudad)
+ *  - gml:pos en EPSG:25830 → conversion a WGS84
+ *
+ * @param {unknown} gmlText
+ * @returns {Array<{
+ *   provider: string,
+ *   external_id: string,
+ *   nombre: string,
+ *   lat: number,
+ *   lng: number,
+ *   direccion: null,
+ *   ciudad: string | null,
+ *   brand: null,
+ *   source: string,
+ *   tipo: string,
+ * }>}
+ */
+export function riojaGymsFromGml(gmlText) {
+  if (typeof gmlText !== "string") return [];
+
+  // Extrae cada FeatureType completo: <ms:instalaciones_deportivas> ... </ms:instalaciones_deportivas>
+  const featureRe = /<ms:instalaciones_deportivas\b[\s\S]*?<\/ms:instalaciones_deportivas>/g;
+  const matches = gmlText.match(featureRe) || [];
+  if (matches.length === 0) return [];
+
+  /** @type {ReturnType<typeof opendataRow>[]}*/
+  const rows = [];
+  const seen = new Set();
+
+  for (const block of matches) {
+    const id = block
+      .match(/<ms:T175_ID>([\s\S]*?)<\/ms:T175_ID>/)?.[1]
+      ?.trim();
+    const nombre = block
+      .match(/<ms:T175_NOMBRE>([\s\S]*?)<\/ms:T175_NOMBRE>/)?.[1]
+      ?.trim();
+    const ciudad = block
+      .match(/<ms:T175_000_INEMUNICIPIO_DENO>([\s\S]*?)<\/ms:T175_000_INEMUNICIPIO_DENO>/)?.[1]
+      ?.trim() || null;
+
+    const pos = block.match(/<gml:pos>\s*([-0-9.]+)\s+([-0-9.]+)\s*<\/gml:pos>/);
+    if (!id || !nombre || !pos) continue;
+
+    const x = Number(pos[1]);
+    const y = Number(pos[2]);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+
+    const wgs = utmZone30ToWgs84(x, y);
+    if (!wgs || !Number.isFinite(wgs.lat) || !Number.isFinite(wgs.lng)) continue;
+
+    if (seen.has(id)) continue;
+    seen.add(id);
+
+    // No forzamos municipal aquí: el censo puede mezclar titularidades.
+    rows.push({
+      provider: "rioja",
+      external_id: String(id).slice(0, 80),
+      nombre: String(nombre).slice(0, 120),
+      lat: wgs.lat,
+      lng: wgs.lng,
+      direccion: null,
+      ciudad: ciudad ? String(ciudad).slice(0, 80) : null,
+      brand: null,
+      source: "opendata",
+      tipo: "unknown",
+    });
+  }
+
+  return rows;
+}
