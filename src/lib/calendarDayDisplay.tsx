@@ -77,10 +77,10 @@ export function getCalendarDayCircleClasses({
 
   const circleBorder = showTrained
     ? isPast
-      ? "border-primary/22"
-      : "border-primary/40"
+      ? "border-primary/10"
+      : "border-primary/16"
     : showCardio
-      ? "border-blue-400/50"
+      ? "border-blue-400/18"
       : isPast
         ? "border-border/70"
         : "border-border/12";
@@ -88,7 +88,13 @@ export function getCalendarDayCircleClasses({
   return {
     circleFill,
     circleText,
-    circleBorder: today ? "border-primary" : circleBorder,
+    circleBorder: today
+      ? showTrained
+        ? "border-primary/28"
+        : showCardio
+          ? "border-blue-400/28"
+          : "border-primary"
+      : circleBorder,
     transitionClass: dataReady ? "transition-all duration-200" : "transition-none",
     loadingClass: dataReady ? "" : "animate-pulse opacity-85",
   };

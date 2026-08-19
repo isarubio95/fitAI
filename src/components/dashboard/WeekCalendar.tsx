@@ -328,7 +328,7 @@ export function WeekCalendar({
                       isSelected && !today && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background",
                       today
                         ? "group-hover:scale-[1.03]"
-                        : "group-hover:scale-[1.03] group-hover:border-primary/50 group-hover:ring-1 group-hover:ring-primary/25 group-hover:ring-offset-0",
+                        : "group-hover:scale-[1.03] group-hover:border-primary/28 group-hover:ring-1 group-hover:ring-primary/12 group-hover:ring-offset-0",
                     )}
                   >
                     <CalendarDayCircleContent day={day} display={dayDisplay} today={today} />
