@@ -66,7 +66,9 @@ export function GymDirectoryDrawer({
 
             <main
               className={cn(
-                "flex min-h-0 w-full flex-1 flex-col pb-24 md:pb-0",
+                // Evitamos dejar espacio en blanco al final del Drawer:
+                // el BottomNav se superpone, y el mapa debe rellenar hasta abajo.
+                "flex min-h-0 w-full flex-1 flex-col pb-0 md:pb-0",
                 "max-md:pt-[var(--app-header-height,5rem)]",
                 "md:pt-12",
               )}

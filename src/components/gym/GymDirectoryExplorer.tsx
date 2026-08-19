@@ -12,7 +12,9 @@ const GymDirectoryMap = lazy(() =>
 );
 
 export const gymDirectoryPageHeightClass =
-  "relative min-h-0 overflow-hidden h-[calc(100dvh-8rem)] md:h-[calc(100dvh-3rem)]";
+  // Usamos flex-1 para que el mapa rellene el alto real del contenedor del Drawer.
+  // Evita huecos al final cuando cambian alturas del header/bottom nav según viewport.
+  "relative flex-1 min-h-0 overflow-hidden";
 
 type Props = {
   actionLabel?: string;

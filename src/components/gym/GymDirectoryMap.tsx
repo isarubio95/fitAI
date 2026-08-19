@@ -405,7 +405,11 @@ export function GymDirectoryMap({
         onChange={onBasemapChange}
         menuPlacement="above"
         className="absolute right-3 z-20"
-        style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+        style={{
+          // BottomNav expone --app-bottom-nav-inset para posicionar elementos
+          // siempre por encima de la barra inferior (incluye safe-area).
+          bottom: "calc(var(--app-bottom-nav-inset, env(safe-area-inset-bottom, 0px)) + 0.75rem)",
+        }}
       />
       <button
         type="button"
@@ -415,7 +419,10 @@ export function GymDirectoryMap({
           "border border-white/15 bg-[#1a1f21]/90 text-white shadow-lg backdrop-blur-sm",
           "transition-colors active:scale-95",
         )}
-        style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom, 0px))" }}
+        style={{
+          // Misma lógica: mantener el botón siempre por encima del BottomNav.
+          bottom: "calc(var(--app-bottom-nav-inset, env(safe-area-inset-bottom, 0px)) + 3.5rem)",
+        }}
         aria-label="Mi ubicación"
       >
         {locating ? (
