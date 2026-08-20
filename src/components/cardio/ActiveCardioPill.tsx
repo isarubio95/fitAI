@@ -55,7 +55,9 @@ export function ActiveCardioPill() {
       role="button"
       tabIndex={0}
       className={`fixed left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none cursor-grab active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full ${
-        stackAboveWorkout ? "bottom-40" : "bottom-24"
+        stackAboveWorkout
+          ? "bottom-40 max-md:bottom-[calc(var(--app-bottom-nav-inset,5rem)+0.75rem+4rem)]"
+          : "bottom-24 max-md:bottom-[calc(var(--app-bottom-nav-inset,5rem)+0.75rem)]"
       }`}
       style={drag.style}
       onPointerDown={drag.onPointerDown}

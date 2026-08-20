@@ -18,7 +18,7 @@ export function ActiveWorkoutPill() {
   const { data: active } = useActiveWorkout();
   const { openActiveWorkout, state } = useGlobalWorkoutDrawer();
   const [elapsed, setElapsed] = useState("");
-  /** bottom-24 = 6rem → 96px con root 16px */
+  /** En desktop: bottom-24. En móvil: encima del BottomNav (+ holgura). */
   const drag = useDraggablePillPosition("gym-log-pill-active-workout", 96, "activeWorkout");
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export function ActiveWorkoutPill() {
       data-draggable-pill
       role="button"
       tabIndex={0}
-      className="fixed bottom-24 left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none cursor-grab active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full"
+      className="fixed bottom-24 left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none cursor-grab active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full max-md:bottom-[calc(var(--app-bottom-nav-inset,5rem)+0.75rem)]"
       style={drag.style}
       onPointerDown={drag.onPointerDown}
       onPointerMove={drag.onPointerMove}

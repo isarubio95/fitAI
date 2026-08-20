@@ -11,16 +11,26 @@ const MOMENTUM_STOP_SPEED = 0.004;
 
 export type DraggablePillBoundsMode = "activeWorkout" | "restSheet" | "restGlobal";
 
+/** Holgura extra por encima del BottomNav (además del gap ya incluido en --app-bottom-nav-inset). */
+const BOTTOM_NAV_EXTRA_GAP_PX = 12;
+
 /** Pill “en curso”: respeta BottomNav en móvil. */
 function bottomInsetPx(): number {
   if (typeof window === "undefined") return EDGE_PX;
   if (window.matchMedia("(min-width: 768px)").matches) return EDGE_PX;
+  const css = getComputedStyle(document.documentElement)
+    .getPropertyValue("--app-bottom-nav-inset")
+    .trim();
+  if (css.endsWith("px")) {
+    const n = Number.parseFloat(css);
+    if (Number.isFinite(n) && n > 0) return n + BOTTOM_NAV_EXTRA_GAP_PX;
+  }
   const nav = document.querySelector("[data-app-bottom-nav]");
   if (nav instanceof HTMLElement) {
     const h = nav.getBoundingClientRect().height;
-    return h + EDGE_PX;
+    return h + EDGE_PX + BOTTOM_NAV_EXTRA_GAP_PX;
   }
-  return 80 + EDGE_PX;
+  return 80 + EDGE_PX + BOTTOM_NAV_EXTRA_GAP_PX;
 }
 
 function minTopPx(mode: DraggablePillBoundsMode): number {
