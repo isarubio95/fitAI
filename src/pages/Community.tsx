@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Loader2, UserPlus, UserCheck } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useUserSearch } from "@/hooks/useUserSearch";
 import { useFollows } from "@/hooks/useFollows";
 import { useCommunityFeed, type CommunityFeedItem } from "@/hooks/useCommunityFeed";
+import { useCommunityFocusedItem } from "@/hooks/useCommunityFocusedItem";
 import { useActivityLikes } from "@/hooks/useActivityLikes";
 import { useActivityCommentCounts } from "@/hooks/useActivityComments";
 import { useCardioSessionLikes } from "@/hooks/useCardioSessionLikes";
@@ -39,6 +41,10 @@ function feedItemKey(item: CommunityFeedItem) {
 
 export default function Community() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const focusGymId = searchParams.get("gym");
+  const focusCardioId = searchParams.get("cardio");
+  const focusCommentsOpen = searchParams.get("comments") === "1";
   const [usernameQuery, setUsernameQuery] = useState("");
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
   const [cardioDetailsId, setCardioDetailsId] = useState<string | null>(null);
@@ -54,6 +60,10 @@ export default function Community() {
     isFetchingNextPage,
   } = useCommunityFeed(followingIds, { enabled: followsFetched });
   const loadingFeed = !followsFetched || loadingFeedQuery;
+  const { item: focusedItem, isLoading: loadingFocused } = useCommunityFocusedItem(
+    focusGymId,
+    focusCardioId,
+  );
   const { openMyProfile, openUserProfile } = useProfileDrawer();
 
   const showSearchPanel = searching || usernameQuery.trim().length > 0;
@@ -66,16 +76,22 @@ export default function Community() {
       .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
   }, [data]);
 
-  const feedActividadIds = useMemo(
-    () =>
-      normalizedFeed.filter((item) => item.type === "gym").map((item) => item.workout.id),
-    [normalizedFeed],
-  );
-  const feedCardioIds = useMemo(
-    () =>
-      normalizedFeed.filter((item) => item.type === "cardio").map((item) => item.session.id),
-    [normalizedFeed],
-  );
+  const displayFeed = useMemo(() => {
+    if (!focusedItem) return normalizedFeed;
+    const key = feedItemKey(focusedItem);
+    return [focusedItem, ...normalizedFeed.filter((item) => feedItemKey(item) !== key)];
+  }, [focusedItem, normalizedFeed]);
+
+  const feedActividadIds = useMemo(() => {
+    const ids = displayFeed.filter((item) => item.type === "gym").map((item) => item.workout.id);
+    if (focusGymId && !ids.includes(focusGymId)) ids.unshift(focusGymId);
+    return ids;
+  }, [displayFeed, focusGymId]);
+  const feedCardioIds = useMemo(() => {
+    const ids = displayFeed.filter((item) => item.type === "cardio").map((item) => item.session.id);
+    if (focusCardioId && !ids.includes(focusCardioId)) ids.unshift(focusCardioId);
+    return ids;
+  }, [displayFeed, focusCardioId]);
   const { likeCounts, likedIds, toggleLike, isToggling: isTogglingLike } =
     useActivityLikes(feedActividadIds);
   const { commentCounts, commentedIds } = useActivityCommentCounts(feedActividadIds);
@@ -95,6 +111,7 @@ export default function Community() {
     commented: commentedIds.has(actividadId),
     onToggleLike: () => toggleLike(actividadId),
     isTogglingLike: isTogglingLike.has(actividadId),
+    defaultCommentsOpen: focusCommentsOpen && focusGymId === actividadId,
   });
 
   const cardioSocialFor = (sessionId: string): CardioFeedCardSocial => ({
@@ -104,6 +121,7 @@ export default function Community() {
     commented: cardioCommentedIds.has(sessionId),
     onToggleLike: () => toggleCardioLike(sessionId),
     isTogglingLike: isTogglingCardioLike.has(sessionId),
+    defaultCommentsOpen: focusCommentsOpen && focusCardioId === sessionId,
   });
 
   useEffect(() => {
@@ -122,14 +140,14 @@ export default function Community() {
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, normalizedFeed.length, showSearchPanel]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, displayFeed.length, showSearchPanel]);
 
   const openAuthorProfile = (authorId: string) => {
     if (authorId === user?.id) openMyProfile();
     else openUserProfile(authorId);
   };
 
-  const hasMergedSecondBlock = !showSearchPanel && (loadingFeed || normalizedFeed.length > 0);
+  const hasMergedSecondBlock = !showSearchPanel && (loadingFeed || loadingFocused || displayFeed.length > 0);
 
   const searchFields = (
     <>
@@ -280,19 +298,19 @@ export default function Community() {
             {showSearchPanel && (
               <CardContent className="space-y-3 px-6 pb-4 pt-0">{searchResultsBody}</CardContent>
             )}
-            {!showSearchPanel && loadingFeed && (
+            {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 && (
               <div className="px-6 pb-4 pt-0">
                 <Skeleton className="h-28 w-full rounded-none border-0 bg-muted/30" />
               </div>
             )}
-            {!showSearchPanel && !loadingFeed && normalizedFeed.length > 0 && (
+            {!showSearchPanel && displayFeed.length > 0 && (
               <CardContent
                 className={cn(
                   "space-y-4 pb-4 pt-6",
-                  normalizedFeed[0].type === "cardio" ? "px-0" : "px-6",
+                  displayFeed[0].type === "cardio" ? "px-0" : "px-6",
                 )}
               >
-                {renderFeedItemBody(normalizedFeed[0])}
+                {renderFeedItemBody(displayFeed[0])}
               </CardContent>
             )}
           </Card>
@@ -311,20 +329,20 @@ export default function Community() {
               )}
             </Card>
 
-            {!showSearchPanel && loadingFeed && (
+            {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 && (
               <Skeleton className="h-28 w-full rounded-3xl border-0 bg-card" />
             )}
 
-            {!showSearchPanel && !loadingFeed && normalizedFeed.length > 0 && renderFeedCard(normalizedFeed[0])}
+            {!showSearchPanel && displayFeed.length > 0 && renderFeedCard(displayFeed[0])}
           </div>
 
-          {!showSearchPanel && !loadingFeed && normalizedFeed.length === 0 && (
+          {!showSearchPanel && !loadingFeed && !loadingFocused && displayFeed.length === 0 && (
             <p className="px-6 py-6 text-center text-sm text-muted-foreground">
               {communityFeedEmptyMessage(followingIds.size)}
             </p>
           )}
 
-          {!showSearchPanel && loadingFeed && normalizedFeed.length === 0 && (
+          {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 && (
             <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-28 w-full rounded-none border-0 bg-card md:rounded-3xl" />
@@ -332,9 +350,9 @@ export default function Community() {
             </div>
           )}
 
-          {!showSearchPanel && !loadingFeed && normalizedFeed.length > 1 && (
+          {!showSearchPanel && displayFeed.length > 1 && (
             <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
-              {normalizedFeed.slice(1).map((item) => renderFeedCard(item))}
+              {displayFeed.slice(1).map((item) => renderFeedCard(item))}
             </div>
           )}
 
