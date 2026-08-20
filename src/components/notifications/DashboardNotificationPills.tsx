@@ -52,6 +52,7 @@ function Pill({ item, onDismiss }: { item: InAppNotificationItem; onDismiss: (id
           compact
           interaction={item.interaction}
           targetType={item.targetType}
+          targetId={item.targetId}
           targetTitle={item.targetTitle}
           autorId={item.autorId}
           username={item.username}

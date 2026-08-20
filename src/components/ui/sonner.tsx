@@ -9,11 +9,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
-      position="bottom-center"
+      position="top-center"
       duration={5000}
-      offset={24}
+      offset={16}
+      swipeDirections={["left", "right", "top"]}
       mobileOffset={{
-        bottom: "var(--app-bottom-nav-inset, calc(1rem + env(safe-area-inset-bottom, 0px)))",
+        top: "calc(var(--app-header-height, 5rem) + 0.5rem)",
         left: 16,
         right: 16,
       }}

@@ -41,8 +41,8 @@ export function BottomNav({
     kind: "popover",
   });
 
-  // Expone el espacio inferior real (nav + safe area) para posicionar toasts de forma
-  // estable aunque el usuario tenga el tamaño de fuente del sistema aumentado.
+  // Expone el espacio inferior real (nav + safe area) para FAB, pills y overlays
+  // aunque el usuario tenga el tamaño de fuente del sistema aumentado.
   useEffect(() => {
     const nav = navRef.current;
     if (!nav || skipInsetSync) return;

@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { toast } from "sonner";
 import { useInAppNotificationsDismiss } from "@/contexts/InAppNotificationsContext";
 import { useMyFollowersReceived } from "@/hooks/useMyFollowersReceived";
 import { useAuth } from "@/hooks/useAuth";
+import { notifyNewFollowerToast } from "@/components/notifications/inAppSocialToast";
 
 const FOLLOWER_SEED_LS = (userId: string) => `gym-log.notifications.follower-seed:${userId}`;
 /** Persistente: un toast por fila de follow, no por sesión de pestaña. */
@@ -129,8 +129,11 @@ export function InAppFollowerToastSync() {
       if (dismissed.has(nid)) continue;
       if (followerToastShown.has(row.id)) continue;
       markFollowerToastShownOnce(user.id, row.id);
-      const label = row.username?.trim() || "Alguien";
-      toast.message(`${label} te ha empezado a seguir`);
+      notifyNewFollowerToast({
+        seguidorId: row.seguidor_id,
+        username: row.username,
+        avatarUrl: row.avatar_url,
+      });
     }
   }, [user?.id, followersSuccess, followersError, followersReceived, dismissed, dismissMany]);
 

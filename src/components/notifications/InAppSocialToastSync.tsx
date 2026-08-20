@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { toast } from "sonner";
 import { useInAppNotificationsDismiss } from "@/contexts/InAppNotificationsContext";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -7,7 +6,7 @@ import {
   useMySocialInteractionsReceived,
 } from "@/hooks/useMySocialInteractionsReceived";
 import { createInAppToastSeenStore } from "@/lib/inAppToastSeenStore";
-import { socialInteractionToastMessage } from "@/lib/socialInteractionNotification";
+import { notifySocialInteractionToast } from "@/components/notifications/inAppSocialToast";
 
 const socialToastSeen = createInAppToastSeenStore("social");
 
@@ -49,7 +48,7 @@ export function InAppSocialToastSync() {
       if (dismissed.has(socialInteractionNotificationId(row))) continue;
       if (socialToastSeen.hasShown(row.id)) continue;
       socialToastSeen.markShown(user.id, row.id);
-      toast.message(socialInteractionToastMessage(row));
+      notifySocialInteractionToast(row);
     }
   }, [user?.id, isSuccess, isError, interactions, dismissed, dismissMany]);
 

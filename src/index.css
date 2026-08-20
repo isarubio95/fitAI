@@ -526,3 +526,16 @@
     padding: 12px 16px !important;
   }
 }
+
+/* Toasts sociales: borde verde propio (Sonner pinta uno claro por defecto). */
+[data-sonner-toaster] [data-sonner-toast].social-in-app-toast,
+[data-sonner-toaster] [data-sonner-toast].social-in-app-toast[data-styled="true"],
+[data-sonner-toaster] [data-sonner-toast].social-in-app-toast[data-styled="false"] {
+  border: 1px solid hsl(var(--success)) !important;
+  border-left-width: 4px !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: hsl(var(--success-muted)) !important;
+  color: hsl(var(--success-foreground)) !important;
+  cursor: pointer;
+}

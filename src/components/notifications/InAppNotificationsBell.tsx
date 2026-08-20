@@ -61,6 +61,7 @@ function NotificationRow({
         <SocialInteractionNotificationContent
           interaction={item.interaction}
           targetType={item.targetType}
+          targetId={item.targetId}
           targetTitle={item.targetTitle}
           autorId={item.autorId}
           username={item.username}
@@ -123,7 +124,11 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
         aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount})` : "Notificaciones"}
         onClick={() => setOpen(true)}
       >
-        <Bell className="text-current" />
+        <Bell
+          className="text-current"
+          fill={unreadCount > 0 ? "currentColor" : "none"}
+          aria-hidden
+        />
         {unreadCount > 0 ? (
           <span className="absolute right-[-2.5px] top-[0.5px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary-solid px-1 text-[10px] font-bold leading-none text-primary-foreground">
             {unreadCount > 9 ? "9+" : unreadCount}

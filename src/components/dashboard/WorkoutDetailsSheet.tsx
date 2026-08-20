@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import { WorkoutMuscleMiniMap } from "@/components/dashboard/WorkoutMuscleMiniMap";
+import { ActivityDetailsSocial } from "@/components/community/ActivityDetailsSocial";
 import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -51,6 +52,8 @@ type WorkoutDetailsSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workoutId: string | null;
+  /** Abre el panel de comentarios al mostrar el detalle (p. ej. toast de comentario). */
+  initialCommentsOpen?: boolean;
 };
 
 const RADAR = {
@@ -393,7 +396,12 @@ function ExerciseBlock({
   );
 }
 
-export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDetailsSheetProps) {
+export function WorkoutDetailsSheet({
+  open,
+  onOpenChange,
+  workoutId,
+  initialCommentsOpen,
+}: WorkoutDetailsSheetProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: workout, isLoading } = useWorkoutById(workoutId);
@@ -466,6 +474,16 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
           </DrawerHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-card">
+            {workout ? (
+              <ActivityDetailsSocial
+                kind="gym"
+                targetId={workout.id}
+                ownerId={workout.usuario_id}
+                isPublic={workout.es_publica}
+                initialCommentsOpen={initialCommentsOpen}
+                className="px-6 pt-4"
+              />
+            ) : null}
             <WorkoutDetailsContent
               workout={workout}
               isLoading={isLoading}

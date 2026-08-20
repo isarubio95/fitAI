@@ -28,8 +28,28 @@ import { InAppNotificationsProvider } from "@/contexts/InAppNotificationsContext
 import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
 import { InAppFollowerToastSync } from "@/components/notifications/InAppFollowerToastSync";
 import { InAppSocialToastSync } from "@/components/notifications/InAppSocialToastSync";
+import { InAppToastNavigationHost } from "@/components/notifications/InAppToastNavigationHost";
+import { notifySocialInteractionToast } from "@/components/notifications/inAppSocialToast";
 import { useSafeAreaInsetsSync } from "@/hooks/useSafeAreaInsetsSync";
 import { useLogrosSync } from "@/hooks/useLogrosSync";
+
+/** Mock temporal para previsualizar toasts sociales — quitar cuando ya no haga falta. */
+function MockSocialToastPreview() {
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      notifySocialInteractionToast({
+        interaction: "comment",
+        targetType: "actividad",
+        targetId: "mock-preview",
+        username: "noeliapinillos",
+        // Foto de muestra (randomuser) para previsualizar el avatar realista
+        avatarUrl: "https://randomuser.me/api/portraits/women/44.jpg",
+      });
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, []);
+  return null;
+}
 
 export function AppLayout() {
   useSafeAreaInsetsSync();
@@ -205,7 +225,9 @@ export function AppLayout() {
         <InAppNotificationsProvider>
       <InAppFollowerToastSync />
       <InAppSocialToastSync />
+      <MockSocialToastPreview />
       <ProfileDrawerProvider>
+      <InAppToastNavigationHost />
       <div className="flex min-h-screen bg-background">
         <DesktopSidebar />
         <div className="relative flex min-w-0 flex-1 flex-col">

@@ -33,6 +33,7 @@ import {
 import { resolveCardioSessionIcon } from "@/lib/cardioIcons";
 import { formatActivityAbsoluteDate } from "@/lib/formatActivityRelativeDate";
 import { CardioStartMetaRow } from "@/components/cardio/CardioStartMetaRow";
+import { ActivityDetailsSocial } from "@/components/community/ActivityDetailsSocial";
 import { cn } from "@/lib/utils";
 
 const CardioRouteMap = lazy(() =>
@@ -43,6 +44,8 @@ type CardioDetailsSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sessionId: string | null;
+  /** Abre el panel de comentarios al mostrar el detalle (p. ej. toast de comentario). */
+  initialCommentsOpen?: boolean;
 };
 
 function StatBlock({ label, value }: { label: string; value: string }) {
@@ -54,7 +57,12 @@ function StatBlock({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDetailsSheetProps) {
+export function CardioDetailsSheet({
+  open,
+  onOpenChange,
+  sessionId,
+  initialCommentsOpen,
+}: CardioDetailsSheetProps) {
   const { data: session, isLoading } = useCardioSessionById(open ? sessionId : null);
   const saveRoute = useSaveCardioRouteFromSession();
   const { toast } = useToast();
@@ -131,6 +139,14 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+              <ActivityDetailsSocial
+                kind="cardio"
+                targetId={session.id}
+                ownerId={session.usuario_id}
+                isPublic={!!session.es_publica}
+                initialCommentsOpen={initialCommentsOpen}
+                className="px-4"
+              />
               <div className="grid shrink-0 grid-cols-2 gap-2 px-4">
                 <StatBlock label="Tiempo" value={formatCardioDuration(metrics.durationSec)} />
                 <StatBlock

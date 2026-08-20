@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { Heart, MessageCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
+import { navigateFromInAppToast } from "@/lib/inAppToastNavigation";
 import {
   socialInteractionAuthorName,
   socialInteractionCommentPreview,
@@ -22,6 +22,7 @@ function initialsFromUsername(username?: string | null) {
 type Props = {
   interaction: SocialInteractionType;
   targetType: SocialInteractionTargetType;
+  targetId: string;
   targetTitle: string;
   autorId: string;
   username: string | null;
@@ -38,8 +39,8 @@ type Props = {
 export function SocialInteractionNotificationContent({
   interaction,
   targetType,
+  targetId,
   targetTitle,
-  autorId,
   username,
   avatarUrl,
   texto,
@@ -48,7 +49,6 @@ export function SocialInteractionNotificationContent({
   className,
   trailing,
 }: Props) {
-  const { openUserProfile } = useProfileDrawer();
   const avatar = useUserAvatar([avatarUrl]);
   const displayName = socialInteractionAuthorName(username);
 
@@ -61,8 +61,13 @@ export function SocialInteractionNotificationContent({
         ? `${commentPreview} en ${targetTitle}`
         : `Ha comentado en ${targetTitle}`;
 
-  const openProfile = () => {
-    openUserProfile(autorId);
+  const openTarget = () => {
+    navigateFromInAppToast({
+      type: "activity",
+      targetType,
+      targetId,
+      openComments: interaction === "comment",
+    });
     onAfterOpenProfile?.();
   };
 
@@ -78,7 +83,7 @@ export function SocialInteractionNotificationContent({
 
       <button
         type="button"
-        onClick={openProfile}
+        onClick={openTarget}
         className="-m-1 flex min-w-0 items-center gap-3 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
       >
         <Avatar className={cn("shrink-0", compact ? "h-10 w-10" : "h-11 w-11")}>
