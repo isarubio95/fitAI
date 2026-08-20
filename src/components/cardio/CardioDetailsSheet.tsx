@@ -47,7 +47,7 @@ type CardioDetailsSheetProps = {
 
 function StatBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="shrink-0 rounded-xl bg-muted/40 px-3 py-3 text-left">
+    <div className="min-w-0 rounded-xl bg-card px-3 py-3 text-center">
       <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 font-mono text-base font-semibold tabular-nums">{value}</p>
     </div>
@@ -97,7 +97,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         className={cn(
-          "flex max-h-[92dvh] flex-col gap-0 overflow-hidden bg-card p-0",
+          "flex h-[92dvh] max-h-[92dvh] flex-col gap-0 overflow-hidden bg-card p-0",
           drawerSafeAreaBottom,
         )}
       >
@@ -123,15 +123,15 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
           )}
         </DrawerHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-card py-4">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background pt-4">
           {isLoading || !session || !metrics ? (
-            <div className="space-y-3 px-6">
+            <div className="space-y-3 px-6 pb-4">
               <Skeleton className="h-48 w-full rounded-xl" />
               <Skeleton className="h-20 w-full rounded-xl" />
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-start gap-2 px-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+              <div className="grid shrink-0 grid-cols-2 gap-2 px-4">
                 <StatBlock label="Tiempo" value={formatCardioDuration(metrics.durationSec)} />
                 <StatBlock
                   label="Distancia"
@@ -161,8 +161,33 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
                 ) : null}
               </div>
 
+              {hasRoute ? (
+                <div className="shrink-0 overflow-hidden">
+                  <Suspense fallback={<div className="map-route-skeleton relative h-64 w-full" aria-hidden />}>
+                    <CardioRouteMap
+                      points={mapPoints}
+                      interactive
+                      cameraKey={session.id}
+                      className="h-64 w-full"
+                    />
+                  </Suspense>
+                </div>
+              ) : (
+                <div className="mx-6 flex shrink-0 items-center gap-4 rounded-2xl bg-muted/30 px-4 py-6">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-background/80 shadow-sm">
+                    {Icon ? <Icon className="h-8 w-8" aria-hidden /> : null}
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Sin recorrido GPS</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Métricas de la sesión (estilo indoor / sin mapa).
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {(metrics.fcMedia != null || metrics.fcMax != null) && (
-                <p className="flex items-center gap-2 px-6 text-sm tabular-nums text-muted-foreground">
+                <p className="flex shrink-0 items-center gap-2 px-6 text-sm tabular-nums text-muted-foreground">
                   <Heart className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                   {metrics.fcMedia != null ? (
                     <span>
@@ -177,33 +202,8 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
                 </p>
               )}
 
-              {hasRoute ? (
-                <div className="overflow-hidden">
-                  <Suspense fallback={<div className="map-route-skeleton relative h-64 w-full" aria-hidden />}>
-                    <CardioRouteMap
-                      points={mapPoints}
-                      interactive
-                      cameraKey={session.id}
-                      className="h-64 w-full"
-                    />
-                  </Suspense>
-                </div>
-              ) : (
-                <div className="mx-6 flex items-center gap-4 rounded-2xl bg-muted/30 px-4 py-6">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-background/80 shadow-sm">
-                    {Icon ? <Icon className="h-8 w-8" aria-hidden /> : null}
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground">Sin recorrido GPS</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Métricas de la sesión (estilo indoor / sin mapa).
-                    </p>
-                  </div>
-                </div>
-              )}
-
               {running ? (
-                <div className="mx-6 rounded-xl border border-border/40 p-3 text-sm">
+                <div className="mx-6 shrink-0 rounded-xl border border-border/40 p-3 text-sm">
                   <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Running
                   </p>
@@ -229,7 +229,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
               ) : null}
 
               {cycling ? (
-                <div className="mx-6 rounded-xl border border-border/40 p-3 text-sm">
+                <div className="mx-6 shrink-0 rounded-xl border border-border/40 p-3 text-sm">
                   <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Cycling
                   </p>
@@ -268,7 +268,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
               ) : null}
 
               {session.comentarios?.trim() ? (
-                <div className="mx-6 rounded-xl bg-muted/30 p-3 text-left">
+                <div className="mx-6 shrink-0 rounded-xl bg-muted/30 p-3 text-left">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Notas
                   </p>
