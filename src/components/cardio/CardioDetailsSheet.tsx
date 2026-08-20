@@ -130,7 +130,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
               <Skeleton className="h-20 w-full rounded-xl" />
             </div>
           ) : (
-            <div className={cn("space-y-4", hasRoute && "pb-16")}>
+            <div className="space-y-4">
               <div className="flex flex-wrap items-start gap-2 px-6">
                 <StatBlock label="Tiempo" value={formatCardioDuration(metrics.durationSec)} />
                 <StatBlock
