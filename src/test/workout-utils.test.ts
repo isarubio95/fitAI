@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   defaultSetForMode,
   formatRitmoSegKmLabel,
+  formPatchFromLastSet,
   normalizeRegistroSeries,
   serieFieldsForRegistro,
   setHasWork,
   serieCountsAsRecorded,
+  setIsUnlogged,
 } from "@/types/workout";
 
 describe("workout utils", () => {
@@ -37,6 +39,41 @@ describe("workout utils", () => {
     expect(serieCountsAsRecorded({ completed: true, repeticiones: 0, peso_kg: 0 })).toBe(true);
     expect(serieCountsAsRecorded({ completed: false, repeticiones: 0, peso_kg: 0 })).toBe(false);
     expect(serieCountsAsRecorded({ completed: false, repeticiones: 8, peso_kg: 0 })).toBe(true);
+  });
+
+  it("no cuenta precargas del registro anterior hasta marcarlas o editarlas", () => {
+    expect(
+      serieCountsAsRecorded({
+        completed: false,
+        seededFromPrevious: true,
+        repeticiones: 8,
+        peso_kg: 60,
+      }),
+    ).toBe(false);
+    expect(
+      serieCountsAsRecorded({
+        completed: true,
+        seededFromPrevious: true,
+        repeticiones: 8,
+        peso_kg: 60,
+      }),
+    ).toBe(true);
+  });
+
+  it("detecta series vacías candidatas a precargar", () => {
+    const blank = defaultSetForMode("peso_reps");
+    expect(setIsUnlogged(blank, "peso_reps")).toBe(true);
+    expect(setIsUnlogged({ ...blank, repeticiones: 8 }, "peso_reps")).toBe(false);
+    expect(setIsUnlogged({ ...blank, seededFromPrevious: true, repeticiones: 8, peso_kg: 60 }, "peso_reps")).toBe(false);
+    expect(setIsUnlogged(defaultSetForMode("duracion", 45), "duracion")).toBe(false);
+    expect(setIsUnlogged(defaultSetForMode("duracion"), "duracion")).toBe(true);
+  });
+
+  it("copia el último registro al parche de la serie según el modo", () => {
+    const last = { peso_kg: 60, repeticiones: 8, duracion_seg: 45, ritmo_seg_km: 300 };
+    expect(formPatchFromLastSet("peso_reps", last)).toEqual({ repeticiones: 8, peso_kg: 60 });
+    expect(formPatchFromLastSet("duracion", last)).toEqual({ duracion_seg: 45 });
+    expect(formPatchFromLastSet("duracion_ritmo", last)).toEqual({ duracion_seg: 45, ritmo_seg_km: 300 });
   });
 
   it("genera set por defecto por modo", () => {

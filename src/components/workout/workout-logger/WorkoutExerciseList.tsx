@@ -33,6 +33,7 @@ export type WorkoutExerciseListProps = {
     field: keyof SetFormData,
     value: number | null,
   ) => void;
+  onSeedSetFromPrevious: (exerciseIndex: number, setIndex: number, patch: Partial<SetFormData>) => void;
   onAutoSaveSet: (exerciseIndex: number, setIndex: number) => void;
   onSetCompleted: (exerciseIndex: number, setIndex: number, completed: boolean) => void;
   onViewExerciseDetails: (exercise: ExerciseFormData) => void;
@@ -48,6 +49,7 @@ export function WorkoutExerciseList({
   onAddSet,
   onRemoveSet,
   onUpdateSet,
+  onSeedSetFromPrevious,
   onAutoSaveSet,
   onSetCompleted,
   onViewExerciseDetails,
@@ -104,6 +106,11 @@ export function WorkoutExerciseList({
                                 onAddSet={() => onAddSet(ei)}
                                 onRemoveSet={(si) => onRemoveSet(ei, si)}
                                 onUpdateSet={(si, field, value) => onUpdateSet(ei, si, field, value)}
+                                onSeedSetFromPrevious={
+                                  isActiveWorkout
+                                    ? (si, patch) => onSeedSetFromPrevious(ei, si, patch)
+                                    : undefined
+                                }
                                 onAutoSaveSet={(si) => onAutoSaveSet(ei, si)}
                                 onSetCompleted={
                                   isActiveWorkout
@@ -128,6 +135,11 @@ export function WorkoutExerciseList({
                         onAddSet={() => onAddSet(ei)}
                         onRemoveSet={(si) => onRemoveSet(ei, si)}
                         onUpdateSet={(si, field, value) => onUpdateSet(ei, si, field, value)}
+                        onSeedSetFromPrevious={
+                          isActiveWorkout
+                            ? (si, patch) => onSeedSetFromPrevious(ei, si, patch)
+                            : undefined
+                        }
                         onAutoSaveSet={(si) => onAutoSaveSet(ei, si)}
                         onSetCompleted={
                           isActiveWorkout

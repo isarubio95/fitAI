@@ -70,6 +70,7 @@ import {
   serieCountsAsRecorded,
   countRecordedSets,
   serieFieldsForRegistro,
+  setIsUnlogged,
 } from "@/types/workout";
 
 export function WorkoutLogger() {
@@ -748,12 +749,36 @@ export function WorkoutLogger() {
     setExercises((prev) =>
       prev.map((ex, i) =>
         i === exerciseIndex
-          ? { ...ex, sets: ex.sets.map((s, si) => (si === setIndex ? { ...s, [field]: value } : s)) }
+          ? {
+              ...ex,
+              sets: ex.sets.map((s, si) =>
+                si === setIndex ? { ...s, [field]: value, seededFromPrevious: false } : s,
+              ),
+            }
           : ex
       )
     );
     if (isActiveWorkout) scheduleAutoSave(exerciseIndex, setIndex);
   };
+
+  const seedSetFromPrevious = useCallback(
+    (exerciseIndex: number, setIndex: number, patch: Partial<SetFormData>) => {
+      setExercises((prev) =>
+        prev.map((ex, i) => {
+          if (i !== exerciseIndex) return ex;
+          const mode = normalizeRegistroSeries(ex.registro_series);
+          return {
+            ...ex,
+            sets: ex.sets.map((s, si) => {
+              if (si !== setIndex || !setIsUnlogged(s, mode)) return s;
+              return { ...s, ...patch, seededFromPrevious: true };
+            }),
+          };
+        }),
+      );
+    },
+    [],
+  );
 
   /**
    * Mantiene la caché de React Query (["workout", id]) sincronizada con los
@@ -815,7 +840,9 @@ export function WorkoutLogger() {
     autoSaveTimersRef.current = {};
     if (!effectiveWorkoutId) return;
     const pending = exercises.flatMap((ex, exerciseIndex) =>
-      ex.sets.map((set, setIndex) => ({ exerciseIndex, setIndex, set })).filter(({ set }) => set.id),
+      ex.sets
+        .map((set, setIndex) => ({ exerciseIndex, setIndex, set }))
+        .filter(({ set }) => set.id && !set.seededFromPrevious),
     );
     await Promise.all(pending.map(({ exerciseIndex, setIndex }) => persistSetToDb(exerciseIndex, setIndex)));
   }, [effectiveWorkoutId, exercises, persistSetToDb]);
@@ -829,7 +856,14 @@ export function WorkoutLogger() {
       setExercises((prev) =>
         prev.map((e, i) =>
           i === exerciseIndex
-            ? { ...e, sets: e.sets.map((s, si) => (si === setIndex ? { ...s, completed } : s)) }
+            ? {
+                ...e,
+                sets: e.sets.map((s, si) =>
+                  si === setIndex
+                    ? { ...s, completed, ...(completed ? { seededFromPrevious: false } : {}) }
+                    : s,
+                ),
+              }
             : e
         )
       );
@@ -1121,7 +1155,7 @@ export function WorkoutLogger() {
 
           // Calculate XP and show post-workout modal
           const completedSets = exercises.reduce(
-            (acc, ex) => acc + ex.sets.filter((s) => s.completed || setHasWork(s)).length,
+            (acc, ex) => acc + ex.sets.filter((s) => serieCountsAsRecorded(s)).length,
             0
           );
           try {
@@ -1501,6 +1535,7 @@ export function WorkoutLogger() {
                   onAddSet={addSet}
                   onRemoveSet={removeSet}
                   onUpdateSet={updateSet}
+                  onSeedSetFromPrevious={seedSetFromPrevious}
                   onAutoSaveSet={handleAutoSaveSet}
                   onSetCompleted={handleSetCompleted}
                   onViewExerciseDetails={handleViewExerciseDetails}

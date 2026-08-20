@@ -1,4 +1,4 @@
-import { useContext, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { DrawerInContentContext } from "@/components/ui/drawer";
 import { useLastPerformance, type LastSetData } from "@/hooks/useLastPerformance";
 import { formatMSS } from "@/hooks/useRestTimer";
@@ -22,6 +22,9 @@ import {
   type SetFormData,
   normalizeRegistroSeries,
   formatRitmoSegKmLabel,
+  setIsUnlogged,
+  formPatchFromLastSet,
+  setHasWork,
 } from "@/types/workout";
 import { ActiveWorkoutCheckbox } from "./ActiveWorkoutCheckbox";
 import { SwipeToDeleteRow } from "./SwipeToDeleteRow";
@@ -54,6 +57,7 @@ interface ExerciseCardProps {
   onAddSet: () => void;
   onRemoveSet: (setIndex: number) => void;
   onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number | null) => void;
+  onSeedSetFromPrevious?: (setIndex: number, patch: Partial<SetFormData>) => void;
   onAutoSaveSet?: (setIndex: number) => void;
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
   dragHandleProps?: DraggableSyntheticListeners & Partial<DraggableAttributes>;
@@ -68,6 +72,7 @@ export function ExerciseCard({
   onAddSet,
   onRemoveSet,
   onUpdateSet,
+  onSeedSetFromPrevious,
   onAutoSaveSet,
   onSetCompleted,
   dragHandleProps,
@@ -104,6 +109,17 @@ export function ExerciseCard({
     return () => observer.disconnect();
   }, [exercise.sets, lastPerf, mode]);
 
+  useEffect(() => {
+    if (!onSeedSetFromPrevious || !lastPerf?.sets.length) return;
+    exercise.sets.forEach((s, si) => {
+      const prev = lastPerf.sets[si];
+      if (!prev || !setIsUnlogged(s, mode)) return;
+      const patch = formPatchFromLastSet(mode, prev);
+      if (!setHasWork({ ...s, ...patch })) return;
+      onSeedSetFromPrevious(si, patch);
+    });
+  }, [exercise.sets, lastPerf, mode, onSeedSetFromPrevious]);
+
   const restSeconds = exercise.descanso ?? 120;
 
   /** Misma base visual que el badge de descanso (outline + borde tema). */
@@ -134,7 +150,7 @@ export function ExerciseCard({
   );
 
   const previousCell = (si: number) => (
-    <span data-anterior-cell className="w-max justify-self-center whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+    <span data-anterior-cell className="w-max justify-self-center whitespace-nowrap text-xs tracking-wide tabular-nums text-muted-foreground">
       {formatPreviousSet(mode, lastPerf?.sets[si])}
     </span>
   );
@@ -218,7 +234,7 @@ export function ExerciseCard({
               className={surfaceBg}
             >
               <div className={SETS_GRID_TWO_INPUTS}>
-                <span data-num-cell className="mx-0.5 w-max justify-self-start text-left text-sm tabular-nums text-muted-foreground">{si + 1}</span>
+                <span data-num-cell className="mr-0.5 w-max justify-self-start text-left text-sm tabular-nums text-muted-foreground">{si + 1}</span>
                 {previousCell(si)}
                 <SetValueInput
                   field="repeticiones"

@@ -34,4 +34,17 @@ describe("countRecordedSets", () => {
     expect(countRecordedSets([{ sets: [{ repeticiones: 0, peso_kg: 0 }] }])).toBe(0);
     expect(countRecordedSets([])).toBe(0);
   });
+
+  it("ignora series precargadas del registro anterior", () => {
+    expect(
+      countRecordedSets([
+        {
+          sets: [
+            { repeticiones: 8, peso_kg: 60, seededFromPrevious: true },
+            { repeticiones: 8, peso_kg: 60 },
+          ],
+        },
+      ]),
+    ).toBe(1);
+  });
 });

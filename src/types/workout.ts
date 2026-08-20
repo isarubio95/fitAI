@@ -41,18 +41,59 @@ export function setHasWork(s: {
 /** Serie con datos o marcada como completada (persistida en sesión activa). */
 export function serieCountsAsRecorded(s: {
   completed?: boolean;
+  /** Precarga del último entreno: visible en inputs, aún no registrada. */
+  seededFromPrevious?: boolean;
   repeticiones?: number;
   peso_kg?: number;
   duracion_seg?: number | null;
   ritmo_seg_km?: number | null;
 }): boolean {
+  if (s.seededFromPrevious && !s.completed) return false;
   return !!s.completed || setHasWork(s);
 }
 
 export function countRecordedSets(
-  exercises: Array<{ sets: Array<Parameters<typeof setHasWork>[0]> }>,
+  exercises: Array<{
+    sets: Array<Parameters<typeof setHasWork>[0] & { seededFromPrevious?: boolean }>;
+  }>,
 ): number {
-  return exercises.reduce((acc, ex) => acc + ex.sets.filter(setHasWork).length, 0);
+  return exercises.reduce(
+    (acc, ex) => acc + ex.sets.filter((s) => !s.seededFromPrevious && setHasWork(s)).length,
+    0,
+  );
+}
+
+export type LastSetLike = {
+  peso_kg: number;
+  repeticiones: number;
+  duracion_seg?: number | null;
+  ritmo_seg_km?: number | null;
+};
+
+/** Serie vacía de la sesión actual, candidata a precargar el último registro. */
+export function setIsUnlogged(s: SetFormData, mode: RegistroSeries): boolean {
+  if (s.completed || s.seededFromPrevious) return false;
+  if (mode === "duracion") return !(Number(s.duracion_seg) > 0);
+  if (mode === "duracion_ritmo") {
+    return !(Number(s.duracion_seg) > 0) && !(Number(s.ritmo_seg_km) > 0);
+  }
+  return !Number(s.repeticiones) && !Number(s.peso_kg);
+}
+
+export function formPatchFromLastSet(mode: RegistroSeries, last: LastSetLike): Partial<SetFormData> {
+  if (mode === "duracion") {
+    return { duracion_seg: last.duracion_seg ?? 0 };
+  }
+  if (mode === "duracion_ritmo") {
+    return {
+      duracion_seg: last.duracion_seg ?? 0,
+      ritmo_seg_km: last.ritmo_seg_km ?? null,
+    };
+  }
+  return {
+    repeticiones: last.repeticiones,
+    peso_kg: last.peso_kg,
+  };
 }
 
 export function defaultSetForMode(
@@ -102,6 +143,8 @@ export interface SetFormData {
   descanso?: number; // rest time in seconds
   id?: string;
   completed?: boolean;
+  /** Valores copiados del último entreno; no cuentan como serie registrada hasta editar o marcar hecha. */
+  seededFromPrevious?: boolean;
 }
 
 export interface ExerciseFormData {

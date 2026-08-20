@@ -1,0 +1,101 @@
+import { render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import type { ExerciseFormData, SetFormData } from "@/types/workout";
+
+beforeAll(() => {
+  class ResizeObserverMock {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+});
+
+const lastPerf = {
+  fecha: "2026-08-10",
+  sets: [
+    { numero_serie: 1, peso_kg: 60, repeticiones: 8, duracion_seg: null, ritmo_seg_km: null },
+    { numero_serie: 2, peso_kg: 62.5, repeticiones: 6, duracion_seg: null, ritmo_seg_km: null },
+  ],
+};
+
+vi.mock("@/hooks/useLastPerformance", () => ({
+  useLastPerformance: () => ({ data: lastPerf }),
+}));
+
+import { ExerciseCard } from "@/components/workout/ExerciseCard";
+
+const emptySet = (): SetFormData => ({
+  repeticiones: 0,
+  peso_kg: 0,
+  duracion_seg: null,
+  ritmo_seg_km: null,
+  completed: false,
+});
+
+function ActiveExerciseHarness({
+  initialSets = [emptySet(), emptySet()],
+}: {
+  initialSets?: SetFormData[];
+}) {
+  const [exercise, setExercise] = useState<ExerciseFormData>({
+    nombre: "Press banca",
+    tipo_ejercicio_id: "press",
+    registro_series: "peso_reps",
+    sets: initialSets,
+  });
+
+  return (
+    <ExerciseCard
+      exercise={exercise}
+      exerciseIndex={0}
+      onRemoveExercise={() => undefined}
+      onAddSet={() => undefined}
+      onRemoveSet={() => undefined}
+      onUpdateSet={() => undefined}
+      onSeedSetFromPrevious={(si, patch) => {
+        setExercise((ex) => ({
+          ...ex,
+          sets: ex.sets.map((s, i) =>
+            i === si ? { ...s, ...patch, seededFromPrevious: true } : s,
+          ),
+        }));
+      }}
+      onSetCompleted={() => undefined}
+    />
+  );
+}
+
+describe("ExerciseCard", () => {
+  it("precarga los inputs con el último registro en un entreno activo", async () => {
+    render(<ActiveExerciseHarness />);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("8")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("60")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("6")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("62.5")).toBeInTheDocument();
+    });
+  });
+
+  it("no pisa series que ya tienen datos de la sesión", async () => {
+    render(
+      <ActiveExerciseHarness
+        initialSets={[
+          { repeticiones: 10, peso_kg: 70, duracion_seg: null, ritmo_seg_km: null, completed: false },
+          emptySet(),
+        ]}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("10")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("70")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("6")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("62.5")).toBeInTheDocument();
+    });
+    expect(screen.queryByDisplayValue("8")).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue("60")).not.toBeInTheDocument();
+  });
+});
