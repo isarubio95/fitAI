@@ -571,18 +571,13 @@ function WorkoutCompactSummary({
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
-        <div
-          className={cn(
-            "flex min-w-0 flex-1 gap-3",
-            leadingRoutineIcon ? "items-center" : "items-start",
-          )}
-        >
-          {leadingRoutineIcon ? (
-            <WorkoutLeadingRoutineIcon iconKey={leadingRoutineIcon} className="h-4 w-4" />
-          ) : leadingAvatar ? (
-            <WorkoutLeadingAvatarBadge avatar={leadingAvatar} />
-          ) : null}
+      <div className="flex items-start gap-3">
+        {leadingRoutineIcon ? (
+          <WorkoutLeadingRoutineIcon iconKey={leadingRoutineIcon} className="mt-0.5 h-4 w-4" />
+        ) : leadingAvatar ? (
+          <WorkoutLeadingAvatarBadge avatar={leadingAvatar} />
+        ) : null}
+        <div className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
           <h3
             className={cn(
               "min-w-0 flex-1 text-sm font-semibold leading-snug",
@@ -591,12 +586,14 @@ function WorkoutCompactSummary({
           >
             {workout.titulo}
           </h3>
-        </div>
-        <div className="shrink-0 text-right text-[11px] leading-tight text-muted-foreground tabular-nums">
-          {!hideDate && workout.fecha ? (
-            <time dateTime={workout.fecha}>{formatActivityRelativeDate(workout.fecha)}</time>
-          ) : null}
-          <p className={!hideDate && workout.fecha ? "mt-0.5" : undefined}>{statsLabel}</p>
+          <div className="shrink-0 text-right text-[11px] leading-snug text-muted-foreground tabular-nums">
+            {!hideDate && workout.fecha ? (
+              <time dateTime={workout.fecha} className="block">
+                {formatActivityRelativeDate(workout.fecha)}
+              </time>
+            ) : null}
+            <p className={!hideDate && workout.fecha ? "mt-0.5" : undefined}>{statsLabel}</p>
+          </div>
         </div>
       </div>
       {workout.gimnasio_nombre ? (
