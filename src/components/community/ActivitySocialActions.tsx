@@ -1,9 +1,10 @@
 import { useState, type FormEvent, type MouseEvent } from "react";
-import { Heart, MessageCircle, Loader2, Trash2, Send } from "lucide-react";
+import { Heart, MessageCircle, Loader2, Trash2, Send, Share2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { useActivityComments } from "@/hooks/useActivityComments";
 import { useCardioSessionComments } from "@/hooks/useCardioSessionComments";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
@@ -67,9 +68,11 @@ export function ActivitySocialActions({
   className,
 }: ActivitySocialStatsProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [commentsOpen, setCommentsOpen] = useState(defaultCommentsOpen);
   const [draft, setDraft] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
   const commentsPanel = useCalendarDayExpandTransition(commentsOpen ? "comments" : null);
   const commentsMounted = !!commentsPanel;
 
@@ -105,6 +108,35 @@ export function ActivitySocialActions({
     setCommentsOpen((v) => !v);
   };
 
+  const handleShare = async (e: MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (isSharing) return;
+
+    const param = kind === "cardio" ? "cardio" : "gym";
+    const url = `${window.location.origin}/community?${param}=${encodeURIComponent(targetId)}`;
+    const title = kind === "cardio" ? "Entrenamiento de cardio" : "Entrenamiento de gimnasio";
+    const text = "Mira esta actividad en fitAI";
+
+    setIsSharing(true);
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share({ title, text, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Enlace copiado" });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      toast({
+        title: "No se pudo compartir",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -137,7 +169,7 @@ export function ActivitySocialActions({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-11 w-1/2 flex-1 gap-2 px-3 text-muted-foreground [&_svg]:size-[1.15rem]",
+            "h-11 flex-1 gap-2 px-3 text-muted-foreground [&_svg]:size-[1.15rem]",
             liked && "text-rose-600 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-400",
           )}
           aria-pressed={liked}
@@ -154,7 +186,7 @@ export function ActivitySocialActions({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-11 w-1/2 flex-1 gap-2 px-3 text-muted-foreground [&_svg]:size-[1.15rem]",
+            "h-11 flex-1 gap-2 px-3 text-muted-foreground [&_svg]:size-[1.15rem]",
             commentsOpen && "text-foreground",
           )}
           aria-expanded={commentsOpen}
@@ -163,6 +195,18 @@ export function ActivitySocialActions({
         >
           <MessageCircle className={cn("h-[1.15rem] w-[1.15rem]", hasCommented && "fill-current")} />
           <span className="tabular-nums text-sm font-medium">{displayCommentCount}</span>
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-11 flex-1 gap-2 px-3 text-muted-foreground [&_svg]:size-[1.15rem]"
+          aria-label="Compartir"
+          disabled={isSharing}
+          onClick={handleShare}
+        >
+          <Share2 className="h-[1.15rem] w-[1.15rem]" />
         </Button>
       </div>
 
