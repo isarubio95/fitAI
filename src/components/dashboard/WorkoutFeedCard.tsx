@@ -14,9 +14,9 @@ import type { ActividadWithDetails } from "@/types/workout";
 export const COMMUNITY_CARD_CLASS =
   "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
 
-/** Card interior compacta del entrenamiento: plana, sin borde, con hover. */
+/** Card interior compacta del entrenamiento: plana, sin borde ni sombra, con hover. */
 export const WORKOUT_COMPACT_CARD_CLASS =
-  "w-full max-w-none overflow-hidden border-0 rounded-none transition-colors hover:bg-muted/30";
+  "w-full max-w-none overflow-hidden border-0 rounded-none shadow-none transition-colors hover:bg-muted/30";
 
 export type WorkoutFeedCardAuthor = {
   id: string;
