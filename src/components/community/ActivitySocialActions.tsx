@@ -131,7 +131,7 @@ export function ActivitySocialActions({
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
-      <div className="flex w-full items-center -mt-4">
+      <div className="flex w-full items-center -mt-2">
         <Button
           type="button"
           variant="ghost"

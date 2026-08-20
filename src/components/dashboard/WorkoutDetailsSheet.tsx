@@ -570,7 +570,7 @@ function WorkoutCompactSummary({
   const statsLabel = `${exerciseCount} ejercicio${exerciseCount === 1 ? "" : "s"} · ${totalSets} series`;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div
           className={cn(
