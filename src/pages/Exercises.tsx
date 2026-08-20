@@ -927,7 +927,7 @@ const Exercises = () => {
         </Card>
       )}
 
-      <div className="flex w-full flex-col gap-3 bg-background px-4 pt-1 md:gap-2.75 md:px-0">
+      <div className="flex w-full flex-col gap-2.5 bg-background px-4 pt-1 md:gap-2.75 md:px-0">
         {catalogLoading || difficultyLoading
           ? Array.from({ length: 6 }).map((_, i) => (
               <div

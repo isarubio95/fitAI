@@ -588,7 +588,7 @@ export function SavedRoutesPickerSheet({
                   </p>
                 </div>
               ) : predefinedLoading ? (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <RouteListCardSkeleton />
                   <RouteListCardSkeleton />
                 </div>
@@ -606,7 +606,7 @@ export function SavedRoutesPickerSheet({
                 </p>
               ) : (
                 <>
-                  <ul className="space-y-3">
+                  <ul className="space-y-2.5">
                     {selectedRouteId && onClear ? (
                       <li>
                         <ClearSelectedButton onClear={onClear} onOpenChange={onOpenChange} />
@@ -641,7 +641,7 @@ export function SavedRoutesPickerSheet({
               className="mt-0 min-h-0 flex-1 overflow-y-auto px-4 py-3 data-[state=inactive]:hidden"
             >
               {savedLoading ? (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <RouteListCardSkeleton />
                   <RouteListCardSkeleton />
                 </div>
@@ -660,7 +660,7 @@ export function SavedRoutesPickerSheet({
                 </p>
               ) : (
                 <>
-                  <ul className="space-y-3">
+                  <ul className="space-y-2.5">
                     {selectedRouteId && onClear ? (
                       <li>
                         <ClearSelectedButton onClear={onClear} onOpenChange={onOpenChange} />

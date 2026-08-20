@@ -434,17 +434,17 @@ const Routines = () => {
           type="button"
           variant="new"
           onClick={openCreateChoice}
-          title="Crear rutina"
-          aria-label="Nueva rutina"
+          title="Añadir rutina"
+          aria-label="Añadir rutina"
           className="fixed z-40 right-4 bottom-[calc(var(--app-bottom-nav-inset,5.5rem)+0.5rem)] shadow-lg md:right-8 md:bottom-10"
         >
-          <span className="whitespace-nowrap">Crear</span>
+          <span className="whitespace-nowrap">Añadir</span>
           <Plus className="shrink-0" />
         </Button>
       ) : null}
 
       {isLoading ? (
-        <div className="flex w-full flex-col gap-3 bg-background px-4 md:gap-2.75 md:px-0">
+        <div className="flex w-full flex-col gap-2.5 bg-background px-4 md:gap-2.75 md:px-0">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-28 w-full rounded-xl border border-border/40 bg-card" />
           ))}
@@ -460,7 +460,7 @@ const Routines = () => {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sortedRoutines.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-            <div className="flex w-full flex-col gap-3 bg-background px-4 md:gap-2.75 md:px-0">
+            <div className="flex w-full flex-col gap-2.5 bg-background px-4 md:gap-2.75 md:px-0">
               {sortedRoutines.map((r) => (
                 <SortableRoutineCard
                   key={r.id}
