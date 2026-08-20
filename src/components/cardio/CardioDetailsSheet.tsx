@@ -101,7 +101,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
           drawerSafeAreaBottom,
         )}
       >
-        <DrawerHeader className="shrink-0 border-b border-border bg-card px-6 pb-3 pt-4 text-left">
+        <DrawerHeader className="shrink-0 border-b border-border bg-card px-6 pb-4 pt-4 text-left">
           {isLoading || !session || !metrics || !Icon ? (
             <>
               <DrawerTitle>Cardio</DrawerTitle>
@@ -131,7 +131,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-start gap-2 px-6">
+              <div className="flex flex-wrap items-start gap-2 px-4">
                 <StatBlock label="Tiempo" value={formatCardioDuration(metrics.durationSec)} />
                 <StatBlock
                   label="Distancia"
