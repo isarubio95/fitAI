@@ -192,7 +192,7 @@ export function SwipeToDeleteRow({
       ref={rootRef}
       data-vaul-no-drag
       data-vaul-allow-horizontal-pan
-      className="relative isolate overflow-hidden touch-pan-y"
+      className="relative isolate w-full overflow-hidden touch-pan-y"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -231,7 +231,7 @@ export function SwipeToDeleteRow({
         </>
       ) : null}
       <div
-        className={cn("relative", className)}
+        className={cn("relative w-full", className)}
         style={{
           transform: revealing ? `translate3d(${offset}px, 0, 0)` : undefined,
           transition: animating ? `transform ${EXIT_MS}ms ease` : "none",
