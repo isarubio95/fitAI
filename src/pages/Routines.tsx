@@ -129,6 +129,7 @@ const Routines = () => {
   const [importCsvOpen, setImportCsvOpen] = useState(false);
   const [createChoiceOpen, setCreateChoiceOpen] = useState(false);
   const [predefinedExplorerOpen, setPredefinedExplorerOpen] = useState(false);
+  const [openRoutineId, setOpenRoutineId] = useState<string | null>(null);
 
   const [sortMode, setSortMode] = useState<SortMode>(() => loadRoutinesSortPreference().sortMode);
   const [sortDir, setSortDir] = useState<SortDir>(() => loadRoutinesSortPreference().sortDir);
@@ -465,6 +466,8 @@ const Routines = () => {
                   key={r.id}
                   routine={r}
                   isDragMode={isDragMode}
+                  isOpen={openRoutineId === r.id}
+                  onOpenChange={(open) => setOpenRoutineId(open ? r.id : null)}
                   lastTrainedAt={lastTrainedByName?.[r.nombre.trim()] ?? null}
                   onEdit={openEdit}
                   onDelete={setDeleteId}
