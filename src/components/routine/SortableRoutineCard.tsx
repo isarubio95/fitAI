@@ -129,12 +129,12 @@ export function SortableRoutineCard({
                 onClick={() => setIsOpen((v) => !v)}
                 className="min-w-0 flex-1 text-left"
               >
-                <h2 className="font-semibold text-base flex items-center gap-2 min-w-0">
+                <h2 className="font-semibold mb-0.5 text-base flex items-center gap-2 min-w-0">
                   <RoutineTitleIcon className="h-4 w-4 shrink-0" />
                   <span className="truncate">{r.nombre}</span>
                 </h2>
                 {description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
+                  <p className="text-sm text-muted-foreground line-clamp-2 my-0.5">
                     {description}
                   </p>
                 )}

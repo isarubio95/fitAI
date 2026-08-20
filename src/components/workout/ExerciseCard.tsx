@@ -3,8 +3,8 @@ import { DrawerInContentContext } from "@/components/ui/drawer";
 import { useLastPerformance } from "@/hooks/useLastPerformance";
 import { formatMSS } from "@/hooks/useRestTimer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge, badgeVariants } from "@/components/ui/badge";
+import { SetValueInput } from "./SetValueInput";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -174,22 +174,20 @@ export function ExerciseCard({
                   <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
                 )}
               </div>
-              <Input
-                type="number"
-                min={0}
-                value={s.repeticiones || ""}
-                onChange={(e) => onUpdateSet(si, "repeticiones", Number(e.target.value))}
-                onBlur={() => onAutoSaveSet?.(si)}
+              <SetValueInput
+                field="repeticiones"
+                value={s.repeticiones}
+                onValueChange={(v) => onUpdateSet(si, "repeticiones", v ?? 0)}
+                onCommit={() => onAutoSaveSet?.(si)}
                 className="h-11"
                 placeholder={exercise.repRange || "0"}
               />
-              <Input
-                type="number"
-                min={0}
-                step={0.5}
-                value={s.peso_kg || ""}
-                onChange={(e) => onUpdateSet(si, "peso_kg", Number(e.target.value))}
-                onBlur={() => onAutoSaveSet?.(si)}
+              <SetValueInput
+                field="peso_kg"
+                value={s.peso_kg}
+                allowDecimal
+                onValueChange={(v) => onUpdateSet(si, "peso_kg", v ?? 0)}
+                onCommit={() => onAutoSaveSet?.(si)}
                 className="h-11"
                 placeholder="0"
               />
@@ -227,15 +225,12 @@ export function ExerciseCard({
                   <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
                 )}
               </div>
-              <Input
-                type="number"
-                min={0}
-                value={s.duracion_seg ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  onUpdateSet(si, "duracion_seg", v === "" ? null : Number(v));
-                }}
-                onBlur={() => onAutoSaveSet?.(si)}
+              <SetValueInput
+                field="duracion_seg"
+                value={s.duracion_seg}
+                emptyAs="null"
+                onValueChange={(v) => onUpdateSet(si, "duracion_seg", v)}
+                onCommit={() => onAutoSaveSet?.(si)}
                 className="h-11"
                 placeholder="s"
               />
@@ -277,27 +272,22 @@ export function ExerciseCard({
                   <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
                 )}
               </div>
-              <Input
-                type="number"
-                min={0}
-                value={s.duracion_seg ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  onUpdateSet(si, "duracion_seg", v === "" ? null : Number(v));
-                }}
-                onBlur={() => onAutoSaveSet?.(si)}
+              <SetValueInput
+                field="duracion_seg"
+                value={s.duracion_seg}
+                emptyAs="null"
+                onValueChange={(v) => onUpdateSet(si, "duracion_seg", v)}
+                onCommit={() => onAutoSaveSet?.(si)}
                 className="h-11"
                 placeholder="s"
               />
-              <Input
-                type="number"
+              <SetValueInput
+                field="ritmo_seg_km"
+                value={s.ritmo_seg_km}
+                emptyAs="null"
                 min={1}
-                value={s.ritmo_seg_km ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  onUpdateSet(si, "ritmo_seg_km", v === "" ? null : Number(v));
-                }}
-                onBlur={() => onAutoSaveSet?.(si)}
+                onValueChange={(v) => onUpdateSet(si, "ritmo_seg_km", v)}
+                onCommit={() => onAutoSaveSet?.(si)}
                 className="h-11"
                 placeholder="300"
               />

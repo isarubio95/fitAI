@@ -13,10 +13,11 @@ test.describe("E2E: finish gym", () => {
     await addCatalogExercise(page);
 
     // Rellenar serie (el checkbox custom no siempre es accesible en headless)
-    const numberInputs = page.locator('input[type="number"]');
-    await numberInputs.nth(0).fill("10");
-    await numberInputs.nth(1).fill("60");
-    await numberInputs.nth(0).blur();
+    const repsInput = page.locator('input[data-set-field="repeticiones"]').first();
+    const weightInput = page.locator('input[data-set-field="peso_kg"]').first();
+    await repsInput.fill("10");
+    await weightInput.fill("60");
+    await repsInput.blur();
 
     const finishBtn = page.getByRole("button", { name: "Finalizar" });
     await expect(finishBtn).toBeEnabled();

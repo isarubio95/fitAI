@@ -229,12 +229,6 @@ export function PostWorkoutModal({
           onFocusOutside={(e) => {
             if (gymPickerOpen) e.preventDefault();
           }}
-          onPointerDownOutside={(e) => {
-            if (gymPickerOpen) e.preventDefault();
-          }}
-          onInteractOutside={(e) => {
-            if (gymPickerOpen) e.preventDefault();
-          }}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
@@ -242,7 +236,7 @@ export function PostWorkoutModal({
             transition={{ duration: 0.35, ease: easeOut }}
           >
             <AlertDialogHeader>
-              <AlertDialogTitle className="mx-auto mb-1 max-w-[11.5rem] text-center text-2xl font-extrabold leading-tight">
+              <AlertDialogTitle className="mx-auto mb-2 max-w-[11.5rem] text-center text-2xl font-extrabold leading-tight">
                 ¡Entrenamiento Completado!
               </AlertDialogTitle>
             </AlertDialogHeader>
@@ -279,7 +273,7 @@ export function PostWorkoutModal({
               </div>
             )}
 
-            <div className="space-y-3 py-2">
+            <div className="space-y-3 pt-2 pb-3">
               {rows.map((row, index) => (
                 <motion.div
                   key={row.key}
@@ -349,7 +343,7 @@ export function PostWorkoutModal({
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.38, duration: 0.35, ease: easeOut }}
-                  className="my-2 space-y-1.5 text-left"
+                  className="mt-2 mb-3 space-y-1.5 text-left"
                 >
                   <Label htmlFor="post-workout-gimnasio">Gimnasio</Label>
                   <button
@@ -373,7 +367,7 @@ export function PostWorkoutModal({
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.35, ease: easeOut }}
-                  className="my-2 flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5 text-left"
+                  className="mt-2 mb-3 flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5 text-left"
                 >
                   <div className="min-w-0 space-y-0.5">
                     <p className="text-sm font-medium">Publicar en comunidad</p>
