@@ -24,6 +24,7 @@ import {
   formatRitmoSegKmLabel,
 } from "@/types/workout";
 import { ActiveWorkoutCheckbox } from "./ActiveWorkoutCheckbox";
+import { SwipeToDeleteRow } from "./SwipeToDeleteRow";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 
 interface ExerciseCardProps {
@@ -59,7 +60,6 @@ export function ExerciseCard({
   });
   const mode = normalizeRegistroSeries(exercise.registro_series);
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
-  const [confirmDeleteSet, setConfirmDeleteSet] = useState<number | null>(null);
 
   const restSeconds = exercise.descanso ?? 120;
 
@@ -67,11 +67,27 @@ export function ExerciseCard({
   const headerMetaBadgeClass = "gap-1";
 
   const inDrawer = useContext(DrawerInContentContext);
+  const surfaceBg = inDrawer && isInSuperset ? "bg-primary/5" : "bg-card";
   const wrapperClass = cn(
     "space-y-3",
     inDrawer
-      ? cn("p-6", isInSuperset ? "bg-primary/5" : "bg-card")
+      ? cn("p-6", surfaceBg)
       : cn("rounded-xl border border-border bg-card p-4"),
+  );
+
+  const setDoneControl = (s: SetFormData, si: number) => (
+    <div className="flex items-center justify-center justify-self-center mr-4">
+      {onSetCompleted ? (
+        <ActiveWorkoutCheckbox
+          checked={!!s.completed}
+          onChange={(next) => onSetCompleted(si, next)}
+          title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
+          size={32}
+        />
+      ) : (
+        <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
+      )}
+    </div>
   );
 
   return (
@@ -152,154 +168,115 @@ export function ExerciseCard({
 
       {mode === "peso_reps" ? (
         <>
-          <div className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1 items-center">
+          <div className="grid grid-cols-[2rem_2.5rem_1fr_1fr] gap-2 text-xs text-muted-foreground px-1 items-center">
             <span>#</span>
             <span className="mr-4 flex justify-center">Hecho</span>
             <span>Reps</span>
             <span>Peso (kg)</span>
-            <span />
           </div>
           {exercise.sets.map((s, si) => (
-            <div key={si} className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 items-center">
-              <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
-              <div className="flex items-center justify-center justify-self-center mr-4">
-                {onSetCompleted ? (
-                  <ActiveWorkoutCheckbox
-                    checked={!!s.completed}
-                    onChange={(next) => onSetCompleted(si, next)}
-                    title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
-                    size={32}
-                  />
-                ) : (
-                  <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
-                )}
+            <SwipeToDeleteRow
+              key={s.id ?? si}
+              label={`serie ${si + 1}`}
+              onDelete={() => onRemoveSet(si)}
+              className={cn("px-1", surfaceBg)}
+            >
+              <div className="grid grid-cols-[2rem_2.5rem_1fr_1fr] gap-2 items-center">
+                <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
+                {setDoneControl(s, si)}
+                <SetValueInput
+                  field="repeticiones"
+                  value={s.repeticiones}
+                  onValueChange={(v) => onUpdateSet(si, "repeticiones", v ?? 0)}
+                  onCommit={() => onAutoSaveSet?.(si)}
+                  className="h-11"
+                  placeholder={exercise.repRange || "0"}
+                />
+                <SetValueInput
+                  field="peso_kg"
+                  value={s.peso_kg}
+                  allowDecimal
+                  onValueChange={(v) => onUpdateSet(si, "peso_kg", v ?? 0)}
+                  onCommit={() => onAutoSaveSet?.(si)}
+                  className="h-11"
+                  placeholder="0"
+                />
               </div>
-              <SetValueInput
-                field="repeticiones"
-                value={s.repeticiones}
-                onValueChange={(v) => onUpdateSet(si, "repeticiones", v ?? 0)}
-                onCommit={() => onAutoSaveSet?.(si)}
-                className="h-11"
-                placeholder={exercise.repRange || "0"}
-              />
-              <SetValueInput
-                field="peso_kg"
-                value={s.peso_kg}
-                allowDecimal
-                onValueChange={(v) => onUpdateSet(si, "peso_kg", v ?? 0)}
-                onCommit={() => onAutoSaveSet?.(si)}
-                className="h-11"
-                placeholder="0"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                onClick={() => setConfirmDeleteSet(si)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            </SwipeToDeleteRow>
           ))}
         </>
       ) : mode === "duracion" ? (
         <>
-          <div className="grid grid-cols-[2rem_2.5rem_1fr_2rem] gap-2 text-xs text-muted-foreground px-1 items-center">
+          <div className="grid grid-cols-[2rem_2.5rem_1fr] gap-2 text-xs text-muted-foreground px-1 items-center">
             <span>#</span>
             <span className="mr-4 flex justify-center">Hecho</span>
             <span>Segundos</span>
-            <span />
           </div>
           {exercise.sets.map((s, si) => (
-            <div key={si} className="grid grid-cols-[2rem_2.5rem_1fr_2rem] gap-2 items-center">
-              <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
-              <div className="flex items-center justify-center justify-self-center mr-4">
-                {onSetCompleted ? (
-                  <ActiveWorkoutCheckbox
-                    checked={!!s.completed}
-                    onChange={(next) => onSetCompleted(si, next)}
-                    title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
-                    size={32}
-                  />
-                ) : (
-                  <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
-                )}
+            <SwipeToDeleteRow
+              key={s.id ?? si}
+              label={`serie ${si + 1}`}
+              onDelete={() => onRemoveSet(si)}
+              className={cn("px-1", surfaceBg)}
+            >
+              <div className="grid grid-cols-[2rem_2.5rem_1fr] gap-2 items-center">
+                <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
+                {setDoneControl(s, si)}
+                <SetValueInput
+                  field="duracion_seg"
+                  value={s.duracion_seg}
+                  emptyAs="null"
+                  onValueChange={(v) => onUpdateSet(si, "duracion_seg", v)}
+                  onCommit={() => onAutoSaveSet?.(si)}
+                  className="h-11"
+                  placeholder="s"
+                />
               </div>
-              <SetValueInput
-                field="duracion_seg"
-                value={s.duracion_seg}
-                emptyAs="null"
-                onValueChange={(v) => onUpdateSet(si, "duracion_seg", v)}
-                onCommit={() => onAutoSaveSet?.(si)}
-                className="h-11"
-                placeholder="s"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                onClick={() => setConfirmDeleteSet(si)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            </SwipeToDeleteRow>
           ))}
         </>
       ) : (
         <>
-          <div className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 text-xs text-muted-foreground px-1 items-center">
+          <div className="grid grid-cols-[2rem_2.5rem_1fr_1fr] gap-2 text-xs text-muted-foreground px-1 items-center">
             <span>#</span>
             <span className="mr-4 flex justify-center">Hecho</span>
             <span>Tiempo (s)</span>
             <span>Ritmo (s/km)</span>
-            <span />
           </div>
           <p className="text-[10px] text-muted-foreground px-1 -mt-1">
             Ritmo en segundos por km (ej. 300 = 5:00/km)
           </p>
           {exercise.sets.map((s, si) => (
-            <div key={si} className="grid grid-cols-[2rem_2.5rem_1fr_1fr_2rem] gap-2 items-center">
-              <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
-              <div className="flex items-center justify-center justify-self-center mr-4">
-                {onSetCompleted ? (
-                  <ActiveWorkoutCheckbox
-                    checked={!!s.completed}
-                    onChange={(next) => onSetCompleted(si, next)}
-                    title={s.completed ? "Marcar como no hecho" : "Marcar serie hecha e iniciar descanso"}
-                    size={32}
-                  />
-                ) : (
-                  <span className="text-muted-foreground text-xs">{s.completed ? "✓" : "—"}</span>
-                )}
+            <SwipeToDeleteRow
+              key={s.id ?? si}
+              label={`serie ${si + 1}`}
+              onDelete={() => onRemoveSet(si)}
+              className={cn("px-1", surfaceBg)}
+            >
+              <div className="grid grid-cols-[2rem_2.5rem_1fr_1fr] gap-2 items-center">
+                <span className="text-sm text-muted-foreground text-left">{si + 1}</span>
+                {setDoneControl(s, si)}
+                <SetValueInput
+                  field="duracion_seg"
+                  value={s.duracion_seg}
+                  emptyAs="null"
+                  onValueChange={(v) => onUpdateSet(si, "duracion_seg", v)}
+                  onCommit={() => onAutoSaveSet?.(si)}
+                  className="h-11"
+                  placeholder="s"
+                />
+                <SetValueInput
+                  field="ritmo_seg_km"
+                  value={s.ritmo_seg_km}
+                  emptyAs="null"
+                  min={1}
+                  onValueChange={(v) => onUpdateSet(si, "ritmo_seg_km", v)}
+                  onCommit={() => onAutoSaveSet?.(si)}
+                  className="h-11"
+                  placeholder="300"
+                />
               </div>
-              <SetValueInput
-                field="duracion_seg"
-                value={s.duracion_seg}
-                emptyAs="null"
-                onValueChange={(v) => onUpdateSet(si, "duracion_seg", v)}
-                onCommit={() => onAutoSaveSet?.(si)}
-                className="h-11"
-                placeholder="s"
-              />
-              <SetValueInput
-                field="ritmo_seg_km"
-                value={s.ritmo_seg_km}
-                emptyAs="null"
-                min={1}
-                onValueChange={(v) => onUpdateSet(si, "ritmo_seg_km", v)}
-                onCommit={() => onAutoSaveSet?.(si)}
-                className="h-11"
-                placeholder="300"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                onClick={() => setConfirmDeleteSet(si)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            </SwipeToDeleteRow>
           ))}
         </>
       )}
@@ -324,20 +301,6 @@ export function ExerciseCard({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={onRemoveExercise}>Eliminar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Confirm delete set */}
-      <AlertDialog open={confirmDeleteSet !== null} onOpenChange={(open) => !open && setConfirmDeleteSet(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar serie {confirmDeleteSet !== null ? confirmDeleteSet + 1 : ""}?</AlertDialogTitle>
-            <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirmDeleteSet !== null) onRemoveSet(confirmDeleteSet); setConfirmDeleteSet(null); }}>Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

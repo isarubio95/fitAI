@@ -15,7 +15,7 @@ import {
   pillCircleTransitionStyleForBottomSheet,
   type PillCirclePhase,
 } from "@/lib/pillCircleTransition";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Flag, Check } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { HeartRatePanel } from "@/components/cardio/live/HeartRatePanel";
@@ -1404,30 +1404,52 @@ export function WorkoutLogger() {
               data-active-workout-sheet-header
               className="relative z-10 shrink-0 border-b border-border bg-card px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left"
             >
-              <div className="flex flex-col gap-2.5">
-                <div className="flex items-center justify-between gap-3">
-                  <DrawerTitle className="min-w-0 truncate text-lg">
-                    {isActiveWorkout ? "Entrenamiento Activo" : isEdit ? "Editar Entrenamiento" : "Nuevo Entrenamiento"}
-                  </DrawerTitle>
-                  {isActiveWorkout && existingWorkout && (
-                    <div className="shrink-0">
-                      <ElapsedTime
-                        since={existingWorkout.fecha}
-                        pausedAccumMs={pausedAccumMs}
-                        pausedAt={pausedAt}
-                        paused={isPaused}
+              {isActiveWorkout ? (
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <DrawerTitle className="sr-only">
+                        {titulo.trim() || "Entrenamiento activo"}
+                      </DrawerTitle>
+                      <label htmlFor="titulo" className="sr-only">
+                        Título
+                      </label>
+                      <input
+                        id="titulo"
+                        value={titulo}
+                        onChange={(e) => setTitulo(e.target.value)}
+                        placeholder="Ej: Día de Pierna"
+                        disabled={creatingActive}
+                        className="w-full min-w-0 truncate bg-transparent text-lg font-semibold leading-none tracking-tight outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
                       />
+                      <DrawerDescription>Entrenamiento activo</DrawerDescription>
                     </div>
+                    {existingWorkout && (
+                      <div className="shrink-0">
+                        <ElapsedTime
+                          since={existingWorkout.fecha}
+                          pausedAccumMs={pausedAccumMs}
+                          pausedAt={pausedAt}
+                          paused={isPaused}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {restTimer.activeKey && (
+                    <RestProgressBar
+                      remaining={restTimer.remaining}
+                      duration={restTimer.duration}
+                      finished={restTimer.finished}
+                    />
                   )}
                 </div>
-                {isActiveWorkout && restTimer.activeKey && (
-                  <RestProgressBar
-                    remaining={restTimer.remaining}
-                    duration={restTimer.duration}
-                    finished={restTimer.finished}
-                  />
-                )}
-              </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <DrawerTitle className="min-w-0 truncate text-lg">
+                    {isEdit ? "Editar Entrenamiento" : "Nuevo Entrenamiento"}
+                  </DrawerTitle>
+                </div>
+              )}
             </DrawerHeader>
 
             <div className="relative min-h-0 flex-1">

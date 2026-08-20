@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { WorkoutLeadingRoutineIcon } from "@/components/dashboard/WorkoutDetailsSheet";
-import { RoutineIconPicker, WorkoutIconPickerTrigger } from "@/components/routine/RoutineIconPicker";
+import { RoutineIconPicker } from "@/components/routine/RoutineIconPicker";
 import { GymPickerSheet } from "@/components/gym/GymPickerSheet";
 import type { RoutineIconKey } from "@/lib/routineIcons";
 import {
@@ -41,7 +41,6 @@ export function WorkoutMetaForm({
   isActiveWorkout,
   workoutIcon,
   onWorkoutIconChange,
-  creatingActive,
   fecha,
   onFechaChange,
   isEditingCompletedWorkout,
@@ -53,6 +52,17 @@ export function WorkoutMetaForm({
   children,
 }: WorkoutMetaFormProps) {
   const [gymPickerOpen, setGymPickerOpen] = useState(false);
+
+  // En entrenamiento activo, título e icono viven en la cabecera del drawer.
+  if (isActiveWorkout) {
+    if (!children) return null;
+    return (
+      <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
+        <CardContent className="space-y-3 px-6 py-4">{children}</CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
       <CardContent className="space-y-3 px-6 py-4">
@@ -65,15 +75,7 @@ export function WorkoutMetaForm({
           >
             <Label htmlFor="titulo">Título</Label>
             <div className="flex items-center gap-3">
-              {isActiveWorkout ? (
-                <WorkoutIconPickerTrigger
-                  value={workoutIcon}
-                  onChange={onWorkoutIconChange}
-                  disabled={creatingActive}
-                />
-              ) : (
-                <WorkoutLeadingRoutineIcon iconKey={workoutIcon} />
-              )}
+              <WorkoutLeadingRoutineIcon iconKey={workoutIcon} />
               <Input
                 id="titulo"
                 placeholder="Ej: Día de Pierna"
@@ -97,27 +99,25 @@ export function WorkoutMetaForm({
           )}
         </div>
         {children}
-        {!isActiveWorkout && (
-          <div className="space-y-1.5">
-            <Label htmlFor="gimnasio">Gimnasio</Label>
-            <button
-              type="button"
-              id="gimnasio"
-              disabled={gymDisabled}
-              onClick={() => setGymPickerOpen(true)}
-              className={cn(
-                "flex h-12 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-left text-base md:text-sm",
-                "focus-visible:border-emerald-500/30 focus-visible:outline-none",
-                gymDisabled && "cursor-not-allowed opacity-50",
-              )}
-            >
-              <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className={cn("min-w-0 flex-1 truncate", !gimnasio && "text-muted-foreground")}>
-                {gimnasio?.nombre ?? "Dónde has entrenado (opcional)"}
-              </span>
-            </button>
-          </div>
-        )}
+        <div className="space-y-1.5">
+          <Label htmlFor="gimnasio">Gimnasio</Label>
+          <button
+            type="button"
+            id="gimnasio"
+            disabled={gymDisabled}
+            onClick={() => setGymPickerOpen(true)}
+            className={cn(
+              "flex h-12 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-left text-base md:text-sm",
+              "focus-visible:border-emerald-500/30 focus-visible:outline-none",
+              gymDisabled && "cursor-not-allowed opacity-50",
+            )}
+          >
+            <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className={cn("min-w-0 flex-1 truncate", !gimnasio && "text-muted-foreground")}>
+              {gimnasio?.nombre ?? "Dónde has entrenado (opcional)"}
+            </span>
+          </button>
+        </div>
         {isEditingCompletedWorkout && (
           <>
             <RoutineIconPicker
@@ -141,14 +141,12 @@ export function WorkoutMetaForm({
           </>
         )}
       </CardContent>
-      {!isActiveWorkout && (
-        <GymPickerSheet
-          open={gymPickerOpen}
-          onOpenChange={setGymPickerOpen}
-          selected={gimnasio}
-          onSelect={onGimnasioChange}
-        />
-      )}
+      <GymPickerSheet
+        open={gymPickerOpen}
+        onOpenChange={setGymPickerOpen}
+        selected={gimnasio}
+        onSelect={onGimnasioChange}
+      />
     </Card>
   );
 }
