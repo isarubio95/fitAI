@@ -263,7 +263,7 @@ export function AppLayout() {
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center justify-end gap-2.5">
+              <div className="flex shrink-0 items-center justify-end gap-3">
                 <div id="header-actions-slot" className="flex items-center gap-2 max-md:gap-3" />
                 <InAppNotificationsBell />
                 <SettingsDrawer />
