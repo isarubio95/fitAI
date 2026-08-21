@@ -6,13 +6,20 @@ import type { ReactNode } from "react";
 import type { SelectedGimnasio } from "@/types/gimnasio";
 import type { XPBreakdown } from "@/hooks/useGamification";
 
-const { mockPersistActividadGimnasio } = vi.hoisted(() => ({
+const { mockPersistActividadGimnasio, mockFrom } = vi.hoisted(() => ({
   mockPersistActividadGimnasio: vi.fn(),
+  mockFrom: vi.fn(),
 }));
 
 vi.mock("@/hooks/useGimnasios", () => ({
   persistActividadGimnasio: mockPersistActividadGimnasio,
   GIMNASIOS_QUERY_KEY: ["gimnasios"],
+}));
+
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    from: (...args: unknown[]) => mockFrom(...args),
+  },
 }));
 
 vi.mock("@/components/gym/GymPickerSheet", () => ({
@@ -67,6 +74,11 @@ describe("PostWorkoutModal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPersistActividadGimnasio.mockResolvedValue(undefined);
+    mockFrom.mockReturnValue({
+      update: () => ({
+        eq: () => Promise.resolve({ error: null }),
+      }),
+    });
   });
 
   it("permite elegir el gimnasio al terminar el entrenamiento", async () => {
@@ -107,5 +119,35 @@ describe("PostWorkoutModal", () => {
     );
 
     expect(await screen.findByRole("button", { name: /Gimnasio|Basic Fit/i })).toHaveTextContent("Basic Fit");
+  });
+
+  it("guarda el esfuerzo percibido al elegirlo", async () => {
+    const eq = vi.fn().mockResolvedValue({ error: null });
+    const payloads: Array<{ rpe?: number }> = [];
+    mockFrom.mockReturnValue({
+      update: (payload: { rpe?: number }) => {
+        payloads.push(payload);
+        return { eq };
+      },
+    });
+
+    render(
+      wrap(
+        <PostWorkoutModal
+          open
+          onClose={vi.fn()}
+          breakdown={breakdown}
+          workoutId="act-1"
+        />,
+      ),
+    );
+
+    const slider = screen.getByRole("slider", { name: /esfuerzo percibido/i });
+    slider.focus();
+    fireEvent.keyDown(slider, { key: "ArrowRight" });
+    await waitFor(() => {
+      expect(payloads.at(-1)).toEqual({ rpe: 2 });
+      expect(eq).toHaveBeenCalledWith("id", "act-1");
+    });
   });
 });

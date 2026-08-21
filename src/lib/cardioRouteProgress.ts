@@ -79,6 +79,18 @@ export function polylineLengthM(points: RouteLatLng[]): number {
   return total;
 }
 
+/**
+ * Distancia a persistir: el contador en vivo (nativo) si es > 0, si no la polilínea.
+ * Evita guardar 0 cuando el GPS sí dejó puntos (p. ej. nativo en 0 tras bloquear pantalla).
+ */
+export function resolveRecordedDistanceM(
+  liveM: number | null | undefined,
+  points: RouteLatLng[],
+): number {
+  const live = liveM != null && Number.isFinite(liveM) && liveM > 0 ? liveM : 0;
+  return Math.max(live, polylineLengthM(points));
+}
+
 function finishProgress(totalM: number, alongM: number, offRouteM: number): CardioRouteProgress {
   const clampedAlong = Math.min(totalM, Math.max(0, alongM));
   const remainingM = Math.max(0, totalM - clampedAlong);

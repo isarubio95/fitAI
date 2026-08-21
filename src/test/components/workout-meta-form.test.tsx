@@ -28,6 +28,8 @@ const baseProps = {
   onEsPublicaChange: vi.fn(),
   gimnasio: null,
   onGimnasioChange: vi.fn(),
+  rpe: null,
+  onRpeChange: vi.fn(),
 };
 
 describe("WorkoutMetaForm", () => {
@@ -54,5 +56,18 @@ describe("WorkoutMetaForm", () => {
     );
 
     expect(screen.getByLabelText("Gimnasio")).toBeInTheDocument();
+  });
+
+  it("permite editar el RPE de un entrenamiento completado", () => {
+    render(
+      <WorkoutMetaForm
+        {...baseProps}
+        hideWorkoutDate={false}
+        isActiveWorkout={false}
+        isEditingCompletedWorkout
+      />,
+    );
+
+    expect(screen.getByText("¿Qué tan duro se sintió?")).toBeInTheDocument();
   });
 });

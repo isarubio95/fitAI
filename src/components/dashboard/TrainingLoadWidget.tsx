@@ -56,7 +56,7 @@ const RANGE_OPTIONS = [
 
 type RangeKey = (typeof RANGE_OPTIONS)[number]["key"];
 const TRAINING_LOAD_RANGE_STORAGE_KEY = "gym-log.training-load.range";
-const TRAINING_LOAD_DATA_STORAGE_KEY = "gym-log.training-load.data.v2";
+const TRAINING_LOAD_DATA_STORAGE_KEY = "gym-log.training-load.data.v4";
 const X_AXIS_HEIGHT = 28;
 // Altura del gráfico (ResponsiveContainer) para alinear con `ExerciseProgressWidget` (1RM).
 const CHART_HEIGHT = 190;
@@ -242,9 +242,9 @@ export function TrainingLoadWidget() {
                 <PopoverContent className="w-72 text-sm" side="bottom" align="end">
                   <p className="mb-1 font-semibold">¿Cómo se calcula?</p>
                   <p className="mb-3 text-muted-foreground">
-                    Modelo Banister/Coggan: cada día suma carga de fuerza (volumen × RIR y FC si hay) y
-                    cardio (TRIMP por FC o TSS por potencia). Fitness acumula a ~42 días; Fatiga a ~7;
-                    Forma = Fitness − Fatiga.
+                    Modelo Banister/Coggan: cada sesión suma minutos × esfuerzo (1–10). Si no
+                    indicas el esfuerzo, se estima con pulso, potencia o el RIR de las series.
+                    Fitness acumula a ~42 días; Fatiga a ~7; Forma = Fitness − Fatiga.
                   </p>
                   <div className="space-y-1 rounded-md bg-muted p-2.5 text-xs">
                     <p>
@@ -257,7 +257,7 @@ export function TrainingLoadWidget() {
                       <strong>Forma:</strong> frescura relativa; positiva = más fresco.
                     </p>
                     <p className="pt-1 text-muted-foreground">
-                      Con sensor de FC, el esfuerzo relativo ≈ Edwards TRIMP (tiempo en zonas).
+                      Gym y cardio usan la misma regla, así el gráfico no mezcla unidades distintas.
                     </p>
                   </div>
                 </PopoverContent>

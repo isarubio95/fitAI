@@ -99,3 +99,12 @@ export function elevationGainM(
   }
   return gain;
 }
+
+/** Desnivel a persistir: contador en vivo si es > 0, si no el calculado sobre los puntos. */
+export function resolveRecordedElevationM(
+  liveM: number | null | undefined,
+  points: { elevacion_m?: number | null }[],
+): number {
+  const live = liveM != null && Number.isFinite(liveM) && liveM > 0 ? liveM : 0;
+  return Math.max(live, elevationGainM(points));
+}

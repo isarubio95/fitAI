@@ -1,6 +1,13 @@
 import { chartColors } from "@/lib/chart-colors";
+import {
+  FORM_SCALE_MAX,
+  FORM_SCALE_MIN,
+  FORM_ZONE_BOUNDS,
+  getFormZoneDef,
+  type FormZoneKey,
+} from "@/lib/trainingLoad";
 
-export type FormZoneKey = "muy-fatigado" | "fatigado" | "optimo" | "fresco" | "bajo";
+export type { FormZoneKey };
 
 export interface FormZone {
   key: FormZoneKey;
@@ -13,55 +20,33 @@ export interface FormZone {
   hint: string;
 }
 
-/** Extremos de la escala visual: la forma se recorta aquí para posicionar el marcador. */
-export const FORM_SCALE_MIN = -80;
-export const FORM_SCALE_MAX = 45;
+export { FORM_SCALE_MIN, FORM_SCALE_MAX };
 
-export const FORM_ZONES: readonly FormZone[] = [
-  {
-    key: "muy-fatigado",
-    label: "Agotado",
-    min: FORM_SCALE_MIN,
-    max: -30,
-    color: chartColors.danger,
-    hint: "Necesitas descanso: la fatiga domina con claridad.",
-  },
-  {
-    key: "fatigado",
-    label: "Fatigado",
-    min: -30,
-    max: -10,
-    color: chartColors.fatigue,
-    hint: "Carga productiva, pero sostenida en el tiempo pasa factura.",
-  },
-  {
-    key: "optimo",
-    label: "Óptimo",
-    min: -10,
-    max: 5,
-    color: chartColors.positive,
-    hint: "Equilibrio entre entrenar y recuperar.",
-  },
-  {
-    key: "fresco",
-    label: "Fresco",
-    min: 5,
-    max: 25,
-    color: chartColors.fresh,
-    hint: "Buen momento para rendir o competir.",
-  },
-  {
-    key: "bajo",
-    label: "Inactivo",
-    min: 25,
-    max: FORM_SCALE_MAX,
-    color: chartColors.neutral,
-    hint: "Llevas tiempo sin carga: estás perdiendo fitness.",
-  },
-];
+const ZONE_HINTS: Record<FormZoneKey, string> = {
+  "muy-fatigado": "Necesitas descanso: la fatiga domina con claridad.",
+  fatigado: "Carga productiva, pero sostenida en el tiempo pasa factura.",
+  optimo: "Equilibrio entre entrenar y recuperar.",
+  fresco: "Buen momento para rendir o competir.",
+  bajo: "Llevas tiempo sin carga: estás perdiendo fitness.",
+};
+
+const ZONE_COLORS: Record<FormZoneKey, string> = {
+  "muy-fatigado": chartColors.danger,
+  fatigado: chartColors.fatigue,
+  optimo: chartColors.positive,
+  fresco: chartColors.fresh,
+  bajo: chartColors.neutral,
+};
+
+export const FORM_ZONES: readonly FormZone[] = FORM_ZONE_BOUNDS.map((zone) => ({
+  ...zone,
+  color: ZONE_COLORS[zone.key],
+  hint: ZONE_HINTS[zone.key],
+}));
 
 export function getFormZone(form: number): FormZone {
-  return FORM_ZONES.find((zone) => form < zone.max) ?? FORM_ZONES[FORM_ZONES.length - 1];
+  const def = getFormZoneDef(form);
+  return FORM_ZONES.find((zone) => zone.key === def.key) ?? FORM_ZONES[FORM_ZONES.length - 1];
 }
 
 /**

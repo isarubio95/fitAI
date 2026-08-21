@@ -28,6 +28,7 @@ import { workoutSnapshotToRoutineFormSnapshot } from "@/lib/workoutToRoutine";
 import { RoutineForm } from "@/components/routine/RoutineForm";
 import { supabase } from "@/integrations/supabase/client";
 import { GIMNASIOS_QUERY_KEY, persistActividadGimnasio } from "@/hooks/useGimnasios";
+import { SessionRpePicker } from "@/components/training/SessionRpePicker";
 import type { SelectedGimnasio } from "@/types/gimnasio";
 
 /** Encima del AlertDialog (z-50) para que el picker y el mapa no queden detrás. */
@@ -101,6 +102,8 @@ export function PostWorkoutModal({
   const [gimnasio, setGimnasio] = useState<SelectedGimnasio | null>(null);
   const [gymPickerOpen, setGymPickerOpen] = useState(false);
   const [savingGym, setSavingGym] = useState(false);
+  const [rpe, setRpe] = useState<number | null>(null);
+  const [savingRpe, setSavingRpe] = useState(false);
   const canPersistWorkout = !!workoutId && workoutId !== "manual";
 
   useEffect(() => {
@@ -117,6 +120,8 @@ export function PostWorkoutModal({
       setGimnasio(null);
       setGymPickerOpen(false);
       setSavingGym(false);
+      setRpe(null);
+      setSavingRpe(false);
       return;
     }
     setGimnasio(initialGimnasio ?? null);
@@ -141,6 +146,27 @@ export function PostWorkoutModal({
     } finally {
       setPublishing(false);
     }
+  };
+
+  const persistRpe = async (value: number) => {
+    if (!workoutId || workoutId === "manual") return;
+    setSavingRpe(true);
+    try {
+      const { error } = await supabase.from("actividad").update({ rpe: value }).eq("id", workoutId);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["trainingLoad"] });
+      queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
+      queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
+    } catch {
+      setRpe(null);
+    } finally {
+      setSavingRpe(false);
+    }
+  };
+
+  const onRpeChange = (value: number) => {
+    setRpe(value);
+    void persistRpe(value);
   };
 
   const persistGimnasio = async (gym: SelectedGimnasio | null) => {
@@ -339,6 +365,19 @@ export function PostWorkoutModal({
 
             {canPersistWorkout && (
               <>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.36, duration: 0.35, ease: easeOut }}
+                  className="mt-2 mb-3"
+                >
+                  <SessionRpePicker
+                    id="post-workout-rpe"
+                    value={rpe}
+                    onChange={onRpeChange}
+                    disabled={savingRpe}
+                  />
+                </motion.div>
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}

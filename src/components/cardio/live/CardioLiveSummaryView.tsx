@@ -8,6 +8,7 @@ import {
   COMMUNITY_PUBLISH_HINT_OFF,
   COMMUNITY_PUBLISH_HINT_ON,
 } from "@/lib/communityFeedVisibility";
+import { SessionRpePicker } from "@/components/training/SessionRpePicker";
 import {
   formatCardioDistanceM,
   formatCardioDuration,
@@ -25,11 +26,13 @@ type Props = {
   titulo: string;
   comentarios: string;
   esPublica: boolean;
+  rpe: number | null;
   saving: boolean;
   discarding: boolean;
   onTituloChange: (v: string) => void;
   onComentariosChange: (v: string) => void;
   onEsPublicaChange: (v: boolean) => void;
+  onRpeChange: (v: number) => void;
   onSave: () => void;
   onDiscard: () => void;
   onBack: () => void;
@@ -46,11 +49,13 @@ export function CardioLiveSummaryView({
   titulo,
   comentarios,
   esPublica,
+  rpe,
   saving,
   discarding,
   onTituloChange,
   onComentariosChange,
   onEsPublicaChange,
+  onRpeChange,
   onSave,
   onDiscard,
   onBack,
@@ -108,6 +113,8 @@ export function CardioLiveSummaryView({
           placeholder="Sensaciones, clima…"
         />
       </div>
+
+      <SessionRpePicker id="cardio-live-rpe" value={rpe} onChange={onRpeChange} disabled={saving} />
 
       <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5">
         <div className="min-w-0 space-y-0.5">

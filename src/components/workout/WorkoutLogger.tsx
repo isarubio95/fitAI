@@ -22,6 +22,7 @@ import { HeartRatePanel } from "@/components/cardio/live/HeartRatePanel";
 import { useToast } from "@/hooks/use-toast";
 import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
 import { persistActividadHeartRate } from "@/lib/persistActividadHeartRate";
+import { parseSessionRpe } from "@/lib/trainingLoad/sessionLoad";
 import { PostWorkoutModal } from "./PostWorkoutModal";
 import { useRestTimerContext } from "./RestTimerProvider";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ import {
 } from "@/lib/routineIcons";
 import { buildWorkoutRoutineSnapshot, type WorkoutRoutineSnapshot } from "@/lib/workoutToRoutine";
 import { persistActividadGimnasio, fetchPrefillGimnasioForUser, GIMNASIOS_QUERY_KEY } from "@/hooks/useGimnasios";
+import { mergeCalendarDatePreservingTime } from "@/lib/mergeCalendarDate";
 import type { SelectedGimnasio } from "@/types/gimnasio";
 import { getDefaultWorkoutTitle } from "@/lib/defaultWorkoutTitle";
 import { completePlannedRoutine } from "@/hooks/useWorkoutPlan";
@@ -93,6 +95,7 @@ export function WorkoutLogger() {
   const [exercises, setExercises] = useState<ExerciseFormData[]>([]);
   const [esPublica, setEsPublica] = useState(false);
   const [gimnasio, setGimnasio] = useState<SelectedGimnasio | null>(null);
+  const [rpe, setRpe] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -152,8 +155,8 @@ export function WorkoutLogger() {
   const hasRecordedWork = countRecordedSets(exercises) > 0;
   const hasUnsavedChanges = useMemo(() => {
     if (!isEditingCompletedWorkout || editBaseline === null) return false;
-    return serializeWorkoutFormSnapshot(titulo, fecha, exercises, workoutIcon, esPublica, gimnasio?.id ?? null) !== editBaseline;
-  }, [isEditingCompletedWorkout, editBaseline, titulo, fecha, exercises, workoutIcon, esPublica, gimnasio?.id]);
+    return serializeWorkoutFormSnapshot(titulo, fecha, exercises, workoutIcon, esPublica, gimnasio?.id ?? null, rpe) !== editBaseline;
+  }, [isEditingCompletedWorkout, editBaseline, titulo, fecha, exercises, workoutIcon, esPublica, gimnasio?.id, rpe]);
   const canSubmitPrimaryAction = isEditingCompletedWorkout
     ? hasRecordedWork && hasUnsavedChanges
     : hasRecordedWork;
@@ -217,6 +220,8 @@ export function WorkoutLogger() {
           ? { id: existingWorkout.gimnasio_id, nombre: existingWorkout.gimnasio_nombre }
           : null;
       setGimnasio(hydratedGym);
+      const hydratedRpe = parseSessionRpe(existingWorkout.rpe);
+      setRpe(hydratedRpe);
       setStartedFromRoutine(
         !existingWorkout.fecha_fin && wasWorkoutStartedFromRoutine(existingWorkout.id),
       );
@@ -229,6 +234,7 @@ export function WorkoutLogger() {
               hydratedIcon,
               hydratedEsPublica,
               hydratedGym?.id ?? null,
+              hydratedRpe,
             )
           : null,
       );
@@ -275,6 +281,7 @@ export function WorkoutLogger() {
       setStartedFromRoutine(false);
       setEsPublica(false);
       setGimnasio(initialGimnasio ?? null);
+      setRpe(null);
     }
   }, [open, workoutId, activeWorkoutId, defaultDate, templateExercises, initialGimnasio]);
 
@@ -288,6 +295,7 @@ export function WorkoutLogger() {
       setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
       setEsPublica(false);
       setGimnasio(null);
+      setRpe(null);
     }
   }, [open]);
 
@@ -1124,11 +1132,14 @@ export function WorkoutLogger() {
 
         if (isActiveWorkout) {
           const endIso = new Date().toISOString();
+          const startIso = existingWorkout?.fecha
+            ? mergeCalendarDatePreservingTime(fecha, existingWorkout.fecha)
+            : new Date().toISOString();
           const { error } = await supabase
             .from("actividad")
             .update({
               titulo: resolvedTitulo,
-              fecha: new Date(fecha).toISOString(),
+              fecha: startIso,
               fecha_fin: endIso,
               icono: workoutIcon,
               es_publica: false,
@@ -1186,11 +1197,14 @@ export function WorkoutLogger() {
             .from("actividad")
             .update({
               titulo: resolvedTitulo,
-              fecha: new Date(fecha).toISOString(),
+              fecha: existingWorkout?.fecha
+                ? mergeCalendarDatePreservingTime(fecha, existingWorkout.fecha)
+                : new Date(fecha).toISOString(),
               icono: workoutIcon,
               es_publica: esPublica,
               gimnasio_id: gimnasio?.id ?? null,
               gimnasio_nombre: gimnasio?.nombre ?? null,
+              rpe,
             })
             .eq("id", effectiveWorkoutId);
           if (error) throw error;
@@ -1505,6 +1519,8 @@ export function WorkoutLogger() {
                   gimnasio={gimnasio}
                   onGimnasioChange={(gym) => void handleGimnasioChange(gym)}
                   gymDisabled={creatingActive}
+                  rpe={rpe}
+                  onRpeChange={setRpe}
                 >
                   {isActiveWorkout && hrMonitor.available ? (
                     <HeartRatePanel

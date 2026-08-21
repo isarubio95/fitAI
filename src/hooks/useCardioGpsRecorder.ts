@@ -13,6 +13,7 @@ import {
   MAX_TRACK_POINTS_DRAFT,
   prepareTrackPointsForStorage,
 } from "@/lib/cardioTrackPoints";
+import { resolveRecordedDistanceM } from "@/lib/cardioRouteProgress";
 import {
   addNativeCardioTrackListener,
   buildNativeCardioTrackConfig,
@@ -36,12 +37,6 @@ export type CardioGpsPoint = {
 };
 
 export { haversineM };
-
-function totalPathLengthM(points: CardioGpsPoint[]): number {
-  let t = 0;
-  for (let i = 1; i < points.length; i++) t += haversineM(points[i - 1], points[i]);
-  return t;
-}
 
 const EMPTY_MOTION: GpsMotionSnapshot = {
   speedMps: null,
@@ -250,6 +245,9 @@ export function useCardioGpsRecorder({
         // El servicio dejó de grabar por su cuenta (p. ej. se apagaron las notificaciones en
         // vivo, que son obligatorias para el GPS en background): degrada a watchPosition.
         if (!update.tracking) {
+          // El contador nativo en 0 no debe tapar la distancia de los puntos al caer a web.
+          setNativeDistanceM(null);
+          setNativeElevationGainM(null);
           setNativeUnavailable(true);
           return;
         }
@@ -420,8 +418,10 @@ export function useCardioGpsRecorder({
     return () => clearInterval(id);
   }, [sessionId, recording, preview, nativeBackend]);
 
-  const webDistanceM = useMemo(() => totalPathLengthM(points), [points]);
-  const distanceM = nativeDistanceM ?? webDistanceM;
+  const distanceM = useMemo(
+    () => resolveRecordedDistanceM(nativeDistanceM, points),
+    [nativeDistanceM, points],
+  );
 
   return {
     points,

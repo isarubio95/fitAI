@@ -23,6 +23,13 @@ vi.mock("recharts", () => ({
   ReferenceDot: () => null,
 }));
 
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
 
 const SAMPLE_DATA = {
@@ -83,7 +90,7 @@ describe("TrainingLoadWidget", () => {
 
   it("usa caché local cuando no hay respuesta de red", () => {
     localStorage.setItem(
-      "gym-log.training-load.data.v2",
+      "gym-log.training-load.data.v4",
       JSON.stringify({
         points: [
           {

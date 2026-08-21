@@ -78,19 +78,3 @@ export function estimatedDaysToBaseline(
   }
   return days;
 }
-
-export type FormLabel = "Fresco" | "Óptimo" | "Cargado" | "Muy fatigado";
-
-export function getFormLabel(form: number): FormLabel {
-  if (form >= 15) return "Fresco";
-  if (form >= 0) return "Óptimo";
-  if (form >= -25) return "Cargado";
-  return "Muy fatigado";
-}
-
-export function getFormClass(form: number): string {
-  if (form >= 15) return "text-sky-500";
-  if (form >= 0) return "text-emerald-500";
-  if (form >= -25) return "text-amber-500";
-  return "text-red-500";
-}

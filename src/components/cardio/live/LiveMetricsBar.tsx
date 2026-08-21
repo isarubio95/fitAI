@@ -44,9 +44,9 @@ export function LiveMetricsBar({
           value: formatCardioDuration(isSetup ? 0 : elapsedSec),
         },
         {
-          key: "routePct",
-          label: "% ruta",
-          value: `${Math.round(routePercent)}%`,
+          key: "distance",
+          label: "Distancia",
+          value: formatCardioDistanceM(isSetup ? 0 : distanceM),
         },
         {
           key: "routeLeft",

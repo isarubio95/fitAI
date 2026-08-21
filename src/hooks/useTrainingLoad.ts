@@ -9,14 +9,22 @@ import {
   banisterSeries,
   cardioBlockImpulse,
   combineStrengthSessionLoad,
+  DEFAULT_CARDIO_SESSION_RPE,
+  DEFAULT_STRENGTH_SESSION_RPE,
   edwardsTrimpFromAvgHr,
   edwardsTrimpFromSamples,
+  estimatedStrengthDurationSec,
+  MAX_CARDIO_CLOCK_SEC,
+  MAX_STRENGTH_CLOCK_SEC,
   resolveMaxHeartRate,
   resolveRestingHeartRate,
+  resolveSessionDurationSec,
+  resolveSessionRpe,
   strengthSetMechanicalImpulse,
+  unifiedSessionLoad,
   type PhysioProfile,
 } from "@/lib/trainingLoad";
-import type { HeartRateSample } from "@/lib/heartRateMetrics";
+import { summarizeHeartRate, type HeartRateSample } from "@/lib/heartRateMetrics";
 
 const LOOKBACK_DAYS = 400;
 
@@ -89,10 +97,11 @@ export function useTrainingLoad() {
         fecha_fin: string | null;
         fc_media: number | null;
         fc_max: number | null;
+        rpe: number | null;
       }>((from, to) =>
         supabase
           .from("actividad")
-          .select("id, fecha, fecha_fin, fc_media, fc_max")
+          .select("id, fecha, fecha_fin, fc_media, fc_max, rpe")
           .eq("usuario_id", user!.id)
           .not("fecha_fin", "is", null)
           .gte("fecha", fromIso)
@@ -117,6 +126,8 @@ export function useTrainingLoad() {
         const exerciseIds = ejercicios.map((e) => e.id);
         const activityByExerciseId = new Map(ejercicios.map((e) => [e.id, e.actividad_id]));
         const mechanicalByActivity = new Map<string, number>();
+        const rirsByActivity = new Map<string, Array<number | null>>();
+        const setCountByActivity = new Map<string, number>();
 
         if (exerciseIds.length > 0) {
           const series: {
@@ -161,6 +172,10 @@ export function useTrainingLoad() {
               bodyWeightKg,
             );
             mechanicalByActivity.set(activityId, (mechanicalByActivity.get(activityId) ?? 0) + impulse);
+            const rirs = rirsByActivity.get(activityId) ?? [];
+            rirs.push(s.rir);
+            rirsByActivity.set(activityId, rirs);
+            setCountByActivity.set(activityId, (setCountByActivity.get(activityId) ?? 0) + 1);
           }
         }
 
@@ -188,10 +203,15 @@ export function useTrainingLoad() {
           const samples = hrSamplesByActivity.get(activity.id) ?? [];
           const startMs = Date.parse(activity.fecha);
           const endMs = activity.fecha_fin ? Date.parse(activity.fecha_fin) : NaN;
-          const durationSec =
+          const clockSec =
             Number.isFinite(startMs) && Number.isFinite(endMs) && endMs > startMs
               ? (endMs - startMs) / 1000
               : 0;
+          const durationSec = resolveSessionDurationSec({
+            clockSec,
+            estimatedSec: estimatedStrengthDurationSec(setCountByActivity.get(activity.id) ?? 0),
+            maxClockSec: MAX_STRENGTH_CLOCK_SEC,
+          });
 
           if (samples.length > 0) {
             hrTrimp = edwardsTrimpFromSamples(samples, maxHr, durationSec || undefined);
@@ -199,16 +219,34 @@ export function useTrainingLoad() {
             hrTrimp = edwardsTrimpFromAvgHr(durationSec, activity.fc_media, maxHr);
           }
 
-          const sessionLoad = combineStrengthSessionLoad(mechanical, hrTrimp);
+          const sampleHr = summarizeHeartRate(samples).fcMedia;
+          const rpe = resolveSessionRpe({
+            sessionRpe: activity.rpe,
+            fcMedia: sampleHr ?? activity.fc_media,
+            maxHr,
+            restingHr,
+            setRirs: rirsByActivity.get(activity.id) ?? [],
+            fallbackRpe: DEFAULT_STRENGTH_SESSION_RPE,
+          });
+          const sessionLoad = unifiedSessionLoad({
+            durationSec,
+            rpe,
+            fallbackLoad: combineStrengthSessionLoad(mechanical, hrTrimp),
+          });
           if (sessionLoad <= 0) continue;
           loadStrengthByDay[dateKey] = (loadStrengthByDay[dateKey] ?? 0) + sessionLoad;
         }
       }
 
-      const sessions = await fetchAllPages<{ id: string; fecha_inicio: string }>((from, to) =>
+      const sessions = await fetchAllPages<{
+        id: string;
+        fecha_inicio: string;
+        fecha_fin: string | null;
+        rpe: number | null;
+      }>((from, to) =>
         supabase
           .from("cardio_sesion")
-          .select("id, fecha_inicio")
+          .select("id, fecha_inicio, fecha_fin, rpe")
           .eq("usuario_id", user!.id)
           .not("fecha_fin", "is", null)
           .gte("fecha_inicio", fromIso)
@@ -219,7 +257,6 @@ export function useTrainingLoad() {
 
       const sessionIds = sessions.map((s) => s.id);
       if (sessionIds.length > 0) {
-        const sessionDateById = new Map(sessions.map((s) => [s.id, s.fecha_inicio]));
         const blocks: {
           cardio_sesion_id: string;
           duracion_seg: number | null;
@@ -287,60 +324,89 @@ export function useTrainingLoad() {
         }
 
         const durationBySession = new Map<string, number>();
+        const fcMediaBySession = new Map<string, number>();
+        const blocksBySession = new Map<string, typeof blocks>();
         for (const b of blocks) {
           durationBySession.set(
             b.cardio_sesion_id,
             (durationBySession.get(b.cardio_sesion_id) ?? 0) + Number(b.duracion_seg ?? 0),
           );
+          if (b.fc_media != null && b.fc_media > 0 && !fcMediaBySession.has(b.cardio_sesion_id)) {
+            fcMediaBySession.set(b.cardio_sesion_id, b.fc_media);
+          }
+          const list = blocksBySession.get(b.cardio_sesion_id) ?? [];
+          list.push(b);
+          blocksBySession.set(b.cardio_sesion_id, list);
         }
 
-        for (const b of blocks) {
-          const sessionDate = sessionDateById.get(b.cardio_sesion_id);
-          if (!sessionDate) continue;
-          const dateKey = format(new Date(sessionDate), "yyyy-MM-dd");
-          const samples = trackFcBySession.get(b.cardio_sesion_id) ?? [];
-          const cycling = cyclingBySession.get(b.cardio_sesion_id);
-          const sessionDuration = durationBySession.get(b.cardio_sesion_id) ?? Number(b.duracion_seg ?? 0);
+        for (const session of sessions) {
+          const dateKey = format(new Date(session.fecha_inicio), "yyyy-MM-dd");
+          const samples = trackFcBySession.get(session.id) ?? [];
+          const cycling = cyclingBySession.get(session.id);
+          let sessionDuration = durationBySession.get(session.id) ?? 0;
+          if (sessionDuration <= 0 && session.fecha_fin) {
+            const startMs = Date.parse(session.fecha_inicio);
+            const endMs = Date.parse(session.fecha_fin);
+            if (Number.isFinite(startMs) && Number.isFinite(endMs) && endMs > startMs) {
+              sessionDuration = (endMs - startMs) / 1000;
+            }
+          }
+          sessionDuration = resolveSessionDurationSec({
+            clockSec: sessionDuration,
+            maxClockSec: MAX_CARDIO_CLOCK_SEC,
+          });
 
-          // Si hay samples de track, TRIMP a nivel sesión una sola vez vía el primer bloque.
-          const isFirstBlock =
-            blocks.find((x) => x.cardio_sesion_id === b.cardio_sesion_id) === b;
-
-          let impulse: number;
+          const sessionBlocks = blocksBySession.get(session.id) ?? [];
+          let fallback = 0;
           if (samples.length > 0) {
-            if (!isFirstBlock) continue;
-            impulse = cardioBlockImpulse(
-              { duracion_seg: sessionDuration, fc_media: b.fc_media },
+            fallback = cardioBlockImpulse(
+              { duracion_seg: sessionDuration, fc_media: fcMediaBySession.get(session.id) ?? null },
               {
                 maxHr,
                 restingHr,
                 ftpW,
                 samples,
-                cycling: cycling
-                  ? { ...cycling, duracion_seg: sessionDuration }
-                  : null,
+                cycling: cycling ? { ...cycling, duracion_seg: sessionDuration } : null,
               },
             );
           } else {
-            impulse = cardioBlockImpulse(
-              {
-                duracion_seg: b.duracion_seg,
-                fc_media: b.fc_media,
-                fc_max: b.fc_max,
-              },
-              {
-                maxHr,
-                restingHr,
-                ftpW,
-                cycling: cycling
-                  ? { ...cycling, duracion_seg: Number(b.duracion_seg ?? 0) }
-                  : null,
-              },
-            );
+            for (const b of sessionBlocks) {
+              fallback += cardioBlockImpulse(
+                {
+                  duracion_seg: b.duracion_seg,
+                  fc_media: b.fc_media,
+                  fc_max: b.fc_max,
+                },
+                {
+                  maxHr,
+                  restingHr,
+                  ftpW,
+                  cycling: cycling
+                    ? { ...cycling, duracion_seg: Number(b.duracion_seg ?? 0) }
+                    : null,
+                },
+              );
+            }
           }
 
-          if (impulse <= 0) continue;
-          loadCardioByDay[dateKey] = (loadCardioByDay[dateKey] ?? 0) + impulse;
+          const power = Number(cycling?.potencia_normalizada_w ?? cycling?.potencia_media_w ?? 0);
+          const intensityFactor = ftpW != null && ftpW > 0 && power > 0 ? power / ftpW : null;
+          const sampleHr = summarizeHeartRate(samples).fcMedia;
+          const rpe = resolveSessionRpe({
+            sessionRpe: session.rpe,
+            fcMedia: sampleHr ?? fcMediaBySession.get(session.id) ?? null,
+            maxHr,
+            restingHr,
+            intensityFactor,
+            fallbackRpe: DEFAULT_CARDIO_SESSION_RPE,
+          });
+          const sessionLoad = unifiedSessionLoad({
+            durationSec: sessionDuration,
+            rpe,
+            fallbackLoad: fallback,
+          });
+          if (sessionLoad <= 0) continue;
+          loadCardioByDay[dateKey] = (loadCardioByDay[dateKey] ?? 0) + sessionLoad;
         }
       }
 

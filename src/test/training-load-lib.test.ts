@@ -6,10 +6,16 @@ import {
   distributeLocalMuscleImpulse,
   edwardsTrimpFromAvgHr,
   estimatedDaysToBaseline,
+  estimatedStrengthDurationSec,
+  fosterSessionLoad,
   getFormLabel,
   intensityFromRir,
   localMuscleFatigueSeries,
+  MAX_STRENGTH_CLOCK_SEC,
+  resolveSessionDurationSec,
+  resolveSessionRpe,
   strengthSetMechanicalImpulse,
+  unifiedSessionLoad,
 } from "@/lib/trainingLoad";
 
 describe("intensityFromRir", () => {
@@ -82,7 +88,7 @@ describe("banisterSeries", () => {
     const last = series[series.length - 1];
     expect(last.fatigue).toBeGreaterThan(last.fitness);
     expect(last.form).toBeLessThan(0);
-    expect(getFormLabel(last.form)).toMatch(/Cargado|Muy fatigado/);
+    expect(getFormLabel(last.form)).toMatch(/Fatigado|Agotado/);
   });
 
   it("recupera forma al descansar", () => {
@@ -110,3 +116,52 @@ describe("localMuscleFatigue", () => {
     expect(estimatedDaysToBaseline(series[0])).toBeGreaterThan(0);
   });
 });
+
+describe("getFormLabel", () => {
+  it("usa las mismas zonas Coggan que la escala del gráfico", () => {
+    expect(getFormLabel(-40)).toBe("Agotado");
+    expect(getFormLabel(-20)).toBe("Fatigado");
+    expect(getFormLabel(-8)).toBe("Óptimo");
+    expect(getFormLabel(10)).toBe("Fresco");
+    expect(getFormLabel(30)).toBe("Inactivo");
+  });
+});
+
+describe("fosterSessionLoad", () => {
+  it("escala minutos × RPE a unidades tipo TSS (/10)", () => {
+    expect(fosterSessionLoad(3600, 7)).toBe(42);
+    expect(fosterSessionLoad(0, 7)).toBe(0);
+  });
+
+  it("prioriza el RPE de sesión sobre pulso o RIR", () => {
+    expect(
+      resolveSessionRpe({
+        sessionRpe: 8,
+        fcMedia: 120,
+        maxHr: 190,
+        setRirs: [3],
+        fallbackRpe: 5,
+      }),
+    ).toBe(8);
+  });
+
+  it("unifica gym y cardio en Foster cuando hay duración", () => {
+    const gym = unifiedSessionLoad({ durationSec: 3600, rpe: 7, fallbackLoad: 200 });
+    const cardio = unifiedSessionLoad({ durationSec: 3600, rpe: 7, fallbackLoad: 80 });
+    expect(gym).toBe(42);
+    expect(cardio).toBe(42);
+  });
+
+  it("ignora un reloj de gym desde medianoche y usa la estimación por series", () => {
+    const twelveHours = 12 * 3600;
+    const durationSec = resolveSessionDurationSec({
+      clockSec: twelveHours,
+      estimatedSec: estimatedStrengthDurationSec(20),
+      maxClockSec: MAX_STRENGTH_CLOCK_SEC,
+    });
+    expect(durationSec).toBe(20 * 180);
+    expect(fosterSessionLoad(twelveHours, 7)).toBeGreaterThan(500);
+    expect(unifiedSessionLoad({ durationSec, rpe: 7, fallbackLoad: 999 })).toBe(fosterSessionLoad(durationSec, 7));
+  });
+});
+

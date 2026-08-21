@@ -127,8 +127,8 @@ export function PhysiologySettings() {
         Fisiología (carga y fatiga)
       </p>
       <p className="text-xs leading-snug text-muted-foreground">
-        Se usan para TRIMP, zonas de FC y el gráfico Fitness / Fatiga / Forma. Si dejas FCmáx vacío,
-        se estima por edad (Tanaka) o 190.
+        Se usan para estimar el esfuerzo si no lo indicas al terminar, y para el gráfico
+        Fitness / Fatiga / Forma. Si dejas FCmáx vacío, se estima por edad (Tanaka) o 190.
       </p>
 
       <div className="grid gap-3">

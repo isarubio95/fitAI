@@ -139,6 +139,21 @@ describe("useCardioGpsRecorder (backend nativo Android)", () => {
     expect(result.current.nativeState).toMatchObject({ paused: false, pauseSource: null });
   });
 
+  it("si el nativo reporta distancia 0, usa la longitud de los puntos GPS", async () => {
+    mocks.snapshot = nativeUpdate({
+      full: true,
+      revision: 2,
+      totalPoints: 2,
+      distanceM: 0,
+      elevationGainM: 0,
+      points: [nativePoint(0, 40.4168, -3.7038), nativePoint(1, 40.4175, -3.703)],
+    });
+    const { result } = renderNativeRecorder();
+
+    await waitFor(() => expect(result.current.points).toHaveLength(2));
+    expect(result.current.distanceM).toBeGreaterThan(50);
+  });
+
   it("acumula los puntos que llegan por evento delta", async () => {
     const { result } = renderNativeRecorder();
     await waitFor(() => expect(mocks.trackListeners).toHaveLength(1));
@@ -156,7 +171,7 @@ describe("useCardioGpsRecorder (backend nativo Android)", () => {
     });
 
     await waitFor(() => expect(result.current.points).toHaveLength(3));
-    expect(result.current.distanceM).toBe(205);
+    expect(result.current.distanceM).toBeGreaterThanOrEqual(205);
     expect(result.current.points[2].lat).toBeCloseTo(40.4182);
   });
 

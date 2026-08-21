@@ -4,6 +4,7 @@ import {
   MAX_BACKTRACK_M,
   ON_ROUTE_MAX_M,
   polylineLengthM,
+  resolveRecordedDistanceM,
 } from "@/lib/cardioRouteProgress";
 import { haversineM } from "@/lib/cardioGpsMotion";
 
@@ -18,6 +19,12 @@ describe("cardioRouteProgress", () => {
     const len = polylineLengthM(route);
     expect(len).toBeGreaterThan(200);
     expect(len).toBeLessThan(250);
+  });
+
+  it("resuelve distancia 0 en vivo con la polilínea de los puntos", () => {
+    expect(resolveRecordedDistanceM(0, route)).toBeGreaterThan(200);
+    expect(resolveRecordedDistanceM(null, route)).toBeGreaterThan(200);
+    expect(resolveRecordedDistanceM(1500, route)).toBe(1500);
   });
 
   it("progreso 0 sin posición", () => {

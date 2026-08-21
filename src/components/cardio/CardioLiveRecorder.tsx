@@ -19,10 +19,10 @@ import {
   useUpsertCardioSession,
 } from "@/hooks/useCardioSessions";
 import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
-import { elevationGainM } from "@/lib/cardioFormat";
+import { resolveRecordedElevationM } from "@/lib/cardioFormat";
 import { shouldAutoPause, shouldAutoResume, readCardioAutoPauseEnabled, writeCardioAutoPauseEnabled } from "@/lib/cardioGpsMotion";
 import { MAX_TRACK_POINTS_DB, prepareTrackPointsForStorage } from "@/lib/cardioTrackPoints";
-import { computeRouteProgress } from "@/lib/cardioRouteProgress";
+import { computeRouteProgress, resolveRecordedDistanceM } from "@/lib/cardioRouteProgress";
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
 import { firstNested } from "@/lib/firstNested";
@@ -79,6 +79,7 @@ export function CardioLiveRecorder() {
   const [summaryTitulo, setSummaryTitulo] = useState("");
   const [summaryComentarios, setSummaryComentarios] = useState("");
   const [esPublica, setEsPublica] = useState(false);
+  const [summaryRpe, setSummaryRpe] = useState<number | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [pillCirclePhase, setPillCirclePhase] = useState<PillCirclePhase | null>(null);
   const pillCloseTimerRef = useRef<number | null>(null);
@@ -184,6 +185,7 @@ export function CardioLiveRecorder() {
       setSummaryTitulo("");
       setSummaryComentarios("");
       setEsPublica(false);
+      setSummaryRpe(null);
       setConfirmDiscard(false);
       setPillCirclePhase(null);
       setControlsDrawerHeightPx(0);
@@ -351,11 +353,15 @@ export function CardioLiveRecorder() {
   }, [sessionData?.fecha_inicio, paused, pausedMsAccum, tick]);
 
   const elapsedSec = step === "summary" && elapsedSecFrozen != null ? elapsedSecFrozen : computeElapsedSec();
-  const displayDistanceM = step === "summary" && distanceFrozenM != null ? distanceFrozenM : distanceM;
-  const pointsElevationGainM = useMemo(() => elevationGainM(points), [points]);
-  const elevationGainLive = nativeElevationGainM ?? pointsElevationGainM;
-  const displayElevationM =
-    step === "summary" && elevationFrozenM != null ? elevationFrozenM : elevationGainLive;
+  const displayDistanceM = resolveRecordedDistanceM(
+    step === "summary" ? (distanceFrozenM ?? distanceM) : distanceM,
+    points,
+  );
+  const elevationGainLive = resolveRecordedElevationM(nativeElevationGainM, points);
+  const displayElevationM = resolveRecordedElevationM(
+    step === "summary" ? (elevationFrozenM ?? elevationGainLive) : elevationGainLive,
+    points,
+  );
 
   const routeProgress = useMemo(() => {
     if (!selectedRoute?.points?.length) {
@@ -549,8 +555,8 @@ export function CardioLiveRecorder() {
       ? new Date(sessionData.fecha_inicio).getTime()
       : Date.now();
     setElapsedSecFrozen(Math.max(0, Math.floor((Date.now() - startMs - pauseExtra) / 1000)));
-    setDistanceFrozenM(distanceM);
-    setElevationFrozenM(elevationGainLive);
+    setDistanceFrozenM(resolveRecordedDistanceM(distanceM, points) || null);
+    setElevationFrozenM(resolveRecordedElevationM(elevationGainLive, points) || null);
     setStatsOpen(false);
     setStep("summary");
     void updateLiveCardio({
@@ -627,8 +633,8 @@ export function CardioLiveRecorder() {
     );
 
     const dur = elapsedSecFrozen ?? elapsedSec;
-    const dist = distanceFrozenM ?? distanceM;
-    const elevGain = elevationFrozenM ?? elevationGainLive;
+    const dist = resolveRecordedDistanceM(distanceFrozenM ?? distanceM, points);
+    const elevGain = resolveRecordedElevationM(elevationFrozenM ?? elevationGainLive, points);
 
     const track =
       cardioDisciplineUsesGpsMap(code) && trackPoints.length > 0
@@ -664,6 +670,7 @@ export function CardioLiveRecorder() {
             },
           ],
           es_publica: esPublica,
+          rpe: summaryRpe,
         },
       });
       clearDraft();
@@ -784,11 +791,13 @@ export function CardioLiveRecorder() {
             titulo={summaryTitulo}
             comentarios={summaryComentarios}
             esPublica={esPublica}
+            rpe={summaryRpe}
             saving={upsert.isPending}
             discarding={deleteSession.isPending}
             onTituloChange={setSummaryTitulo}
             onComentariosChange={setSummaryComentarios}
             onEsPublicaChange={setEsPublica}
+            onRpeChange={setSummaryRpe}
             onSave={() => void onSaveSummary()}
             onDiscard={() => setConfirmDiscard(true)}
             onBack={() => setStep("recording")}

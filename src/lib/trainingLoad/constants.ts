@@ -13,9 +13,27 @@ export const DEFAULT_BODYWEIGHT_SET_LOAD = 20;
 /** Fallback cardio sin FC ni potencia (minutos × factor). */
 export const CARDIO_PER_MINUTE_FACTOR = 8;
 
-/** Mezcla fuerza mecánica + TRIMP de FC de sesión. */
+/** Mezcla fuerza mecánica + TRIMP de FC de sesión (solo si no hay duración). */
 export const STRENGTH_MECHANICAL_WEIGHT = 0.65;
 export const STRENGTH_HR_WEIGHT = 0.35;
+
+/** RPE de sesión por defecto si el usuario no lo indica y no hay FC/RIR. */
+export const DEFAULT_STRENGTH_SESSION_RPE = 7;
+export const DEFAULT_CARDIO_SESSION_RPE = 5;
+
+/**
+ * Foster crudo (min × RPE) es ~10× un TSS/TRIMP. Dividir deja CTL/ATL
+ * en la escala de las zonas de forma (±30, fresco +5…+25).
+ */
+export const FOSTER_LOAD_DIVISOR = 10;
+
+/** Reloj de gym desde medianoche (fecha calendario) no es duración real. */
+export const MIN_PLAUSIBLE_SESSION_SEC = 3 * 60;
+export const MAX_STRENGTH_CLOCK_SEC = 4 * 60 * 60;
+export const MAX_CARDIO_CLOCK_SEC = 16 * 60 * 60;
+
+/** Si el reloj no es creíble, ~3 min por serie (trabajo + descanso). */
+export const ESTIMATED_SEC_PER_STRENGTH_SET = 180;
 
 /** FCreposo por defecto si el perfil no la define. */
 export const DEFAULT_RESTING_HR = 60;

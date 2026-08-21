@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { WorkoutLeadingRoutineIcon } from "@/components/dashboard/WorkoutDetailsSheet";
 import { RoutineIconPicker } from "@/components/routine/RoutineIconPicker";
 import { GymPickerSheet } from "@/components/gym/GymPickerSheet";
+import { SessionRpePicker } from "@/components/training/SessionRpePicker";
 import type { RoutineIconKey } from "@/lib/routineIcons";
 import {
   COMMUNITY_PUBLISH_HINT_OFF,
@@ -31,6 +32,8 @@ type WorkoutMetaFormProps = {
   gimnasio: SelectedGimnasio | null;
   onGimnasioChange: (value: SelectedGimnasio | null) => void;
   gymDisabled?: boolean;
+  rpe: number | null;
+  onRpeChange: (value: number) => void;
   children?: ReactNode;
 };
 
@@ -49,6 +52,8 @@ export function WorkoutMetaForm({
   gimnasio,
   onGimnasioChange,
   gymDisabled = false,
+  rpe,
+  onRpeChange,
   children,
 }: WorkoutMetaFormProps) {
   const [gymPickerOpen, setGymPickerOpen] = useState(false);
@@ -138,6 +143,7 @@ export function WorkoutMetaForm({
                 aria-label="Publicar en comunidad"
               />
             </div>
+            <SessionRpePicker id="workout-logger-rpe" value={rpe} onChange={onRpeChange} />
           </>
         )}
       </CardContent>

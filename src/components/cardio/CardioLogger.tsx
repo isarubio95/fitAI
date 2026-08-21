@@ -12,6 +12,7 @@ import { CyclingMetricsSection } from "@/components/cardio/logger/CyclingMetrics
 import { FormField } from "@/components/cardio/logger/FormField";
 import { emptyBlock } from "@/components/cardio/logger/emptyBlock";
 import { PublishCommunitySwitch } from "@/components/cardio/logger/PublishCommunitySwitch";
+import { SessionRpePicker } from "@/components/training/SessionRpePicker";
 import { RunningMetricsSection } from "@/components/cardio/logger/RunningMetricsSection";
 import { TrackJsonSection } from "@/components/cardio/logger/TrackJsonSection";
 import { durationPartsFromSeconds, secondsFromDurationParts, toDatetimeLocalValue } from "@/lib/cardioDatetime";
@@ -62,6 +63,7 @@ type CardioFormSnapshot = {
   durSegundos: string;
   comentarios: string;
   esPublica: boolean;
+  rpe: number | null;
   runningRitmo: string;
   runningCadencia: string;
   runningDesnivel: string;
@@ -96,6 +98,7 @@ export function CardioLogger() {
   const [durSegundos, setDurSegundos] = useState("");
   const [comentarios, setComentarios] = useState("");
   const [esPublica, setEsPublica] = useState(false);
+  const [rpe, setRpe] = useState<number | null>(null);
   const [runningRitmo, setRunningRitmo] = useState("");
   const [runningCadencia, setRunningCadencia] = useState("");
   const [runningDesnivel, setRunningDesnivel] = useState("");
@@ -151,6 +154,8 @@ export function CardioLogger() {
       const nextFechaFin = toDatetimeLocalValue(sessionData.fecha_fin ?? "");
       const nextComentarios = sessionData.comentarios ?? "";
       const nextEsPublica = !!sessionData.es_publica;
+      const nextRpe =
+        sessionData.rpe != null && sessionData.rpe >= 1 && sessionData.rpe <= 10 ? sessionData.rpe : null;
       const running = firstNested(sessionData.cardio_sesion_running as NestedOneOrMany<CardioRunningRow>);
       const cycling = firstNested(sessionData.cardio_sesion_cycling as NestedOneOrMany<CardioCyclingRow>);
       const track = firstNested(sessionData.cardio_track as NestedOneOrMany<CardioTrackRow>);
@@ -225,6 +230,7 @@ export function CardioLogger() {
       setFechaFin(nextFechaFin);
       setComentarios(nextComentarios);
       setEsPublica(nextEsPublica);
+      setRpe(nextRpe);
       setDistanciaKm(nextDistanciaKm);
       setDurHoras(nextDurHoras);
       setDurMinutos(nextDurMinutos);
@@ -252,6 +258,7 @@ export function CardioLogger() {
           durSegundos: nextDurSegundos,
           comentarios: nextComentarios,
           esPublica: nextEsPublica,
+          rpe: nextRpe,
           runningRitmo: nextRunningRitmo,
           runningCadencia: nextRunningCadencia,
           runningDesnivel: nextRunningDesnivel,
@@ -297,6 +304,7 @@ export function CardioLogger() {
     setDurSegundos("");
     setComentarios("");
     setEsPublica(false);
+    setRpe(null);
     setRunningRitmo("");
     setRunningCadencia("");
     setRunningDesnivel("");
@@ -324,6 +332,7 @@ export function CardioLogger() {
         durSegundos,
         comentarios,
         esPublica,
+        rpe,
         runningRitmo,
         runningCadencia,
         runningDesnivel,
@@ -350,6 +359,7 @@ export function CardioLogger() {
     durSegundos,
     comentarios,
     esPublica,
+    rpe,
     runningRitmo,
     runningCadencia,
     runningDesnivel,
@@ -502,6 +512,7 @@ export function CardioLogger() {
         fecha_fin: fechaFinIso,
         comentarios: comentarios.trim() || null,
         es_publica: esPublica,
+        rpe,
         bloques: bloquesToSave,
       },
     });
@@ -583,6 +594,9 @@ export function CardioLogger() {
               </FormField>
             </div>
             <PublishCommunitySwitch esPublica={esPublica} onCheckedChange={setEsPublica} />
+            <div className="col-span-2">
+              <SessionRpePicker id="cardio-logger-rpe" value={rpe} onChange={setRpe} />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

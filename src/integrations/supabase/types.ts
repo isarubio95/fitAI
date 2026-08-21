@@ -29,6 +29,7 @@ export type Database = {
           id: string
           origen: string | null
           origen_externo_id: string | null
+          rpe: number | null
           titulo: string
           usuario_id: string
         }
@@ -46,6 +47,7 @@ export type Database = {
           id?: string
           origen?: string | null
           origen_externo_id?: string | null
+          rpe?: number | null
           titulo: string
           usuario_id?: string
         }
@@ -63,6 +65,7 @@ export type Database = {
           id?: string
           origen?: string | null
           origen_externo_id?: string | null
+          rpe?: number | null
           titulo?: string
           usuario_id?: string
         }
@@ -554,6 +557,7 @@ export type Database = {
           fecha_fin: string | null
           fecha_inicio: string
           id: string
+          rpe: number | null
           titulo: string
           usuario_id: string
         }
@@ -565,6 +569,7 @@ export type Database = {
           fecha_fin?: string | null
           fecha_inicio: string
           id?: string
+          rpe?: number | null
           titulo: string
           usuario_id?: string
         }
@@ -576,6 +581,7 @@ export type Database = {
           fecha_fin?: string | null
           fecha_inicio?: string
           id?: string
+          rpe?: number | null
           titulo?: string
           usuario_id?: string
         }

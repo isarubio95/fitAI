@@ -18,6 +18,7 @@ type CardioSessionInput = {
   fecha_fin?: string | null;
   comentarios?: string | null;
   es_publica?: boolean;
+  rpe?: number | null;
   cardio_disciplina_id?: string | null;
   sport_detail?: CardioSportDetailInput | null;
   track?: CardioTrackInput | null;
@@ -210,6 +211,7 @@ export function useUpsertCardioSession() {
         fecha_fin: input.fecha_fin ?? null,
         comentarios: input.comentarios ?? null,
         es_publica: input.es_publica ?? false,
+        rpe: input.rpe ?? null,
         cardio_disciplina_id: input.cardio_disciplina_id ?? null,
         usuario_id: user!.id,
       };
