@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer } from "@/components/ui/chart";
-import { Check, ListPlus, MapPin, Trophy } from "lucide-react";
+import { Check, ListPlus, Trophy } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import { MUSCLE_GROUPS, MUSCLE_GROUP_ICON_SRC } from "@/constants/muscleGroups";
@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import { WorkoutMuscleMiniMap } from "@/components/dashboard/WorkoutMuscleMiniMap";
-import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
+import { GymStartMetaRow } from "@/components/dashboard/GymStartMetaRow";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -577,31 +577,25 @@ function WorkoutCompactSummary({
         ) : leadingAvatar ? (
           <WorkoutLeadingAvatarBadge avatar={leadingAvatar} />
         ) : null}
-        <div className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
-          <h3
-            className={cn(
-              "min-w-0 flex-1 text-sm font-semibold leading-snug",
-              leadingAvatar && "pt-1.5",
-            )}
-          >
-            {workout.titulo}
-          </h3>
-          <div className="shrink-0 text-right text-[11px] leading-snug text-muted-foreground tabular-nums">
-            {!hideDate && workout.fecha ? (
-              <time dateTime={workout.fecha} className="block">
-                {formatActivityRelativeDate(workout.fecha)}
-              </time>
-            ) : null}
-            <p className={!hideDate && workout.fecha ? "mt-0.5" : undefined}>{statsLabel}</p>
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex items-baseline justify-between gap-3">
+            <h3
+              className={cn(
+                "min-w-0 flex-1 text-sm font-semibold leading-snug",
+                leadingAvatar && "pt-1.5",
+              )}
+            >
+              {workout.titulo}
+            </h3>
+            <p className="shrink-0 text-right text-[11px] leading-snug text-muted-foreground tabular-nums">
+              {statsLabel}
+            </p>
           </div>
+          {!hideDate ? (
+            <GymStartMetaRow dateTime={workout.fecha} gymName={workout.gimnasio_nombre} />
+          ) : null}
         </div>
       </div>
-      {workout.gimnasio_nombre ? (
-        <p className="flex min-w-0 items-center gap-1.5 text-xs leading-none text-muted-foreground">
-          <MapPin className="h-3 w-3 shrink-0" aria-hidden strokeWidth={1.75} />
-          <span className="truncate">{workout.gimnasio_nombre}</span>
-        </p>
-      ) : null}
       {totalSets === 0 ? (
         <p className="text-xs text-muted-foreground">Sin series registradas.</p>
       ) : visibleGroups.length > 0 ? (

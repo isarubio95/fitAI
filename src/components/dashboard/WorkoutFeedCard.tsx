@@ -5,7 +5,7 @@ import {
   type ActivitySocialStatsProps,
 } from "@/components/community/ActivitySocialActions";
 import { WorkoutDetailsContent } from "@/components/dashboard/WorkoutDetailsSheet";
-import { formatActivityAbsoluteDate } from "@/lib/formatActivityRelativeDate";
+import { GymStartMetaRow } from "@/components/dashboard/GymStartMetaRow";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { cn } from "@/lib/utils";
 import type { ActividadWithDetails } from "@/types/workout";
@@ -100,13 +100,11 @@ export function WorkoutFeedCardBody({
             >
               {author.username}
             </button>
-            {workout.fecha ? (
-              <time
+            {workout.fecha || workout.gimnasio_nombre ? (
+              <GymStartMetaRow
                 dateTime={workout.fecha}
-                className="block text-xs leading-none text-muted-foreground"
-              >
-                {formatActivityAbsoluteDate(workout.fecha)}
-              </time>
+                gymName={workout.gimnasio_nombre}
+              />
             ) : null}
           </div>
         </div>
