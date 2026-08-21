@@ -16,7 +16,6 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Library = lazy(() => import("./pages/Library"));
 const Community = lazy(() => import("./pages/Community"));
-const WorkoutHistory = lazy(() => import("./pages/WorkoutHistory"));
 const Evolution = lazy(() => import("./pages/Evolution"));
 const CardioRoutines = lazy(() => import("./pages/CardioRoutines"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -49,7 +48,7 @@ const App = () => {
                       <Route path="/routines" element={<Library />} />
                       <Route path="/exercises" element={<Navigate to="/routines?tab=ejercicios" replace />} />
                       <Route path="/community" element={<Community />} />
-                      <Route path="/history" element={<WorkoutHistory />} />
+                      <Route path="/history" element={<Navigate to="/evolution?tab=progress" replace />} />
                       <Route path="/evolution" element={<Evolution />} />
                       <Route path="/cardio-routines" element={<CardioRoutines />} />
                       <Route path="/gimnasios" element={<Gyms />} />

@@ -1287,6 +1287,53 @@ export type Database = {
           },
         ]
       }
+      salud_diaria: {
+        Row: {
+          calorias: number | null
+          calidad_sueno: number | null
+          created_at: string
+          fc_reposo: number | null
+          fecha: string
+          id: string
+          notas: string | null
+          sueno_min: number | null
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          calorias?: number | null
+          calidad_sueno?: number | null
+          created_at?: string
+          fc_reposo?: number | null
+          fecha?: string
+          id?: string
+          notas?: string | null
+          sueno_min?: number | null
+          updated_at?: string
+          usuario_id?: string
+        }
+        Update: {
+          calorias?: number | null
+          calidad_sueno?: number | null
+          created_at?: string
+          fc_reposo?: number | null
+          fecha?: string
+          id?: string
+          notas?: string | null
+          sueno_min?: number | null
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salud_diaria_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seguimiento: {
         Row: {
           created_at: string

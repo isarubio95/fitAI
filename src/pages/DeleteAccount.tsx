@@ -92,7 +92,7 @@ export default function DeleteAccount() {
                 <li>Perfil, nombre de usuario, avatar y preferencias.</li>
                 <li>Historial de entrenamientos de fuerza, series y rutinas.</li>
                 <li>Sesiones de cardio, rutas GPS y rutinas de cardio.</li>
-                <li>Medidas corporales, logros, seguidores y actividad en comunidad.</li>
+                <li>Medidas corporales, registros de salud, logros, seguidores y actividad en comunidad.</li>
                 <li>Ejercicios personalizados.</li>
               </ul>
             </section>

@@ -1,4 +1,5 @@
 import { useLocation, useSearchParams } from "react-router-dom";
+import { YOU_TAB_LABELS, normalizeYouTab } from "@/lib/youPageTabs";
 
 export function usePageLayoutMeta() {
   const location = useLocation();
@@ -9,7 +10,7 @@ export function usePageLayoutMeta() {
     location.pathname === "/"
       ? "Inicio"
       : location.pathname === "/evolution"
-        ? "Evolución"
+        ? "Tú"
         : location.pathname === "/routines"
           ? "Biblioteca"
           : location.pathname === "/community"
@@ -27,9 +28,7 @@ export function usePageLayoutMeta() {
 
   const activeSubsectionLabel =
     location.pathname === "/evolution"
-      ? (currentTab || "history") === "measurements"
-        ? "Medidas"
-        : "Entrenos"
+      ? YOU_TAB_LABELS[normalizeYouTab(currentTab)]
       : location.pathname === "/routines"
         ? (currentTab || "rutinas") === "ejercicios"
           ? "Ejercicios"

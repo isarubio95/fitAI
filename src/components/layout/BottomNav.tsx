@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, BarChart3, ClipboardList, CirclePlus, Users } from "lucide-react";
+import { Home, User, ClipboardList, CirclePlus, Users } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ const navItems = [
   { to: "/routines", icon: ClipboardList, label: "Biblioteca" },
   { type: "add" },
   { to: "/community", icon: Users, label: "Comunidad" },
-  { to: "/evolution", icon: BarChart3, label: "Evolución" },
+  { to: "/evolution", icon: User, label: "Tú" },
 ];
 
 export function BottomNav({
