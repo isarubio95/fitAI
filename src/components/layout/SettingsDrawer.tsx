@@ -68,11 +68,11 @@ export function SettingsDrawer() {
         overlayClassName="z-[110]"
         className="z-115 flex h-full w-full flex-col border-0 bg-background p-0 shadow-none"
       >
-        <DrawerHeader className="px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
+        <DrawerHeader className="px-4 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
           <DrawerTitle className="text-lg">Ajustes</DrawerTitle>
         </DrawerHeader>
 
-        <div className="mt-3 flex-1 space-y-4 overflow-y-auto px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+        <div className="mt-3 flex-1 space-y-4 overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           <div className={settingsSectionCardClass}>
             <p className="flex items-center gap-2 text-sm font-medium">
               <SunMoon className="h-4 w-4 text-muted-foreground" />
