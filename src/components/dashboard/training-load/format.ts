@@ -22,6 +22,10 @@ export function formatAxisValue(value: number): string {
 
 const Y_TICK_COUNT = 5;
 const Y_HEADROOM = 1.08;
+/** Si el pico cabe por debajo de 70, el eje se queda en 60 (15 en 15) para acercar el zoom. */
+const Y_COMPACT_MAX = 70;
+const Y_COMPACT_DOMAIN = 60;
+const Y_COMPACT_STEP = 15;
 
 /** Paso redondo (1, 2, 5 × 10ⁿ) que cubre al menos `value`. */
 function niceCeilStep(value: number): number {
@@ -36,11 +40,18 @@ function niceCeilStep(value: number): number {
 /**
  * Escala Y del gráfico Fitness/Fatiga: siempre `tickCount` marcas (incluye 0),
  * con el mismo intervalo numérico y visual. El máximo crece o encoge con los datos.
+ * Por debajo de 70 se usa 0–60 de 15 en 15 (una guía menos que 0–80) para ganar zoom.
  */
 export function getTrainingLoadYScale(
   maxValue: number,
   tickCount = Y_TICK_COUNT,
 ): { domain: [number, number]; ticks: number[] } {
+  if (maxValue < Y_COMPACT_MAX) {
+    const compactDivisions = Y_COMPACT_DOMAIN / Y_COMPACT_STEP;
+    const ticks = Array.from({ length: compactDivisions + 1 }, (_, i) => i * Y_COMPACT_STEP);
+    return { domain: [0, Y_COMPACT_DOMAIN], ticks };
+  }
+
   const divisions = Math.max(1, tickCount - 1);
   const paddedMax = Math.max(0, maxValue) * Y_HEADROOM;
   const step = niceCeilStep(paddedMax / divisions);

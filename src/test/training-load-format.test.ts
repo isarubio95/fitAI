@@ -104,13 +104,14 @@ describe("getTrainingLoadYScale", () => {
     const high = getTrainingLoadYScale(330);
     expect(high.domain[1]).toBeGreaterThan(low.domain[1]);
     expect(high.domain[1]).toBeGreaterThanOrEqual(330);
-    expect(low.ticks).toEqual([0, 20, 40, 60, 80]);
+    expect(low.ticks).toEqual([0, 15, 30, 45, 60]);
     expect(high.ticks).toEqual([0, 100, 200, 300, 400]);
   });
 
-  it("con valores vacíos o cero sigue mostrando 5 líneas desde 0", () => {
-    const { ticks, domain } = getTrainingLoadYScale(0);
-    expect(ticks).toEqual([0, 1, 2, 3, 4]);
-    expect(domain).toEqual([0, 4]);
+  it("por debajo de 70 usa 0–60 de 15 en 15 para acercar el zoom", () => {
+    expect(getTrainingLoadYScale(0)).toEqual({ domain: [0, 60], ticks: [0, 15, 30, 45, 60] });
+    expect(getTrainingLoadYScale(55)).toEqual({ domain: [0, 60], ticks: [0, 15, 30, 45, 60] });
+    expect(getTrainingLoadYScale(69)).toEqual({ domain: [0, 60], ticks: [0, 15, 30, 45, 60] });
+    expect(getTrainingLoadYScale(70).domain[1]).toBeGreaterThanOrEqual(70);
   });
 });
