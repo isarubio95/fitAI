@@ -110,6 +110,14 @@ function formatYTick(value: number): string {
   return Math.round(Number(value)).toLocaleString("es-ES");
 }
 
+const Y_AXIS_WIDE_EXTRA_PX = 5;
+
+function yAxisWidthForTicks(dataKey: "workouts" | "volume", ticks: readonly number[]): number {
+  if (dataKey !== "volume") return chartYAxis.width;
+  const wide = ticks.some((tick) => Math.round(Math.abs(tick)).toString().length >= 5);
+  return wide ? chartYAxis.width + Y_AXIS_WIDE_EXTRA_PX : chartYAxis.width;
+}
+
 function inRange(fecha: string, start: Date, end: Date) {
   const d = new Date(fecha);
   return d >= start && d < end;
@@ -285,6 +293,8 @@ function ProgressAreaChart({
   onPoint: (point: ChartPoint | undefined) => void;
   gradientId: string;
 }) {
+  const yAxisWidth = yAxisWidthForTicks(dataKey, yScale.ticks);
+
   return (
     <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
       <AreaChart data={data} margin={{ top: 12, right: chartYAxis.marginRight, left: 0, bottom: 0 }}>
@@ -314,7 +324,7 @@ function ProgressAreaChart({
         <YAxis
           type="number"
           orientation={chartYAxis.orientation}
-          width={chartYAxis.width}
+          width={yAxisWidth}
           domain={yScale.domain}
           ticks={yScale.ticks}
           interval={0}
@@ -322,7 +332,7 @@ function ProgressAreaChart({
           axisLine={false}
           tickLine={false}
           tickMargin={0}
-          tick={<ChartYAxisTick />}
+          tick={<ChartYAxisTick axisWidth={yAxisWidth} />}
           tickFormatter={formatYTick}
         />
         <Tooltip
