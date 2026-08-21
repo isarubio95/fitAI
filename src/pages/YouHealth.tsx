@@ -1,6 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { useLayoutActionSlot } from "@/hooks/useLayoutActionSlot";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -101,8 +99,6 @@ const YouHealth = () => {
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [metric, setMetric] = useState<HealthMetric>("peso");
-  const mobileActionsSlot = useLayoutActionSlot("section-pills-actions-slot", null);
-  const desktopCreateSlot = useLayoutActionSlot(null, "desktop-floating-create-slot");
 
   const { data: perfilPhysio } = useQuery({
     queryKey: ["perfilPhysio", user?.id],
@@ -339,25 +335,25 @@ const YouHealth = () => {
   const cardClass =
     "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
 
-  const registerButton = (className?: string) => (
-    <Button
-      type="button"
-      variant="new"
-      onClick={() => setSheetOpen(true)}
-      title="Registrar salud"
-      aria-label="Registrar salud"
-      className={className}
-    >
-      <span className="whitespace-nowrap">Registrar</span>
-      <Plus className="shrink-0" />
-    </Button>
-  );
-
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col bg-card max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3">
+    <div
+      className={cn(
+        "flex w-full min-w-0 flex-1 flex-col bg-card max-md:-mb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3",
+        "max-md:pb-[calc(var(--app-bottom-nav-inset,5.5rem)+3.5rem)] md:pb-20",
+      )}
+    >
     <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP)}>
-      {mobileActionsSlot && createPortal(registerButton(), mobileActionsSlot)}
-      {desktopCreateSlot && createPortal(registerButton("shadow-lg"), desktopCreateSlot)}
+      <Button
+        type="button"
+        variant="new"
+        onClick={() => setSheetOpen(true)}
+        title="Registrar salud"
+        aria-label="Registrar salud"
+        className="fixed z-40 right-4 bottom-[calc(var(--app-bottom-nav-inset,5.5rem)+0.5rem)] shadow-lg md:right-8 md:bottom-10"
+      >
+        <span className="whitespace-nowrap">Registrar</span>
+        <Plus className="shrink-0" />
+      </Button>
 
       <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
         <DrawerContent side="bottom" className={cn("max-h-[85lvh] overflow-y-auto", drawerSafeAreaBottom)}>
