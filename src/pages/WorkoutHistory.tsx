@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
 import { useCardioHistory } from "@/hooks/useCardioSessions";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,8 +8,17 @@ import {
   TrendingUp, TrendingDown,
   Activity, Weight, Layers, Trophy, Star, Timer, Route,
 } from "lucide-react";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
-import { chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { chartAxis, chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
 import {
   format, startOfWeek, startOfDay, addDays, subDays, addWeeks, subWeeks,
   startOfMonth, subMonths,
@@ -20,6 +29,13 @@ import { computeCardioSessionMetrics, type CardioSesionWithDetails } from "@/lib
 import { MuscleRankingWidget } from "@/components/dashboard/MuscleRankingWidget";
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
+import {
+  ChartScrubStat,
+  ChartScrubSummary,
+  ChartScrubSync,
+  CHART_SCRUB_CURSOR,
+  CHART_SCRUB_TOOLTIP_WRAPPER,
+} from "@/components/dashboard/chartScrub";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 import {
@@ -37,6 +53,62 @@ const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
   { key: "4w", label: "4 sem." },
   { key: "3m", label: "3 meses" },
 ];
+
+const CHART_HEIGHT = 190;
+const Y_TICK_COUNT = 5;
+/** Una etiqueta más que el 1RM del dashboard (6). */
+const X_MAX_LABELS = 7;
+
+function getEvenXTickNames(names: readonly string[], maxTicks = X_MAX_LABELS): string[] {
+  if (names.length === 0) return [];
+  if (names.length <= maxTicks) return [...names];
+  const last = names.length - 1;
+  const ticks: string[] = [];
+  const seen = new Set<number>();
+  for (let i = 0; i < maxTicks; i++) {
+    const idx = Math.round((i * last) / (maxTicks - 1));
+    if (seen.has(idx)) continue;
+    seen.add(idx);
+    ticks.push(names[idx]);
+  }
+  return ticks;
+}
+
+type ChartPoint = {
+  name: string;
+  date: string;
+  gym: number;
+  cardio: number;
+  workouts: number;
+  volume: number;
+};
+
+/** El techo del eje coincide con el pico: la línea llega a la guía superior. */
+function getProgressChartYScale(
+  maxValue: number,
+  tickCount = Y_TICK_COUNT,
+): { domain: [number, number]; ticks: number[] } {
+  const max = Math.max(0, maxValue);
+  const divisions = Math.max(1, tickCount - 1);
+
+  if (max <= 0) {
+    const ticks = Array.from({ length: tickCount }, (_, i) => i);
+    return { domain: [0, divisions], ticks };
+  }
+
+  const intMax = Math.ceil(max);
+  if (intMax <= divisions && Math.abs(max - intMax) < 1e-9) {
+    const ticks = Array.from({ length: intMax + 1 }, (_, i) => i);
+    return { domain: [0, intMax], ticks };
+  }
+
+  const ticks = Array.from({ length: tickCount }, (_, i) => (max * i) / divisions);
+  return { domain: [0, max], ticks };
+}
+
+function formatYTick(value: number): string {
+  return Math.round(Number(value)).toLocaleString("es-ES");
+}
 
 function inRange(fecha: string, start: Date, end: Date) {
   const d = new Date(fecha);
@@ -161,6 +233,136 @@ function ChangeBadge({ pct }: { pct: number | null }) {
   );
 }
 
+function ProgressXTick({
+  x,
+  y,
+  payload,
+  index = 0,
+  visibleTicksCount = 0,
+}: {
+  x?: string | number;
+  y?: string | number;
+  payload?: { value?: string };
+  index?: number;
+  visibleTicksCount?: number;
+}) {
+  const xNum = typeof x === "number" ? x : Number(x);
+  const yNum = typeof y === "number" ? y : Number(y);
+  if (!Number.isFinite(xNum) || !Number.isFinite(yNum) || payload?.value == null) return null;
+
+  const isFirst = index === 0;
+  const isLast = visibleTicksCount > 1 && index === visibleTicksCount - 1;
+
+  return (
+    <text
+      x={xNum}
+      y={yNum + 12}
+      textAnchor={isFirst ? "start" : isLast ? "end" : "middle"}
+      fill={chartAxis.tick}
+      fontSize={11}
+    >
+      {payload.value}
+    </text>
+  );
+}
+
+function ProgressAreaChart({
+  data,
+  dataKey,
+  yScale,
+  xTicks,
+  lastIndex,
+  displayPoint,
+  onPoint,
+  gradientId,
+}: {
+  data: ChartPoint[];
+  dataKey: "workouts" | "volume";
+  yScale: { domain: [number, number]; ticks: number[] };
+  xTicks: string[];
+  lastIndex: number | undefined;
+  displayPoint: ChartPoint | null;
+  onPoint: (point: ChartPoint | undefined) => void;
+  gradientId: string;
+}) {
+  return (
+    <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+      <AreaChart data={data} margin={{ top: 12, right: chartYAxis.marginRight, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid
+          stroke={chartAxis.grid}
+          strokeOpacity={chartAxis.gridOpacity}
+          vertical={false}
+          horizontal
+          horizontalValues={yScale.ticks}
+        />
+        <XAxis
+          dataKey="name"
+          axisLine={false}
+          tickLine={false}
+          tickMargin={4}
+          tick={(props) => <ProgressXTick {...props} visibleTicksCount={xTicks.length} />}
+          padding={{ left: 0, right: 0 }}
+          ticks={xTicks}
+          interval={0}
+        />
+        <YAxis
+          type="number"
+          orientation={chartYAxis.orientation}
+          width={chartYAxis.width}
+          domain={yScale.domain}
+          ticks={yScale.ticks}
+          interval={0}
+          allowDecimals={yScale.ticks.some((tick) => !Number.isInteger(tick))}
+          axisLine={false}
+          tickLine={false}
+          tickMargin={0}
+          tick={<ChartYAxisTick />}
+          tickFormatter={formatYTick}
+        />
+        <Tooltip
+          active
+          defaultIndex={lastIndex}
+          cursor={false}
+          isAnimationActive={false}
+          wrapperStyle={CHART_SCRUB_TOOLTIP_WRAPPER}
+          content={<ChartScrubSync onPoint={onPoint} />}
+        />
+        <Area
+          type="linear"
+          dataKey={dataKey}
+          isAnimationActive={false}
+          stroke="hsl(var(--primary))"
+          strokeWidth={2}
+          fill={`url(#${gradientId})`}
+          dot={{
+            r: 4,
+            fill: "hsl(var(--primary))",
+            strokeWidth: 2,
+            stroke: "hsl(var(--background))",
+            clipDot: false,
+          }}
+          activeDot={{ r: 5, fill: "hsl(var(--primary))", clipDot: false }}
+        />
+        {displayPoint && (
+          <ReferenceLine
+            x={displayPoint.name}
+            stroke={CHART_SCRUB_CURSOR.stroke}
+            strokeWidth={CHART_SCRUB_CURSOR.strokeWidth}
+            strokeOpacity={CHART_SCRUB_CURSOR.strokeOpacity}
+            ifOverflow="visible"
+          />
+        )}
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
 const WorkoutHistory = () => {
   const { data: workouts, isLoading: loadingGym } = useWorkoutHistory();
   const { data: cardio, isLoading: loadingCardio } = useCardioHistory();
@@ -200,6 +402,7 @@ const WorkoutHistory = () => {
       const gymMetrics = calcGymMetrics(gymIn, b.start, b.end);
       return {
         name: b.name,
+        date: format(b.start, "yyyy-MM-dd"),
         gym: gymIn.length,
         cardio: cardioIn.length,
         workouts: gymIn.length + cardioIn.length,
@@ -207,6 +410,39 @@ const WorkoutHistory = () => {
       };
     });
   }, [buckets, workouts, cardio]);
+
+  const lastIndex = chartData.length > 0 ? chartData.length - 1 : undefined;
+  const lastPoint = chartData[chartData.length - 1] ?? null;
+  const [consistencyScrub, setConsistencyScrub] = useState<ChartPoint | null>(null);
+  const [volumeScrub, setVolumeScrub] = useState<ChartPoint | null>(null);
+  const handleConsistencyScrub = useCallback((point: ChartPoint | undefined) => {
+    setConsistencyScrub(point ?? null);
+  }, []);
+  const handleVolumeScrub = useCallback((point: ChartPoint | undefined) => {
+    setVolumeScrub(point ?? null);
+  }, []);
+
+  useEffect(() => {
+    setConsistencyScrub(null);
+    setVolumeScrub(null);
+  }, [period]);
+
+  const consistencyPoint = consistencyScrub ?? lastPoint;
+  const volumePoint = volumeScrub ?? lastPoint;
+  const consistencyYScale = useMemo(() => {
+    let max = 0;
+    for (const row of chartData) max = Math.max(max, row.workouts);
+    return getProgressChartYScale(max);
+  }, [chartData]);
+  const volumeYScale = useMemo(() => {
+    let max = 0;
+    for (const row of chartData) max = Math.max(max, row.volume);
+    return getProgressChartYScale(max);
+  }, [chartData]);
+  const xTicks = useMemo(
+    () => getEvenXTickNames(chartData.map((row) => row.name)),
+    [chartData],
+  );
 
   const topExercises = useMemo(() => {
     if (!workouts) return [];
@@ -359,53 +595,29 @@ const WorkoutHistory = () => {
               <Skeleton className="h-44 w-full rounded-none md:rounded-lg" />
             </div>
           ) : (
-            <div className="py-2">
-              <ResponsiveContainer width="100%" height={176}>
-                <AreaChart data={chartData} margin={{ top: 5, right: chartYAxis.marginRight, left: 5, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="weeklyConsistencyGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    stroke="hsl(var(--border))"
-                    strokeOpacity={0.45}
-                    vertical={false}
-                    horizontal
+            <>
+              {consistencyPoint && (
+                <ChartScrubSummary date={consistencyPoint.date}>
+                  <ChartScrubStat
+                    label="Sesiones"
+                    value={`${consistencyPoint.workouts}`}
+                    color="hsl(var(--primary))"
                   />
-                  <XAxis
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tickMargin={10}
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                    padding={{ left: 20, right: 20 }}
-                  />
-                  <YAxis
-                    orientation={chartYAxis.orientation}
-                    width={chartYAxis.width}
-                    allowDecimals={false}
-                    axisLine={false}
-                    tickLine={false}
-                    tickMargin={0}
-                    tick={<ChartYAxisTick />}
-                    interval={0}
-                  />
-                  <Tooltip content={ConsistencyTooltip} />
-                  <Area
-                    type="linear"
-                    dataKey="workouts"
-                    isAnimationActive={false}
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    fill="url(#weeklyConsistencyGradient)"
-                    dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
-                    activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+                  <ChartScrubStat label="Gym" value={`${consistencyPoint.gym}`} />
+                  <ChartScrubStat label="Cardio" value={`${consistencyPoint.cardio}`} />
+                </ChartScrubSummary>
+              )}
+              <ProgressAreaChart
+                data={chartData}
+                dataKey="workouts"
+                yScale={consistencyYScale}
+                xTicks={xTicks}
+                lastIndex={lastIndex}
+                displayPoint={consistencyPoint}
+                onPoint={handleConsistencyScrub}
+                gradientId="weeklyConsistencyGradient"
+              />
+            </>
           )}
         </CardContent>
       </Card>
@@ -422,52 +634,27 @@ const WorkoutHistory = () => {
               <Skeleton className="h-44 w-full rounded-none md:rounded-lg" />
             </div>
           ) : (
-            <div className="py-2">
-              <ResponsiveContainer width="100%" height={176}>
-                <AreaChart data={chartData} margin={{ top: 5, right: chartYAxis.marginRight, left: 5, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    stroke="hsl(var(--border))"
-                    strokeOpacity={0.45}
-                    vertical={false}
-                    horizontal
+            <>
+              {volumePoint && (
+                <ChartScrubSummary date={volumePoint.date}>
+                  <ChartScrubStat
+                    label="Volumen"
+                    value={formatVolume(volumePoint.volume)}
+                    color="hsl(var(--primary))"
                   />
-                  <XAxis
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tickMargin={10}
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                    padding={{ left: 20, right: 20 }}
-                  />
-                  <YAxis
-                    orientation={chartYAxis.orientation}
-                    width={chartYAxis.width}
-                    allowDecimals={false}
-                    axisLine={false}
-                    tickLine={false}
-                    tickMargin={0}
-                    tick={<ChartYAxisTick />}
-                  />
-                  <Tooltip content={VolumeTooltip} />
-                  <Area
-                    type="linear"
-                    dataKey="volume"
-                    isAnimationActive={false}
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    fill="url(#volumeGradient)"
-                    dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
-                    activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+                </ChartScrubSummary>
+              )}
+              <ProgressAreaChart
+                data={chartData}
+                dataKey="volume"
+                yScale={volumeYScale}
+                xTicks={xTicks}
+                lastIndex={lastIndex}
+                displayPoint={volumePoint}
+                onPoint={handleVolumeScrub}
+                gradientId="volumeGradient"
+              />
+            </>
           )}
         </CardContent>
       </Card>
@@ -528,57 +715,3 @@ const WorkoutHistory = () => {
 
 export default WorkoutHistory;
 
-function ConsistencyTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: readonly {
-    payload?: {
-      name?: string;
-      workouts?: number;
-      gym?: number;
-      cardio?: number;
-    };
-  }[];
-}) {
-  if (!active || !payload?.length) return null;
-  const data = payload[0]?.payload;
-  if (!data) return null;
-
-  return (
-    <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md text-popover-foreground">
-      <p className="font-medium">{data.name}</p>
-      <p className="text-primary font-semibold">
-        {data.workouts} sesión{data.workouts === 1 ? "" : "es"}
-      </p>
-      <p className="text-muted-foreground">
-        {data.gym ?? 0} gym · {data.cardio ?? 0} cardio
-      </p>
-    </div>
-  );
-}
-
-function VolumeTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: readonly {
-    payload?: {
-      name?: string;
-      volume?: number;
-    };
-  }[];
-}) {
-  if (!active || !payload?.length) return null;
-  const data = payload[0]?.payload;
-  if (!data) return null;
-
-  return (
-    <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md text-popover-foreground">
-      <p className="font-medium">{data.name}</p>
-      <p className="text-primary font-semibold">{formatVolume(data.volume ?? 0)}</p>
-    </div>
-  );
-}
