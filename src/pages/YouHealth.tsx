@@ -3,34 +3,26 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useMeasurements, type MedidaInsert } from "@/hooks/useMeasurements";
-import { useDailyHealth, type SaludDiariaPatch } from "@/hooks/useDailyHealth";
+import { useMeasurements } from "@/hooks/useMeasurements";
+import { useDailyHealth } from "@/hooks/useDailyHealth";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
 import { useCardioHistory } from "@/hooks/useCardioSessions";
 import { computeCardioSessionMetrics } from "@/lib/cardioSessionDisplay";
+import { HealthLogDrawer } from "@/components/health/HealthLogDrawer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Drawer, DrawerContent, DrawerHeader, DrawerTitle,
-  drawerSafeAreaBottom,
-} from "@/components/ui/drawer";
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
-  Scale, TrendingUp, TrendingDown, CalendarIcon,
+  Scale, TrendingUp, TrendingDown,
   Plus, Flame, Heart, Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
-import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "@/components/ui/textarea";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
 
 type HealthMetric = "peso" | "calorias" | "fc" | "sueno";
@@ -41,15 +33,6 @@ const METRIC_OPTIONS: { key: HealthMetric; label: string }[] = [
   { key: "fc", label: "FC" },
   { key: "sueno", label: "Sueño" },
 ];
-
-const numericFields = [
-  { key: "peso", label: "Peso (kg)", step: "0.1" },
-  { key: "grasa", label: "% Grasa", step: "0.1" },
-  { key: "cintura", label: "Cintura (cm)", step: "0.1" },
-  { key: "pecho", label: "Pecho (cm)", step: "0.1" },
-  { key: "brazo", label: "Brazo (cm)", step: "0.1" },
-  { key: "pierna", label: "Pierna (cm)", step: "0.1" },
-] as const;
 
 const chartConfig = {
   peso: { label: "Peso (kg)", color: "hsl(var(--primary))" },
@@ -62,16 +45,6 @@ const chartConfig = {
 
 function dayKey(value: string | Date) {
   return format(typeof value === "string" ? new Date(value) : value, "yyyy-MM-dd");
-}
-
-function parseOptionalNumber(raw: string | undefined, min?: number, max?: number): number | null {
-  const trimmed = raw?.trim() ?? "";
-  if (!trimmed) return null;
-  const n = Number(trimmed);
-  if (!Number.isFinite(n)) return null;
-  if (min != null && n < min) return null;
-  if (max != null && n > max) return null;
-  return n;
 }
 
 function formatSleepHours(min: number) {
@@ -90,11 +63,10 @@ function latestWith<T>(
 
 const YouHealth = () => {
   const { user } = useAuth();
-  const { data: medidas, isLoading: loadingMedidas, addMeasurement, isAdding } = useMeasurements();
-  const { data: daily, isLoading: loadingDaily, upsertDailyHealth, isSaving } = useDailyHealth();
+  const { data: medidas, isLoading: loadingMedidas } = useMeasurements();
+  const { data: daily, isLoading: loadingDaily } = useDailyHealth();
   const { data: workouts } = useWorkoutHistory();
   const { data: cardio } = useCardioHistory();
-  const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -121,12 +93,7 @@ const YouHealth = () => {
     }
   }, [location.state, location.pathname, navigate]);
 
-  const [formDate, setFormDate] = useState<Date>(new Date());
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const [calidad, setCalidad] = useState<number | null>(null);
-
   const isLoading = loadingMedidas || loadingDaily;
-  const saving = isAdding || isSaving;
 
   const burnedByDate = useMemo(() => {
     const map: Record<string, number> = {};
@@ -280,58 +247,6 @@ const YouHealth = () => {
 
   const chartHasData = chartData.length > 1;
 
-  const resetForm = () => {
-    setFormValues({});
-    setCalidad(null);
-    setFormDate(new Date());
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const fecha = format(formDate, "yyyy-MM-dd");
-      const notas = formValues.saludNotas?.trim() || null;
-      const medidaPayload: Omit<MedidaInsert, "usuario_id"> = {
-        fecha,
-        notas,
-      };
-      let hasMedida = false;
-      for (const f of numericFields) {
-        const n = parseOptionalNumber(formValues[f.key]);
-        medidaPayload[f.key] = n;
-        if (n != null) hasMedida = true;
-      }
-
-      const calorias = parseOptionalNumber(formValues.calorias, 0);
-      const suenoHoras = parseOptionalNumber(formValues.suenoHoras, 0, 24);
-      const fcReposo = parseOptionalNumber(formValues.fcReposo, 30, 120);
-      const suenoMin = suenoHoras != null ? Math.round(suenoHoras * 60) : null;
-      const hasSalud =
-        calorias != null || suenoMin != null || calidad != null || fcReposo != null;
-
-      if (!hasMedida && !hasSalud) {
-        toast({ title: "Añade al menos un dato", variant: "destructive" });
-        return;
-      }
-
-      if (hasMedida) await addMeasurement(medidaPayload);
-      if (hasSalud) {
-        const patch: SaludDiariaPatch = { fecha };
-        if (calorias != null) patch.calorias = calorias;
-        if (suenoMin != null) patch.sueno_min = suenoMin;
-        if (calidad != null) patch.calidad_sueno = calidad;
-        if (fcReposo != null) patch.fc_reposo = fcReposo;
-        if (notas) patch.notas = notas;
-        await upsertDailyHealth(patch);
-      }
-
-      setSheetOpen(false);
-      resetForm();
-      toast({ title: "Registro guardado" });
-    } catch {
-      toast({ title: "Error al guardar", variant: "destructive" });
-    }
-  };
-
   const cardClass =
     "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
 
@@ -355,120 +270,7 @@ const YouHealth = () => {
         <Plus className="shrink-0" />
       </Button>
 
-      <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
-        <DrawerContent side="bottom" className={cn("max-h-[85lvh] overflow-y-auto", drawerSafeAreaBottom)}>
-          <DrawerHeader>
-            <DrawerTitle>Registrar salud</DrawerTitle>
-          </DrawerHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Fecha</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    {format(formDate, "PPP", { locale: es })}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formDate}
-                    onSelect={(d) => d && setFormDate(d)}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <p className="text-sm font-medium">Medidas</p>
-            <div className="grid grid-cols-2 gap-3">
-              {numericFields.map((f) => (
-                <div key={f.key} className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">{f.label}</label>
-                  <Input
-                    type="number"
-                    step={f.step}
-                    inputMode="decimal"
-                    placeholder="–"
-                    value={formValues[f.key] ?? ""}
-                    onChange={(e) => setFormValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <p className="text-sm font-medium">Día a día</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Calorías ingeridas</label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  placeholder="kcal"
-                  value={formValues.calorias ?? ""}
-                  onChange={(e) => setFormValues((v) => ({ ...v, calorias: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Sueño (horas)</label>
-                <Input
-                  type="number"
-                  step="0.25"
-                  inputMode="decimal"
-                  placeholder="7.5"
-                  value={formValues.suenoHoras ?? ""}
-                  onChange={(e) => setFormValues((v) => ({ ...v, suenoHoras: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">FC reposo (lpm)</label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  placeholder="60"
-                  value={formValues.fcReposo ?? ""}
-                  onChange={(e) => setFormValues((v) => ({ ...v, fcReposo: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Calidad del sueño</label>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setCalidad((cur) => (cur === n ? null : n))}
-                      className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-md border text-sm",
-                        calidad === n
-                          ? "border-primary bg-primary/15 text-primary"
-                          : "border-border text-muted-foreground",
-                      )}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Notas</label>
-              <Textarea
-                placeholder="Observaciones opcionales…"
-                value={formValues.saludNotas ?? ""}
-                onChange={(e) => setFormValues((v) => ({ ...v, saludNotas: e.target.value }))}
-                rows={2}
-              />
-            </div>
-
-            <Button className="w-full" onClick={handleSubmit} disabled={saving}>
-              {saving ? "Guardando…" : "Guardar"}
-            </Button>
-          </div>
-        </DrawerContent>
-      </Drawer>
+      <HealthLogDrawer open={sheetOpen} onOpenChange={setSheetOpen} />
 
       <Card className={cardClass}>
         <CardContent className="p-0">
