@@ -221,7 +221,7 @@ export function SortableRoutineCard({
           </DropdownMenuItem>
         </DropdownMenuContent>
 
-        <CardContent className="px-2 pt-3 pb-3 min-[361px]:px-3">
+        <CardContent className="p-0">
           <div className="flex items-stretch gap-1">
             {isDragMode && (
               <button
@@ -242,15 +242,21 @@ export function SortableRoutineCard({
               aria-expanded={isOpen}
               aria-label={isOpen ? `Ocultar ejercicios de ${r.nombre}` : `Ver ejercicios de ${r.nombre}`}
             >
-              <div className="h-24 w-28 shrink-0 overflow-hidden pointer-events-none" aria-hidden>
-                <WorkoutMuscleMiniMap
-                  groupSets={groupSets}
-                  maxSets={maxSets}
-                  size="compact"
-                  className="h-full w-full"
-                />
+              <div className="shrink-0 pt-1 pl-1 pb-1">
+                <div
+                  className="flex h-24 w-28 items-center justify-center overflow-hidden rounded-xl bg-background p-1 pointer-events-none"
+                  aria-hidden
+                >
+                  <WorkoutMuscleMiniMap
+                    groupSets={groupSets}
+                    maxSets={maxSets}
+                    variant="routine"
+                    size="compact"
+                    className="h-full w-full"
+                  />
+                </div>
               </div>
-              <div className="min-w-0 flex-1 py-0.5">
+              <div className="min-w-0 flex-1 py-3">
                 <div className="mb-0.5 flex min-w-0 items-center gap-2">
                   <h2 className="flex min-w-0 items-center gap-2 font-semibold text-base">
                     <RoutineTitleIcon className="h-4 w-4 shrink-0" />
@@ -278,7 +284,7 @@ export function SortableRoutineCard({
             </button>
 
             <div
-              className="flex shrink-0 flex-col items-center justify-center gap-0.5"
+              className="flex shrink-0 flex-col items-center justify-center gap-0.5 py-3 pr-2 min-[361px]:pr-3"
               onPointerDown={(e) => e.stopPropagation()}
             >
               <Button
@@ -306,8 +312,8 @@ export function SortableRoutineCard({
           </div>
 
           <div
-            className={`grid transition-all duration-200 ease-out ${
-              isOpen ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0"
+            className={`grid px-2 min-[361px]:px-3 transition-all duration-200 ease-out ${
+              isOpen ? "grid-rows-[1fr] opacity-100 mt-3 pb-3" : "grid-rows-[0fr] opacity-0"
             }`}
           >
             <div className="overflow-hidden" inert={!isOpen ? true : undefined}>
@@ -315,12 +321,12 @@ export function SortableRoutineCard({
                 {volumeRows.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-[11px] font-medium text-muted-foreground">Series por grupo</p>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2">
                       {volumeRows.map(([group, sets]) => {
                         const pct = maxSets > 0 ? (sets / maxSets) * 100 : 0;
                         return (
-                          <div key={group} className="grid grid-cols-[minmax(0,6.5rem)_1fr_1.25rem] items-center gap-2">
-                            <span className="truncate text-xs text-muted-foreground">{group}</span>
+                          <div key={group} className="contents">
+                            <span className="whitespace-nowrap text-xs text-muted-foreground">{group}</span>
                             <Progress value={pct} className="h-1.5" />
                             <span className="text-right text-xs tabular-nums text-muted-foreground">{sets}</span>
                           </div>

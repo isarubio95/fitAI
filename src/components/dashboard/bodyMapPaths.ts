@@ -10,6 +10,14 @@ export const LOAD_COLORS: Record<MuscleLoadLevel, string> = {
   high: "hsl(var(--primary) / 0.9)",
 };
 
+/** Rutinas: binario (entrena el grupo o no), verde pleno si hay volumen. */
+export const ROUTINE_MUSCLE_COLORS: Record<MuscleLoadLevel, string> = {
+  none: "hsl(var(--muted-foreground) / 0.3)",
+  light: "hsl(142 71% 45% / 0.9)",
+  moderate: "hsl(142 71% 45% / 0.9)",
+  high: "hsl(142 71% 45% / 0.9)",
+};
+
 /** Fatiga local: escala ámbar/naranja (misma familia que Fatiga sistémica). */
 export const FATIGUE_COLORS: Record<MuscleLoadLevel, string> = {
   none: "hsl(var(--muted-foreground) / 0.3)",
