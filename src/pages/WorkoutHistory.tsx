@@ -559,7 +559,7 @@ const WorkoutHistory = () => {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="grid grid-cols-2 gap-0">
+          <div className="grid grid-cols-2 gap-0 pb-2">
             {kpiCards.map((kpi, i) => {
               const Icon = kpi.icon;
               const cellBorder =
@@ -571,7 +571,7 @@ const WorkoutHistory = () => {
                       ? "border-r border-black/5 dark:border-white/10"
                       : "";
               return (
-                <div key={kpi.label} className={`space-y-1 px-6 py-8 ${cellBorder}`}>
+                <div key={kpi.label} className={`space-y-1 px-6 py-6 ${cellBorder}`}>
                   <div className="flex items-center gap-2">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
                       <Icon className="h-4 w-4 text-primary" />
@@ -580,9 +580,9 @@ const WorkoutHistory = () => {
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <p className="text-[11px] text-muted-foreground">{kpi.label}</p>
+                      <p className="text-[11px] font-semibold">{kpi.label}</p>
                       {kpi.sub && !isLoading && (
-                        <p className="text-[10px] text-muted-foreground/80 mt-0.5">{kpi.sub}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{kpi.sub}</p>
                       )}
                     </div>
                     {!isLoading && <ChangeBadge pct={kpi.pct} />}

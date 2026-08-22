@@ -1,11 +1,12 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { format, addDays, startOfWeek, addWeeks, getDay } from "date-fns";
+import { format, addDays, startOfWeek, addWeeks, getDay, startOfDay, isBefore } from "date-fns";
 import { es } from "date-fns/locale";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -19,6 +20,7 @@ import { useRoutines } from "@/hooks/useRoutines";
 import { usePredefinedRoutines } from "@/hooks/usePredefinedRoutines";
 import { useScheduleRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { Calendar, Check } from "lucide-react";
+import { PlanSchedulePreviewCalendar } from "@/components/dashboard/PlanSchedulePreviewCalendar";
 
 /** A partir de las rutinas programadas, infiere qué rutina_id está asignada a cada día de la semana (0=Dom, 1=Lun...6=Sab). */
 export function deriveRoutineByDayFromPlanned(planned: PlannedRoutine[]): Record<string, string> {
@@ -58,11 +60,19 @@ const DAY_LABELS: Array<{ key: DayKey; label: string; name: string }> = [
 
 /** Fechas para un día de la semana (dayKey) durante N semanas desde start. */
 function getDatesForWeekday(dayKey: DayKey, start: Date, weeks: number): string[] {
+  const startDay = startOfDay(start);
   const startWeek = startOfWeek(start, { weekStartsOn: 1 });
-  const dates: string[] = [];
   const offset = dayKey === 0 ? 6 : dayKey - 1;
+  let first = addDays(startWeek, offset);
+
+  // Si ese día de la semana actual ya pasó, empezar en la siguiente ocurrencia
+  if (isBefore(startOfDay(first), startDay)) {
+    first = addWeeks(first, 1);
+  }
+
+  const dates: string[] = [];
   for (let w = 0; w < weeks; w++) {
-    const d = addDays(addWeeks(startWeek, w), offset);
+    const d = addWeeks(first, w);
     dates.push(format(d, "yyyy-MM-dd"));
   }
   return dates;
@@ -101,6 +111,14 @@ interface ProgramWizardProps {
 
 const EMPTY = "__none__";
 
+const WIZARD_STEPS: Array<{ number: 1 | 2; label: string }> = [
+  { number: 1, label: "Rutina por día" },
+  { number: 2, label: "Duración" },
+];
+
+/** Duración del barrido de cada mitad de la línea del stepper */
+const SEGMENT_MS = 220;
+
 const defaultRoutineByDay = () =>
   Object.fromEntries(DAY_LABELS.map((d) => [String(d.key), ""]));
 
@@ -120,7 +138,7 @@ export function ProgramWizard({
   const [step, setStep] = useState<1 | 2>(1);
   const [transitioningStep, setTransitioningStep] = useState<1 | 2 | null>(null);
   const [routineByDay, setRoutineByDay] = useState<Record<string, string>>(defaultRoutineByDay);
-  const [durationWeeks, setDurationWeeks] = useState<1 | 4 | 8>(4);
+  const [durationWeeks, setDurationWeeks] = useState(4);
   const stepTransitionTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -144,6 +162,17 @@ export function ProgramWizard({
   }, [startDate, durationWeeks, routineByDay]);
 
   const totalDays = useMemo(() => schedules.reduce((acc, s) => acc + s.fechasArray.length, 0), [schedules]);
+
+  const routineMeta = useMemo(() => {
+    const meta: Record<string, { nombre: string; icono?: string | null }> = {};
+    for (const r of routines ?? []) {
+      meta[r.id] = { nombre: r.nombre, icono: r.icono };
+    }
+    for (const r of templates ?? []) {
+      meta[r.id] = { nombre: r.nombre, icono: r.icono };
+    }
+    return meta;
+  }, [routines, templates]);
 
   const hasAtLeastOneRoutine = useMemo(
     () => Object.values(routineByDay).some((id) => id && id !== EMPTY),
@@ -234,150 +263,242 @@ export function ProgramWizard({
           </p>
         </DrawerHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-20 bg-card">
-          {/* Stepper */}
-          <div className="mb-6 mt-1 flex justify-center items-center gap-2 text-xs">
-            <span className={`px-2 py-1 rounded-full ${step === 1 ? "bg-primary-solid text-primary-foreground" : "bg-muted text-muted-foreground"}`}>1</span>
-            <span className="text-foreground/70">Rutina por día</span>
-            <span className="text-foreground/60">→</span>
-            <span className={`px-2 py-1 rounded-full ${step === 2 ? "bg-primary-solid text-primary-foreground" : "bg-muted text-muted-foreground"}`}>2</span>
-            <span className="text-foreground/70">Duración</span>
-          </div>
-
-          <AnimatePresence mode="wait" initial={false}>
-          {step === 1 && (
-            <motion.div
-              key="wizard-step-1"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
-              className="space-y-4 min-h-[286px]"
-            >
-              <Label className="text-sm font-medium text-foreground/75 pb-3 block mb-0">Asigna una rutina a cada día (deja vacío si no entrenas ese día)</Label>
-              {loadingRoutines || loadingTemplates ? (
-                <Skeleton className="h-64 w-full rounded-none" />
-              ) : (
-                <div className="space-y-2">
-                  {DAY_LABELS.map((d) => {
-                    const currentValue = routineByDay[String(d.key)] || EMPTY;
-                    const isNoneSelected = currentValue === EMPTY;
-                    return (
-                    <div key={d.key} className="flex items-center gap-3">
-                      <span
-                        className={`w-8 shrink-0 text-sm font-medium ${
-                          isNoneSelected ? "text-muted-foreground" : "text-accent font-semibold"
-                        }`}
-                      >
-                        {d.label}
+        <div className="min-h-0 flex-1 overflow-y-auto bg-background">
+          <div className="flex flex-col gap-6 px-4 pb-4">
+            {/* Stepper */}
+            <div className="grid grid-cols-2 pt-6 text-xs">
+              {WIZARD_STEPS.map((s, i) => {
+                const isDone = step > s.number;
+                const isActive = step === s.number;
+                const incomingFilled = isDone || isActive;
+                return (
+                  <div key={s.number} className="relative flex flex-col items-center gap-1.5">
+                    {i > 0 && (
+                      <span className="absolute left-0 right-1/2 top-3 h-0.5 overflow-hidden bg-muted">
+                        <span
+                          className="block h-full w-full origin-left bg-primary-solid transition-transform ease-out"
+                          style={{
+                            transform: `scaleX(${incomingFilled ? 1 : 0})`,
+                            transitionDuration: `${SEGMENT_MS}ms`,
+                            // Encadena las dos mitades del tramo para que el barrido sea continuo
+                            transitionDelay: `${incomingFilled ? SEGMENT_MS : 0}ms`,
+                          }}
+                        />
                       </span>
-                      <Select value={currentValue} onValueChange={(v) => setRoutineForDay(d.key, v)}>
-                        <SelectTrigger className={`h-10 flex-1 ${isNoneSelected ? "text-muted-foreground" : ""}`}>
-                          <SelectValue placeholder={`${d.name} — Ninguna`} />
-                        </SelectTrigger>
-                        <SelectContent
-                          position="item-aligned"
-                          onCloseAutoFocus={(e) => e.preventDefault()}
+                    )}
+                    {i < WIZARD_STEPS.length - 1 && (
+                      <span className="absolute left-1/2 right-0 top-3 h-0.5 overflow-hidden bg-muted">
+                        <span
+                          className="block h-full w-full origin-left bg-primary-solid transition-transform ease-out"
+                          style={{
+                            transform: `scaleX(${isDone ? 1 : 0})`,
+                            transitionDuration: `${SEGMENT_MS}ms`,
+                            transitionDelay: `${isDone ? 0 : SEGMENT_MS}ms`,
+                          }}
+                        />
+                      </span>
+                    )}
+                    <span
+                      className={`relative z-10 inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
+                        isDone || isActive
+                          ? "bg-primary-solid text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                      style={{
+                        transitionDuration: `${SEGMENT_MS}ms`,
+                        // El círculo cambia justo cuando la línea termina de llegar
+                        transitionDelay: `${incomingFilled && i > 0 ? SEGMENT_MS * 2 : 0}ms`,
+                      }}
+                    >
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.span
+                          key={isDone ? "check" : "number"}
+                          initial={{ opacity: 0, scale: 0.6 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.6 }}
+                          transition={{ duration: 0.15, ease: "easeOut" }}
+                          className="inline-flex"
                         >
-                          <SelectItem value={EMPTY}>Ninguna</SelectItem>
-                          {routineOptions.mine.length > 0 && (
-                            <>
-                              <div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
-                                Tus rutinas
-                              </div>
-                              {routineOptions.mine.map((r) => (
-                                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                              ))}
-                            </>
-                          )}
-                          {routineOptions.tpl.length > 0 && (
-                            <>
-                              <div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
-                                Plantillas
-                              </div>
-                              {routineOptions.tpl.map((r) => (
-                                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                              ))}
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
+                          {isDone ? <Check className="h-3.5 w-3.5" /> : s.number}
+                        </motion.span>
+                      </AnimatePresence>
+                    </span>
+                    <span className="text-center text-foreground/70">{s.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="space-y-4 rounded-xl border border-border/60 bg-card p-4">
+                <AnimatePresence mode="wait" initial={false}>
+                {step === 1 && (
+                  <motion.div
+                    key="wizard-step-1"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    className="space-y-4 min-h-[286px]"
+                  >
+                    <Label className="text-sm font-medium text-foreground/75 pb-3 block mb-0">Asigna una rutina a cada día (deja vacío si no entrenas ese día)</Label>
+                    {loadingRoutines || loadingTemplates ? (
+                      <Skeleton className="h-64 w-full rounded-none" />
+                    ) : (
+                      <div className="space-y-2">
+                        {DAY_LABELS.map((d) => {
+                          const currentValue = routineByDay[String(d.key)] || EMPTY;
+                          const isNoneSelected = currentValue === EMPTY;
+                          return (
+                          <div key={d.key} className="flex items-center gap-2">
+                            <span
+                              className={`w-8 shrink-0 text-sm font-medium ${
+                                isNoneSelected ? "text-muted-foreground" : "text-accent font-semibold"
+                              }`}
+                            >
+                              {d.label}
+                            </span>
+                            <Select value={currentValue} onValueChange={(v) => setRoutineForDay(d.key, v)}>
+                              <SelectTrigger
+                                className={cn(
+                                  "h-10 flex-1",
+                                  isNoneSelected
+                                    ? "text-muted-foreground"
+                                    : "text-accent font-semibold"
+                                )}
+                              >
+                                <SelectValue placeholder={`${d.name} — Ninguna`} />
+                              </SelectTrigger>
+                              <SelectContent
+                                position="item-aligned"
+                                onCloseAutoFocus={(e) => e.preventDefault()}
+                              >
+                                <SelectItem value={EMPTY}>Ninguna</SelectItem>
+                                {routineOptions.mine.length > 0 && (
+                                  <>
+                                    <div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
+                                      Tus rutinas
+                                    </div>
+                                    {routineOptions.mine.map((r) => (
+                                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                                    ))}
+                                  </>
+                                )}
+                                {routineOptions.tpl.length > 0 && (
+                                  <>
+                                    <div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
+                                      Plantillas
+                                    </div>
+                                    {routineOptions.tpl.map((r) => (
+                                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                                    ))}
+                                  </>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )})}
+                      </div>
+                    )}
+                    <p className="text-xs text-foreground/70">
+                      Semana base:{" "}
+                      <span className="font-medium">
+                        {format(startDate ?? new Date(), "d MMM yyyy", { locale: es })}
+                      </span>
+                    </p>
+                  </motion.div>
+                )}
+
+                {step === 2 && (
+                  <motion.div
+                    key="wizard-step-2"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    className="space-y-4 min-h-71.5"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-3">
+                        <Label className="mb-0">Duración</Label>
+                        <span className="text-sm font-semibold tabular-nums">
+                          {durationWeeks} {durationWeeks === 1 ? "semana" : "semanas"}
+                        </span>
+                      </div>
+                      <div className="mt-5 space-y-3">
+                        <Slider
+                          min={1}
+                          max={8}
+                          step={1}
+                          value={[durationWeeks]}
+                          onValueChange={([weeks]) => {
+                            if (weeks == null) return;
+                            setDurationWeeks(weeks);
+                          }}
+                          aria-label="Duración en semanas"
+                        />
+                        <div className="flex justify-between px-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
+                          {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => (
+                            <span
+                              key={n}
+                              className={cn(
+                                "w-4 text-center transition-colors",
+                                durationWeeks === n && "text-foreground"
+                              )}
+                            >
+                              {n}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  )})}
-                </div>
-              )}
-              <p className="text-xs text-foreground/70">
-                Semana base:{" "}
-                <span className="font-medium">
-                  {format(startDate ?? new Date(), "d MMM yyyy", { locale: es })}
-                </span>
-              </p>
-            </motion.div>
-          )}
 
-          {step === 2 && (
-            <motion.div
-              key="wizard-step-2"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
-              className="space-y-4 min-h-[286px]"
-            >
-              <Label className="mb-2 block">Duración</Label>
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                className="justify-start flex-wrap gap-2"
-                value={String(durationWeeks)}
-                onValueChange={(v) => {
-                  if (!v) return;
-                  setDurationWeeks(Number(v) as 1 | 4 | 8);
-                }}
-              >
-                <ToggleGroupItem value="1" className="h-10 px-4">1 semana</ToggleGroupItem>
-                <ToggleGroupItem value="4" className="h-10 px-4">4 semanas</ToggleGroupItem>
-                <ToggleGroupItem value="8" className="h-10 px-4">8 semanas</ToggleGroupItem>
-              </ToggleGroup>
+                    <div className="text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-foreground/70">Días resultantes</span>
+                        <span className="font-semibold">{totalDays}</span>
+                      </div>
+                      <div className="mt-2 text-xs text-foreground/70 flex flex-wrap gap-1.5">
+                        {schedules.flatMap((s) => s.fechasArray).slice(0, 8).map((d) => (
+                          <span key={d} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5">
+                            {format(new Date(d + "T12:00:00.000Z"), "d MMM", { locale: es })}
+                          </span>
+                        ))}
+                        {totalDays > 8 && (
+                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5">
+                            +{totalDays - 8} más
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-              <div data-drawer-section className="rounded-none border border-border bg-muted/30 p-3 text-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-foreground/70">Días resultantes</span>
-                  <span className="font-semibold">{totalDays}</span>
-                </div>
-                <div className="mt-2 text-xs text-foreground/70 flex flex-wrap gap-1.5">
-                  {schedules.flatMap((s) => s.fechasArray).slice(0, 8).map((d) => (
-                    <span key={d} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5">
-                      {format(new Date(d + "T12:00:00.000Z"), "d MMM", { locale: es })}
-                    </span>
-                  ))}
-                  {totalDays > 8 && (
-                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5">
-                      +{totalDays - 8} más
-                    </span>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-          </AnimatePresence>
+                    {totalDays > 0 && (
+                      <div className="mt-4">
+                        <PlanSchedulePreviewCalendar schedules={schedules} routineMeta={routineMeta} />
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+                </AnimatePresence>
+            </div>
+          </div>
         </div>
 
         {/* Footer fijo para evitar saltos y mejorar alcance con pulgar */}
         <div className="border-t border-border bg-card/95 px-5 py-3 backdrop-blur supports-backdrop-filter:bg-card/85 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              className="disabled:opacity-100 disabled:bg-muted/70 disabled:text-muted-foreground dark:disabled:bg-muted/40"
-              disabled={step === 1 || isBusy || isStepTransitioning}
-              onClick={() => goToStep(1)}
-            >
-              Atrás
-            </Button>
+          <div className={cn("flex items-center", step === 1 ? "justify-end" : "justify-between")}>
+            {step > 1 && (
+              <Button
+                variant="outline"
+                disabled={isBusy || isStepTransitioning}
+                onClick={() => goToStep(1)}
+              >
+                Atrás
+              </Button>
+            )}
 
             {step < 2 ? (
               <Button
-                className="disabled:opacity-100 disabled:border-border disabled:bg-muted/70 disabled:text-muted-foreground disabled:shadow-none dark:disabled:bg-muted/40"
+                className="disabled:opacity-100 disabled:ring-border disabled:bg-muted/70 disabled:text-muted-foreground disabled:shadow-none dark:disabled:bg-muted/40"
                 disabled={!canNext || isBusy || isStepTransitioning}
                 onClick={() => goToStep(2)}
               >
@@ -387,7 +508,7 @@ export function ProgramWizard({
               <Button
                 disabled={!canConfirm || isBusy || isStepTransitioning}
                 onClick={onConfirm}
-                className="gap-2 disabled:opacity-100 disabled:bg-muted/70 disabled:text-muted-foreground dark:disabled:bg-muted/40"
+                className="gap-2 disabled:opacity-100 disabled:ring-border disabled:bg-muted/70 disabled:text-muted-foreground disabled:shadow-none dark:disabled:bg-muted/40"
               >
                 <Check className="h-4 w-4" />
                 Confirmar
