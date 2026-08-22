@@ -1,6 +1,8 @@
 import { useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { DrawerInContentContext } from "@/components/ui/drawer";
 import { useLastPerformance, type LastSetData } from "@/hooks/useLastPerformance";
+import { useProgressiveOverload } from "@/hooks/useProgressiveOverload";
+import { OverloadSuggestionBanner } from "./OverloadSuggestion";
 import { formatMSS } from "@/hooks/useRestTimer";
 import { Button } from "@/components/ui/button";
 import { Badge, badgeVariants } from "@/components/ui/badge";
@@ -23,6 +25,7 @@ import {
   normalizeRegistroSeries,
   formatRitmoSegKmLabel,
   setIsUnlogged,
+  setCanApplyOverloadPatch,
   formPatchFromLastSet,
   setHasWork,
 } from "@/types/workout";
@@ -58,6 +61,7 @@ interface ExerciseCardProps {
   onRemoveSet: (setIndex: number) => void;
   onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number | null) => void;
   onSeedSetFromPrevious?: (setIndex: number, patch: Partial<SetFormData>) => void;
+  onApplySuggestionToSet?: (setIndex: number, patch: Partial<SetFormData>) => void;
   onAutoSaveSet?: (setIndex: number) => void;
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
   dragHandleProps?: DraggableSyntheticListeners & Partial<DraggableAttributes>;
@@ -73,6 +77,7 @@ export function ExerciseCard({
   onRemoveSet,
   onUpdateSet,
   onSeedSetFromPrevious,
+  onApplySuggestionToSet,
   onAutoSaveSet,
   onSetCompleted,
   dragHandleProps,
@@ -82,6 +87,7 @@ export function ExerciseCard({
     tipo_ejercicio_id: exercise.tipo_ejercicio_id,
     usuario_ejercicio_id: exercise.usuario_ejercicio_id,
   });
+  const overloadSuggestion = useProgressiveOverload(exercise);
   const mode = normalizeRegistroSeries(exercise.registro_series);
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
   const setsTableRef = useRef<HTMLDivElement>(null);
@@ -119,6 +125,19 @@ export function ExerciseCard({
       onSeedSetFromPrevious(si, patch);
     });
   }, [exercise.sets, lastPerf, mode, onSeedSetFromPrevious]);
+
+  const handleApplyOverload = () => {
+    if (!overloadSuggestion || !onApplySuggestionToSet) return;
+    exercise.sets.forEach((s, si) => {
+      if (!setCanApplyOverloadPatch(s, mode)) return;
+      const keepWeightOnRepProgress =
+        overloadSuggestion.action === "increase_reps" && Number(s.peso_kg) > 0;
+      onApplySuggestionToSet(si, {
+        peso_kg: keepWeightOnRepProgress ? s.peso_kg : overloadSuggestion.suggestedWeight,
+        repeticiones: overloadSuggestion.suggestedReps,
+      });
+    });
+  };
 
   const restSeconds = exercise.descanso ?? 120;
 
@@ -211,6 +230,14 @@ export function ExerciseCard({
           </Button>
         </div>
       </div>
+
+      {mode === "peso_reps" && overloadSuggestion ? (
+        <OverloadSuggestionBanner
+          suggestion={overloadSuggestion}
+          canApply={!!onApplySuggestionToSet}
+          onApply={handleApplyOverload}
+        />
+      ) : null}
 
       <div
         ref={setsTableRef}

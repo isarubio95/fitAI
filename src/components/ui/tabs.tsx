@@ -125,30 +125,31 @@ const AnimatedTabsList = React.forwardRef<
       )}
       {...props}
     >
-      {indicator.width > 0 &&
-        (variant === "underline" ? (
-          <motion.span
-            aria-hidden="true"
-            className="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-foreground"
-            initial={false}
-            animate={{
-              left: indicator.left,
-              width: indicator.width,
-            }}
-            transition={canAnimateRef.current ? INDICATOR_TRANSITION : { duration: 0 }}
-          />
-        ) : (
-          <motion.span
-            aria-hidden="true"
-            className={pillTabsIndicatorClass}
-            initial={false}
-            animate={{
-              left: indicator.left,
-              width: indicator.width,
-            }}
-            transition={canAnimateRef.current ? INDICATOR_TRANSITION : { duration: 0 }}
-          />
-        ))}
+      {variant === "underline" ? (
+        <motion.span
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-foreground"
+          initial={false}
+          animate={{
+            left: indicator.left,
+            width: indicator.width,
+            opacity: indicator.width > 0 ? 1 : 0,
+          }}
+          transition={canAnimateRef.current ? INDICATOR_TRANSITION : { duration: 0 }}
+        />
+      ) : (
+        <motion.span
+          aria-hidden="true"
+          className={pillTabsIndicatorClass}
+          initial={false}
+          animate={{
+            left: indicator.left,
+            width: indicator.width,
+            opacity: indicator.width > 0 ? 1 : 0,
+          }}
+          transition={canAnimateRef.current ? INDICATOR_TRANSITION : { duration: 0 }}
+        />
+      )}
       {children}
     </TabsPrimitive.List>
   );

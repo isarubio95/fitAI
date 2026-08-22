@@ -8,6 +8,7 @@ export interface LastSetData {
   repeticiones: number;
   duracion_seg: number | null;
   ritmo_seg_km: number | null;
+  rir: number | null;
 }
 
 export interface LastPerformanceData {
@@ -57,7 +58,7 @@ export function useLastPerformance(opts: {
 
       const { data: series, error: sError } = await supabase
         .from("serie")
-        .select("numero_serie, peso_kg, repeticiones, duracion_seg, ritmo_seg_km")
+        .select("numero_serie, peso_kg, repeticiones, duracion_seg, ritmo_seg_km, rir")
         .eq("ejercicio_id", lastEj.id)
         .order("numero_serie", { ascending: true });
 
@@ -72,6 +73,7 @@ export function useLastPerformance(opts: {
           repeticiones: s.repeticiones,
           duracion_seg: s.duracion_seg ?? null,
           ritmo_seg_km: s.ritmo_seg_km ?? null,
+          rir: s.rir ?? null,
         })),
       };
     },

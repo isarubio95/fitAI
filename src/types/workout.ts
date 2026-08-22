@@ -80,6 +80,13 @@ export function setIsUnlogged(s: SetFormData, mode: RegistroSeries): boolean {
   return !Number(s.repeticiones) && !Number(s.peso_kg);
 }
 
+/** Serie que puede recibir la sugerencia de sobrecarga (vacía o precargada, no completada). */
+export function setCanApplyOverloadPatch(s: SetFormData, mode: RegistroSeries): boolean {
+  if (s.completed) return false;
+  if (s.seededFromPrevious) return true;
+  return setIsUnlogged(s, mode);
+}
+
 export function formPatchFromLastSet(mode: RegistroSeries, last: LastSetLike): Partial<SetFormData> {
   if (mode === "duracion") {
     return { duracion_seg: last.duracion_seg ?? 0 };
@@ -157,6 +164,8 @@ export interface ExerciseFormData {
   registro_series?: RegistroSeries;
   repRange?: string;
   targetRir?: number | null;
+  /** Grupo muscular principal (catálogo); usado para fatiga y sobrecarga progresiva. */
+  grupo_muscular?: string | null;
   descanso?: number; // default rest time in seconds for this exercise
   /** Agrupa con el siguiente en la UI como superserie (viene de rutina). */
   superset_id?: string | null;

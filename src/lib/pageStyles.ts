@@ -4,6 +4,10 @@ export const PAGE_CARD_STACK_GAP = "gap-[3px] md:gap-[11px]";
 /** Cards pegadas en móvil; en escritorio misma separación que PAGE_CARD_STACK_GAP. */
 export const PAGE_CARD_STACK_GAP_FLUSH_MOBILE = "gap-0 md:gap-[11px]";
 
+/** Cabecera de cards en Progreso (sin pt-8 extra). */
+export const PROGRESS_CARD_HEADER = "px-6 pb-4";
+export const PROGRESS_CARD_HEADER_SKELETON = "px-6 pb-2";
+
 /** Fila de pills de sección encima del contenido (solo escritorio). */
 export const SECTION_PILLS_ROW =
   "hidden md:flex md:max-w-2xl md:mx-auto md:w-full md:items-center md:justify-between md:gap-3 md:px-8";
@@ -16,13 +20,13 @@ export const SECTION_UNDERLINE_TABS_LIST =
   "flex h-auto w-full min-w-0 items-stretch justify-stretch gap-0 rounded-none bg-transparent p-0 shadow-none border-b border-border";
 
 export const SECTION_UNDERLINE_TABS_TRIGGER =
-  "touch-pill inline-flex h-auto min-h-0 flex-1 items-center justify-center rounded-none border-0 border-b-2 border-transparent bg-transparent px-1 pb-2.5 pt-1 text-sm font-medium text-muted-foreground shadow-none outline-none -mb-px transition-[color,border-color] active:!bg-transparent focus:!bg-transparent focus-visible:!bg-transparent data-[state=active]:!bg-transparent data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=inactive]:text-muted-foreground";
+  "section-tab-trigger touch-pill inline-flex h-auto min-h-0 flex-1 items-center justify-center rounded-none border-0 border-b-2 border-transparent bg-transparent px-1 pb-2.5 pt-1 text-sm font-medium text-muted-foreground shadow-none outline-none -mb-px transition-[color] active:!bg-transparent focus:!bg-transparent focus-visible:!bg-transparent data-[state=active]:!bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=inactive]:text-muted-foreground";
 
 /** Botón de pestaña subrayada fuera de TabsTrigger (cabecera móvil). */
 export function sectionUnderlineTabClass(active: boolean) {
   return [
-    "touch-pill inline-flex h-auto min-h-0 flex-1 items-center justify-center rounded-none border-0 border-b-2 bg-transparent px-1 pb-2.5 pt-1 text-sm font-medium shadow-none outline-none -mb-px transition-[color,border-color] active:bg-transparent focus:bg-transparent focus-visible:bg-transparent",
-    active ? "border-primary text-foreground" : "border-transparent text-muted-foreground",
+    "section-tab-trigger touch-pill inline-flex h-auto min-h-0 flex-1 items-center justify-center rounded-none border-0 border-b-2 border-transparent bg-transparent px-1 pb-2.5 pt-1 text-sm font-medium shadow-none outline-none -mb-px transition-[color] active:bg-transparent focus:bg-transparent focus-visible:bg-transparent",
+    active ? "text-foreground" : "text-muted-foreground",
   ].join(" ");
 }
 

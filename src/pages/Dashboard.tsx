@@ -349,6 +349,7 @@ const Dashboard = () => {
                   : "Tiempo"
                 : `${ej.repes_min}-${ej.repes_max}`,
           targetRir: ej.rir ?? 1,
+          grupo_muscular: ej.tipo_ejercicio?.grupo_muscular ?? ej.usuario_ejercicio?.grupo_muscular ?? null,
           descanso: ej.descanso ?? 120,
           superset_id: ej.superset_id ?? null,
           sets: Array.from({ length: ej.series_objetivo }, () =>

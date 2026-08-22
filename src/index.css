@@ -429,6 +429,46 @@
   }
 }
 
+/* Pestañas de sección: la barra activa aparece de izquierda a derecha; al desactivar desaparece al instante. */
+@keyframes section-tab-underline-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.section-tab-trigger {
+  position: relative;
+}
+
+.section-tab-trigger[data-active="true"]::after,
+.section-tab-trigger[data-state="active"]::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: hsl(var(--primary));
+  transform: scaleX(1);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+[data-animate-section-tabs] .section-tab-trigger[data-active="true"]::after,
+[data-animate-section-tabs] .section-tab-trigger[data-state="active"]::after {
+  animation: section-tab-underline-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-animate-section-tabs] .section-tab-trigger[data-active="true"]::after,
+  [data-animate-section-tabs] .section-tab-trigger[data-state="active"]::after {
+    animation: none;
+  }
+}
+
 /*
  * Sheets bottom/top: curvatura tipo Apple (abierta, ~56px) + squircle donde el motor lo soporte.
  * El radio base vive también en drawer.tsx (`drawerSheetRadiusTop/Bottom`).

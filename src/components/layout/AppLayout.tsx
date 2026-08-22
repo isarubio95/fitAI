@@ -31,6 +31,7 @@ import { InAppSocialToastSync } from "@/components/notifications/InAppSocialToas
 import { InAppToastNavigationHost } from "@/components/notifications/InAppToastNavigationHost";
 import { useSafeAreaInsetsSync } from "@/hooks/useSafeAreaInsetsSync";
 import { useLogrosSync } from "@/hooks/useLogrosSync";
+import { useSectionTabUnderlineAnimation } from "@/hooks/useSectionTabUnderlineAnimation";
 
 export function AppLayout() {
   useSafeAreaInsetsSync();
@@ -62,6 +63,8 @@ export function AppLayout() {
   });
 
   const currentTab = searchParams.get("tab") || "";
+  const evolutionTabAnimation = useSectionTabUnderlineAnimation();
+  const routinesTabAnimation = useSectionTabUnderlineAnimation();
 
   useEffect(() => {
     if (loading || !user || profileLoading || !profileSetup?.username || !profileSetup.username.trim()) return;
@@ -261,12 +264,20 @@ export function AppLayout() {
                 )}
               >
                 <div className="flex min-w-0 flex-col">
-                  <div className={cn(SECTION_UNDERLINE_TABS_LIST, "-mx-4 w-[calc(100%+2rem)]")}>
+                  <div
+                    className={cn(SECTION_UNDERLINE_TABS_LIST, "-mx-4 w-[calc(100%+2rem)]")}
+                    {...evolutionTabAnimation.containerProps}
+                  >
                     {YOU_TABS.map((tab) => (
                       <button
                         key={tab}
                         type="button"
-                        onClick={() => setSearchParams({ tab })}
+                        data-active={normalizeYouTab(searchParams.get("tab")) === tab ? "true" : undefined}
+                        onClick={() => {
+                          const isActive = normalizeYouTab(searchParams.get("tab")) === tab;
+                          if (!isActive) evolutionTabAnimation.enableAnimation();
+                          setSearchParams({ tab });
+                        }}
                         className={sectionUnderlineTabClass(normalizeYouTab(searchParams.get("tab")) === tab)}
                       >
                         {YOU_TAB_LABELS[tab]}
@@ -291,10 +302,18 @@ export function AppLayout() {
                 )}
               >
                 <div className="flex min-w-0 flex-col">
-                  <div className={cn(SECTION_UNDERLINE_TABS_LIST, "-mx-4 w-[calc(100%+2rem)]")}>
+                  <div
+                    className={cn(SECTION_UNDERLINE_TABS_LIST, "-mx-4 w-[calc(100%+2rem)]")}
+                    {...routinesTabAnimation.containerProps}
+                  >
                     <button
                       type="button"
-                      onClick={() => setSearchParams({ tab: "rutinas" })}
+                      data-active={(searchParams.get("tab") || "rutinas") === "rutinas" ? "true" : undefined}
+                      onClick={() => {
+                        const isActive = (searchParams.get("tab") || "rutinas") === "rutinas";
+                        if (!isActive) routinesTabAnimation.enableAnimation();
+                        setSearchParams({ tab: "rutinas" });
+                      }}
                       className={sectionUnderlineTabClass(
                         (searchParams.get("tab") || "rutinas") === "rutinas",
                       )}
@@ -303,7 +322,12 @@ export function AppLayout() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSearchParams({ tab: "ejercicios" })}
+                      data-active={searchParams.get("tab") === "ejercicios" ? "true" : undefined}
+                      onClick={() => {
+                        const isActive = searchParams.get("tab") === "ejercicios";
+                        if (!isActive) routinesTabAnimation.enableAnimation();
+                        setSearchParams({ tab: "ejercicios" });
+                      }}
                       className={sectionUnderlineTabClass(searchParams.get("tab") === "ejercicios")}
                     >
                       Ejercicios

@@ -34,6 +34,7 @@ export type WorkoutExerciseListProps = {
     value: number | null,
   ) => void;
   onSeedSetFromPrevious: (exerciseIndex: number, setIndex: number, patch: Partial<SetFormData>) => void;
+  onApplySuggestionToSet: (exerciseIndex: number, setIndex: number, patch: Partial<SetFormData>) => void;
   onAutoSaveSet: (exerciseIndex: number, setIndex: number) => void;
   onSetCompleted: (exerciseIndex: number, setIndex: number, completed: boolean) => void;
   onViewExerciseDetails: (exercise: ExerciseFormData) => void;
@@ -50,6 +51,7 @@ export function WorkoutExerciseList({
   onRemoveSet,
   onUpdateSet,
   onSeedSetFromPrevious,
+  onApplySuggestionToSet,
   onAutoSaveSet,
   onSetCompleted,
   onViewExerciseDetails,
@@ -111,6 +113,11 @@ export function WorkoutExerciseList({
                                     ? (si, patch) => onSeedSetFromPrevious(ei, si, patch)
                                     : undefined
                                 }
+                                onApplySuggestionToSet={
+                                  isActiveWorkout
+                                    ? (si, patch) => onApplySuggestionToSet(ei, si, patch)
+                                    : undefined
+                                }
                                 onAutoSaveSet={(si) => onAutoSaveSet(ei, si)}
                                 onSetCompleted={
                                   isActiveWorkout
@@ -138,6 +145,11 @@ export function WorkoutExerciseList({
                         onSeedSetFromPrevious={
                           isActiveWorkout
                             ? (si, patch) => onSeedSetFromPrevious(ei, si, patch)
+                            : undefined
+                        }
+                        onApplySuggestionToSet={
+                          isActiveWorkout
+                            ? (si, patch) => onApplySuggestionToSet(ei, si, patch)
                             : undefined
                         }
                         onAutoSaveSet={(si) => onAutoSaveSet(ei, si)}

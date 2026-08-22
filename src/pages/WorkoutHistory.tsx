@@ -36,7 +36,7 @@ import {
   CHART_SCRUB_CURSOR,
   CHART_SCRUB_TOOLTIP_WRAPPER,
 } from "@/components/dashboard/chartScrub";
-import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { PAGE_CARD_STACK_GAP, PROGRESS_CARD_HEADER } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 import {
   AnimatedTabsList,
@@ -46,12 +46,13 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 
-type PeriodKey = "7d" | "4w" | "3m";
+type PeriodKey = "7d" | "4w" | "3m" | "6m";
 
 const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
   { key: "7d", label: "7 días" },
   { key: "4w", label: "4 sem." },
   { key: "3m", label: "3 meses" },
+  { key: "6m", label: "6 meses" },
 ];
 
 const CHART_HEIGHT = 190;
@@ -196,9 +197,15 @@ function periodBounds(now: Date, key: PeriodKey) {
     const prevStart = startOfWeek(subWeeks(now, 7), { weekStartsOn: 1 });
     return { start, end, prevStart, prevEnd: start };
   }
-  const start = startOfMonth(subMonths(now, 2));
+  if (key === "3m") {
+    const start = startOfMonth(subMonths(now, 2));
+    const end = addDays(startOfDay(now), 1);
+    const prevStart = startOfMonth(subMonths(now, 5));
+    return { start, end, prevStart, prevEnd: start };
+  }
+  const start = startOfMonth(subMonths(now, 5));
   const end = addDays(startOfDay(now), 1);
-  const prevStart = startOfMonth(subMonths(now, 5));
+  const prevStart = startOfMonth(subMonths(now, 11));
   return { start, end, prevStart, prevEnd: start };
 }
 
@@ -217,7 +224,7 @@ function periodBuckets(now: Date, key: PeriodKey): Bucket[] {
     }
     return buckets;
   }
-  const weekCount = key === "4w" ? 4 : 13;
+  const weekCount = key === "4w" ? 4 : key === "3m" ? 13 : 26;
   const buckets: Bucket[] = [];
   for (let i = weekCount - 1; i >= 0; i--) {
     const start = startOfWeek(subWeeks(now, i), { weekStartsOn: 1 });
@@ -531,15 +538,19 @@ const WorkoutHistory = () => {
     <div className="flex w-full min-w-0 flex-1 flex-col bg-card max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3">
       <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP)}>
       <Card className={cardClass}>
-        <CardHeader className="px-6 pt-8 pb-4">
+        <CardHeader className={PROGRESS_CARD_HEADER}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle asChild className="text-base">
               <h2>Resumen</h2>
             </CardTitle>
-            <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodKey)}>
-              <AnimatedTabsList value={period} className={cn(pillTabsListClass, "w-full sm:w-auto")}>
+            <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodKey)} className="w-full sm:max-w-sm">
+              <AnimatedTabsList value={period} className={cn(pillTabsListClass, "w-full")}>
                 {PERIOD_OPTIONS.map((opt) => (
-                  <TabsTrigger key={opt.key} value={opt.key} className={pillTabsTriggerClass}>
+                  <TabsTrigger
+                    key={opt.key}
+                    value={opt.key}
+                    className={cn(pillTabsTriggerClass, "min-w-0 flex-1 px-2")}
+                  >
                     {opt.label}
                   </TabsTrigger>
                 ))}
@@ -594,7 +605,7 @@ const WorkoutHistory = () => {
       )}
 
       <Card className={cardClass}>
-        <CardHeader className="px-6 pt-8 pb-4">
+        <CardHeader className={PROGRESS_CARD_HEADER}>
           <CardTitle asChild className="text-base">
             <h2>Constancia</h2>
           </CardTitle>
@@ -633,7 +644,7 @@ const WorkoutHistory = () => {
       </Card>
 
       <Card className={cardClass}>
-        <CardHeader className="px-6 pt-8 pb-4">
+        <CardHeader className={PROGRESS_CARD_HEADER}>
           <CardTitle asChild className="text-base">
             <h2>Volumen de fuerza</h2>
           </CardTitle>
@@ -669,15 +680,15 @@ const WorkoutHistory = () => {
         </CardContent>
       </Card>
 
-      <TrainingLoadWidget />
-      <ExerciseProgressWidget />
+      <TrainingLoadWidget flushHeader />
+      <ExerciseProgressWidget flushHeader />
       <MuscleRankingWidget />
 
       {!isLoading && (topExercises.length > 0 || topLoads.length > 0) && (
         <div className={cn("grid w-full grid-cols-1 bg-background md:grid-cols-2", PAGE_CARD_STACK_GAP)}>
           {topExercises.length > 0 && (
             <Card className={cardClass}>
-              <CardHeader className="px-6 pt-8 pb-4">
+              <CardHeader className={PROGRESS_CARD_HEADER}>
                 <CardTitle className="flex items-center gap-1.5 text-base">
                   <Star className="h-4 w-4 text-primary" /> Top ejercicios
                 </CardTitle>
@@ -698,7 +709,7 @@ const WorkoutHistory = () => {
 
           {topLoads.length > 0 && (
             <Card className={cardClass}>
-              <CardHeader className="px-6 pt-8 pb-4">
+              <CardHeader className={PROGRESS_CARD_HEADER}>
                 <CardTitle className="flex items-center gap-1.5 text-base">
                   <Trophy className="h-4 w-4 text-primary" /> Cargas máximas
                 </CardTitle>

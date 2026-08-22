@@ -60,6 +60,11 @@ import { useToast } from "@/hooks/use-toast";
 import type { RutinaWithDetails } from "@/types/routine";
 import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 import {
+  circleCenterTransitionAttr,
+  circleCenterTransitionStyle,
+  useCircleCenterTransition,
+} from "@/lib/circleCenterTransition";
+import {
   type ExerciseFormData,
   normalizeRegistroSeries,
   defaultSetForMode,
@@ -310,6 +315,7 @@ const Routines = () => {
                   : "Tiempo"
                 : `${ej.repes_min}-${ej.repes_max}`,
           targetRir: ej.rir ?? 1,
+          grupo_muscular: ej.tipo_ejercicio?.grupo_muscular ?? null,
           descanso: ej.descanso ?? 120,
           superset_id: ej.superset_id ?? null,
           sets: Array.from({ length: ej.series_objetivo }, () =>
@@ -395,6 +401,9 @@ const Routines = () => {
   );
 
   const routineCount = routines?.length ?? 0;
+  const routineExpanded = openRoutineId !== null;
+  const fabPhase = useCircleCenterTransition(!routineExpanded);
+  const fabFullyHidden = routineExpanded && fabPhase === null;
 
   return (
     <div
@@ -430,17 +439,36 @@ const Routines = () => {
       ) : null}
 
       {routineCount > 0 ? (
-        <Button
-          type="button"
-          variant="new"
-          onClick={openCreateChoice}
-          title="Añadir rutina"
-          aria-label="Añadir rutina"
-          className="fixed z-40 right-4 bottom-[calc(var(--app-bottom-nav-inset,5.5rem)+0.5rem)] shadow-lg md:right-8 md:bottom-10"
+        <div
+          data-routine-fab={fabPhase ?? "hidden"}
+          aria-hidden={fabFullyHidden}
+          {...(fabPhase && fabPhase !== "settled"
+            ? { "transition-style": circleCenterTransitionAttr(fabPhase) }
+            : {})}
+          style={
+            fabPhase
+              ? circleCenterTransitionStyle(fabPhase)
+              : { clipPath: "circle(0% at 50% 50%)" }
+          }
+          className={cn(
+            "fixed z-40 right-4 bottom-[calc(var(--app-bottom-nav-inset,5.5rem)+0.5rem)] md:right-8 md:bottom-10",
+            (fabFullyHidden || fabPhase === "out") && "pointer-events-none",
+            fabFullyHidden && "invisible",
+          )}
         >
-          <span className="whitespace-nowrap">Añadir</span>
-          <Plus className="shrink-0" />
-        </Button>
+          <Button
+            type="button"
+            variant="new"
+            onClick={openCreateChoice}
+            title="Añadir rutina"
+            aria-label="Añadir rutina"
+            tabIndex={fabFullyHidden ? -1 : undefined}
+            className="shadow-lg"
+          >
+            <span className="whitespace-nowrap">Añadir</span>
+            <Plus className="shrink-0" />
+          </Button>
+        </div>
       ) : null}
 
       {isLoading ? (

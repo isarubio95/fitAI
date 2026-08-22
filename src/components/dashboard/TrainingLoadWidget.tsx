@@ -23,6 +23,7 @@ import {
   Tabs,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { PROGRESS_CARD_HEADER, PROGRESS_CARD_HEADER_SKELETON } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 import { useTrainingLoad, type TrainingLoadData, type TrainingLoadPoint } from "@/hooks/useTrainingLoad";
 import {
@@ -136,7 +137,7 @@ type ChartRow = TrainingLoadPoint & {
   gapFresh: [number, number] | null;
 };
 
-export function TrainingLoadWidget() {
+export function TrainingLoadWidget({ flushHeader = false }: { flushHeader?: boolean }) {
   const { data, isLoading, isFetching } = useTrainingLoad();
   const [cachedData, setCachedData] = useState<TrainingLoadData | null>(loadCachedTrainingLoadData);
   const [range, setRange] = useState<RangeKey>(loadSavedRange);
@@ -205,10 +206,13 @@ export function TrainingLoadWidget() {
   const displayRow = scrubRow ?? lastRow;
   const displayZone = displayRow ? getFormZone(displayRow.form) : zone;
 
+  const headerClass = flushHeader ? PROGRESS_CARD_HEADER : "px-6 pt-8 pb-4";
+  const skeletonHeaderClass = flushHeader ? PROGRESS_CARD_HEADER_SKELETON : "px-6 pt-8 pb-2";
+
   if (isLoading && !resolvedData) {
     return (
       <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-        <CardHeader className="px-6 pt-8 pb-2">
+        <CardHeader className={skeletonHeaderClass}>
           <Skeleton className="h-5 w-40" />
         </CardHeader>
         <CardContent className="px-6 pt-0">
@@ -222,7 +226,7 @@ export function TrainingLoadWidget() {
 
   return (
     <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-      <CardHeader className="px-6 pt-8 pb-4">
+      <CardHeader className={headerClass}>
         <div className="flex items-center justify-between gap-2">
           <CardTitle asChild className="text-base font-bold">
             <h2>Forma y fatiga</h2>

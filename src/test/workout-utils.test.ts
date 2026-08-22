@@ -8,6 +8,7 @@ import {
   setHasWork,
   serieCountsAsRecorded,
   setIsUnlogged,
+  setCanApplyOverloadPatch,
 } from "@/types/workout";
 
 describe("workout utils", () => {
@@ -67,6 +68,18 @@ describe("workout utils", () => {
     expect(setIsUnlogged({ ...blank, seededFromPrevious: true, repeticiones: 8, peso_kg: 60 }, "peso_reps")).toBe(false);
     expect(setIsUnlogged(defaultSetForMode("duracion", 45), "duracion")).toBe(false);
     expect(setIsUnlogged(defaultSetForMode("duracion"), "duracion")).toBe(true);
+  });
+
+  it("permite aplicar sobrecarga en series precargadas pero no completadas", () => {
+    const seeded = {
+      ...defaultSetForMode("peso_reps"),
+      seededFromPrevious: true,
+      repeticiones: 7,
+      peso_kg: 57.5,
+    };
+    expect(setCanApplyOverloadPatch(seeded, "peso_reps")).toBe(true);
+    expect(setCanApplyOverloadPatch({ ...seeded, completed: true }, "peso_reps")).toBe(false);
+    expect(setCanApplyOverloadPatch(defaultSetForMode("peso_reps"), "peso_reps")).toBe(true);
   });
 
   it("copia el último registro al parche de la serie según el modo", () => {

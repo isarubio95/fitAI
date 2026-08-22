@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PROGRESS_CARD_HEADER, PROGRESS_CARD_HEADER_SKELETON } from "@/lib/pageStyles";
 import {
   Area,
   AreaChart,
@@ -210,7 +211,7 @@ function EqualSpacedXLabels({
   );
 }
 
-export function ExerciseProgressWidget() {
+export function ExerciseProgressWidget({ flushHeader = false }: { flushHeader?: boolean }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: exercises, isLoading: loadingExercises } = useExerciseWithHistory();
@@ -292,10 +293,13 @@ export function ExerciseProgressWidget() {
     setSwiping(false);
   };
 
+  const headerClass = flushHeader ? PROGRESS_CARD_HEADER : "px-6 pt-8 pb-4";
+  const skeletonHeaderClass = flushHeader ? PROGRESS_CARD_HEADER_SKELETON : "px-6 pt-8 pb-2";
+
   if (loadingExercises) {
     return (
       <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-        <CardHeader className="px-6 pt-8 pb-2">
+        <CardHeader className={skeletonHeaderClass}>
           <Skeleton className="h-5 w-40" />
         </CardHeader>
         <CardContent className="px-6 pt-0">
@@ -312,7 +316,7 @@ export function ExerciseProgressWidget() {
 
   return (
     <Card className="w-full min-w-0 overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
-      <CardHeader className="px-6 pt-8 pb-4">
+      <CardHeader className={headerClass}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">
             <CardTitle asChild className="text-base font-bold">

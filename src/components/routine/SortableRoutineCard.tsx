@@ -29,7 +29,7 @@ import {
 import { formatActivityRelativeDate } from "@/lib/formatActivityRelativeDate";
 import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
-import type { MainMuscleGroup } from "@/constants/muscleGroups";
+import { MUSCLE_GROUP_ICON_SRC, type MainMuscleGroup } from "@/constants/muscleGroups";
 
 const LONG_PRESS_MS = 480;
 const LONG_PRESS_MOVE_PX = 12;
@@ -317,7 +317,7 @@ export function SortableRoutineCard({
             }`}
           >
             <div className="overflow-hidden" inert={!isOpen ? true : undefined}>
-              <div className="space-y-4 pt-1">
+              <div className="space-y-4">
                 {volumeRows.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-[11px] font-medium text-muted-foreground">Series por grupo</p>
@@ -326,7 +326,15 @@ export function SortableRoutineCard({
                         const pct = maxSets > 0 ? (sets / maxSets) * 100 : 0;
                         return (
                           <div key={group} className="contents">
-                            <span className="whitespace-nowrap text-xs text-muted-foreground">{group}</span>
+                            <div className="flex items-center gap-1.5">
+                              <img
+                                src={MUSCLE_GROUP_ICON_SRC[group]}
+                                alt=""
+                                className="h-6 w-6 shrink-0"
+                                draggable={false}
+                              />
+                              <span className="whitespace-nowrap text-xs text-muted-foreground">{group}</span>
+                            </div>
                             <Progress value={pct} className="h-1.5" />
                             <span className="text-right text-xs tabular-nums text-muted-foreground">{sets}</span>
                           </div>
@@ -384,7 +392,7 @@ export function SortableRoutineCard({
                 </div>
 
                 <div
-                  className="grid grid-cols-3 gap-2"
+                  className="grid grid-cols-3 gap-3"
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   <Button

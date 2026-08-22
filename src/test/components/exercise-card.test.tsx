@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
+import type { OverloadSuggestion } from "@/lib/progressiveOverload";
 
 beforeAll(() => {
   class ResizeObserverMock {
@@ -15,14 +16,20 @@ beforeAll(() => {
 const lastPerf = {
   fecha: "2026-08-10",
   sets: [
-    { numero_serie: 1, peso_kg: 60, repeticiones: 8, duracion_seg: null, ritmo_seg_km: null },
-    { numero_serie: 2, peso_kg: 62.5, repeticiones: 6, duracion_seg: null, ritmo_seg_km: null },
+    { numero_serie: 1, peso_kg: 60, repeticiones: 8, duracion_seg: null, ritmo_seg_km: null, rir: null },
+    { numero_serie: 2, peso_kg: 62.5, repeticiones: 6, duracion_seg: null, ritmo_seg_km: null, rir: null },
   ],
 };
 
 vi.mock("@/hooks/useLastPerformance", () => ({
   useLastPerformance: () => ({ data: lastPerf }),
 }));
+
+vi.mock("@/hooks/useProgressiveOverload", () => ({
+  useProgressiveOverload: () => mockOverloadSuggestion,
+}));
+
+let mockOverloadSuggestion: OverloadSuggestion | null = null;
 
 import { ExerciseCard } from "@/components/workout/ExerciseCard";
 
@@ -62,12 +69,24 @@ function ActiveExerciseHarness({
           ),
         }));
       }}
+      onApplySuggestionToSet={(si, patch) => {
+        setExercise((ex) => ({
+          ...ex,
+          sets: ex.sets.map((s, i) =>
+            i === si ? { ...s, ...patch, seededFromPrevious: false } : s,
+          ),
+        }));
+      }}
       onSetCompleted={() => undefined}
     />
   );
 }
 
 describe("ExerciseCard", () => {
+  beforeAll(() => {
+    mockOverloadSuggestion = null;
+  });
+
   it("precarga los inputs con el último registro en un entreno activo", async () => {
     render(<ActiveExerciseHarness />);
 
@@ -97,5 +116,37 @@ describe("ExerciseCard", () => {
     });
     expect(screen.queryByDisplayValue("8")).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue("60")).not.toBeInTheDocument();
+  });
+
+  it("aplica la sugerencia de sobrecarga en series precargadas", async () => {
+    mockOverloadSuggestion = {
+      action: "increase_reps",
+      suggestedWeight: 57.5,
+      suggestedReps: 8,
+      confidence: 0.8,
+      reason: "Añade 1 rep",
+    };
+
+    render(
+      <ActiveExerciseHarness
+        initialSets={[
+          {
+            repeticiones: 7,
+            peso_kg: 57.5,
+            duracion_seg: null,
+            ritmo_seg_km: null,
+            completed: false,
+            seededFromPrevious: true,
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("8")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("57.5")).toBeInTheDocument();
+    });
   });
 });

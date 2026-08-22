@@ -73,6 +73,7 @@ import {
   countRecordedSets,
   serieFieldsForRegistro,
   setIsUnlogged,
+  setCanApplyOverloadPatch,
 } from "@/types/workout";
 
 export function WorkoutLogger() {
@@ -780,6 +781,25 @@ export function WorkoutLogger() {
             sets: ex.sets.map((s, si) => {
               if (si !== setIndex || !setIsUnlogged(s, mode)) return s;
               return { ...s, ...patch, seededFromPrevious: true };
+            }),
+          };
+        }),
+      );
+    },
+    [],
+  );
+
+  const applySuggestionToSet = useCallback(
+    (exerciseIndex: number, setIndex: number, patch: Partial<SetFormData>) => {
+      setExercises((prev) =>
+        prev.map((ex, i) => {
+          if (i !== exerciseIndex) return ex;
+          const mode = normalizeRegistroSeries(ex.registro_series);
+          return {
+            ...ex,
+            sets: ex.sets.map((s, si) => {
+              if (si !== setIndex || !setCanApplyOverloadPatch(s, mode)) return s;
+              return { ...s, ...patch, seededFromPrevious: false };
             }),
           };
         }),
@@ -1552,6 +1572,7 @@ export function WorkoutLogger() {
                   onRemoveSet={removeSet}
                   onUpdateSet={updateSet}
                   onSeedSetFromPrevious={seedSetFromPrevious}
+                  onApplySuggestionToSet={applySuggestionToSet}
                   onAutoSaveSet={handleAutoSaveSet}
                   onSetCompleted={handleSetCompleted}
                   onViewExerciseDetails={handleViewExerciseDetails}
