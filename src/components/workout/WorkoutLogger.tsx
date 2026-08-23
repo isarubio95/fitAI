@@ -1069,6 +1069,7 @@ export function WorkoutLogger() {
   const handleDelete = async () => {
     const targetId = effectiveWorkoutId;
     if (!targetId) return;
+    const isEmptyActiveWorkout = isActiveWorkout && exercises.length === 0;
     if (isActiveWorkout) {
       restTimer.stop();
       void stopLiveWorkout();
@@ -1098,7 +1099,9 @@ export function WorkoutLogger() {
       }
       const { error } = await supabase.from("actividad").delete().eq("id", targetId);
       if (error) throw error;
-      toast({ title: "Entrenamiento eliminado correctamente" });
+      if (!isEmptyActiveWorkout) {
+        toast({ title: "Entrenamiento eliminado correctamente" });
+      }
       clearWorkoutStartedFromRoutine(targetId);
       setStartedFromRoutine(false);
       const deletedFecha = existingWorkout?.fecha ? new Date(existingWorkout.fecha).toISOString().slice(0, 10) : undefined;
@@ -1118,6 +1121,14 @@ export function WorkoutLogger() {
       setDeleting(false);
       setConfirmDelete(false);
     }
+  };
+
+  const requestDeleteWorkout = () => {
+    if (isActiveWorkout && exercises.length === 0) {
+      void handleDelete();
+      return;
+    }
+    setConfirmDelete(true);
   };
 
   const handleSave = async () => {
@@ -1638,7 +1649,7 @@ export function WorkoutLogger() {
                 deleting={deleting}
                 creatingActive={creatingActive || preparingLiveSession}
                 onClose={close}
-                onRequestDelete={() => setConfirmDelete(true)}
+                onRequestDelete={requestDeleteWorkout}
                 isPaused={isPaused}
                 onTogglePause={togglePause}
                 exercisePickerOpen={exercisePickerOpen}
