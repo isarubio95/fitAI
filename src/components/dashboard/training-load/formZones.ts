@@ -17,17 +17,18 @@ export interface FormZone {
   /** Límite superior excluido. */
   max: number;
   color: string;
-  hint: string;
+  /** Qué hacer hoy con esta forma, en una frase. */
+  advice: string;
 }
 
 export { FORM_SCALE_MIN, FORM_SCALE_MAX };
 
-const ZONE_HINTS: Record<FormZoneKey, string> = {
-  "muy-fatigado": "Necesitas descanso: la fatiga domina con claridad.",
-  fatigado: "Carga productiva, pero sostenida en el tiempo pasa factura.",
-  optimo: "Equilibrio entre entrenar y recuperar.",
-  fresco: "Buen momento para rendir o competir.",
-  bajo: "Llevas tiempo sin carga: estás perdiendo fitness.",
+const ZONE_ADVICE: Record<FormZoneKey, string> = {
+  "muy-fatigado": "Toca descargar: la fatiga domina con claridad.",
+  fatigado: "Mejor una sesión suave o un día de descanso.",
+  optimo: "Buena ventana para una sesión exigente.",
+  fresco: "Estás fresco: buen día para rendir o competir.",
+  bajo: "Llevas tiempo sin carga y estás perdiendo fitness.",
 };
 
 const ZONE_COLORS: Record<FormZoneKey, string> = {
@@ -41,7 +42,7 @@ const ZONE_COLORS: Record<FormZoneKey, string> = {
 export const FORM_ZONES: readonly FormZone[] = FORM_ZONE_BOUNDS.map((zone) => ({
   ...zone,
   color: ZONE_COLORS[zone.key],
-  hint: ZONE_HINTS[zone.key],
+  advice: ZONE_ADVICE[zone.key],
 }));
 
 export function getFormZone(form: number): FormZone {

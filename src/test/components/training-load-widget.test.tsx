@@ -85,6 +85,11 @@ describe("TrainingLoadWidget", () => {
     expect(screen.getAllByText("42").length).toBeGreaterThan(0);
     expect(screen.getByText("Tu forma hoy")).toBeInTheDocument();
     expect(screen.getAllByText("−8").length).toBeGreaterThan(0);
+    expect(screen.getByText("Buena ventana para una sesión exigente.")).toBeInTheDocument();
+    expect(screen.getByTestId("form-surplus")).toBeInTheDocument();
+    expect(
+      screen.getByText(/El tramo claro es tu forma: 8 puntos de fatiga por encima del fitness/),
+    ).toBeInTheDocument();
     expect(screen.queryByText((content) => content.includes("Últimos 7 días"))).not.toBeInTheDocument();
   });
 
@@ -128,7 +133,7 @@ describe("TrainingLoadWidget", () => {
     expect(screen.queryByText(/Equilibrio entre entrenar/)).not.toBeInTheDocument();
   });
 
-  it("muestra el resumen del último día encima del gráfico", () => {
+  it("resume la tendencia de la forma en vez del detalle por día", () => {
     mockUseTrainingLoad.mockReturnValue({
       data: SAMPLE_DATA,
       isLoading: false,
@@ -136,9 +141,12 @@ describe("TrainingLoadWidget", () => {
     });
 
     render(<TrainingLoadWidget />);
-    expect(screen.getByText(/2 abr\.? 2026/i)).toBeInTheDocument();
-    expect(screen.getByText("Carga")).toBeInTheDocument();
-    expect(screen.getByText("120 (F 70 · C 50)")).toBeInTheDocument();
-    expect(screen.getByText(/−8 · Óptimo/)).toBeInTheDocument();
+    expect(screen.getByText(/en los últimos 7 días/)).toBeInTheDocument();
+    // El desglose por día solo aparece al recorrer el gráfico.
+    expect(screen.queryByText("Carga")).not.toBeInTheDocument();
+    expect(screen.queryByText(/2 abr\.? 2026/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("Carga de hoy")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sin entrenamientos hoy")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Registrar" })).not.toBeInTheDocument();
   });
 });

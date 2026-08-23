@@ -76,7 +76,7 @@ function Pill({ item, onDismiss }: { item: InAppNotificationItem; onDismiss: (id
           : "border-border/60 bg-muted/40",
       )}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-3">
         <Icon
           className={cn(
             "mt-0.5 h-4 w-4 shrink-0",

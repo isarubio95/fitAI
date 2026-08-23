@@ -1,7 +1,7 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format, addDays, startOfWeek, addWeeks, getDay, startOfDay, isBefore } from "date-fns";
 import { es } from "date-fns/locale";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Label } from "@/components/ui/label";
@@ -118,6 +118,8 @@ const WIZARD_STEPS: Array<{ number: 1 | 2; label: string }> = [
 
 /** Duración del barrido de cada mitad de la línea del stepper */
 const SEGMENT_MS = 220;
+/** Transición de contenido entre pasos (crossfade + desplazamiento) */
+const STEP_CONTENT_TRANSITION = { duration: 0.22, ease: [0.32, 0.72, 0, 1] } as const;
 
 const defaultRoutineByDay = () =>
   Object.fromEntries(DAY_LABELS.map((d) => [String(d.key), ""]));
@@ -136,10 +138,8 @@ export function ProgramWizard({
   const deleteAll = useDeleteAllPlannedRoutines();
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [transitioningStep, setTransitioningStep] = useState<1 | 2 | null>(null);
   const [routineByDay, setRoutineByDay] = useState<Record<string, string>>(defaultRoutineByDay);
   const [durationWeeks, setDurationWeeks] = useState(4);
-  const stepTransitionTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (open && replaceExisting && initialRoutineByDay && Object.keys(initialRoutineByDay).length > 0) {
@@ -181,7 +181,6 @@ export function ProgramWizard({
 
   const canNext = step === 1 ? hasAtLeastOneRoutine : true;
   const canConfirm = hasAtLeastOneRoutine && schedules.length > 0 && totalDays > 0;
-  const isStepTransitioning = transitioningStep !== null;
 
   const isBusy = schedule.isPending || deleteAll.isPending || loadingRoutines || loadingTemplates;
 
@@ -190,11 +189,6 @@ export function ProgramWizard({
   };
 
   const reset = () => {
-    if (stepTransitionTimerRef.current != null) {
-      window.clearTimeout(stepTransitionTimerRef.current);
-      stepTransitionTimerRef.current = null;
-    }
-    setTransitioningStep(null);
     setStep(1);
     setRoutineByDay(defaultRoutineByDay());
     setDurationWeeks(4);
@@ -202,25 +196,8 @@ export function ProgramWizard({
 
   const goToStep = (next: 1 | 2) => {
     if (next === step) return;
-    if (stepTransitionTimerRef.current != null) {
-      window.clearTimeout(stepTransitionTimerRef.current);
-      stepTransitionTimerRef.current = null;
-    }
-    setTransitioningStep(next);
-    stepTransitionTimerRef.current = window.setTimeout(() => {
-      setStep(next);
-      setTransitioningStep(null);
-      stepTransitionTimerRef.current = null;
-    }, 120);
+    setStep(next);
   };
-
-  useEffect(() => {
-    return () => {
-      if (stepTransitionTimerRef.current != null) {
-        window.clearTimeout(stepTransitionTimerRef.current);
-      }
-    };
-  }, []);
 
   const onConfirm = async () => {
     if (!schedules.length || totalDays === 0) return;
@@ -310,18 +287,24 @@ export function ProgramWizard({
                         transitionDelay: `${incomingFilled && i > 0 ? SEGMENT_MS * 2 : 0}ms`,
                       }}
                     >
-                      <AnimatePresence mode="wait" initial={false}>
+                      <span className="relative inline-flex h-3.5 w-3.5 items-center justify-center">
                         <motion.span
-                          key={isDone ? "check" : "number"}
-                          initial={{ opacity: 0, scale: 0.6 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.6 }}
+                          initial={false}
+                          animate={{ opacity: isDone ? 0 : 1, scale: isDone ? 0.5 : 1 }}
                           transition={{ duration: 0.15, ease: "easeOut" }}
-                          className="inline-flex"
+                          className="absolute inset-0 inline-flex items-center justify-center"
                         >
-                          {isDone ? <Check className="h-3.5 w-3.5" /> : s.number}
+                          {s.number}
                         </motion.span>
-                      </AnimatePresence>
+                        <motion.span
+                          initial={false}
+                          animate={{ opacity: isDone ? 1 : 0, scale: isDone ? 1 : 0.5 }}
+                          transition={{ duration: 0.15, ease: "easeOut" }}
+                          className="absolute inset-0 inline-flex items-center justify-center"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </motion.span>
+                      </span>
                     </span>
                     <span className="text-center text-foreground/70">{s.label}</span>
                   </div>
@@ -329,16 +312,21 @@ export function ProgramWizard({
               })}
             </div>
 
-            <div className="space-y-4 rounded-xl border border-border/60 bg-card p-4">
-                <AnimatePresence mode="wait" initial={false}>
-                {step === 1 && (
+            <div className="rounded-xl border border-border/60 bg-card p-4">
+                <div className="relative overflow-hidden">
                   <motion.div
-                    key="wizard-step-1"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                    className="space-y-4 min-h-[286px]"
+                    initial={false}
+                    animate={{
+                      opacity: step === 1 ? 1 : 0,
+                      x: step === 1 ? 0 : -16,
+                    }}
+                    transition={STEP_CONTENT_TRANSITION}
+                    className={cn(
+                      "space-y-4 min-h-71.5 transform-gpu",
+                      step === 1 ? "relative" : "pointer-events-none absolute inset-x-0 top-0",
+                    )}
+                    aria-hidden={step !== 1}
+                    inert={step !== 1 || undefined}
                   >
                     <Label className="text-sm font-medium text-foreground/75 pb-3 block mb-0">Asigna una rutina a cada día (deja vacío si no entrenas ese día)</Label>
                     {loadingRoutines || loadingTemplates ? (
@@ -406,16 +394,20 @@ export function ProgramWizard({
                       </span>
                     </p>
                   </motion.div>
-                )}
 
-                {step === 2 && (
                   <motion.div
-                    key="wizard-step-2"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                    className="space-y-4 min-h-71.5"
+                    initial={false}
+                    animate={{
+                      opacity: step === 2 ? 1 : 0,
+                      x: step === 2 ? 0 : 16,
+                    }}
+                    transition={STEP_CONTENT_TRANSITION}
+                    className={cn(
+                      "space-y-4 min-h-71.5 transform-gpu",
+                      step === 2 ? "relative" : "pointer-events-none absolute inset-x-0 top-0",
+                    )}
+                    aria-hidden={step !== 2}
+                    inert={step !== 2 || undefined}
                   >
                     <div>
                       <div className="flex items-center justify-between gap-3">
@@ -477,8 +469,7 @@ export function ProgramWizard({
                       </div>
                     )}
                   </motion.div>
-                )}
-                </AnimatePresence>
+                </div>
             </div>
           </div>
         </div>
@@ -489,7 +480,7 @@ export function ProgramWizard({
             {step > 1 && (
               <Button
                 variant="outline"
-                disabled={isBusy || isStepTransitioning}
+                disabled={isBusy}
                 onClick={() => goToStep(1)}
               >
                 Atrás
@@ -499,14 +490,14 @@ export function ProgramWizard({
             {step < 2 ? (
               <Button
                 className="disabled:opacity-100 disabled:ring-border disabled:bg-muted/70 disabled:text-muted-foreground disabled:shadow-none dark:disabled:bg-muted/40"
-                disabled={!canNext || isBusy || isStepTransitioning}
+                disabled={!canNext || isBusy}
                 onClick={() => goToStep(2)}
               >
                 Siguiente
               </Button>
             ) : (
               <Button
-                disabled={!canConfirm || isBusy || isStepTransitioning}
+                disabled={!canConfirm || isBusy}
                 onClick={onConfirm}
                 className="gap-2 disabled:opacity-100 disabled:ring-border disabled:bg-muted/70 disabled:text-muted-foreground disabled:shadow-none dark:disabled:bg-muted/40"
               >

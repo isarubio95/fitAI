@@ -97,30 +97,31 @@ function firstDatePerMonth(dates: readonly string[]): string[] {
   return result;
 }
 
-function pickEveryStep(dates: readonly string[], step: number): string[] {
+/**
+ * Marcas cada `step` posiciones ancladas al final de la serie: el último día
+ * siempre lleva etiqueta, porque es donde el gráfico remata las dos curvas.
+ */
+function pickEveryStepFromEnd(dates: readonly string[], step: number): string[] {
   if (dates.length === 0) return [];
   const ticks: string[] = [];
-  for (let i = 0; i < dates.length; i += step) {
+  for (let i = dates.length - 1; i >= 0; i -= step) {
     ticks.push(dates[i]);
   }
-  return ticks;
+  return ticks.reverse();
 }
 
 /**
  * Fechas del eje X según el rango:
- * - 1 mes: ~5 ticks, cada 6 días
- * - 2 meses: ~5 ticks, cada 12 días (también día + mes)
+ * - 1 mes: ~3 ticks, cada 12 días desde el final
+ * - 2 meses: ~5 ticks, cada 12 días desde el final (también día + mes)
  * - 6 meses: 6 ticks, 1 por mes
  * - 1 año: 6 ticks, 1 cada 2 meses
  */
 export function getTrainingLoadXTicks(dates: readonly string[], rangeDays: number): string[] {
   if (dates.length === 0) return [];
 
-  if (rangeDays <= 30) {
-    return pickEveryStep(dates, 6);
-  }
   if (rangeDays <= 60) {
-    return pickEveryStep(dates, 12);
+    return pickEveryStepFromEnd(dates, 12);
   }
 
   const monthly = firstDatePerMonth(dates);

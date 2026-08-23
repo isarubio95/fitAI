@@ -38,25 +38,23 @@ describe("formatTrainingLoadXTick", () => {
 });
 
 describe("getTrainingLoadXTicks", () => {
-  it("en 1 mes toma ~5 ticks cada 6 días", () => {
+  it("en 1 mes toma ~3 ticks cada 12 días, con el último día incluido", () => {
     const dates = buildDates("2026-06-01", 30);
     expect(getTrainingLoadXTicks(dates, 30)).toEqual([
-      "2026-06-01",
-      "2026-06-07",
-      "2026-06-13",
-      "2026-06-19",
-      "2026-06-25",
+      "2026-06-06",
+      "2026-06-18",
+      "2026-06-30",
     ]);
   });
 
-  it("en 2 meses toma ~5 ticks cada 12 días", () => {
+  it("en 2 meses toma ~5 ticks cada 12 días, con el último día incluido", () => {
     const dates = buildDates("2026-05-01", 60);
     expect(getTrainingLoadXTicks(dates, 60)).toEqual([
-      "2026-05-01",
-      "2026-05-13",
-      "2026-05-25",
-      "2026-06-06",
-      "2026-06-18",
+      "2026-05-12",
+      "2026-05-24",
+      "2026-06-05",
+      "2026-06-17",
+      "2026-06-29",
     ]);
   });
 

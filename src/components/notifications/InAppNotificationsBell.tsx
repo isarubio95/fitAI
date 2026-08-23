@@ -142,20 +142,19 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
           overlayClassName="z-[110]"
           className="z-[115] flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none"
         >
-          <DrawerHeader className="shrink-0 border-b border-border/60 px-4 pb-4 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
-            <DrawerTitle className="text-lg">Notificaciones</DrawerTitle>
-            {dismissableCount > 0 ? (
-              <button
-                type="button"
-                className="mt-2 w-fit text-xs font-medium text-primary hover:underline"
-                onClick={() => {
-                  markAllRead();
-                  setOpen(false);
-                }}
-              >
-                Marcar todas como leídas
-              </button>
-            ) : null}
+          <DrawerHeader className="shrink-0 border-b border-border/60 px-6 pb-4 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
+            <div className="flex items-center justify-between gap-3">
+              <DrawerTitle className="text-lg">Notificaciones</DrawerTitle>
+              {dismissableCount > 0 ? (
+                <button
+                  type="button"
+                  className="shrink-0 text-xs font-medium text-primary hover:underline"
+                  onClick={() => markAllRead()}
+                >
+                  Marcar todas como leídas
+                </button>
+              ) : null}
+            </div>
           </DrawerHeader>
 
           <div className={cn("min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4", drawerSafeAreaBottom)}>

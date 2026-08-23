@@ -47,7 +47,7 @@ export function NewFollowerNotificationContent({
 
   return (
     <div className={cn("flex min-w-0 flex-col gap-2", className)}>
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-3 px-1.5">
         <HeaderIcon
           className="mt-0.5 h-4 w-4 shrink-0 text-primary"
           aria-hidden

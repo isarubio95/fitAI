@@ -52,7 +52,7 @@ export function OverloadSuggestionBanner({
   return (
     <div
       className={cn(
-        "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs",
+        "flex items-start gap-3 rounded-lg border px-3 py-2 text-xs",
         style.className,
       )}
     >

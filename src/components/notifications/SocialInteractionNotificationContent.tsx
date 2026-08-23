@@ -73,9 +73,9 @@ export function SocialInteractionNotificationContent({
 
   return (
     <div className={cn("flex min-w-0 flex-col gap-2", className)}>
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-3 px-1.5">
         <HeaderIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-        <p className="min-w-0 flex-1 text-sm font-semibold leading-tight">
+        <p className="min-w-0 flex-1 text-[15px] font-semibold leading-tight">
           {socialInteractionTitle(interaction)}
         </p>
         {trailing ? <div className="-mr-1 -mt-0.5 flex shrink-0">{trailing}</div> : null}

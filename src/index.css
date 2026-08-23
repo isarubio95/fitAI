@@ -153,7 +153,8 @@
     --chart-fitness: 209 70% 53%;
     --chart-fatigue: 36 86% 55%;
     --chart-danger: 0 73% 59%;
-    --chart-positive: 88 64% 37%;
+    /* Lima de zona/badge: más saturado que el resto para que «Óptimo» se lea. */
+    --chart-positive: 88 78% 58%;
     --chart-fresh: 160 50% 58%;
     --chart-neutral: 45 8% 69%;
     --sidebar-background: 60 4% 8%;
