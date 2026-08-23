@@ -58,7 +58,7 @@ export function WorkoutMetaForm({
 }: WorkoutMetaFormProps) {
   const [gymPickerOpen, setGymPickerOpen] = useState(false);
 
-  // En entrenamiento activo, título e icono viven en la cabecera del drawer.
+  // En entrenamiento activo, gym/RPE/comunidad se eligen al finalizar.
   if (isActiveWorkout) {
     if (!children) return null;
     return (

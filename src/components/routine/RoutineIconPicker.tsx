@@ -63,21 +63,30 @@ export function WorkoutIconPickerTrigger({
   value,
   onChange,
   disabled,
+  contentClassName,
+  onOpenChange,
 }: {
   value: RoutineIconKey;
   onChange: (key: RoutineIconKey) => void;
   disabled?: boolean;
+  contentClassName?: string;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const Icon = resolveRoutineIcon(value);
 
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    onOpenChange?.(next);
+  };
+
   const handleSelect = (key: RoutineIconKey) => {
     onChange(key);
-    setOpen(false);
+    handleOpenChange(false);
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -101,7 +110,7 @@ export function WorkoutIconPickerTrigger({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[min(92vw,16.5rem)] border-input bg-background p-3 shadow-md"
+        className={cn("w-[min(92vw,16.5rem)] border-input bg-background p-3 shadow-md", contentClassName)}
         align="start"
         side="bottom"
       >

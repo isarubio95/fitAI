@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildNotificationFeed,
+  countNotificationFeedEntries,
   formatNotificationTimestamp,
   notificationEntryAction,
   notificationEntryDetail,
@@ -64,6 +65,31 @@ describe("buildNotificationFeed", () => {
     expect(merged.ids).toEqual(["a", "b"]);
     expect(notificationEntryAction(merged)).toBe("dio me gusta a 2 entrenos tuyos");
     expect(notificationEntryDetail(merged)).toBe("Día B · Día C");
+  });
+
+  it("el recuento del badge sigue las filas visibles, no los me gusta fusionados", () => {
+    const items: InAppNotificationItem[] = [
+      {
+        ...like("c1", "Día B (6)", "2026-08-20T18:31:57Z"),
+        interaction: "comment",
+        texto: "Y los ABS??",
+      } as InAppNotificationItem,
+      like("l1", "Día B (6)", "2026-08-20T18:31:50Z"),
+      like("l2", "Día C (6)", "2026-08-18T16:46:56Z"),
+      {
+        id: "f1",
+        variant: "new-follower",
+        kind: "action",
+        dismissable: true,
+        seguidorId: "u2",
+        username: "joseba",
+        avatarUrl: null,
+        createdAt: "2026-08-07T19:03:56Z",
+      },
+    ];
+
+    expect(items).toHaveLength(4);
+    expect(countNotificationFeedEntries(items, NOW)).toBe(3);
   });
 
   it("mantiene los comentarios separados y muestra el texto", () => {

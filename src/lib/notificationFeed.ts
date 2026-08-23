@@ -222,3 +222,22 @@ export function buildNotificationFeed(
     .map((key) => ({ key, label: SECTION_LABELS[key], entries: bySection.get(key) ?? [] }))
     .filter((section) => section.entries.length > 0);
 }
+
+/** Filas visibles del feed (me gusta del mismo autor ya fusionados). */
+export function flattenNotificationFeedEntries(
+  items: InAppNotificationItem[],
+  now: Date = new Date(),
+): NotificationFeedEntry[] {
+  return buildNotificationFeed(items, now).flatMap((section) => section.entries);
+}
+
+/**
+ * Recuento del badge: una unidad por fila del panel, no por like/comentario crudo.
+ * Si no, dos me gusta del mismo autor cuentan 2 y en la lista se ven como 1.
+ */
+export function countNotificationFeedEntries(
+  items: InAppNotificationItem[],
+  now: Date = new Date(),
+): number {
+  return flattenNotificationFeedEntries(items, now).length;
+}

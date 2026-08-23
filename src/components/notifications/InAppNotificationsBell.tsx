@@ -1,19 +1,17 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { useInAppNotifications } from "@/hooks/useInAppNotifications";
-import { buildNotificationFeed } from "@/lib/notificationFeed";
 import { cn } from "@/lib/utils";
 import { NotificationFeedRow } from "@/components/notifications/NotificationFeedRow";
 import { InAppNotificationItemMotion } from "@/components/notifications/InAppNotificationItemMotion";
 
 export function InAppNotificationsBell({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
-  const { items, unreadCount, dismissMany, markAllRead } = useInAppNotifications();
+  const { items, sections, unreadCount, dismissMany, markAllRead } = useInAppNotifications();
 
-  const sections = useMemo(() => buildNotificationFeed(items), [items]);
   const dismissableCount = items.filter((i) => i.dismissable).length;
 
   return (

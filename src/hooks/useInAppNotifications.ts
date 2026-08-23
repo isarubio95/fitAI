@@ -5,6 +5,7 @@ import {
   socialInteractionNotificationId,
   useMySocialInteractionsReceived,
 } from "@/hooks/useMySocialInteractionsReceived";
+import { buildNotificationFeed } from "@/lib/notificationFeed";
 import type { InAppNotificationItem } from "@/types/inAppNotification";
 
 /**
@@ -149,7 +150,11 @@ export function useInAppNotifications() {
     });
   }, [built, dismissed]);
 
-  const unreadCount = items.length;
+  const sections = useMemo(() => buildNotificationFeed(items), [items]);
+  const unreadCount = useMemo(
+    () => sections.reduce((total, section) => total + section.entries.length, 0),
+    [sections],
+  );
 
   const topItems = useMemo(() => items.slice(0, 3), [items]);
 
@@ -160,6 +165,7 @@ export function useInAppNotifications() {
 
   return {
     items,
+    sections,
     topItems,
     unreadCount,
     dismiss,

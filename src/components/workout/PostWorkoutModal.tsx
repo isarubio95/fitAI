@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -13,7 +13,9 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { GymPickerSheet } from "@/components/gym/GymPickerSheet";
+import { WorkoutIconPickerTrigger } from "@/components/routine/RoutineIconPicker";
 import { cn } from "@/lib/utils";
 import {
   COMMUNITY_PUBLISH_HINT_OFF,
@@ -30,6 +32,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { GIMNASIOS_QUERY_KEY, persistActividadGimnasio } from "@/hooks/useGimnasios";
 import { SessionRpePicker } from "@/components/training/SessionRpePicker";
 import type { SelectedGimnasio } from "@/types/gimnasio";
+import { getDefaultWorkoutTitle } from "@/lib/defaultWorkoutTitle";
+import {
+  DEFAULT_ROUTINE_ICON_KEY,
+  resolveRoutineIconKey,
+  type RoutineIconKey,
+} from "@/lib/routineIcons";
 
 /** Encima del AlertDialog (z-50) para que el picker y el mapa no queden detrás. */
 const PICKER_OVERLAY_CLASS = "z-[120]";
@@ -47,6 +55,11 @@ interface PostWorkoutModalProps {
   workoutId?: string | null;
   /** Gimnasio asociado al finalizar (p. ej. el prefill del perfil). */
   initialGimnasio?: SelectedGimnasio | null;
+  /** Título predefinido (p. ej. «Entrenamiento de tarde») para sesiones que no vienen de rutina. */
+  initialTitulo?: string;
+  initialIcono?: RoutineIconKey;
+  /** Sesión libre: permite cambiar título e icono al finalizar. */
+  allowEditTitleAndIcon?: boolean;
 }
 
 const easeOut = [0.22, 1, 0.36, 1] as const;
@@ -93,6 +106,9 @@ export function PostWorkoutModal({
   nuevosLogros = [],
   workoutId = null,
   initialGimnasio = null,
+  initialTitulo = "",
+  initialIcono = DEFAULT_ROUTINE_ICON_KEY,
+  allowEditTitleAndIcon = false,
 }: PostWorkoutModalProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -104,7 +120,14 @@ export function PostWorkoutModal({
   const [savingGym, setSavingGym] = useState(false);
   const [rpe, setRpe] = useState<number | null>(null);
   const [savingRpe, setSavingRpe] = useState(false);
+  const [titulo, setTitulo] = useState(() => initialTitulo.trim() || getDefaultWorkoutTitle());
+  const [icono, setIcono] = useState<RoutineIconKey>(() => resolveRoutineIconKey(initialIcono));
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const [savingMeta, setSavingMeta] = useState(false);
+  const lastSavedTituloRef = useRef(initialTitulo.trim() || getDefaultWorkoutTitle());
+  const lastSavedIconoRef = useRef<RoutineIconKey>(resolveRoutineIconKey(initialIcono));
   const canPersistWorkout = !!workoutId && workoutId !== "manual";
+  const showTitleAndIcon = allowEditTitleAndIcon && canPersistWorkout;
 
   useEffect(() => {
     if (open && breakdown) {
@@ -122,9 +145,21 @@ export function PostWorkoutModal({
       setSavingGym(false);
       setRpe(null);
       setSavingRpe(false);
+      setTitulo("");
+      setIcono(DEFAULT_ROUTINE_ICON_KEY);
+      setIconPickerOpen(false);
+      setSavingMeta(false);
+      lastSavedTituloRef.current = "";
+      lastSavedIconoRef.current = DEFAULT_ROUTINE_ICON_KEY;
       return;
     }
     setGimnasio(initialGimnasio ?? null);
+    const nextTitulo = initialTitulo.trim() || getDefaultWorkoutTitle();
+    const nextIcono = resolveRoutineIconKey(initialIcono);
+    setTitulo(nextTitulo);
+    setIcono(nextIcono);
+    lastSavedTituloRef.current = nextTitulo;
+    lastSavedIconoRef.current = nextIcono;
     // Solo al abrir: el drawer del entreno resetea el gym al cerrarse.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -186,15 +221,58 @@ export function PostWorkoutModal({
     }
   };
 
+  const persistWorkoutMeta = async (fields: { titulo?: string; icono?: RoutineIconKey }) => {
+    if (!workoutId || workoutId === "manual") return;
+    setSavingMeta(true);
+    try {
+      const { error } = await supabase.from("actividad").update(fields).eq("id", workoutId);
+      if (error) throw error;
+      if (fields.titulo != null) lastSavedTituloRef.current = fields.titulo;
+      if (fields.icono != null) lastSavedIconoRef.current = fields.icono;
+      queryClient.invalidateQueries({ queryKey: ["workout", workoutId] });
+      queryClient.invalidateQueries({ queryKey: ["workoutHistory"] });
+    } catch {
+      if (fields.titulo != null) setTitulo(lastSavedTituloRef.current);
+      if (fields.icono != null) setIcono(lastSavedIconoRef.current);
+    } finally {
+      setSavingMeta(false);
+    }
+  };
+
+  const persistTitulo = async (value: string) => {
+    const resolved = value.trim() || initialTitulo.trim() || getDefaultWorkoutTitle();
+    setTitulo(resolved);
+    if (resolved === lastSavedTituloRef.current) return;
+    await persistWorkoutMeta({ titulo: resolved });
+  };
+
+  const persistIcono = async (value: RoutineIconKey) => {
+    setIcono(value);
+    if (value === lastSavedIconoRef.current) return;
+    await persistWorkoutMeta({ icono: value });
+  };
+
   const onPublicarChange = (value: boolean) => {
     setEsPublica(value);
     void persistPublicacion(value);
   };
 
-  const routinePrefill = useMemo(
-    () => (routineSnapshot ? workoutSnapshotToRoutineFormSnapshot(routineSnapshot) : null),
-    [routineSnapshot],
-  );
+  const handleGoHome = () => {
+    if (showTitleAndIcon) void persistTitulo(titulo);
+    onClose();
+    navigate("/");
+  };
+
+  const routinePrefill = useMemo(() => {
+    if (!routineSnapshot) return null;
+    const base = workoutSnapshotToRoutineFormSnapshot(routineSnapshot);
+    if (!showTitleAndIcon) return base;
+    return {
+      ...base,
+      nombre: titulo.trim() || base.nombre,
+      icono,
+    };
+  }, [routineSnapshot, showTitleAndIcon, titulo, icono]);
 
   const canSaveAsRoutine = !!routinePrefill?.ejercicios.length;
 
@@ -253,7 +331,7 @@ export function PostWorkoutModal({
         <AlertDialogContent
           className="text-center overflow-hidden"
           onFocusOutside={(e) => {
-            if (gymPickerOpen) e.preventDefault();
+            if (gymPickerOpen || iconPickerOpen) e.preventDefault();
           }}
         >
           <motion.div
@@ -378,6 +456,34 @@ export function PostWorkoutModal({
                     disabled={savingRpe}
                   />
                 </motion.div>
+                {showTitleAndIcon ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.37, duration: 0.35, ease: easeOut }}
+                    className="mt-2 mb-3 space-y-1.5 text-left"
+                  >
+                    <Label htmlFor="post-workout-titulo">Título</Label>
+                    <div className="flex items-center gap-3">
+                      <WorkoutIconPickerTrigger
+                        value={icono}
+                        onChange={(next) => void persistIcono(next)}
+                        disabled={savingMeta}
+                        contentClassName="z-[126]"
+                        onOpenChange={setIconPickerOpen}
+                      />
+                      <Input
+                        id="post-workout-titulo"
+                        placeholder="Ej: Día de Pierna"
+                        value={titulo}
+                        onChange={(e) => setTitulo(e.target.value)}
+                        onBlur={() => void persistTitulo(titulo)}
+                        disabled={savingMeta}
+                        className="h-12 min-w-0 flex-1"
+                      />
+                    </div>
+                  </motion.div>
+                ) : null}
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -437,10 +543,7 @@ export function PostWorkoutModal({
                 </Button>
               )}
               <AlertDialogAction
-                onClick={() => {
-                  onClose();
-                  navigate("/");
-                }}
+                onClick={handleGoHome}
                 className={cn(buttonVariants({ variant: "default" }), "w-full mt-2")}
               >
                 Ir al inicio

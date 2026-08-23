@@ -46,6 +46,18 @@ vi.mock("@/components/routine/RoutineForm", () => ({
   RoutineForm: () => null,
 }));
 
+vi.mock("@/components/routine/RoutineIconPicker", () => ({
+  WorkoutIconPickerTrigger: ({
+    onChange,
+  }: {
+    onChange: (icon: string) => void;
+  }) => (
+    <button type="button" onClick={() => onChange("flame")}>
+      Cambiar icono
+    </button>
+  ),
+}));
+
 import { PostWorkoutModal } from "@/components/workout/PostWorkoutModal";
 
 const breakdown: XPBreakdown = {
@@ -147,6 +159,69 @@ describe("PostWorkoutModal", () => {
     fireEvent.keyDown(slider, { key: "ArrowRight" });
     await waitFor(() => {
       expect(payloads.at(-1)).toEqual({ rpe: 2 });
+      expect(eq).toHaveBeenCalledWith("id", "act-1");
+    });
+  });
+
+  it("no muestra título e icono si el entrenamiento viene de una rutina", () => {
+    render(
+      wrap(
+        <PostWorkoutModal
+          open
+          onClose={vi.fn()}
+          breakdown={breakdown}
+          workoutId="act-1"
+          initialTitulo="Push"
+          allowEditTitleAndIcon={false}
+        />,
+      ),
+    );
+
+    expect(screen.queryByLabelText("Título")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cambiar icono" })).not.toBeInTheDocument();
+  });
+
+  it("permite cambiar el título predefinido y el icono encima del gimnasio", async () => {
+    const eq = vi.fn().mockResolvedValue({ error: null });
+    const payloads: Array<{ titulo?: string; icono?: string }> = [];
+    mockFrom.mockReturnValue({
+      update: (payload: { titulo?: string; icono?: string }) => {
+        payloads.push(payload);
+        return { eq };
+      },
+    });
+
+    render(
+      wrap(
+        <PostWorkoutModal
+          open
+          onClose={vi.fn()}
+          breakdown={breakdown}
+          workoutId="act-1"
+          initialTitulo="Entrenamiento de tarde"
+          initialIcono="dumbbell"
+          allowEditTitleAndIcon
+        />,
+      ),
+    );
+
+    const titleInput = screen.getByLabelText("Título");
+    const gymInput = screen.getByLabelText("Gimnasio");
+    expect(titleInput).toHaveValue("Entrenamiento de tarde");
+    expect(screen.getByRole("button", { name: "Cambiar icono" })).toBeInTheDocument();
+    expect(
+      Boolean(titleInput.compareDocumentPosition(gymInput) & Node.DOCUMENT_POSITION_FOLLOWING),
+    ).toBe(true);
+
+    fireEvent.change(titleInput, { target: { value: "Push day" } });
+    fireEvent.blur(titleInput);
+    await waitFor(() => {
+      expect(payloads).toContainEqual({ titulo: "Push day" });
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cambiar icono" }));
+    await waitFor(() => {
+      expect(payloads).toContainEqual({ icono: "flame" });
       expect(eq).toHaveBeenCalledWith("id", "act-1");
     });
   });

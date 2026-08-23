@@ -112,6 +112,9 @@ export function WorkoutLogger() {
   const [postWorkoutLogros, setPostWorkoutLogros] = useState<LogroRow[]>([]);
   const [postWorkoutId, setPostWorkoutId] = useState<string | null>(null);
   const [postWorkoutGimnasio, setPostWorkoutGimnasio] = useState<SelectedGimnasio | null>(null);
+  const [postWorkoutTitulo, setPostWorkoutTitulo] = useState("");
+  const [postWorkoutIcono, setPostWorkoutIcono] = useState<RoutineIconKey>(DEFAULT_ROUTINE_ICON_KEY);
+  const [postWorkoutAllowEditMeta, setPostWorkoutAllowEditMeta] = useState(false);
   const [showPostWorkout, setShowPostWorkout] = useState(false);
   const calculateAndAwardXP = useCalculateAndAwardXP();
   const removeXP = useRemoveWorkoutXP();
@@ -1238,6 +1241,9 @@ export function WorkoutLogger() {
             setPostWorkoutData(breakdown);
             setPostWorkoutId(effectiveWorkoutId);
             setPostWorkoutGimnasio(gimnasio);
+            setPostWorkoutTitulo(resolvedTitulo);
+            setPostWorkoutIcono(workoutIcon);
+            setPostWorkoutAllowEditMeta(!startedFromRoutine);
             setShowPostWorkout(true);
           } catch {
             // XP failed silently, still close
@@ -1507,24 +1513,37 @@ export function WorkoutLogger() {
               className="relative z-10 shrink-0 border-b border-border bg-card px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left"
             >
               {isActiveWorkout ? (
-                <div className="flex flex-col gap-2.5">
+                <div className="flex flex-col">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <DrawerTitle className="sr-only">
-                        {titulo.trim() || "Entrenamiento activo"}
-                      </DrawerTitle>
-                      <label htmlFor="titulo" className="sr-only">
-                        Título
-                      </label>
-                      <input
-                        id="titulo"
-                        value={titulo}
-                        onChange={(e) => setTitulo(e.target.value)}
-                        placeholder="Ej: Día de Pierna"
-                        disabled={creatingActive || preparingLiveSession}
-                        className="w-full min-w-0 truncate bg-transparent text-lg font-semibold leading-none tracking-tight outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                      />
-                      <DrawerDescription>Entrenamiento activo</DrawerDescription>
+                      {startedFromRoutine ? (
+                        <>
+                          <DrawerTitle className="sr-only">
+                            {titulo.trim() || "Entrenamiento activo"}
+                          </DrawerTitle>
+                          <label htmlFor="titulo" className="sr-only">
+                            Título
+                          </label>
+                          <input
+                            id="titulo"
+                            value={titulo}
+                            onChange={(e) => setTitulo(e.target.value)}
+                            placeholder="Ej: Día de Pierna"
+                            disabled={creatingActive || preparingLiveSession}
+                            className="w-full min-w-0 truncate bg-transparent text-lg font-semibold leading-none tracking-tight outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                          />
+                          <DrawerDescription>Entrenamiento activo</DrawerDescription>
+                        </>
+                      ) : (
+                        <>
+                          <DrawerTitle className="truncate text-lg font-semibold leading-none tracking-tight">
+                            Entrenamiento activo
+                          </DrawerTitle>
+                          <DrawerDescription className="sr-only">
+                            Entrenamiento en curso
+                          </DrawerDescription>
+                        </>
+                      )}
                     </div>
                     {existingWorkout && (
                       <div className="shrink-0">
@@ -1537,13 +1556,12 @@ export function WorkoutLogger() {
                       </div>
                     )}
                   </div>
-                  {restTimer.activeKey && (
-                    <RestProgressBar
-                      remaining={restTimer.remaining}
-                      duration={restTimer.duration}
-                      finished={restTimer.finished}
-                    />
-                  )}
+                  <RestProgressBar
+                    open={!!restTimer.activeKey}
+                    remaining={restTimer.remaining}
+                    duration={restTimer.duration}
+                    finished={restTimer.finished}
+                  />
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-3">
@@ -1684,12 +1702,18 @@ export function WorkoutLogger() {
           setPostWorkoutLogros([]);
           setPostWorkoutId(null);
           setPostWorkoutGimnasio(null);
+          setPostWorkoutTitulo("");
+          setPostWorkoutIcono(DEFAULT_ROUTINE_ICON_KEY);
+          setPostWorkoutAllowEditMeta(false);
         }}
         breakdown={postWorkoutData}
         routineSnapshot={postWorkoutRoutineSnapshot}
         nuevosLogros={postWorkoutLogros}
         workoutId={postWorkoutId}
         initialGimnasio={postWorkoutGimnasio}
+        initialTitulo={postWorkoutTitulo}
+        initialIcono={postWorkoutIcono}
+        allowEditTitleAndIcon={postWorkoutAllowEditMeta}
       />
 
       <ExerciseDetailSheet
