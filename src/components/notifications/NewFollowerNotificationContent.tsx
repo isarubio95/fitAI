@@ -64,9 +64,9 @@ export function NewFollowerNotificationContent({
         >
           <Avatar className={cn("shrink-0", compact ? "h-10 w-10" : "h-11 w-11")}>
             {avatar.src ? <AvatarImage src={avatar.src} alt="" className="object-cover" onError={avatar.onError} /> : null}
-            <AvatarFallback className="text-xs font-semibold">{initialsFromUsername(username)}</AvatarFallback>
+            <AvatarFallback className="text-xs font-semibold leading-none">{initialsFromUsername(username)}</AvatarFallback>
           </Avatar>
-          <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight">{displayName}</p>
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-none">{displayName}</p>
         </button>
 
         <Button

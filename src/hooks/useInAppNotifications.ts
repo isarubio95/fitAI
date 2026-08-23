@@ -163,6 +163,7 @@ export function useInAppNotifications() {
     topItems,
     unreadCount,
     dismiss,
+    dismissMany,
     markAllRead,
   };
 }

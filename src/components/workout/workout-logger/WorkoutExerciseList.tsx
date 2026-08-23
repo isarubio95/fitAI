@@ -72,7 +72,7 @@ export function WorkoutExerciseList({
         </Card>
       )}
 
-      <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
+      <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-background shadow-none md:border-x">
         <CardContent className="p-0">
           <div className="flex items-center justify-between gap-3 px-6 pt-4">
             <div className="font-semibold">Ejercicios</div>

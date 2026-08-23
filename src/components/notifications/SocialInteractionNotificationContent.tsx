@@ -84,20 +84,18 @@ export function SocialInteractionNotificationContent({
       <button
         type="button"
         onClick={openTarget}
-        className="-m-1 flex min-w-0 items-center gap-3 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+        className="-m-1 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-0.5 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
       >
         <Avatar className={cn("shrink-0", compact ? "h-10 w-10" : "h-11 w-11")}>
           {avatar.src ? (
             <AvatarImage src={avatar.src} alt="" className="object-cover" onError={avatar.onError} />
           ) : null}
-          <AvatarFallback className="text-xs font-semibold">
+          <AvatarFallback className="text-xs font-semibold leading-none">
             {initialsFromUsername(username)}
           </AvatarFallback>
         </Avatar>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold leading-tight">{displayName}</p>
-          <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground">{detail}</p>
-        </div>
+        <p className="truncate text-sm font-semibold leading-none">{displayName}</p>
+        <p className="col-start-2 line-clamp-2 text-xs leading-snug text-muted-foreground">{detail}</p>
       </button>
     </div>
   );

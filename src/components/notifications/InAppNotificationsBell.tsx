@@ -1,114 +1,19 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Bell, X } from "lucide-react";
+import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { useInAppNotifications } from "@/hooks/useInAppNotifications";
+import { buildNotificationFeed } from "@/lib/notificationFeed";
 import { cn } from "@/lib/utils";
-import {
-  isNewFollowerNotification,
-  isSocialInteractionNotification,
-  type InAppNotificationItem,
-} from "@/types/inAppNotification";
-import { NewFollowerNotificationContent } from "@/components/notifications/NewFollowerNotificationContent";
-import { SocialInteractionNotificationContent } from "@/components/notifications/SocialInteractionNotificationContent";
+import { NotificationFeedRow } from "@/components/notifications/NotificationFeedRow";
 import { InAppNotificationItemMotion } from "@/components/notifications/InAppNotificationItemMotion";
-
-function DismissButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground [&_svg]:opacity-80 hover:[&_svg]:opacity-100"
-      aria-label="Descartar"
-      onClick={onClick}
-    >
-      <X className="h-4 w-4" />
-    </button>
-  );
-}
-
-const notificationCardClass =
-  "rounded-xl border border-border/60 bg-card px-3 py-3 text-left";
-
-function NotificationRow({
-  item,
-  onDismiss,
-  onAfterPrimaryAction,
-}: {
-  item: InAppNotificationItem;
-  onDismiss: (id: string) => void;
-  onAfterPrimaryAction?: () => void;
-}) {
-  if (isNewFollowerNotification(item)) {
-    return (
-      <div className={notificationCardClass}>
-        <NewFollowerNotificationContent
-          seguidorId={item.seguidorId}
-          username={item.username}
-          avatarUrl={item.avatarUrl}
-          onAfterOpenProfile={onAfterPrimaryAction}
-          trailing={
-            item.dismissable ? <DismissButton onClick={() => onDismiss(item.id)} /> : null
-          }
-        />
-      </div>
-    );
-  }
-
-  if (isSocialInteractionNotification(item)) {
-    return (
-      <div className={notificationCardClass}>
-        <SocialInteractionNotificationContent
-          interaction={item.interaction}
-          targetType={item.targetType}
-          targetId={item.targetId}
-          targetTitle={item.targetTitle}
-          autorId={item.autorId}
-          username={item.username}
-          avatarUrl={item.avatarUrl}
-          texto={item.texto}
-          onAfterOpenProfile={onAfterPrimaryAction}
-          trailing={
-            item.dismissable ? <DismissButton onClick={() => onDismiss(item.id)} /> : null
-          }
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className={notificationCardClass}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold leading-tight">{item.title}</p>
-          {item.body ? (
-            <p className="mt-1 text-xs text-muted-foreground leading-snug">{item.body}</p>
-          ) : null}
-        </div>
-        {item.dismissable ? <DismissButton onClick={() => onDismiss(item.id)} /> : null}
-      </div>
-      {item.accion ? (
-        <Button
-          type="button"
-          size="sm"
-          className="mt-3 w-full sm:w-auto"
-          variant={item.kind === "action" ? "default" : "secondary"}
-          onClick={() => {
-            item.accion?.onClick();
-            onAfterPrimaryAction?.();
-          }}
-        >
-          {item.accion.etiqueta}
-        </Button>
-      ) : null}
-    </div>
-  );
-}
 
 export function InAppNotificationsBell({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
-  const { items, unreadCount, dismiss, markAllRead } = useInAppNotifications();
+  const { items, unreadCount, dismissMany, markAllRead } = useInAppNotifications();
 
+  const sections = useMemo(() => buildNotificationFeed(items), [items]);
   const dismissableCount = items.filter((i) => i.dismissable).length;
 
   return (
@@ -142,38 +47,43 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
           overlayClassName="z-[110]"
           className="z-[115] flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none"
         >
-          <DrawerHeader className="shrink-0 border-b border-border/60 px-6 pb-4 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
+          <DrawerHeader className="shrink-0 px-6 pb-3 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
             <div className="flex items-center justify-between gap-3">
-              <DrawerTitle className="text-lg">Notificaciones</DrawerTitle>
+              <DrawerTitle className="text-2xl font-semibold tracking-tight">Notificaciones</DrawerTitle>
               {dismissableCount > 0 ? (
                 <button
                   type="button"
-                  className="shrink-0 text-xs font-medium text-primary hover:underline"
+                  className="shrink-0 text-sm font-medium text-primary transition-opacity hover:opacity-80"
                   onClick={() => markAllRead()}
                 >
-                  Marcar todas como leídas
+                  Marcar leídas
                 </button>
               ) : null}
             </div>
           </DrawerHeader>
 
-          <div className={cn("min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4", drawerSafeAreaBottom)}>
-            {items.length === 0 ? (
+          <div className={cn("min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6", drawerSafeAreaBottom)}>
+            {sections.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">No hay novedades por ahora.</p>
             ) : (
-              <div className="space-y-3">
-                <AnimatePresence initial={false} mode="popLayout">
-                  {items.map((item) => (
-                    <InAppNotificationItemMotion key={item.id}>
-                      <NotificationRow
-                        item={item}
-                        onDismiss={dismiss}
-                        onAfterPrimaryAction={() => setOpen(false)}
-                      />
-                    </InAppNotificationItemMotion>
-                  ))}
-                </AnimatePresence>
-              </div>
+              sections.map((section) => (
+                <section key={section.key} className="pt-4">
+                  <h3 className="border-b border-border/60 pb-2 text-sm text-muted-foreground">
+                    {section.label}
+                  </h3>
+                  <AnimatePresence initial={false} mode="popLayout">
+                    {section.entries.map((entry) => (
+                      <InAppNotificationItemMotion key={entry.id} className="border-b border-border/60">
+                        <NotificationFeedRow
+                          entry={entry}
+                          onRead={dismissMany}
+                          onNavigate={() => setOpen(false)}
+                        />
+                      </InAppNotificationItemMotion>
+                    ))}
+                  </AnimatePresence>
+                </section>
+              ))
             )}
           </div>
         </DrawerContent>
