@@ -108,22 +108,24 @@ export function WorkoutFloatingActionBar({
             <Trash2 className="h-5 w-5" />
           </Button>
         )}
-        <ExerciseSelector
-          variant="drawer"
-          open={exercisePickerOpen}
-          onOpenChange={onExercisePickerOpenChange}
-          onSelect={onAddExercise}
-          trigger={
-            <Button
-              variant={isActiveWorkout && exerciseCount > 0 ? "secondary" : "default"}
-              size="icon"
-              className="h-12 w-12 rounded-full shadow-md"
-              aria-label="Agregar ejercicio"
-            >
-              <Plus className="h-5 w-5 stroke-[2px]" />
-            </Button>
-          }
-        />
+        {exerciseCount > 0 ? (
+          <ExerciseSelector
+            variant="drawer"
+            open={exercisePickerOpen}
+            onOpenChange={onExercisePickerOpenChange}
+            onSelect={onAddExercise}
+            trigger={
+              <Button
+                variant={isActiveWorkout ? "secondary" : "default"}
+                size="icon"
+                className="h-12 w-12 rounded-full shadow-md"
+                aria-label="Agregar ejercicio"
+              >
+                <Plus className="h-5 w-5 stroke-[2px]" />
+              </Button>
+            }
+          />
+        ) : null}
       </div>
       {showFinishButton && (
         <div

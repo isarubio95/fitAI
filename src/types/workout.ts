@@ -122,6 +122,18 @@ export function defaultSetForMode(
   return { repeticiones: 0, peso_kg: 0, duracion_seg: null, ritmo_seg_km: null };
 }
 
+/** Series en blanco al añadir un ejercicio de fuerza desde el catálogo. */
+export const DEFAULT_STRENGTH_SET_COUNT = 3;
+
+export function initialSetCountForRegistro(mode: RegistroSeries): number {
+  return mode === "peso_reps" ? DEFAULT_STRENGTH_SET_COUNT : 1;
+}
+
+export function initialSetsForNewExercise(mode: RegistroSeries): SetFormData[] {
+  const blank = defaultSetForMode(mode);
+  return Array.from({ length: initialSetCountForRegistro(mode) }, () => ({ ...blank }));
+}
+
 /** Campos de serie en BD según modo (evita dejar ritmo en modo solo duración). */
 export function serieFieldsForRegistro(mode: RegistroSeries, s: SetFormData): {
   duracion_seg: number | null;

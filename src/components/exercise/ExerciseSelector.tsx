@@ -1,71 +1,63 @@
 import {
+  useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   cloneElement,
   isValidElement,
-  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type ReactElement,
   type ReactNode,
 } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { normalizeRegistroSeries } from "@/types/workout";
-import { useExerciseCatalogInfinite } from "@/hooks/useExerciseCatalog";
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { normalizeRegistroSeries, type RegistroSeries } from "@/types/workout";
+import {
+  useExerciseCatalogInfinite,
+  useExercisesByKeys,
+  useFavoriteExercisesCatalog,
+} from "@/hooks/useExerciseCatalog";
+import { useExerciseUsageStats } from "@/hooks/useExerciseUsageStats";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  drawerSafeAreaBottom,
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Info, Loader2, Plus, Search, User } from "lucide-react";
+import { Loader2, Plus, Search } from "lucide-react";
+import { useExerciseFavorites } from "@/hooks/useExerciseFavorites";
 import { cn } from "@/lib/utils";
 import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
-import { MUSCLE_GROUPS, MUSCLE_GROUP_ICON_SRC, type MainMuscleGroup } from "@/constants/muscleGroups";
-import { filterChipActive, filterChipInactive } from "@/lib/filter-pill-styles";
+import { normalizeExerciseName } from "@/lib/matchExerciseByName";
+import { groupExerciseFamilies, type ExerciseFamily } from "@/lib/exerciseVariants";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
+import { ExerciseSelectorFilters } from "@/components/exercise/exercise-selector/ExerciseSelectorFilters";
+import { ExerciseFamilyRow } from "@/components/exercise/exercise-selector/ExerciseFamilyRow";
+import {
+  exerciseKey,
+  exerciseSource,
+  type ExerciseSortMode,
+  type SelectorExercise,
+} from "@/components/exercise/exercise-selector/types";
 
-const MUSCLE_GROUP_OPTIONS = Object.keys(MUSCLE_GROUPS) as MainMuscleGroup[];
+/** Máximo de ejercicios "más usados" que traemos fuera de la paginación. */
+const TOP_USED_LIMIT = 60;
 
-/** Valor inexistente para que cmdk no resalte ningún ejercicio al abrir. */
-const NO_HIGHLIGHT = "__none__";
+const SEARCH_DEBOUNCE_MS = 220;
 
-/** Máscara tipo dial solo en la parte inferior (suave). */
-const DIAL_MASK: CSSProperties = {
-  maskImage: "linear-gradient(to bottom, black 0%, black 82%, rgba(0,0,0,0.45) 94%, transparent 100%)",
-  WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 82%, rgba(0,0,0,0.45) 94%, transparent 100%)",
+type ExerciseCatalogRef = {
+  tipo_ejercicio_id?: string;
+  usuario_ejercicio_id?: string;
+  registro_series?: RegistroSeries;
 };
-
-function applyDialDepth(scrollEl: HTMLElement) {
-  const rootRect = scrollEl.getBoundingClientRect();
-  const fadeStart = rootRect.top + rootRect.height * 0.62;
-  const fadeEnd = rootRect.bottom;
-  const fadeSpan = Math.max(fadeEnd - fadeStart, 1);
-  scrollEl.querySelectorAll<HTMLElement>("[data-dial-item]").forEach((node) => {
-    const r = node.getBoundingClientRect();
-    const itemMid = r.top + r.height / 2;
-    if (itemMid <= fadeStart) {
-      node.style.opacity = "1";
-      node.style.transform = "scale(1)";
-      return;
-    }
-    const t = Math.min(1, (itemMid - fadeStart) / fadeSpan);
-    const eased = t * t;
-    node.style.opacity = String(1 - eased * 0.62);
-    node.style.transform = `scale(${1 - eased * 0.1})`;
-  });
-}
 
 interface ExerciseSelectorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (
-    catalogRef: { tipo_ejercicio_id?: string; usuario_ejercicio_id?: string },
-    nombre: string,
-  ) => void;
+  onSelect: (catalogRef: ExerciseCatalogRef, nombre: string) => void | Promise<unknown>;
   /** Permite reemplazar el botón por defecto (p. ej. para la barra flotante del entreno activo). */
   trigger?: ReactNode;
   /**
@@ -74,26 +66,38 @@ interface ExerciseSelectorProps {
    * `popover`: comportamiento clásico (rutinas).
    */
   variant?: "popover" | "drawer" | "floating";
+  /** Texto del botón de confirmación; por defecto depende de la variante. */
+  addLabel?: string;
 }
 
-type CatalogItem = {
-  id: string;
-  nombre: string;
-  usuario_id?: string | null;
-  registro_series?: string | null;
-  __source?: "catalogo" | "usuario";
-  imagen?: string | null;
-  gif_url?: string | null;
-  body_part?: string | string[] | null;
-  equipment?: string | null;
-  instructions?: string[] | null;
-  tipo?: string | null;
-  grupo_muscular?: string | null;
-  dificultad?: string | null;
-};
+function catalogRefFor(exercise: SelectorExercise): ExerciseCatalogRef {
+  const registro_series = normalizeRegistroSeries(exercise.registro_series);
+  return exerciseSource(exercise) === "usuario"
+    ? { usuario_ejercicio_id: exercise.id, registro_series }
+    : { tipo_ejercicio_id: exercise.id, registro_series };
+}
 
-function toggleMuscleGroup(list: string[], value: string) {
-  return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+function matchesSearch(exercise: SelectorExercise, needle: string) {
+  if (!needle) return true;
+  const haystack = normalizeExerciseName(
+    [exercise.nombre, exercise.equipment, exercise.grupo_muscular].filter(Boolean).join(" "),
+  );
+  return needle.split(" ").every((word) => haystack.includes(word));
+}
+
+function usageScore(
+  family: ExerciseFamily<SelectorExercise>,
+  usage: Map<string, { count: number; lastUsed: number }>,
+) {
+  let count = 0;
+  let lastUsed = 0;
+  for (const { item } of family.variants) {
+    const stats = usage.get(exerciseKey(item));
+    if (!stats) continue;
+    count += stats.count;
+    lastUsed = Math.max(lastUsed, stats.lastUsed);
+  }
+  return { count, lastUsed };
 }
 
 function ExerciseSelectorPanel({
@@ -103,17 +107,24 @@ function ExerciseSelectorPanel({
   onToggleGrupo,
   onlyMine,
   onOnlyMineChange,
+  favoritesOnly,
+  onFavoritesOnlyChange,
+  showUserFilters,
+  sort,
+  onSortChange,
   isLoading,
-  filtered,
+  families,
+  expandAll,
+  expandedKeys,
+  onExpandedChange,
+  selectedKeys,
+  onToggleSelect,
+  onViewDetail,
   userId,
   hasNextPage,
   isFetchingNextPage,
   onFetchNextPage,
-  onSelect,
-  onViewDetail,
-  highlightedValue,
-  onHighlightedValueChange,
-  fillHeight = false,
+  fillHeight,
 }: {
   search: string;
   onSearchChange: (value: string) => void;
@@ -121,169 +132,87 @@ function ExerciseSelectorPanel({
   onToggleGrupo: (grupo: string) => void;
   onlyMine: boolean;
   onOnlyMineChange: (value: boolean) => void;
+  favoritesOnly: boolean;
+  onFavoritesOnlyChange: (value: boolean) => void;
+  showUserFilters: boolean;
+  sort: ExerciseSortMode;
+  onSortChange: (sort: ExerciseSortMode) => void;
   isLoading: boolean;
-  filtered: CatalogItem[];
+  families: ExerciseFamily<SelectorExercise>[];
+  expandAll: boolean;
+  expandedKeys: Set<string>;
+  onExpandedChange: (key: string, expanded: boolean) => void;
+  selectedKeys: Set<string>;
+  onToggleSelect: (exercise: SelectorExercise) => void;
+  onViewDetail: (exercise: SelectorExercise) => void;
   userId?: string;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onFetchNextPage: () => void;
-  onSelect: ExerciseSelectorProps["onSelect"];
-  onViewDetail: (exercise: CatalogItem) => void;
-  highlightedValue: string;
-  onHighlightedValueChange: (value: string) => void;
   /** En drawer: la lista crece y scrollea dentro del alto disponible. */
   fillHeight?: boolean;
 }) {
-  const listScrollRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (!fillHeight) return;
-    const el = listScrollRef.current;
-    if (!el) return;
-    applyDialDepth(el);
-  }, [fillHeight, filtered, isLoading, isFetchingNextPage]);
-
   return (
     <div className={cn("flex min-h-0 flex-col", fillHeight && "h-full")}>
-      <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-2">
-        <Label className="mb-0 text-xs text-muted-foreground">Solo mis ejercicios</Label>
-        <Switch checked={onlyMine} onCheckedChange={onOnlyMineChange} />
-      </div>
-      <Command
-        value={highlightedValue}
-        onValueChange={onHighlightedValueChange}
+      <ExerciseSelectorFilters
+        search={search}
+        onSearchChange={onSearchChange}
+        selectedGrupos={selectedGrupos}
+        onToggleGrupo={onToggleGrupo}
+        favoritesOnly={favoritesOnly}
+        onFavoritesOnlyChange={onFavoritesOnlyChange}
+        onlyMine={onlyMine}
+        onOnlyMineChange={onOnlyMineChange}
+        showUserFilters={showUserFilters}
+        sort={sort}
+        onSortChange={onSortChange}
+      />
+
+      <div
         className={cn(
-          "rounded-none bg-transparent **:[[cmdk-input-wrapper]]:px-6",
-          fillHeight && "min-h-0 flex-1",
+          "overflow-y-auto overscroll-contain touch-pan-y border-t border-border [-webkit-overflow-scrolling:touch]",
+          fillHeight ? "min-h-0 flex-1" : "max-h-[min(58svh,30rem)]",
         )}
+        onWheelCapture={(e) => e.stopPropagation()}
+        onTouchMoveCapture={(e) => e.stopPropagation()}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+          if (nearBottom && hasNextPage && !isFetchingNextPage) onFetchNextPage();
+        }}
       >
-        <CommandInput placeholder="Buscar ejercicio..." value={search} onValueChange={onSearchChange} />
-        <div className="shrink-0 border-b border-border px-4 py-2">
-          <div className="flex gap-1.5 overflow-x-auto overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch] pb-0.5">
-            {MUSCLE_GROUP_OPTIONS.map((grupo) => {
-              const active = selectedGrupos.includes(grupo);
-              return (
-                <button
-                  key={grupo}
-                  type="button"
-                  onClick={() => onToggleGrupo(grupo)}
-                  className={cn(
-                    "inline-flex shrink-0 flex-col items-center gap-2 rounded-xl px-2 py-1.5 text-[10px] font-medium leading-tight transition-all whitespace-nowrap",
-                    active ? filterChipActive : filterChipInactive,
-                  )}
-                >
-                  <img
-                    src={MUSCLE_GROUP_ICON_SRC[grupo]}
-                    alt=""
-                    className="h-11 w-11 shrink-0"
-                    draggable={false}
-                  />
-                  {grupo}
-                </button>
-              );
-            })}
+        {isLoading ? (
+          <div className="flex items-center gap-2 px-4 py-6 text-sm text-muted-foreground sm:px-6">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Cargando ejercicios...
           </div>
-        </div>
-        <div className={cn("relative min-h-0", fillHeight ? "flex flex-1 flex-col" : undefined)}>
-          {fillHeight ? (
-            <div
-              className={cn(
-                "pointer-events-none absolute inset-x-0 bottom-0 z-20 h-12",
-                "bg-linear-to-t from-card/55 via-card/20 to-transparent",
-              )}
-              aria-hidden
+        ) : families.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">
+            {favoritesOnly && !search.trim()
+              ? "No hay ejercicios favoritos."
+              : "No se encontraron ejercicios."}
+          </p>
+        ) : (
+          families.map((family) => (
+            <ExerciseFamilyRow
+              key={family.key}
+              family={family}
+              expanded={expandAll || expandedKeys.has(family.key)}
+              onExpandedChange={(next) => onExpandedChange(family.key, next)}
+              selectedKeys={selectedKeys}
+              onToggleSelect={onToggleSelect}
+              onViewDetail={onViewDetail}
+              currentUserId={userId}
             />
-          ) : null}
-          <div
-            ref={listScrollRef}
-            className={cn(
-              "overflow-y-auto overscroll-contain touch-pan-y pt-2 [-webkit-overflow-scrolling:touch]",
-              fillHeight
-                ? "min-h-0 flex-1 scrollbar-none"
-                : "max-h-[min(66svh,34rem)]",
-            )}
-            style={fillHeight ? DIAL_MASK : undefined}
-            onWheelCapture={(e) => e.stopPropagation()}
-            onTouchMoveCapture={(e) => e.stopPropagation()}
-            onScroll={(e) => {
-              const el = e.currentTarget;
-              if (fillHeight) applyDialDepth(el);
-              const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-              if (nearBottom && hasNextPage && !isFetchingNextPage) {
-                onFetchNextPage();
-              }
-            }}
-          >
-            <CommandList className="max-h-none overflow-visible">
-              <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
-              <CommandGroup className="p-0 **:[[cmdk-group-items]]:flex **:[[cmdk-group-items]]:flex-col **:[[cmdk-group-items]]:gap-0.5">
-                {/* Ancla invisible: evita que cmdk resalte el primer ejercicio al abrir. */}
-                <CommandItem value={NO_HIGHLIGHT} className="hidden" aria-hidden />
-                {isLoading && (
-                  <CommandItem value="_loading" disabled className="px-6">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Cargando ejercicios...
-                  </CommandItem>
-                )}
-                {filtered?.map((tipo) => {
-                  const isOwn = tipo.usuario_id === userId;
-                  const source = tipo.__source as "usuario" | "catalogo" | undefined;
-                  const rs = normalizeRegistroSeries(tipo.registro_series);
-                  const catalogRef =
-                    source === "usuario"
-                      ? { usuario_ejercicio_id: tipo.id, registro_series: rs }
-                      : { tipo_ejercicio_id: tipo.id, registro_series: rs };
-                  return (
-                    <CommandItem
-                      key={tipo.id}
-                      value={tipo.nombre}
-                      onSelect={() => onSelect(catalogRef, tipo.nombre)}
-                      data-dial-item={fillHeight ? tipo.id : undefined}
-                      className={cn(
-                        "flex cursor-pointer items-center justify-between gap-2 px-6",
-                        fillHeight && "origin-center will-change-[opacity,transform]",
-                      )}
-                    >
-                      <span className="flex min-w-0 flex-1 items-center gap-2">
-                        <span className="truncate">{tipo.nombre}</span>
-                        {isOwn && <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-                      </span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            title="Ver ficha del ejercicio"
-                            aria-label={`Ver ficha de ${tipo.nombre}`}
-                            className="touch-styled inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              onViewDetail(tipo);
-                            }}
-                          >
-                            <Info className="h-3.5 w-3.5" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="z-[80]">
-                          Ver ficha
-                        </TooltipContent>
-                      </Tooltip>
-                    </CommandItem>
-                  );
-                })}
-                {!isLoading && isFetchingNextPage && (
-                  <CommandItem value="_loading_more" disabled className="px-6">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Cargando más...
-                  </CommandItem>
-                )}
-                {fillHeight ? <div className="h-10 shrink-0" aria-hidden /> : null}
-              </CommandGroup>
-            </CommandList>
+          ))
+        )}
+        {!isLoading && isFetchingNextPage && (
+          <div className="flex items-center gap-2 px-4 py-4 text-sm text-muted-foreground sm:px-6">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Cargando más...
           </div>
-        </div>
-      </Command>
+        )}
+      </div>
     </div>
   );
 }
@@ -294,75 +223,224 @@ export function ExerciseSelector({
   onSelect,
   trigger,
   variant = "popover",
+  addLabel,
 }: ExerciseSelectorProps) {
   const { user } = useAuth();
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [selectedGrupos, setSelectedGrupos] = useState<string[]>([]);
   const [onlyMine, setOnlyMine] = useState(false);
-  const [highlightedValue, setHighlightedValue] = useState(NO_HIGHLIGHT);
-  const [detailExercise, setDetailExercise] = useState<CatalogItem | null>(null);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [sort, setSort] = useState<ExerciseSortMode>("usados");
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const [selection, setSelection] = useState<SelectorExercise[]>([]);
+  const [detailExercise, setDetailExercise] = useState<SelectorExercise | null>(null);
+  const [adding, setAdding] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const isDrawer = variant === "drawer" || variant === "floating";
+  const { isFavorite, favoriteKeys } = useExerciseFavorites();
+
+  useEffect(() => {
+    if (searchInput === search) return;
+    const timer = window.setTimeout(() => setSearch(searchInput), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [searchInput, search]);
+
+  const favoritesCatalogQuery = useFavoriteExercisesCatalog(favoriteKeys, favoritesOnly && open);
+  const { usage, topKeys } = useExerciseUsageStats(!!user && open);
+  const usedByUsage = sort !== "az" && !favoritesOnly;
+  const topUsedQuery = useExercisesByKeys(
+    topKeys.slice(0, TOP_USED_LIMIT),
+    open && usedByUsage,
+  );
   const {
     data,
     isLoading,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useExerciseCatalogInfinite({ q: search, grupos: selectedGrupos }, 30);
+  } = useExerciseCatalogInfinite(
+    { q: search, grupos: selectedGrupos, searchScope: "amplio" },
+    30,
+  );
 
   useEffect(() => {
-    if (!open) {
-      setSelectedGrupos([]);
-      setDetailExercise(null);
-      return;
-    }
-    setHighlightedValue(NO_HIGHLIGHT);
+    if (open) return;
+    setSelectedGrupos([]);
+    setFavoritesOnly(false);
+    setDetailExercise(null);
+    setExpandedKeys(new Set());
+    setSelection([]);
+    setSearchInput("");
+    setSearch("");
   }, [open]);
 
   // El Drawer ya registra su propia capa de back; el popover sí necesita la suya.
   useBackCloseLayer({ open: !isDrawer && open, onOpenChange, kind: "popover" });
 
-  const catalog = useMemo(() => {
-    const pages = data?.pages ?? [];
-    const usuario = pages[0]?.usuario ?? [];
-    const catalogo = pages.flatMap((p) => p.catalogo ?? []);
-    return [...usuario, ...catalogo];
-  }, [data]);
+  const catalog = useMemo<SelectorExercise[]>(() => {
+    const rows: SelectorExercise[] = [];
+    if (favoritesOnly) {
+      rows.push(...((favoritesCatalogQuery.data ?? []) as SelectorExercise[]));
+    } else {
+      // Los más usados van primero aunque vivan en una página lejana del catálogo.
+      if (usedByUsage) rows.push(...((topUsedQuery.data ?? []) as SelectorExercise[]));
+      const pages = data?.pages ?? [];
+      rows.push(...((pages[0]?.usuario ?? []) as SelectorExercise[]));
+      rows.push(...(pages.flatMap((p) => p.catalogo ?? []) as SelectorExercise[]));
+    }
+
+    const seen = new Set<string>();
+    return rows.filter((row) => {
+      const key = exerciseKey(row);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [data, favoritesOnly, favoritesCatalogQuery.data, topUsedQuery.data, usedByUsage]);
+
+  const needle = normalizeExerciseName(search);
 
   const filtered = useMemo(
-    () => catalog.filter((tipo) => !onlyMine || (tipo as { usuario_id?: string }).usuario_id === user?.id),
-    [catalog, onlyMine, user?.id],
+    () =>
+      catalog.filter((ex) => {
+        if (onlyMine && ex.usuario_id !== user?.id) return false;
+        if (favoritesOnly && !isFavorite(exerciseSource(ex), ex.id)) return false;
+        if (selectedGrupos.length) {
+          const grupo = String(ex.grupo_muscular ?? "").trim();
+          if (!selectedGrupos.includes(grupo)) return false;
+        }
+        return matchesSearch(ex, needle);
+      }),
+    [catalog, onlyMine, user?.id, favoritesOnly, isFavorite, selectedGrupos, needle],
   );
 
-  const handleSelect: ExerciseSelectorProps["onSelect"] = (catalogRef, nombre) => {
-    onSelect(catalogRef, nombre);
+  const families = useMemo(() => {
+    const grouped = groupExerciseFamilies(filtered);
+    const byName = (a: ExerciseFamily<SelectorExercise>, b: ExerciseFamily<SelectorExercise>) =>
+      a.base.localeCompare(b.base, "es");
+
+    for (const family of grouped) {
+      family.variants.sort((a, b) => {
+        if (sort !== "az") {
+          const sa = usage.get(exerciseKey(a.item));
+          const sb = usage.get(exerciseKey(b.item));
+          const diff =
+            sort === "usados"
+              ? (sb?.count ?? 0) - (sa?.count ?? 0)
+              : (sb?.lastUsed ?? 0) - (sa?.lastUsed ?? 0);
+          if (diff) return diff;
+        }
+        return a.label.localeCompare(b.label, "es");
+      });
+    }
+
+    if (sort === "az") return grouped.sort(byName);
+
+    return grouped.sort((a, b) => {
+      const sa = usageScore(a, usage);
+      const sb = usageScore(b, usage);
+      const diff = sort === "usados" ? sb.count - sa.count : sb.lastUsed - sa.lastUsed;
+      return diff || byName(a, b);
+    });
+  }, [filtered, sort, usage]);
+
+  const selectedKeys = useMemo(
+    () => new Set(selection.map((ex) => exerciseKey(ex))),
+    [selection],
+  );
+
+  const toggleSelect = useCallback((exercise: SelectorExercise) => {
+    setSelection((prev) => {
+      const key = exerciseKey(exercise);
+      const next = prev.filter((ex) => exerciseKey(ex) !== key);
+      return next.length === prev.length ? [...prev, exercise] : next;
+    });
+  }, []);
+
+  const handleExpandedChange = useCallback((key: string, expanded: boolean) => {
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      if (expanded) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }, []);
+
+  const handleAdd = async () => {
+    if (!selection.length || adding) return;
+    setAdding(true);
+    try {
+      // Secuencial: en el entreno activo cada alta inserta en BD y el orden importa.
+      for (const exercise of selection) {
+        await onSelect(catalogRefFor(exercise), exercise.nombre);
+      }
+    } finally {
+      setAdding(false);
+    }
     onOpenChange(false);
-    setSearch("");
   };
 
+  const resultCount = filtered.length;
+  const confirmLabel = addLabel ?? (isDrawer ? "Añadir al entreno" : "Añadir a la rutina");
+
   const panel = (
-    <TooltipProvider delayDuration={300}>
-      <ExerciseSelectorPanel
-        search={search}
-        onSearchChange={setSearch}
-        selectedGrupos={selectedGrupos}
-        onToggleGrupo={(grupo) => setSelectedGrupos((prev) => toggleMuscleGroup(prev, grupo))}
-        onlyMine={onlyMine}
-        onOnlyMineChange={setOnlyMine}
-        isLoading={isLoading}
-        filtered={filtered as CatalogItem[]}
-        userId={user?.id}
-        hasNextPage={!!hasNextPage}
-        isFetchingNextPage={isFetchingNextPage}
-        onFetchNextPage={() => void fetchNextPage()}
-        onSelect={handleSelect}
-        onViewDetail={setDetailExercise}
-        highlightedValue={highlightedValue}
-        onHighlightedValueChange={setHighlightedValue}
-        fillHeight={isDrawer}
-      />
-    </TooltipProvider>
+    <ExerciseSelectorPanel
+      search={searchInput}
+      onSearchChange={setSearchInput}
+      selectedGrupos={selectedGrupos}
+      onToggleGrupo={(grupo) =>
+        setSelectedGrupos((prev) =>
+          prev.includes(grupo) ? prev.filter((g) => g !== grupo) : [...prev, grupo],
+        )
+      }
+      onlyMine={onlyMine}
+      onOnlyMineChange={setOnlyMine}
+      favoritesOnly={favoritesOnly}
+      onFavoritesOnlyChange={setFavoritesOnly}
+      showUserFilters={!!user}
+      sort={sort}
+      onSortChange={setSort}
+      isLoading={
+        favoritesOnly ? favoriteKeys.size > 0 && favoritesCatalogQuery.isLoading : isLoading
+      }
+      families={families}
+      expandAll={!!search.trim() || favoritesOnly}
+      expandedKeys={expandedKeys}
+      onExpandedChange={handleExpandedChange}
+      selectedKeys={selectedKeys}
+      onToggleSelect={toggleSelect}
+      onViewDetail={setDetailExercise}
+      userId={user?.id}
+      hasNextPage={!!hasNextPage && !favoritesOnly}
+      isFetchingNextPage={isFetchingNextPage && !favoritesOnly}
+      onFetchNextPage={() => void fetchNextPage()}
+      fillHeight={isDrawer}
+    />
+  );
+
+  const footer = (
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-4 pt-3 sm:px-6",
+        isDrawer ? drawerSafeAreaBottom : "pb-3",
+      )}
+    >
+      <span className="text-xs text-muted-foreground">
+        {selection.length === 0
+          ? "Ninguno seleccionado"
+          : `${selection.length} seleccionado${selection.length === 1 ? "" : "s"}`}
+      </span>
+      <Button
+        type="button"
+        onClick={() => void handleAdd()}
+        disabled={!selection.length || adding}
+        className="min-w-40 flex-1 sm:flex-none"
+      >
+        {adding && <Loader2 className="h-4 w-4 animate-spin" />}
+        {confirmLabel}
+      </Button>
+    </div>
   );
 
   const detailSheet = (
@@ -451,12 +529,20 @@ export function ExerciseSelector({
           <DrawerContent
             side="bottom"
             overlayClassName="z-[55]"
-            className="z-[60] flex h-[min(90lvh,46rem)] max-h-[90lvh] flex-col overflow-hidden bg-card p-0"
+            className="z-[60] flex h-[min(92lvh,49rem)] max-h-[92lvh] flex-col overflow-hidden bg-card p-0"
           >
-            <DrawerHeader className="shrink-0 border-b border-border bg-card px-6 text-left">
-              <DrawerTitle className="text-lg">Agregar ejercicio</DrawerTitle>
+            <DrawerHeader className="shrink-0 bg-card px-4 pb-2 text-left sm:px-6">
+              <div className="flex items-baseline justify-between gap-3">
+                <DrawerTitle className="text-lg">Agregar ejercicio</DrawerTitle>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {resultCount}
+                  {hasNextPage && !favoritesOnly ? "+" : ""} resultado
+                  {resultCount === 1 ? "" : "s"}
+                </span>
+              </div>
             </DrawerHeader>
             <div className="min-h-0 flex-1 overflow-hidden bg-card">{panel}</div>
+            {footer}
           </DrawerContent>
         </Drawer>
         {detailSheet}
@@ -474,8 +560,20 @@ export function ExerciseSelector({
             </Button>
           )}
         </PopoverTrigger>
-        <PopoverContent className="max-h-[75svh] w-[320px] overflow-hidden p-0" align="start">
+        <PopoverContent
+          className="flex w-[min(24rem,calc(100vw-2rem))] max-h-[80svh] flex-col overflow-hidden bg-card p-0"
+          align="start"
+        >
+          <div className="flex items-baseline justify-between gap-3 px-4 pt-3 sm:px-6">
+            <span className="text-sm font-semibold">Agregar ejercicio</span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {resultCount}
+              {hasNextPage && !favoritesOnly ? "+" : ""} resultado
+              {resultCount === 1 ? "" : "s"}
+            </span>
+          </div>
           {panel}
+          {footer}
         </PopoverContent>
       </Popover>
       {detailSheet}

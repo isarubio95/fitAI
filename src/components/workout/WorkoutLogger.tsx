@@ -33,6 +33,7 @@ import {
 } from "./workout-logger/fromRoutineStorage";
 import { serializeWorkoutFormSnapshot } from "./workout-logger/serializeWorkoutFormSnapshot";
 import { WorkoutExerciseList } from "./workout-logger/WorkoutExerciseList";
+import { WorkoutEmptyExerciseState } from "./workout-logger/WorkoutEmptyExerciseState";
 import { SWIPE_DISMISS_WINDOW_MS } from "./workout-logger/constants";
 import { ElapsedTime } from "./workout-logger/ElapsedTime";
 import { RestProgressBar } from "./workout-logger/RestProgressBar";
@@ -68,6 +69,7 @@ import {
   type ActividadWithDetails,
   normalizeRegistroSeries,
   defaultSetForMode,
+  initialSetCountForRegistro,
   setHasWork,
   serieCountsAsRecorded,
   countRecordedSets,
@@ -581,6 +583,7 @@ export function WorkoutLogger() {
     const { tipo_ejercicio_id, usuario_ejercicio_id, registro_series: rs } = catalogRef;
     const registro_series = normalizeRegistroSeries(rs);
     const firstSet = defaultSetForMode(registro_series, null, null);
+    const setCount = initialSetCountForRegistro(registro_series);
     if (effectiveWorkoutId && user) {
       try {
         const { data: ej, error } = await supabase
@@ -596,19 +599,23 @@ export function WorkoutLogger() {
           .single();
         if (error) throw error;
         const modeNs = normalizeRegistroSeries(registro_series);
-        const { data: serie } = await supabase
+        const serieFields = serieFieldsForRegistro(modeNs, firstSet);
+        const { data: series, error: seriesError } = await supabase
           .from("serie")
-          .insert({
-            ejercicio_id: ej.id,
-            usuario_id: user.id,
-            numero_serie: 1,
-            repeticiones: 0,
-            peso_kg: 0,
-            ...serieFieldsForRegistro(modeNs, firstSet),
-            completed: false,
-          })
-          .select("id")
-          .single();
+          .insert(
+            Array.from({ length: setCount }, (_, i) => ({
+              ejercicio_id: ej.id,
+              usuario_id: user.id,
+              numero_serie: i + 1,
+              repeticiones: 0,
+              peso_kg: 0,
+              ...serieFields,
+              completed: false,
+            })),
+          )
+          .select("id, numero_serie");
+        if (seriesError) throw seriesError;
+        const orderedSeries = [...(series ?? [])].sort((a, b) => a.numero_serie - b.numero_serie);
         setExercises((prev) => [
           ...prev,
           {
@@ -617,7 +624,11 @@ export function WorkoutLogger() {
             nombre,
             id: ej.id,
             registro_series,
-            sets: [{ ...firstSet, id: serie?.id, completed: false }],
+            sets: Array.from({ length: setCount }, (_, i) => ({
+              ...firstSet,
+              id: orderedSeries[i]?.id,
+              completed: false,
+            })),
           },
         ]);
       } catch (e: unknown) {
@@ -635,7 +646,7 @@ export function WorkoutLogger() {
           usuario_ejercicio_id,
           nombre,
           registro_series,
-          sets: [{ ...firstSet }],
+          sets: Array.from({ length: setCount }, () => ({ ...firstSet })),
         },
       ]);
     }
@@ -1599,6 +1610,14 @@ export function WorkoutLogger() {
                 className="pointer-events-none absolute inset-x-0 bottom-0 z-35 h-[120px] bg-linear-to-t from-black/40 via-black/14 to-transparent dark:from-black/55 dark:via-black/24"
               />
             )}
+
+            {showFloatingActionBar && exercises.length === 0 && !creatingActive ? (
+              <WorkoutEmptyExerciseState
+                open={exercisePickerOpen}
+                onOpenChange={setExercisePickerOpen}
+                onAddExercise={addExercise}
+              />
+            ) : null}
 
             {showFloatingActionBar && (
               <WorkoutFloatingActionBar

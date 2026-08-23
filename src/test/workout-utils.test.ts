@@ -3,6 +3,8 @@ import {
   defaultSetForMode,
   formatRitmoSegKmLabel,
   formPatchFromLastSet,
+  initialSetCountForRegistro,
+  initialSetsForNewExercise,
   normalizeRegistroSeries,
   serieFieldsForRegistro,
   setHasWork,
@@ -87,6 +89,14 @@ describe("workout utils", () => {
     expect(formPatchFromLastSet("peso_reps", last)).toEqual({ repeticiones: 8, peso_kg: 60 });
     expect(formPatchFromLastSet("duracion", last)).toEqual({ duracion_seg: 45 });
     expect(formPatchFromLastSet("duracion_ritmo", last)).toEqual({ duracion_seg: 45, ritmo_seg_km: 300 });
+  });
+
+  it("añade 3 series vacías a los ejercicios de fuerza y 1 al cardio", () => {
+    expect(initialSetCountForRegistro("peso_reps")).toBe(3);
+    expect(initialSetCountForRegistro("duracion")).toBe(1);
+    expect(initialSetCountForRegistro("duracion_ritmo")).toBe(1);
+    expect(initialSetsForNewExercise("peso_reps")).toHaveLength(3);
+    expect(initialSetsForNewExercise("duracion")).toHaveLength(1);
   });
 
   it("genera set por defecto por modo", () => {

@@ -72,21 +72,23 @@ export function WorkoutExerciseList({
         </Card>
       )}
 
+      {exercises.length === 0 ? null : (
       <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-background shadow-none md:border-x">
         <CardContent className="p-0">
-          <div className="flex items-center justify-between gap-3 px-6 pt-4">
-            <div className="font-semibold">Ejercicios</div>
-            <div className="text-xs text-muted-foreground tabular-nums">
-              {exercises.length} ejercicio{exercises.length === 1 ? "" : "s"}
+          {!isActiveWorkout && (
+            <div className="flex items-center justify-between gap-3 px-6 pt-4">
+              <div className="font-semibold">Ejercicios</div>
+              <div className="text-xs text-muted-foreground tabular-nums">
+                {exercises.length} ejercicio{exercises.length === 1 ? "" : "s"}
+              </div>
             </div>
-          </div>
+          )}
 
           <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext
               items={exercises.map((ex, i) => getExerciseSortId(ex, i))}
               strategy={verticalListSortingStrategy}
             >
-              {exercises.length > 0 ? (
                 <div className="flex flex-col gap-1 bg-background">
                   {groupExercisesBySuperset(exercises).map((group) => {
                     const isSuperset = !!group.supersetId && group.items.length > 1;
@@ -163,15 +165,11 @@ export function WorkoutExerciseList({
                     );
                   })}
                 </div>
-              ) : (
-                <p className="px-6 pb-4 text-sm text-muted-foreground">
-                  Añade ejercicios para registrar tu entrenamiento.
-                </p>
-              )}
             </SortableContext>
           </DndContext>
         </CardContent>
       </Card>
+      )}
     </>
   );
 }
