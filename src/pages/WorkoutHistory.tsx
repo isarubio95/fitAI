@@ -381,8 +381,8 @@ function ProgressAreaChart({
 }
 
 const WorkoutHistory = () => {
-  const { data: workouts, isLoading: loadingGym } = useWorkoutHistory();
-  const { data: cardio, isLoading: loadingCardio } = useCardioHistory();
+  const { data: workouts, isPending: loadingGym } = useWorkoutHistory();
+  const { data: cardio, isPending: loadingCardio } = useCardioHistory();
   const [period, setPeriod] = useState<PeriodKey>("4w");
   const now = useMemo(() => new Date(), []);
   const isLoading = loadingGym || loadingCardio;
@@ -576,16 +576,22 @@ const WorkoutHistory = () => {
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
                       <Icon className="h-4 w-4 text-primary" />
                     </div>
-                    <p className="text-xl font-bold leading-none">{isLoading ? "–" : kpi.value}</p>
+                    {isLoading ? (
+                      <Skeleton className="h-6 w-16" />
+                    ) : (
+                      <p className="text-xl font-bold leading-none">{kpi.value}</p>
+                    )}
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-[11px] font-semibold">{kpi.label}</p>
-                      {kpi.sub && !isLoading && (
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{kpi.sub}</p>
-                      )}
+                      {isLoading ? (
+                        <Skeleton className="mt-1 h-2.5 w-20" />
+                      ) : kpi.sub ? (
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">{kpi.sub}</p>
+                      ) : null}
                     </div>
-                    {!isLoading && <ChangeBadge pct={kpi.pct} />}
+                    {isLoading ? <Skeleton className="h-5 w-12 rounded-full" /> : <ChangeBadge pct={kpi.pct} />}
                   </div>
                 </div>
               );
@@ -612,7 +618,15 @@ const WorkoutHistory = () => {
         </CardHeader>
         <CardContent className="px-6 pt-0">
           {isLoading ? (
-            <div className="py-2">
+            <div className="space-y-3 py-2" aria-busy="true" aria-label="Cargando gráfico">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <div className="flex gap-7">
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-6 w-14" />
+                  <Skeleton className="h-6 w-16" />
+                </div>
+              </div>
               <Skeleton className="h-44 w-full rounded-none md:rounded-lg" />
             </div>
           ) : (
@@ -651,7 +665,11 @@ const WorkoutHistory = () => {
         </CardHeader>
         <CardContent className="px-6 pt-0">
           {isLoading ? (
-            <div className="py-2">
+            <div className="space-y-3 py-2" aria-busy="true" aria-label="Cargando gráfico">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-6 w-28" />
+              </div>
               <Skeleton className="h-44 w-full rounded-none md:rounded-lg" />
             </div>
           ) : (

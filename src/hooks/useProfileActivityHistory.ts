@@ -98,6 +98,6 @@ export function useProfileActivityHistory(profileUserId?: string, limit = 5) {
   return {
     items: displayItems,
     totalCount,
-    isLoading: workoutsQuery.isLoading || cardioQuery.isLoading,
+    isLoading: workoutsQuery.isPending || cardioQuery.isPending,
   };
 }

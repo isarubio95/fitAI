@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { Skeleton } from "@/components/ui/skeleton";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
 
 type HealthMetric = "peso" | "calorias" | "fc" | "sueno";
@@ -63,10 +64,10 @@ function latestWith<T>(
 
 const YouHealth = () => {
   const { user } = useAuth();
-  const { data: medidas, isLoading: loadingMedidas } = useMeasurements();
-  const { data: daily, isLoading: loadingDaily } = useDailyHealth();
-  const { data: workouts } = useWorkoutHistory();
-  const { data: cardio } = useCardioHistory();
+  const { data: medidas, isPending: loadingMedidas } = useMeasurements();
+  const { data: daily, isPending: loadingDaily } = useDailyHealth();
+  const { data: workouts, isPending: loadingWorkouts } = useWorkoutHistory();
+  const { data: cardio, isPending: loadingCardio } = useCardioHistory();
   const location = useLocation();
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -93,7 +94,7 @@ const YouHealth = () => {
     }
   }, [location.state, location.pathname, navigate]);
 
-  const isLoading = loadingMedidas || loadingDaily;
+  const isLoading = loadingMedidas || loadingDaily || loadingWorkouts || loadingCardio;
 
   const burnedByDate = useMemo(() => {
     const map: Record<string, number> = {};
@@ -296,20 +297,42 @@ const YouHealth = () => {
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
                       <Icon className="h-4 w-4 text-primary" />
                     </div>
-                    <p className="text-xl font-bold leading-none">{isLoading ? "–" : card.value}</p>
+                    {isLoading ? (
+                      <Skeleton className="h-6 w-16" />
+                    ) : (
+                      <p className="text-xl font-bold leading-none">{card.value}</p>
+                    )}
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="text-[11px] text-muted-foreground">{card.label}</p>
-                      {card.hint && <p className="text-[10px] text-muted-foreground/80 mt-0.5">{card.hint}</p>}
+                      {card.hint && !isLoading && (
+                        <p className="mt-0.5 text-[10px] text-muted-foreground/80">{card.hint}</p>
+                      )}
                     </div>
-                    {card.delta != null && (
-                      <Badge variant="secondary" className={cn("text-[10px] gap-0.5", card.delta <= 0 ? "text-emerald-500" : "text-rose-500")}>
-                        {card.delta <= 0 ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
-                        {card.delta > 0 ? "+" : ""}
-                        {card.deltaLabel === "h" ? card.delta.toFixed(1) : card.deltaLabel === "kg" ? card.delta.toFixed(1) : Math.round(card.delta)}
-                        {card.deltaLabel ? ` ${card.deltaLabel}` : ""}
-                      </Badge>
+                    {isLoading ? (
+                      <Skeleton className="h-5 w-12 rounded-full" />
+                    ) : (
+                      card.delta != null && (
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "gap-0.5 text-[10px]",
+                            card.delta <= 0 ? "text-emerald-500" : "text-rose-500",
+                          )}
+                        >
+                          {card.delta <= 0 ? (
+                            <TrendingDown className="h-3 w-3" />
+                          ) : (
+                            <TrendingUp className="h-3 w-3" />
+                          )}
+                          {card.delta > 0 ? "+" : ""}
+                          {card.deltaLabel === "h" || card.deltaLabel === "kg"
+                            ? card.delta.toFixed(1)
+                            : Math.round(card.delta)}
+                          {card.deltaLabel ? ` ${card.deltaLabel}` : ""}
+                        </Badge>
+                      )
                     )}
                   </div>
                 </button>
@@ -332,7 +355,14 @@ const YouHealth = () => {
         ))}
       </div>
 
-      {chartHasData && (
+      {isLoading ? (
+        <Card className={cardClass} aria-busy="true" aria-label="Cargando gráfico">
+          <CardContent className="px-6 py-8">
+            <Skeleton className="mb-3 h-4 w-40" />
+            <Skeleton className="aspect-2/1 w-full rounded-xl" />
+          </CardContent>
+        </Card>
+      ) : chartHasData ? (
         <Card className={cardClass}>
           <CardContent className="px-6 py-8">
             <h2 className="text-sm font-semibold mb-3">
@@ -388,7 +418,7 @@ const YouHealth = () => {
             )}
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
     </div>
   );

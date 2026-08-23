@@ -49,7 +49,7 @@ export function NewFollowerNotificationContent({
     <div className={cn("flex min-w-0 flex-col gap-2", className)}>
       <div className="flex items-start gap-3 px-1.5">
         <HeaderIcon
-          className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+          className="mt-0.5 h-4.5 w-4.5 shrink-0 text-primary"
           aria-hidden
         />
         <p className="min-w-0 flex-1 text-sm font-semibold leading-tight">Nuevo seguidor</p>

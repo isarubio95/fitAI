@@ -134,9 +134,25 @@ const YouActivities = () => {
         </div>
 
         {isLoading ? (
-          <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="h-28 w-full rounded-none border-0 bg-card md:rounded-3xl" />
+          <div
+            className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}
+            aria-busy="true"
+            aria-label="Cargando actividades"
+          >
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="space-y-4 bg-card px-6 pb-4 pt-6 md:rounded-3xl md:border md:border-border/20"
+              >
+                <div className="flex items-start gap-3">
+                  <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+                  <div className="min-w-0 flex-1 space-y-2 pt-1">
+                    <Skeleton className="h-3.5 w-28" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+                <Skeleton className="h-24 w-full rounded-xl" />
+              </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
