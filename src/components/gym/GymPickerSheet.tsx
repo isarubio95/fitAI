@@ -76,8 +76,9 @@ export function GymPickerSheet({
 
   return (
     <>
+      {open ? (
       <Drawer
-        open={open}
+        open
         onOpenChange={(next) => {
           if (!next) setQuery("");
           onOpenChange(next);
@@ -195,7 +196,9 @@ export function GymPickerSheet({
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+      ) : null}
 
+      {addOpen ? (
       <GymAddSheet
         open={addOpen}
         onOpenChange={setAddOpen}
@@ -203,6 +206,8 @@ export function GymPickerSheet({
         overlayClassName={nestedOverlayClassName}
         contentClassName={nestedContentClassName}
       />
+      ) : null}
+      {mapOpen ? (
       <GymDirectoryDrawer
         open={mapOpen}
         onOpenChange={setMapOpen}
@@ -215,6 +220,7 @@ export function GymPickerSheet({
         overlayClassName={nestedOverlayClassName}
         contentClassName={nestedContentClassName}
       />
+      ) : null}
     </>
   );
 }

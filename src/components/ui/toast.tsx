@@ -41,8 +41,26 @@ const toastVariants = cva(
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & VariantProps<typeof toastVariants>
->(({ className, variant, ...props }, ref) => {
-  return <ToastPrimitives.Root ref={ref} className={cn(toastVariants({ variant }), className)} {...props} />;
+>(({ className, variant, onPointerUp, ...props }, ref) => {
+  return (
+    <ToastPrimitives.Root
+      ref={ref}
+      className={cn(toastVariants({ variant }), className)}
+      {...props}
+      onPointerUp={(event) => {
+        onPointerUp?.(event);
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        try {
+          if (target.hasPointerCapture(event.pointerId)) {
+            target.releasePointerCapture(event.pointerId);
+          }
+        } catch {
+          event.preventDefault();
+        }
+      }}
+    />
+  );
 });
 Toast.displayName = ToastPrimitives.Root.displayName;
 

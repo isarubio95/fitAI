@@ -525,7 +525,8 @@ export function ExerciseSelector({
         <div ref={containerRef} className="relative flex justify-center">
           {renderDrawerTrigger()}
         </div>
-        <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+        {open ? (
+        <Drawer open onOpenChange={onOpenChange} shouldScaleBackground={false}>
           <DrawerContent
             side="bottom"
             overlayClassName="z-[55]"
@@ -545,6 +546,7 @@ export function ExerciseSelector({
             {footer}
           </DrawerContent>
         </Drawer>
+        ) : null}
         {detailSheet}
       </>
     );

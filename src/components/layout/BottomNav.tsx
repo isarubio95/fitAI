@@ -88,8 +88,10 @@ export function BottomNav({
       <div
         aria-hidden
         className={cn(
-          "fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity duration-300 md:hidden",
-          isMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          "fixed inset-0 z-40 bg-black/30 backdrop-blur-sm md:hidden",
+          isMenuOpen
+            ? "pointer-events-auto opacity-100 transition-opacity duration-300"
+            : "pointer-events-none opacity-0 duration-0",
         )}
         onClick={() => setIsMenuOpen(false)}
       />
@@ -104,8 +106,10 @@ export function BottomNav({
         {/* MENÚ DESPLEGABLE DE ACCIONES (fuera del contenedor con overflow-hidden) */}
       <div
         className={cn(
-          "absolute bottom-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 flex w-[min(92vw,22.5rem)] origin-bottom flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl transition-all duration-300 ease-in-out",
-          isMenuOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-50 opacity-0 pointer-events-none"
+          "absolute bottom-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 flex w-[min(92vw,22.5rem)] origin-bottom flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl ease-in-out",
+          isMenuOpen
+            ? "pointer-events-auto scale-100 opacity-100 transition-all duration-300"
+            : "pointer-events-none scale-50 opacity-0 duration-0",
         )}
       >
         <button

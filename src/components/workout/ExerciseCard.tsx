@@ -214,12 +214,12 @@ export function ExerciseCard({
               <Timer className="h-3 w-3" />
               {formatMSS(restSeconds)}
             </Badge>
+            {lastSessionLabel ? (
+              <span className="text-xs text-muted-foreground">{lastSessionLabel}</span>
+            ) : null}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          {lastSessionLabel ? (
-            <span className="mr-1 text-xs text-muted-foreground">{lastSessionLabel}</span>
-          ) : null}
           <Button
             variant="ghost"
             size="icon"

@@ -29,6 +29,8 @@ export function GymDirectoryDrawer({
 }: Props) {
   const close = () => onOpenChange(false);
 
+  if (!open) return null;
+
   return (
     <Drawer
       direction="right"

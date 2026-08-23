@@ -81,8 +81,10 @@ export function GymAddSheet({
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Drawer open={open} onOpenChange={handleOpenChange}>
+    <Drawer open onOpenChange={handleOpenChange}>
       <DrawerContent
         overlayClassName={overlayClassName}
         className={cn("flex max-h-[92lvh] flex-col", contentClassName)}

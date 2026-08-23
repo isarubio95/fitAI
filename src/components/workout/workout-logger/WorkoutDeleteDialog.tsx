@@ -35,7 +35,10 @@ export function WorkoutDeleteDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirmDelete}
+            onClick={(event) => {
+              event.preventDefault();
+              onConfirmDelete();
+            }}
             disabled={deleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

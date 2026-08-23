@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, type ComponentProps } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, type ComponentProps } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type DragEndEvent } from "@dnd-kit/core";
@@ -144,8 +144,12 @@ export function WorkoutLogger() {
   });
 
   const isEdit = !!effectiveWorkoutId;
+  /** Alta en blanco o desde rutina: no pintar un frame del formulario «Nuevo Entrenamiento» (sheets anidados / estado residual). */
+  const isStartingLiveSession = open && !workoutId;
+  const preparingLiveSession = isStartingLiveSession && !effectiveWorkoutId;
   const isActiveWorkout =
     !!activeWorkoutId ||
+    isStartingLiveSession ||
     (!!existingWorkout && !existingWorkout.fecha_fin) ||
     (!!workoutId && serverActiveWorkout?.id === workoutId);
   const isEditingCompletedWorkout = isEdit && !isActiveWorkout && !loadingWorkout;
@@ -275,8 +279,8 @@ export function WorkoutLogger() {
     openActiveWorkout,
   ]);
 
-  // Reset form when opening for new workout (no template, no edit) — antes de crear la sesión activa
-  useEffect(() => {
+  // Antes del pintado: un alta nueva no debe mostrar el título/ejercicios del entreno anterior.
+  useLayoutEffect(() => {
     if (open && !workoutId && !activeWorkoutId && !templateExercises) {
       setTitulo(getDefaultWorkoutTitle());
       setExercises([]);
@@ -285,10 +289,11 @@ export function WorkoutLogger() {
       setEsPublica(false);
       setGimnasio(initialGimnasio ?? null);
       setRpe(null);
+      setExercisePickerOpen(false);
     }
   }, [open, workoutId, activeWorkoutId, defaultDate, templateExercises, initialGimnasio]);
 
-  // Reset activeWorkoutId when drawer closes
+  // Reset al cerrar para que la próxima apertura no herede el formulario anterior.
   useEffect(() => {
     if (!open) {
       setActiveWorkoutId(null);
@@ -299,6 +304,10 @@ export function WorkoutLogger() {
       setEsPublica(false);
       setGimnasio(null);
       setRpe(null);
+      setTitulo("");
+      setExercises([]);
+      setExercisePickerOpen(false);
+      setSelectedExerciseDetail(null);
     }
   }, [open]);
 
@@ -1093,16 +1102,19 @@ export function WorkoutLogger() {
       clearWorkoutStartedFromRoutine(targetId);
       setStartedFromRoutine(false);
       const deletedFecha = existingWorkout?.fecha ? new Date(existingWorkout.fecha).toISOString().slice(0, 10) : undefined;
-      invalidateWorkoutQueries({ workoutId: targetId, fecha: deletedFecha, isDelete: true });
-      close();
-      navigate("/");
+      setConfirmDelete(false);
+      setDeleting(false);
+      window.setTimeout(() => {
+        invalidateWorkoutQueries({ workoutId: targetId, fecha: deletedFecha, isDelete: true });
+        close();
+        navigate("/");
+      }, 0);
     } catch (error: unknown) {
       toast({
         title: "Error al eliminar",
         description: error instanceof Error ? error.message : "Error desconocido",
         variant: "destructive",
       });
-    } finally {
       setDeleting(false);
       setConfirmDelete(false);
     }
@@ -1498,7 +1510,7 @@ export function WorkoutLogger() {
                         value={titulo}
                         onChange={(e) => setTitulo(e.target.value)}
                         placeholder="Ej: Día de Pierna"
-                        disabled={creatingActive}
+                        disabled={creatingActive || preparingLiveSession}
                         className="w-full min-w-0 truncate bg-transparent text-lg font-semibold leading-none tracking-tight outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
                       />
                       <DrawerDescription>Entrenamiento activo</DrawerDescription>
@@ -1541,7 +1553,7 @@ export function WorkoutLogger() {
                   isActiveWorkout={isActiveWorkout}
                   workoutIcon={workoutIcon}
                   onWorkoutIconChange={isEditingCompletedWorkout ? setWorkoutIcon : handleWorkoutIconChange}
-                  creatingActive={creatingActive}
+                  creatingActive={creatingActive || preparingLiveSession}
                   fecha={fecha}
                   onFechaChange={setFecha}
                   isEditingCompletedWorkout={isEditingCompletedWorkout}
@@ -1549,7 +1561,7 @@ export function WorkoutLogger() {
                   onEsPublicaChange={setEsPublica}
                   gimnasio={gimnasio}
                   onGimnasioChange={(gym) => void handleGimnasioChange(gym)}
-                  gymDisabled={creatingActive}
+                  gymDisabled={creatingActive || preparingLiveSession}
                   rpe={rpe}
                   onRpeChange={setRpe}
                 >
@@ -1574,7 +1586,7 @@ export function WorkoutLogger() {
 
                 <WorkoutExerciseList
                   exercises={exercises}
-                  creatingActive={creatingActive}
+                  creatingActive={creatingActive || preparingLiveSession}
                   isActiveWorkout={isActiveWorkout}
                   onDragEnd={handleDragEnd}
                   getExerciseSortId={getExerciseSortId}
@@ -1611,7 +1623,7 @@ export function WorkoutLogger() {
               />
             )}
 
-            {showFloatingActionBar && exercises.length === 0 && !creatingActive ? (
+            {showFloatingActionBar && exercises.length === 0 && !creatingActive && !preparingLiveSession ? (
               <WorkoutEmptyExerciseState
                 open={exercisePickerOpen}
                 onOpenChange={setExercisePickerOpen}
@@ -1624,7 +1636,7 @@ export function WorkoutLogger() {
                 isEditingCompletedWorkout={isEditingCompletedWorkout}
                 isActiveWorkout={isActiveWorkout}
                 deleting={deleting}
-                creatingActive={creatingActive}
+                creatingActive={creatingActive || preparingLiveSession}
                 onClose={close}
                 onRequestDelete={() => setConfirmDelete(true)}
                 isPaused={isPaused}
