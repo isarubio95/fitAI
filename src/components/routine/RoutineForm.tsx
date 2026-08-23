@@ -45,6 +45,7 @@ import {
 import { Trash2, Loader2, GripVertical, Link, Unlink, Info } from "lucide-react";
 import { badgeVariants } from "@/components/ui/badge";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
+import { WorkoutEmptyExerciseState } from "@/components/workout/workout-logger/WorkoutEmptyExerciseState";
 import { RoutineIconPicker } from "@/components/routine/RoutineIconPicker";
 import { useToast } from "@/hooks/use-toast";
 import type { RoutineExerciseFormData, RoutineFormSnapshot, RutinaEjercicioWithDetails } from "@/types/routine";
@@ -428,7 +429,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
               <Button
                 variant="default"
                 onClick={handleSave}
-                disabled={saving || (isEdit && !isDirty)}
+                disabled={saving || ejercicios.length === 0 || (isEdit && !isDirty)}
                 size="sm"
               >
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -438,7 +439,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
           </DrawerHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-background">
-            <div className={cn("flex flex-col gap-1 bg-background pb-[calc(5rem+env(safe-area-inset-bottom,0px))]")}>
+            <div className={cn("flex min-h-full flex-col gap-1 bg-background pb-[calc(5rem+env(safe-area-inset-bottom,0px))]")}>
               <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
                 <CardContent className="space-y-3 px-6 py-4">
                   <div className="space-y-1.5">
@@ -465,6 +466,18 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
                 </CardContent>
               </Card>
 
+              {ejercicios.length === 0 ? (
+                <WorkoutEmptyExerciseState
+                  layout="inline"
+                  message="Añade un ejercicio para completar la rutina"
+                  open={pickerOpen}
+                  onOpenChange={(o) => {
+                    setPickerOpen(o);
+                    if (!o) setSupersetLink(null);
+                  }}
+                  onAddExercise={addExercise}
+                />
+              ) : (
               <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
                 <CardContent className="p-0">
                   <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-3">
@@ -476,59 +489,53 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
 
                   <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleRoutineDragEnd}>
                     <SortableContext items={ejercicios.map((_, i) => i)} strategy={verticalListSortingStrategy}>
-                      {ejercicios.length > 0 ? (
-                        <div className="flex flex-col gap-1 bg-background">
-                          {groups.map((group) => {
-                            const isSuperset = !!group.supersetId && group.items.length > 1;
+                      <div className="flex flex-col gap-1 bg-background">
+                        {groups.map((group) => {
+                          const isSuperset = !!group.supersetId && group.items.length > 1;
 
-                            if (isSuperset) {
-                              return (
-                                <div key={group.supersetId} className="flex flex-col gap-1 bg-background">
-                                  <div className="bg-primary/5 px-6 pt-2 pb-1">
-                                    <span className="text-xs font-medium text-primary">🔗 Superserie</span>
-                                  </div>
-                                  <div className="flex flex-col gap-1 bg-background">
-                                    {group.items.map(({ exercise: ej, originalIndex: i }) => (
-                                      <SortableExerciseRow
-                                        key={i}
-                                        sortId={i}
-                                        exercise={ej}
-                                        index={i}
-                                        onUpdateField={updateExerciseField}
-                                        onRemove={removeExercise}
-                                        onLinkSuperset={startSupersetLink}
-                                        onBreakSuperset={breakSuperset}
-                                        isInSuperset
-                                        onViewExerciseInfo={handleViewExerciseInfo}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            const { exercise: ej, originalIndex: i } = group.items[0];
+                          if (isSuperset) {
                             return (
-                              <SortableExerciseRow
-                                key={i}
-                                sortId={i}
-                                exercise={ej}
-                                index={i}
-                                onUpdateField={updateExerciseField}
-                                onRemove={removeExercise}
-                                onLinkSuperset={startSupersetLink}
-                                onBreakSuperset={breakSuperset}
-                                isInSuperset={false}
-                                onViewExerciseInfo={handleViewExerciseInfo}
-                              />
+                              <div key={group.supersetId} className="flex flex-col gap-1 bg-background">
+                                <div className="bg-primary/5 px-6 pt-2 pb-1">
+                                  <span className="text-xs font-medium text-primary">🔗 Superserie</span>
+                                </div>
+                                <div className="flex flex-col gap-1 bg-background">
+                                  {group.items.map(({ exercise: ej, originalIndex: i }) => (
+                                    <SortableExerciseRow
+                                      key={i}
+                                      sortId={i}
+                                      exercise={ej}
+                                      index={i}
+                                      onUpdateField={updateExerciseField}
+                                      onRemove={removeExercise}
+                                      onLinkSuperset={startSupersetLink}
+                                      onBreakSuperset={breakSuperset}
+                                      isInSuperset
+                                      onViewExerciseInfo={handleViewExerciseInfo}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
                             );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="px-6 pb-4 text-sm text-muted-foreground">
-                          Añade ejercicios para completar la rutina.
-                        </p>
-                      )}
+                          }
+
+                          const { exercise: ej, originalIndex: i } = group.items[0];
+                          return (
+                            <SortableExerciseRow
+                              key={i}
+                              sortId={i}
+                              exercise={ej}
+                              index={i}
+                              onUpdateField={updateExerciseField}
+                              onRemove={removeExercise}
+                              onLinkSuperset={startSupersetLink}
+                              onBreakSuperset={breakSuperset}
+                              isInSuperset={false}
+                              onViewExerciseInfo={handleViewExerciseInfo}
+                            />
+                          );
+                        })}
+                      </div>
                     </SortableContext>
                   </DndContext>
 
@@ -544,6 +551,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
                   </div>
                 </CardContent>
               </Card>
+              )}
             </div>
           </div>
         </div>

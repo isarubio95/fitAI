@@ -21,4 +21,19 @@ describe("WorkoutEmptyExerciseState", () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Agregar ejercicio")).toBeInTheDocument();
   });
+
+  it("permite un mensaje personalizado en layout inline", () => {
+    render(
+      <WorkoutEmptyExerciseState
+        layout="inline"
+        message="Añade un ejercicio para completar la rutina"
+        open={false}
+        onOpenChange={() => undefined}
+        onAddExercise={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText("Añade un ejercicio para completar la rutina")).toBeInTheDocument();
+    expect(screen.getByLabelText("Agregar ejercicio")).toBeInTheDocument();
+  });
 });

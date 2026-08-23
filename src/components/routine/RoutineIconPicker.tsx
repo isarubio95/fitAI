@@ -27,13 +27,18 @@ function RoutineIconGrid({
           <button
             key={opt.key}
             type="button"
-            onClick={() => onChange(opt.key)}
+            onClick={(event) => {
+              onChange(opt.key);
+              if (event.detail > 0) event.currentTarget.blur();
+            }}
             aria-pressed={isSelected}
             title={opt.label}
             aria-label={opt.label}
             className={cn(
-              "flex h-10 w-10 items-center justify-center transition-colors outline-none focus:outline-none focus-visible:outline-none",
-              isSelected ? "text-primary" : "text-muted-foreground hover:text-foreground",
+              "touch-styled flex h-10 w-10 items-center justify-center transition-colors outline-none focus:outline-none focus-visible:outline-none",
+              isSelected
+                ? "text-primary"
+                : "text-muted-foreground [@media(hover:hover)]:hover:text-foreground",
             )}
           >
             <Icon className="h-5 w-5" strokeWidth={1.75} />
