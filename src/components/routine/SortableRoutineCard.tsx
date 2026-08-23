@@ -242,9 +242,9 @@ export function SortableRoutineCard({
               aria-expanded={isOpen}
               aria-label={isOpen ? `Ocultar ejercicios de ${r.nombre}` : `Ver ejercicios de ${r.nombre}`}
             >
-              <div className="shrink-0 pt-1 pl-1 pb-1">
+              <div className="shrink-0 self-stretch py-0.5 pl-0.5">
                 <div
-                  className="flex h-24 w-28 items-center justify-center overflow-hidden rounded-xl bg-background p-1 pointer-events-none"
+                  className="flex h-full w-28 items-center justify-center overflow-hidden rounded-xl bg-background p-1 pointer-events-none"
                   aria-hidden
                 >
                   <WorkoutMuscleMiniMap
