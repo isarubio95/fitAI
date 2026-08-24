@@ -83,11 +83,11 @@ export function NotificationFeedRow({ entry, onRead, onNavigate }: Props) {
   };
 
   return (
-    <div className="flex items-start gap-3 py-3">
+    <div className="flex items-center gap-3 py-3">
       <button
         type="button"
         onClick={openEntry}
-        className="-mx-2 -my-1 flex min-w-0 flex-1 items-start gap-3 rounded-lg px-2 py-1 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+        className="-mx-2 -my-1 flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-1 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
       >
         {entry.type === "standard" ? (
           <StandardIcon entry={entry} />
