@@ -29,7 +29,7 @@ import {
   formatRitmoSegKmLabel,
 } from "@/types/workout";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { PAGE_CARD, PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import { WorkoutMuscleMiniMap } from "@/components/dashboard/WorkoutMuscleMiniMap";
 import { GymStartMetaRow } from "@/components/dashboard/GymStartMetaRow";
@@ -783,16 +783,16 @@ export function WorkoutDetailsContent({
             </DrawerHeader>
           ) : null}
 
-          <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+          <div className={cn("surface-region-page flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
             {workout.comentarios ? (
-              <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+              <Card className={PAGE_CARD}>
                 <CardContent className="px-6 py-6 text-sm text-muted-foreground whitespace-pre-wrap">
                   {workout.comentarios}
                 </CardContent>
               </Card>
             ) : null}
 
-            <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+            <Card className={PAGE_CARD}>
               <CardContent className="px-6 py-6">
                 <div className="flex items-baseline justify-between gap-3 mb-4">
                   <div className="font-semibold leading-none">Series por grupo muscular</div>
@@ -830,7 +830,7 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+            <Card className={PAGE_CARD}>
               <CardContent className="px-3 py-6 sm:px-6">
                 <div className="flex items-baseline justify-between gap-3 mb-3 px-3 sm:px-0">
                   <div className="font-semibold leading-none">Peso levantado por grupo</div>
@@ -889,7 +889,7 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+            <Card className={PAGE_CARD}>
               <CardContent className="px-0 py-6">
                 <div className="px-6 pb-4">
                   <div className="flex items-baseline justify-between gap-3">

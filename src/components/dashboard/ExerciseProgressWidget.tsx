@@ -24,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { PROGRESS_CARD_HEADER, PROGRESS_CARD_HEADER_SKELETON } from "@/lib/pageStyles";
+import { PAGE_CARD, PROGRESS_CARD_HEADER, PROGRESS_CARD_HEADER_SKELETON } from "@/lib/pageStyles";
 import {
   Area,
   AreaChart,
@@ -298,7 +298,7 @@ export function ExerciseProgressWidget({ flushHeader = false }: { flushHeader?: 
 
   if (loadingExercises) {
     return (
-      <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+      <Card className={PAGE_CARD}>
         <CardHeader className={skeletonHeaderClass}>
           <Skeleton className="h-5 w-40" />
         </CardHeader>
@@ -315,7 +315,7 @@ export function ExerciseProgressWidget({ flushHeader = false }: { flushHeader?: 
   const canGoNext = selectedIndex < exercises.length - 1;
 
   return (
-    <Card className="w-full min-w-0 overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+    <Card className={cn(PAGE_CARD, "min-w-0")}>
       <CardHeader className={headerClass}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">

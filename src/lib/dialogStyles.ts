@@ -4,7 +4,7 @@ export const DIALOG_CONTENT_BASE_CLASS =
 
 /** Superficie visual compartida (referencia: diálogo «Editar plan» del dashboard). */
 export const DIALOG_SURFACE_CLASS =
-  "rounded-3xl sm:max-w-md border-black/[0.025] bg-card text-card-foreground shadow-xs dark:border-white/[0.06]";
+  "surface-card rounded-3xl sm:max-w-md bg-card text-card-foreground shadow-[var(--shadow-float)]";
 
 /** Espaciado estándar entre botones de acción dentro del cuerpo del diálogo. */
 export const DIALOG_ACTIONS_CLASS = "flex flex-col gap-3";

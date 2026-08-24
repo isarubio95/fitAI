@@ -1,12 +1,16 @@
 /**
- * Superficie de "chrome" flotante del sistema de diseño (barras del logger).
+ * Superficie de "chrome" flotante (bottom nav, cápsula del logger).
  *
- * El color sale de `--surface-elevated` (un escalón por debajo de `--card`),
- * así que sigue al tema en claro y oscuro sin colores cableados.
+ * Cristal translúcido con filo y sombra (`surface-float` en `index.css`): todo
+ * lo que flota sobre el contenido se lee igual.
  */
-export const floatingGlassSurface =
-  "border border-black/10 bg-[hsl(var(--surface-elevated))] shadow-[0_10px_35px_rgba(0,0,0,0.16)] dark:border-white/10 dark:bg-[hsl(var(--surface-elevated))] dark:shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.06)] dark:ring-1 dark:ring-white/5";
+export const floatingGlassSurface = "surface-float";
 
-/** Chrome fijo del layout móvil (header y bottom nav): opaco en claro y oscuro. */
-export const topBarSurface =
-  "bg-[hsl(var(--surface-elevated))]";
+/**
+ * Chrome fijo del layout móvil (cabecera, barras de drawer).
+ *
+ * Cristal translúcido tintado con el color de la página: el contenido se intuye
+ * al pasar por debajo, pero la barra no introduce un tono intermedio entre
+ * página y card. Sin soporte de `backdrop-filter` cae a opaco (ver `index.css`).
+ */
+export const topBarSurface = "surface-glass";

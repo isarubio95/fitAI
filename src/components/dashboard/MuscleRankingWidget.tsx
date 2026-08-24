@@ -10,7 +10,7 @@ import {
 import { useMuscleStatistics, type MuscleStatistics } from "@/hooks/useMuscleStatistics";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
 import { Flame, Snowflake } from "lucide-react";
-import { PAGE_CARD_STACK_GAP, PROGRESS_CARD_HEADER } from "@/lib/pageStyles";
+import { PAGE_CARD, PAGE_CARD_STACK_GAP, PROGRESS_CARD_HEADER } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 
 export function MuscleRankingWidget() {
@@ -32,7 +32,7 @@ export function MuscleRankingWidget() {
     <>
       <div className={cn("grid w-full grid-cols-1 bg-background sm:grid-cols-2", PAGE_CARD_STACK_GAP)}>
         {/* Top 5 */}
-        <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+        <Card className={PAGE_CARD}>
           <CardHeader className={PROGRESS_CARD_HEADER}>
             <CardTitle className="flex items-center gap-1.5 text-base">
               <Flame className="h-4 w-4 text-primary" /> Más Entrenados
@@ -52,7 +52,7 @@ export function MuscleRankingWidget() {
         </Card>
 
         {/* Bottom 5 */}
-        <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+        <Card className={PAGE_CARD}>
           <CardHeader className={PROGRESS_CARD_HEADER}>
             <CardTitle className="flex items-center gap-1.5 text-base">
               <Snowflake className="h-4 w-4 text-muted-foreground" /> Menos Entrenados

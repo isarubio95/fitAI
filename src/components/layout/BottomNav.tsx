@@ -4,7 +4,7 @@ import { Home, User, ClipboardList, CirclePlus, Users } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
-import { topBarSurface } from "@/lib/surface-styles";
+import { floatingGlassSurface } from "@/lib/surface-styles";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
@@ -99,14 +99,16 @@ export function BottomNav({
         ref={navRef}
         data-app-bottom-nav
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 w-full pb-(--app-safe-area-bottom,env(safe-area-inset-bottom,0px)) md:hidden",
-          topBarSurface,
+          // Barra flotante: el contenido pasa por debajo, así que la nav se lee
+          // como una pieza aparte y no como el final de la página.
+          "fixed inset-x-0 bottom-0 z-50 w-full px-3 pb-[calc(0.625rem+var(--app-safe-area-bottom,env(safe-area-inset-bottom,0px)))] md:hidden",
         )}
       >
         {/* MENÚ DESPLEGABLE DE ACCIONES (fuera del contenedor con overflow-hidden) */}
       <div
         className={cn(
-          "absolute bottom-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 flex w-[min(92vw,22.5rem)] origin-bottom flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl ease-in-out",
+          "absolute bottom-[calc(100%+0.5rem)] left-1/2 -translate-x-1/2 flex w-[min(92vw,22.5rem)] origin-bottom flex-col overflow-hidden rounded-3xl bg-card ease-in-out",
+          floatingGlassSurface,
           isMenuOpen
             ? "pointer-events-auto scale-100 opacity-100 transition-all duration-300"
             : "pointer-events-none scale-50 opacity-0 duration-0",
@@ -135,7 +137,12 @@ export function BottomNav({
       </div>
 
       {/* BARRA DE NAVEGACIÓN */}
-      <div className="relative flex items-center justify-around border-t border-border/50 px-2 py-2.5">
+      <div
+        className={cn(
+          "relative flex items-center justify-around rounded-[1.75rem] px-1.5 py-2",
+          floatingGlassSurface,
+        )}
+      >
         {navItems.map((item, index) => {
           // Renderizado del botón central +
           if (item.type === "add") {

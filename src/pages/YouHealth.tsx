@@ -22,7 +22,7 @@ import {
   Plus, Flame, Heart, Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { PAGE_CARD, PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
 import { Skeleton } from "@/components/ui/skeleton";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
 
@@ -248,17 +248,16 @@ const YouHealth = () => {
 
   const chartHasData = chartData.length > 1;
 
-  const cardClass =
-    "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
+  const cardClass = PAGE_CARD;
 
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 flex-1 flex-col bg-card max-md:-mb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3",
+        "flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3",
         "max-md:pb-[calc(var(--app-bottom-nav-inset,5.5rem)+3.5rem)] md:pb-20",
       )}
     >
-    <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP)}>
+    <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
       <Button
         type="button"
         variant="new"

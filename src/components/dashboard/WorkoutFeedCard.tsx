@@ -9,10 +9,10 @@ import { GymStartMetaRow } from "@/components/dashboard/GymStartMetaRow";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { cn } from "@/lib/utils";
 import type { ActividadWithDetails } from "@/types/workout";
+import { PAGE_CARD } from "@/lib/pageStyles";
 
-/** Card exterior del feed: plena en móvil, redondeada con borde en escritorio. */
-export const COMMUNITY_CARD_CLASS =
-  "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
+/** Card exterior del feed: superficie de página compartida. */
+export const COMMUNITY_CARD_CLASS = PAGE_CARD;
 
 /** Card interior compacta del entrenamiento: plana, sin borde ni sombra, con hover. */
 export const WORKOUT_COMPACT_CARD_CLASS =

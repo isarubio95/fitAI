@@ -64,8 +64,9 @@ export function getCalendarDayCircleClasses({
       : showScheduled
         ? "bg-gradient-to-br from-orange-500/55 via-orange-500/35 to-orange-400/50"
         : isPast
-          ? "bg-secondary/60"
-          : "bg-secondary/70";
+          // Degradado cenital muy leve: el disco deja de leerse como un plano.
+          ? "bg-linear-to-b from-secondary/60 to-secondary/35"
+          : "bg-linear-to-b from-secondary/80 to-secondary/50";
 
   const circleText = showTrained || showCardio
     ? "text-primary-foreground"

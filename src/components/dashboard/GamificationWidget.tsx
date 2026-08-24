@@ -4,6 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Flame, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PAGE_CARD } from "@/lib/pageStyles";
 
 type GamificationWidgetProps = {
   /** Si se omite, usa el usuario autenticado (como en el dashboard). */
@@ -18,7 +19,7 @@ export function GamificationWidget({ userId, contentClassName }: GamificationWid
 
   if (isLoading) {
     return (
-      <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+      <Card className={PAGE_CARD}>
         <CardContent className={bodyClass}>
           <Skeleton className="h-16 w-full" />
         </CardContent>
@@ -32,7 +33,7 @@ export function GamificationWidget({ userId, contentClassName }: GamificationWid
   const hasStreak = stats.racha_actual > 0;
 
   return (
-    <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+    <Card className={PAGE_CARD}>
       <CardContent className={bodyClass}>
         <div className="flex items-center justify-between">
           <span className="font-bold text-base">Nivel {level}</span>

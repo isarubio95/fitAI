@@ -526,7 +526,7 @@ function ProfileDrawerSheet() {
                   : "Este usuario no tiene entrenos visibles."}
               </p>
             ) : (
-              <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+              <div className={cn("surface-region-page flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
                 {lastWorkouts.map((item) =>
                   item.type === "gym" ? (
                     <WorkoutFeedCard

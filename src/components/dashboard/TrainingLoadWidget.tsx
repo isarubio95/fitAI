@@ -24,7 +24,7 @@ import {
   Tabs,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { PROGRESS_CARD_HEADER, PROGRESS_CARD_HEADER_SKELETON } from "@/lib/pageStyles";
+import { PAGE_CARD, PROGRESS_CARD_HEADER, PROGRESS_CARD_HEADER_SKELETON } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 import { useTrainingLoad, type TrainingLoadData, type TrainingLoadPoint } from "@/hooks/useTrainingLoad";
 import {
@@ -253,7 +253,7 @@ export function TrainingLoadWidget({
 
   if (isLoading && !resolvedData) {
     return (
-      <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+      <Card className={PAGE_CARD}>
         <CardHeader className={skeletonHeaderClass}>
           <Skeleton className="h-5 w-40" />
         </CardHeader>
@@ -267,7 +267,7 @@ export function TrainingLoadWidget({
   if (!resolvedData?.points?.length) return null;
 
   return (
-    <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+    <Card className={PAGE_CARD}>
       <CardHeader className={headerClass}>
         <div className="flex items-center justify-between gap-2">
           <CardTitle asChild className="text-base font-bold">

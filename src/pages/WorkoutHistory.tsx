@@ -36,7 +36,7 @@ import {
   CHART_SCRUB_CURSOR,
   CHART_SCRUB_TOOLTIP_WRAPPER,
 } from "@/components/dashboard/chartScrub";
-import { PAGE_CARD_STACK_GAP, PROGRESS_CARD_HEADER } from "@/lib/pageStyles";
+import { PAGE_CARD, PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, PROGRESS_CARD_HEADER } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 import {
   AnimatedTabsList,
@@ -529,14 +529,13 @@ const WorkoutHistory = () => {
     },
   ];
 
-  const cardClass =
-    "w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20";
+  const cardClass = PAGE_CARD;
 
   const hasAnySession = (workouts?.length ?? 0) > 0 || (cardio?.length ?? 0) > 0;
 
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col bg-card max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3">
-      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP)}>
+    <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3">
+      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
       <Card className={cardClass}>
         <CardHeader className={PROGRESS_CARD_HEADER}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -559,21 +558,17 @@ const WorkoutHistory = () => {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="grid grid-cols-2 gap-0 pb-2">
-            {kpiCards.map((kpi, i) => {
+          {/* Baldosas independientes en vez de una rejilla partida por líneas. */}
+          <div className="grid grid-cols-2 gap-2.5 px-4 pb-5">
+            {kpiCards.map((kpi) => {
               const Icon = kpi.icon;
-              const cellBorder =
-                i === 0
-                  ? "border-r border-b border-black/5 dark:border-white/10"
-                  : i === 1
-                    ? "border-b border-black/5 dark:border-white/10"
-                    : i === 2
-                      ? "border-r border-black/5 dark:border-white/10"
-                      : "";
               return (
-                <div key={kpi.label} className={`space-y-1 px-6 py-6 ${cellBorder}`}>
+                <div
+                  key={kpi.label}
+                  className="surface-tile space-y-1 rounded-2xl bg-muted/30 px-4 py-4 dark:bg-white/[0.035]"
+                >
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/12 ring-1 ring-inset ring-primary/15">
                       <Icon className="h-4 w-4 text-primary" />
                     </div>
                     {isLoading ? (
@@ -582,15 +577,16 @@ const WorkoutHistory = () => {
                       <p className="text-xl font-bold leading-none">{kpi.value}</p>
                     )}
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-[11px] font-semibold">{kpi.label}</p>
-                      {isLoading ? (
-                        <Skeleton className="mt-1 h-2.5 w-20" />
-                      ) : kpi.sub ? (
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">{kpi.sub}</p>
-                      ) : null}
-                    </div>
+                  {/* La baldosa es estrecha: etiqueta y comparativa en filas propias. */}
+                  <p className="text-[11px] font-semibold">{kpi.label}</p>
+                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                    {isLoading ? (
+                      <Skeleton className="h-2.5 w-20" />
+                    ) : kpi.sub ? (
+                      <p className="text-[10px] text-muted-foreground">{kpi.sub}</p>
+                    ) : (
+                      <span />
+                    )}
                     {isLoading ? <Skeleton className="h-5 w-12 rounded-full" /> : <ChangeBadge pct={kpi.pct} />}
                   </div>
                 </div>
@@ -703,7 +699,7 @@ const WorkoutHistory = () => {
       <MuscleRankingWidget />
 
       {!isLoading && (topExercises.length > 0 || topLoads.length > 0) && (
-        <div className={cn("grid w-full grid-cols-1 bg-background md:grid-cols-2", PAGE_CARD_STACK_GAP)}>
+        <div className={cn("grid w-full grid-cols-1 bg-background md:grid-cols-2", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
           {topExercises.length > 0 && (
             <Card className={cardClass}>
               <CardHeader className={PROGRESS_CARD_HEADER}>

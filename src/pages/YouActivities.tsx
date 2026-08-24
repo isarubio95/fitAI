@@ -18,7 +18,7 @@ import { useCardioSessionLikes } from "@/hooks/useCardioSessionLikes";
 import { useCardioSessionCommentCounts } from "@/hooks/useCardioSessionComments";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
 
 type ActivityFilter = "all" | "gym" | "cardio";
@@ -114,8 +114,8 @@ const YouActivities = () => {
   };
 
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col bg-card max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3">
-      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP)}>
+    <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3">
+      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
         <div className="flex gap-2 overflow-x-auto px-4 py-2 md:px-0">
           {FILTERS.map((opt) => (
             <button
@@ -142,7 +142,7 @@ const YouActivities = () => {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className="space-y-4 bg-card px-6 pb-4 pt-6 md:rounded-3xl md:border md:border-border/20"
+                className={cn("surface-card space-y-4 rounded-2xl bg-card px-6 pb-4 pt-6 md:rounded-3xl")}
               >
                 <div className="flex items-start gap-3">
                   <Skeleton className="h-9 w-9 shrink-0 rounded-full" />

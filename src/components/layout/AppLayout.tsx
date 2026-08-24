@@ -222,7 +222,7 @@ export function AppLayout() {
           <header
             ref={headerRef}
             className={cn(
-              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border/50 px-4 pb-2 pt-[calc(0.5rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] md:hidden",
+              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-[hsl(var(--surface-border))] px-4 pb-2 pt-[calc(0.5rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] md:hidden",
               topBarSurface,
               showSectionPills ? "max-md:gap-2" : "gap-0",
               (location.pathname === "/routines" || location.pathname === "/evolution") && "max-md:pb-0",

@@ -31,7 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
 import { communityFeedEmptyMessage } from "@/lib/communityFeedVisibility";
 import { cn } from "@/lib/utils";
 
@@ -166,7 +166,7 @@ export default function Community() {
     searching ? (
       <div className="flex flex-col gap-2">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full rounded-none border-0 bg-card md:rounded-xl" />
+          <Skeleton key={i} className="h-16 w-full rounded-xl bg-card" />
         ))}
       </div>
     ) : searchResults.length === 0 ? (
@@ -268,12 +268,13 @@ export default function Community() {
 
   return (
     <>
-      <div className="flex w-full min-w-0 flex-1 flex-col bg-card max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8">
+      <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8">
         <section
           className={cn(
-            "flex w-full flex-col",
+            "flex w-full flex-col bg-background md:bg-transparent",
             PAGE_CARD_STACK_GAP,
-            showSearchPanel ? "flex-1 bg-card md:bg-transparent" : "bg-background md:bg-transparent",
+            PAGE_STACK_INSET,
+            showSearchPanel && "flex-1",
           )}
         >
           {/* Móvil: una sola card sin línea entre búsqueda y el bloque siguiente */}
@@ -300,7 +301,7 @@ export default function Community() {
             )}
             {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 && (
               <div className="px-6 pb-4 pt-0">
-                <Skeleton className="h-28 w-full rounded-none border-0 bg-muted/30" />
+                <Skeleton className="h-28 w-full rounded-xl bg-muted/30" />
               </div>
             )}
             {!showSearchPanel && displayFeed.length > 0 && (
@@ -330,7 +331,7 @@ export default function Community() {
             </Card>
 
             {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 && (
-              <Skeleton className="h-28 w-full rounded-3xl border-0 bg-card" />
+              <Skeleton className="h-28 w-full rounded-3xl bg-card" />
             )}
 
             {!showSearchPanel && displayFeed.length > 0 && renderFeedCard(displayFeed[0])}
@@ -345,7 +346,7 @@ export default function Community() {
           {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 && (
             <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-28 w-full rounded-none border-0 bg-card md:rounded-3xl" />
+                <Skeleton key={i} className="h-28 w-full rounded-2xl bg-card md:rounded-3xl" />
               ))}
             </div>
           )}

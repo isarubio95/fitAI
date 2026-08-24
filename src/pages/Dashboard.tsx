@@ -25,7 +25,7 @@ import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears, addMo
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { PAGE_CARD, PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
 import { usePlannedRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import {
   Dialog,
@@ -403,7 +403,7 @@ const Dashboard = () => {
         return <TrainingLoadWidget />;
       case 'calendar':
         return (
-          <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+          <Card className={PAGE_CARD}>
             <CardHeader className="space-y-3 px-6 pt-8 pb-4">
               <div className="flex w-full flex-row items-center justify-between gap-2">
                 <CalendarPeriodPicker
@@ -631,7 +631,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col bg-card max-md:-mb-24 max-md:pb-24 md:max-w-2xl md:mx-auto md:bg-transparent md:px-8">
+    <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:max-w-2xl md:mx-auto md:bg-transparent md:px-8">
       {headerActionsSlot &&
         createPortal(
           <Button
@@ -661,7 +661,7 @@ const Dashboard = () => {
           items={widgetOrder}
           strategy={verticalListSortingStrategy}
         >
-          <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP)}>
+          <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
             {widgetOrder.map((id) => (
               <SortableWidget key={id} id={id} isDragMode={isDragMode}>
                 {renderWidget(id)}

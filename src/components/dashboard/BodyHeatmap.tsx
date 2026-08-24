@@ -8,6 +8,7 @@ import { MuscleBodyMap, MuscleMapLegend } from "./MuscleBodyMap";
 import { FATIGUE_COLORS, getHeatLevel, heatLevelToLoad } from "./bodyMapPaths";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import { cn } from "@/lib/utils";
+import { PAGE_CARD } from "@/lib/pageStyles";
 
 const HEATMAP_PERIOD_STORAGE_KEY = "gym-log.dashboard.heatmap-period";
 const HEATMAP_MODE_STORAGE_KEY = "gym-log.dashboard.heatmap-mode";
@@ -278,7 +279,7 @@ export function BodyHeatmap() {
 
   return (
     <>
-      <Card className="w-full overflow-hidden rounded-none border-0 bg-card shadow-none md:rounded-3xl md:border md:border-border/20">
+      <Card className={PAGE_CARD}>
         <CardHeader className="space-y-3 px-6 pt-8 pb-4">
           <div className="flex items-center justify-between gap-2">
             <CardTitle asChild className="text-base font-bold">

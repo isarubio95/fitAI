@@ -1,8 +1,24 @@
-/** Espaciado entre cards en páginas (no drawers): móvil 3px, escritorio 11px. */
-export const PAGE_CARD_STACK_GAP = "gap-[3px] md:gap-[11px]";
+/** Espaciado entre cards en páginas (no drawers): las cards flotan, no se pegan. */
+export const PAGE_CARD_STACK_GAP = "gap-2.5 md:gap-3";
 
 /** Cards pegadas en móvil; en escritorio misma separación que PAGE_CARD_STACK_GAP. */
-export const PAGE_CARD_STACK_GAP_FLUSH_MOBILE = "gap-0 md:gap-[11px]";
+export const PAGE_CARD_STACK_GAP_FLUSH_MOBILE = "gap-0 md:gap-3";
+
+/**
+ * Márgenes laterales del stack de cards en móvil.
+ *
+ * Antes las cards iban a sangre y compartían color con la página, lo que las
+ * fundía en un único bloque plano; con margen lateral cada una se lee como una
+ * superficie propia. En escritorio el ancho ya lo limita el contenedor.
+ */
+export const PAGE_STACK_INSET = "max-md:px-3";
+
+/**
+ * Card de contenido a ancho de página. Sustituye a la cadena que se repetía en
+ * cada widget (`rounded-none border-0 shadow-none…`): ahora hereda el volumen
+ * del primitivo `Card` y solo ajusta el radio por breakpoint.
+ */
+export const PAGE_CARD = "w-full overflow-hidden rounded-2xl md:rounded-3xl";
 
 /** Cabecera de cards en Progreso (sin pt-8 extra). */
 export const PROGRESS_CARD_HEADER = "px-6 pb-4";

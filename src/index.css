@@ -50,7 +50,30 @@
     --ring: 142 71% 28%;
     --radius: 0.75rem;
     /* Chrome flotante (header móvil, bottom nav): un escalón por debajo de `--card`. */
-    --surface-elevated: 60 8% 90%;
+    --surface-elevated: 60 12% 96%;
+    /*
+     * Profundidad del sistema (ver `.dark` para la variante oscura):
+     * - `--hairline`: filo superior que simula luz cenital sobre la superficie.
+     * - `--surface-border`: borde de 1px de cualquier superficie elevada.
+     * - `--shadow-card`: cards de contenido. `--shadow-float`: chrome flotante.
+     * - `--sheen-*`: velo en degradado que se pinta ENCIMA del color de fondo,
+     *   así una card con `bg-*` propio conserva su color y gana volumen.
+     */
+    --hairline: 0 0% 100% / 0.9;
+    --surface-border: 60 6% 78% / 0.75;
+    --sheen-from: 0 0% 100% / 0.55;
+    --sheen-to: 60 8% 70% / 0.05;
+    --shadow-card:
+      inset 0 1px 0 hsl(var(--hairline)),
+      0 1px 2px hsl(60 10% 20% / 0.06),
+      0 10px 28px -18px hsl(60 10% 15% / 0.35);
+    --shadow-float:
+      inset 0 1px 0 hsl(var(--hairline)),
+      0 2px 6px hsl(60 10% 20% / 0.07),
+      0 18px 44px -22px hsl(60 10% 15% / 0.42);
+    --shadow-accent: 0 8px 24px -12px hsl(var(--primary) / 0.45);
+    /* Velo de la card, en token para poder reactivarlo donde se neutraliza. */
+    --sheen-card: linear-gradient(to bottom, hsl(var(--sheen-from)) 0, hsl(var(--sheen-to)) 100%);
     /* Serie de datos (gráficos): tono compartido, luminosidad adaptada a fondo claro. */
     --chart-fitness: 209 70% 45%;
     --chart-fatigue: 36 86% 35%;
@@ -124,11 +147,12 @@
   }
 
   .dark {
-    --background: 0 0% 0%;
+    /* Casi negro (no negro puro): deja sitio para que las superficies floten encima. */
+    --background: 60 3% 4.5%;
     --foreground: 60 100% 99%;
-    --card: 0 0% 15%;
+    --card: 60 3% 11%;
     --card-foreground: 60 100% 99%;
-    --popover: 60 2% 17%;
+    --popover: 60 3% 14%;
     --popover-foreground: 60 100% 99%;
     --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
@@ -149,7 +173,20 @@
     --border: 60 2% 24%;
     --input: 60 2% 24%;
     --ring: 142 71% 45%;
-    --surface-elevated: 60 4% 8%;
+    --surface-elevated: 60 3% 8%;
+    --hairline: 0 0% 100% / 0.055;
+    --surface-border: 0 0% 100% / 0.07;
+    --sheen-from: 0 0% 100% / 0.055;
+    --sheen-to: 0 0% 100% / 0;
+    --shadow-card:
+      inset 0 1px 0 hsl(var(--hairline)),
+      0 1px 2px hsl(0 0% 0% / 0.4),
+      0 14px 32px -20px hsl(0 0% 0% / 0.85);
+    --shadow-float:
+      inset 0 1px 0 hsl(var(--hairline)),
+      0 2px 8px hsl(0 0% 0% / 0.5),
+      0 22px 48px -24px hsl(0 0% 0% / 0.95);
+    --shadow-accent: 0 10px 28px -12px hsl(var(--primary) / 0.55);
     --chart-fitness: 209 70% 53%;
     --chart-fatigue: 36 86% 55%;
     --chart-danger: 0 73% 59%;
@@ -250,6 +287,86 @@
   [role="button"]:not(:disabled),
   a[href] {
     cursor: pointer;
+  }
+}
+
+/*
+ * Superficies del sistema.
+ *
+ * Solo pintan `background-image` (un velo en degradado), borde y sombra: el
+ * `background-color` lo sigue decidiendo la utilidad de Tailwind de cada
+ * componente, así una card con color propio (`bg-muted`, `bg-destructive/5`…)
+ * conserva su tono y gana volumen igualmente.
+ */
+@layer components {
+  /* Card de contenido: filo cenital + sombra de apoyo. */
+  .surface-card {
+    border: 1px solid hsl(var(--surface-border));
+    background-image: var(--sheen-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Chrome flotante (bottom nav, cabecera): translúcido y desenfocado. */
+  .surface-float {
+    border: 1px solid hsl(var(--surface-border));
+    background-color: hsl(var(--surface-elevated) / 0.85);
+    background-image: linear-gradient(to bottom, hsl(var(--sheen-from)) 0, hsl(var(--sheen-to)) 64px);
+    box-shadow: var(--shadow-float);
+    backdrop-filter: blur(22px) saturate(1.5);
+    -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  }
+
+  /* Sin soporte de blur el chrome debe volverse opaco o el contenido se cuela. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .surface-float {
+      background-color: hsl(var(--surface-elevated));
+    }
+  }
+
+  /* Cristal de las barras fijas (cabecera móvil): translúcido, sin borde propio. */
+  .surface-glass {
+    background-color: hsl(var(--background) / 0.78);
+    backdrop-filter: blur(22px) saturate(1.5);
+    -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .surface-glass {
+      background-color: hsl(var(--background));
+    }
+  }
+
+  /*
+   * Una card NO repinta la superficie cuando ya vive dentro de otra (card
+   * anidada) ni dentro de un drawer, que es su propio contenedor. Sin esto cada
+   * anidamiento reinicia el velo y deja un corte de color a media card.
+   *
+   * Va en la capa `components` a propósito: así cualquier utilidad que el
+   * componente declare (`border-border/20`, `bg-muted`…) sigue ganando, porque
+   * la capa `utilities` se aplica después pese a la menor especificidad.
+   */
+  [data-slot="card"] [data-slot="card"],
+  [data-vaul-drawer] [data-slot="card"] {
+    background-image: none;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  /*
+   * Excepción: un tramo con fondo de página dentro de un drawer (una lista de
+   * entradas, por ejemplo). Ahí las cards SÍ son superficies propias y el hueco
+   * entre ellas deja ver el fondo, igual que en el dashboard.
+   */
+  [data-vaul-drawer] .surface-region-page [data-slot="card"] {
+    background-image: var(--sheen-card);
+    border-color: hsl(var(--surface-border));
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Baldosa interior (métricas dentro de una card): hundida, sin sombra propia. */
+  .surface-tile {
+    border: 1px solid hsl(var(--surface-border));
+    background-image: linear-gradient(to bottom, hsl(var(--sheen-from)) 0, hsl(var(--sheen-to)) 56px);
   }
 }
 

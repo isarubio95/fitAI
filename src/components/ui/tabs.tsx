@@ -6,13 +6,13 @@ import { cn } from "@/lib/utils";
 
 /** Pills Mes/Semana (calendario, heatmap, etc.). */
 export const pillTabsListClass =
-  "h-9 shrink-0 rounded-full bg-muted p-1 dark:bg-background";
+  "h-9 shrink-0 rounded-full bg-muted p-1 ring-1 ring-inset ring-[hsl(var(--surface-border))] dark:bg-background";
 
 export const pillTabsTriggerClass =
   "touch-pill relative z-10 inline-flex items-center justify-center rounded-full px-5 text-sm font-medium outline-none focus:outline-none focus-visible:outline-none data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=inactive]:text-muted-foreground";
 
 export const pillTabsIndicatorClass =
-  "pointer-events-none absolute bottom-1 top-1 rounded-full bg-card shadow-xs dark:bg-muted dark:shadow-none";
+  "pointer-events-none absolute bottom-1 top-1 rounded-full bg-card shadow-[var(--shadow-card)] dark:bg-muted";
 
 /** Texto con subrayado bajo el activo (periodos, filtros secundarios). */
 export const underlineTabsListClass =
