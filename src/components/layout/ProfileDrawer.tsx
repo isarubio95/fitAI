@@ -201,10 +201,10 @@ function ProfileDrawerSheet() {
     }
     return ids;
   }, [lastWorkouts]);
-  const publicCardioIds = useMemo(() => {
+  const cardioIds = useMemo(() => {
     const ids: string[] = [];
     for (const w of lastWorkouts) {
-      if (w.type === "cardio" && w.session.es_publica) ids.push(w.session.id);
+      if (w.type === "cardio") ids.push(w.session.id);
     }
     return ids;
   }, [lastWorkouts]);
@@ -216,9 +216,9 @@ function ProfileDrawerSheet() {
     likedIds: cardioLikedIds,
     toggleLike: toggleCardioLike,
     isToggling: isTogglingCardioLike,
-  } = useCardioSessionLikes(publicCardioIds);
+  } = useCardioSessionLikes(cardioIds);
   const { commentCounts: cardioCommentCounts, commentedIds: cardioCommentedIds } =
-    useCardioSessionCommentCounts(publicCardioIds);
+    useCardioSessionCommentCounts(cardioIds);
 
   const socialFor = (actividadId: string): WorkoutFeedCardSocial => ({
     likeCount: likeCounts[actividadId] ?? 0,
@@ -485,7 +485,7 @@ function ProfileDrawerSheet() {
                       author={workoutAuthor}
                       onSelectAuthor={openAuthorProfile}
                       onSelectSession={setCardioDetailsId}
-                      social={item.session.es_publica ? cardioSocialFor(item.session.id) : null}
+                      social={cardioSocialFor(item.session.id)}
                     />
                   ),
                 )}

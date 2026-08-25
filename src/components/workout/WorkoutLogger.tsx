@@ -1624,6 +1624,11 @@ export function WorkoutLogger() {
       }
     : {};
 
+  const sessionHasStarted = !!sessionClockStartedAt;
+  const activeWorkoutHeading = sessionHasStarted
+    ? "Entrenamiento activo"
+    : "Comenzar entrenamiento";
+
   return (
     <>
       <Drawer
@@ -1648,7 +1653,7 @@ export function WorkoutLogger() {
                       {startedFromRoutine ? (
                         <>
                           <DrawerTitle className="sr-only">
-                            {titulo.trim() || "Entrenamiento activo"}
+                            {titulo.trim() || activeWorkoutHeading}
                           </DrawerTitle>
                           <label htmlFor="titulo" className="sr-only">
                             Título
@@ -1661,15 +1666,15 @@ export function WorkoutLogger() {
                             disabled={creatingActive || preparingLiveSession}
                             className="w-full min-w-0 truncate bg-transparent text-lg font-semibold leading-none tracking-tight outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           />
-                          <DrawerDescription>Entrenamiento activo</DrawerDescription>
+                          <DrawerDescription>{activeWorkoutHeading}</DrawerDescription>
                         </>
                       ) : (
                         <>
                           <DrawerTitle className="truncate text-lg font-semibold leading-none tracking-tight">
-                            Entrenamiento activo
+                            {activeWorkoutHeading}
                           </DrawerTitle>
                           <DrawerDescription className="sr-only">
-                            Entrenamiento en curso
+                            {sessionHasStarted ? "Entrenamiento en curso" : "Aún no ha comenzado"}
                           </DrawerDescription>
                         </>
                       )}

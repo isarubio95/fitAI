@@ -100,10 +100,10 @@
 }
 
 .checkbox-wrapper input[type="checkbox"]:checked + label {
-  background-color: hsl(var(--primary));
+  background-color: hsl(var(--primary-solid));
   background-image: linear-gradient(
     43deg,
-    hsl(var(--primary)) 0%,
+    hsl(var(--primary-solid)) 0%,
     hsl(var(--accent)) 46%,
     hsl(var(--ring)) 100%
   );

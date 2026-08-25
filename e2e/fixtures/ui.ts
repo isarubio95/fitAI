@@ -27,7 +27,7 @@ export async function openRegisterMenu(page: Page) {
 export async function openGymWorkout(page: Page) {
   await openRegisterMenu(page);
   await page.getByText("Fuerza").click();
-  await expect(page.getByText("Entrenamiento activo")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Comenzar entrenamiento")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("button", { name: "Agregar ejercicio" })).toBeVisible({
     timeout: 15_000,
   });

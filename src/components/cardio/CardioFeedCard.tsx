@@ -155,7 +155,7 @@ export function CardioFeedCardBody({
   onSelectAuthor,
   social,
 }: CardioFeedCardBodyProps) {
-  const showSocial = !!social && session.es_publica;
+  const showSocial = !!social;
   const ownerId = author?.id ?? session.usuario_id;
 
   return (
