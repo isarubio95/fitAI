@@ -12,7 +12,6 @@ vi.mock("@/components/workout/SortableExerciseCard", () => ({
 const noop = () => undefined;
 
 const listProps = {
-  creatingActive: false,
   isActiveWorkout: true,
   onDragEnd: noop,
   getExerciseSortId: (ex: ExerciseFormData, index: number) => ex.id ?? `${ex.nombre}-${index}`,
@@ -75,5 +74,11 @@ describe("WorkoutExerciseList", () => {
     expect(screen.getByText("Ejercicios")).toBeInTheDocument();
     expect(screen.getByText("1 ejercicio")).toBeInTheDocument();
     expect(screen.getByText("Press banca")).toBeInTheDocument();
+  });
+
+  it("no muestra el loader de preparacion al estar vacia", () => {
+    render(<WorkoutExerciseList {...listProps} exercises={[]} />);
+
+    expect(screen.queryByText(/Preparando entrenamiento/i)).not.toBeInTheDocument();
   });
 });

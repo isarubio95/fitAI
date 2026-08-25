@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   SECTION_UNDERLINE_TABS_LIST,
   SECTION_UNDERLINE_TABS_ROW,
+  SECTION_TAB_PANEL,
   SECTION_UNDERLINE_TABS_TRIGGER,
 } from "@/lib/pageStyles";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,15 +48,15 @@ export default function EvolutionPage() {
         <div id="desktop-section-toolbar-slot" className="flex shrink-0 items-center justify-end empty:hidden" />
       </div>
 
-      <TabsContent value="progress" className="mt-0 flex flex-1 flex-col data-[state=inactive]:hidden">
+      <TabsContent value="progress" className={SECTION_TAB_PANEL}>
         <WorkoutHistory />
       </TabsContent>
 
-      <TabsContent value="health" className="mt-0 flex flex-1 flex-col data-[state=inactive]:hidden">
+      <TabsContent value="health" className={SECTION_TAB_PANEL}>
         <YouHealth />
       </TabsContent>
 
-      <TabsContent value="activities" className="mt-0 flex flex-1 flex-col data-[state=inactive]:hidden">
+      <TabsContent value="activities" className={SECTION_TAB_PANEL}>
         <YouActivities />
       </TabsContent>
     </Tabs>

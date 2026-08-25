@@ -40,7 +40,7 @@ export function LiveSessionRehydrator() {
       return;
     }
 
-    if (!workout) {
+    if (!workout || !workout.hasExercises) {
       if (lastWorkoutId.current) {
         lastWorkoutId.current = null;
         void stopLiveWorkout();
@@ -55,7 +55,7 @@ export function LiveSessionRehydrator() {
       title: workout.titulo?.trim() || "Entrenamiento",
       startedAtMs: new Date(workout.fecha).getTime(),
     });
-  }, [workout?.id, workout?.titulo, workout?.fecha, liveSessionEnabled]);
+  }, [workout?.id, workout?.titulo, workout?.fecha, workout?.hasExercises, liveSessionEnabled]);
 
   useEffect(() => {
     if (!isNativeApp()) return;

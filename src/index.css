@@ -557,6 +557,23 @@
   }
 }
 
+/*
+ * Paneles de sección a pantalla completa (Tú, Biblioteca).
+ *
+ * `TabsContent` trae un fundido de entrada (`animate-in fade-in-0
+ * slide-in-from-bottom-1`) pensado para paneles pequeños. Cuando el panel ocupa
+ * toda la pantalla, ese fundido arranca en `opacity: 0` y, como `--background`
+ * del tema oscuro es negro puro, el cambio de pestaña se ve como un parpadeo
+ * negro. Estos paneles aparecen sin animación: el contenido nuevo se pinta en el
+ * mismo frame en que desaparece el anterior.
+ *
+ * Regla sin `@layer` a propósito: así gana a las utilidades de Tailwind
+ * (`@layer utilities`) sin necesidad de `!important`.
+ */
+.section-panel {
+  animation: none;
+}
+
 .section-tab-trigger {
   position: relative;
 }

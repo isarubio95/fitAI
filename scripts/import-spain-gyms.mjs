@@ -14,7 +14,7 @@
  */
 
 import { SPAIN_CCAA, SPAIN_PROVINCIAL_CAPITALS, capitalOverpassQuery, ccaaOverpassQuery } from "./lib/gymOsm.mjs";
-import { rowFromOsmElement } from "./lib/gymOsmMap.mjs";
+import { catalogRowForUpsert, rowFromOsmElement } from "./lib/gymOsmMap.mjs";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -111,7 +111,7 @@ async function upsertBatch(url, key, rows) {
       "Content-Type": "application/json",
       Prefer: "resolution=merge-duplicates,return=minimal",
     },
-    body: JSON.stringify(rows),
+    body: JSON.stringify(rows.map(catalogRowForUpsert)),
   });
   if (!res.ok) {
     const body = await res.text();

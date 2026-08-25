@@ -52,3 +52,17 @@ export const FLOATING_CREATE_SLOT =
 
 export const SECTION_PILLS_LIST =
   "h-auto min-w-0 flex-1 justify-start gap-2 bg-transparent p-0 shadow-none";
+
+/*
+ * Panel de una pestaña de sección a pantalla completa (Tú, Biblioteca).
+ *
+ * `.section-panel` (index.css) anula el fundido de entrada que `TabsContent`
+ * trae por defecto: en un panel de pantalla completa ese fundido arranca en
+ * `opacity: 0` y, como el fondo del tema oscuro es negro puro, se percibe como
+ * un parpadeo negro al cambiar de pestaña.
+ *
+ * `data-[state=inactive]:hidden` gana a `flex` por especificidad, de modo que
+ * el panel inactivo quede oculto también si algún día se monta con `forceMount`.
+ */
+export const SECTION_TAB_PANEL =
+  "section-panel mt-0 flex flex-1 flex-col data-[state=inactive]:hidden";

@@ -36,4 +36,9 @@ describe("WorkoutFloatingActionBar", () => {
     render(<WorkoutFloatingActionBar {...barProps} exerciseCount={1} />);
     expect(screen.getByLabelText("Agregar ejercicio")).toBeInTheDocument();
   });
+
+  it("deshabilita la pausa hasta que arranca el cronómetro", () => {
+    render(<WorkoutFloatingActionBar {...barProps} exerciseCount={0} canPause={false} />);
+    expect(screen.getByLabelText("Pausar tiempo")).toBeDisabled();
+  });
 });

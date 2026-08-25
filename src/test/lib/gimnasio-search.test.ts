@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   duplicateGymNames,
+  duplicateGymNamesInCity,
   formatGimnasioListTitle,
   formatGymDistance,
   gymMatchesQuery,
@@ -103,5 +104,38 @@ describe("gimnasioSearch", () => {
         brand: "Basic-Fit",
       }),
     ).toBe("Basic-Fit Calle Mayor");
+  });
+
+  it("distingue varios Basic-Fit de la misma ciudad con la calle, sin repetir la ciudad", () => {
+    expect(
+      formatGimnasioListTitle({
+        nombre: "Basic-Fit Logroño",
+        direccion: "Calle Marqués de Murrieta 46",
+        ciudad: "Logroño",
+        brand: "Basic-Fit",
+      }),
+    ).toBe("Basic-Fit (Calle Marqués de Murrieta 46)");
+    expect(
+      formatGimnasioListTitle({
+        nombre: "Basic-Fit",
+        direccion: "Avenida de Lobete 11",
+        ciudad: "Logroño",
+        brand: "Basic-Fit",
+      }),
+    ).toBe("Basic-Fit (Avenida de Lobete 11)");
+  });
+
+  it("no usa la ciudad como distintivo si hay varios con el mismo nombre ahí", () => {
+    const sameCity = duplicateGymNamesInCity([
+      { nombre: "Basic-Fit", ciudad: "Logroño" },
+      { nombre: "Basic-Fit", ciudad: "Logroño" },
+    ]);
+    expect(
+      formatGimnasioListTitle(
+        { nombre: "Basic-Fit", direccion: null, ciudad: "Logroño", brand: "Basic-Fit" },
+        undefined,
+        sameCity,
+      ),
+    ).toBe("Basic-Fit");
   });
 });

@@ -12,7 +12,6 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { SortableExerciseCard } from "../SortableExerciseCard";
 import { groupExercisesBySuperset } from "./groupExercisesBySuperset";
@@ -20,7 +19,6 @@ import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
 export type WorkoutExerciseListProps = {
   exercises: ExerciseFormData[];
-  creatingActive: boolean;
   isActiveWorkout: boolean;
   onDragEnd: (event: DragEndEvent) => void;
   getExerciseSortId: (ex: ExerciseFormData, index: number) => string;
@@ -42,7 +40,6 @@ export type WorkoutExerciseListProps = {
 
 export function WorkoutExerciseList({
   exercises,
-  creatingActive,
   isActiveWorkout,
   onDragEnd,
   getExerciseSortId,
@@ -63,15 +60,6 @@ export function WorkoutExerciseList({
 
   return (
     <>
-      {creatingActive && (
-        <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-card shadow-none md:border-x">
-          <CardContent className="flex items-center justify-center px-6 py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="ml-2 text-sm text-muted-foreground">Preparando entrenamiento…</span>
-          </CardContent>
-        </Card>
-      )}
-
       {exercises.length === 0 ? null : (
       <Card className="w-full max-w-none rounded-none border-x-0 border-border/20 bg-background shadow-none md:border-x">
         <CardContent className="p-0">

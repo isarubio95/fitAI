@@ -59,6 +59,19 @@ export function rowFromOsmElement(el, opts = {}) {
 }
 
 /**
+ * PostgREST `merge-duplicates` pisa columnas enviadas como null.
+ * Si OSM no trae calle/ciudad, no las mandamos para no borrar un enrich previo.
+ *
+ * @param {Record<string, unknown>} row
+ */
+export function catalogRowForUpsert(row) {
+  const out = { ...row };
+  if (out.direccion == null) delete out.direccion;
+  if (out.ciudad == null) delete out.ciudad;
+  return out;
+}
+
+/**
  * Variante para importaciones dirigidas por marca/cadena.
  * No exige `leisure/amenity` “de gimnasio”, solo que el nombre/marca/operador coincida con `brandRegex`.
  *

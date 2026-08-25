@@ -194,7 +194,16 @@ export function TrainingLoadWidget({
   }, []);
 
   const resolvedData = data?.points?.length ? data : cachedData;
-  const showDynamicSkeleton = isFetching && !!resolvedData;
+  /*
+   * El skeleton "dinámico" solo tiene sentido cuando lo que se muestra viene
+   * del cache de localStorage y aún no hay respuesta del servidor: ahí puede
+   * estar desactualizado. Si ya hay datos de la query (`data`), se mantienen en
+   * pantalla durante los refetch de fondo. Antes bastaba `isFetching` para
+   * taparlo todo con skeletons, y como las queries no definen `staleTime`,
+   * cada vez que el panel se remontaba (cambio de pestaña en Tú) la tarjeta
+   * parpadeaba a skeleton y volvía.
+   */
+  const showDynamicSkeleton = isFetching && !data && !!resolvedData;
   const selectedRange = useMemo(
     () => RANGE_OPTIONS.find((option) => option.key === range) ?? RANGE_OPTIONS[0],
     [range],

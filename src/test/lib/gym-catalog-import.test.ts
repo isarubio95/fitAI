@@ -7,7 +7,7 @@ import {
   SPAIN_PROVINCIAL_CAPITALS,
   capitalOverpassQuery,
 } from "../../../scripts/lib/gymOsm.mjs";
-import { rowFromOsmElement } from "../../../scripts/lib/gymOsmMap.mjs";
+import { rowFromOsmElement, catalogRowForUpsert } from "../../../scripts/lib/gymOsmMap.mjs";
 import {
   addressPatchFromIncoming,
   findNearbyDuplicate,
@@ -134,6 +134,21 @@ describe("filtros OSM", () => {
       { ciudad: "Sevilla" },
     );
     expect(row?.ciudad).toBe("Sevilla");
+  });
+
+  it("omite direccion nula en el upsert para no borrar calles ya enriquecidas", () => {
+    expect(
+      catalogRowForUpsert({
+        nombre: "Basic-Fit",
+        direccion: null,
+        ciudad: "Logroño",
+        brand: "Basic-Fit",
+      }),
+    ).toEqual({
+      nombre: "Basic-Fit",
+      ciudad: "Logroño",
+      brand: "Basic-Fit",
+    });
   });
 });
 

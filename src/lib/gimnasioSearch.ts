@@ -43,6 +43,23 @@ export function gymMatchesQuery(gym: GimnasioCatalogItem, query: string): boolea
   return haystack.includes(q);
 }
 
+function nameCityKey(nombre: string, ciudad?: string | null): string {
+  return `${normalizeSearchText(nombre)}|${normalizeSearchText(ciudad ?? "")}`;
+}
+
+/** Quita el sufijo de ciudad: «Basic-Fit Logroño» → «Basic-Fit». */
+function stripTrailingCity(nombre: string, city: string | null): string {
+  if (!city) return nombre;
+  const cityNorm = normalizeSearchText(city);
+  if (!cityNorm) return nombre;
+  const parts = nombre.trim().split(/\s+/);
+  const cityParts = city.trim().split(/\s+/);
+  if (parts.length <= cityParts.length) return nombre;
+  const suffix = parts.slice(-cityParts.length).join(" ");
+  if (normalizeSearchText(suffix) !== cityNorm) return nombre;
+  return parts.slice(0, -cityParts.length).join(" ");
+}
+
 /** Nombres que aparecen más de una vez (p. ej. Basic-Fit en varias calles). */
 export function duplicateGymNames(gyms: Array<{ nombre: string }>): Set<string> {
   const counts = new Map<string, number>();
@@ -58,24 +75,47 @@ export function duplicateGymNames(gyms: Array<{ nombre: string }>): Set<string> 
   return duplicates;
 }
 
+/** Mismo nombre en la misma ciudad más de una vez: hay que distinguir por calle, no por ciudad. */
+export function duplicateGymNamesInCity(
+  gyms: Array<{ nombre: string; ciudad?: string | null }>,
+): Set<string> {
+  const counts = new Map<string, number>();
+  for (const gym of gyms) {
+    const key = nameCityKey(gym.nombre, gym.ciudad);
+    if (key === "|") continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const duplicates = new Set<string>();
+  for (const [key, count] of counts) {
+    if (count > 1) duplicates.add(key);
+  }
+  return duplicates;
+}
+
 /**
  * Título de listado: «Basic-Fit (Calle Mayor 12)».
- * Si no hay calle, usa la ciudad cuando el nombre se repite o hay marca.
+ * Si no hay calle, usa la ciudad cuando el nombre se repite o hay marca,
+ * salvo que haya varios con el mismo nombre en esa ciudad (la ciudad no los distingue).
  */
 export function formatGimnasioListTitle(
   gym: Pick<GimnasioCatalogItem, "nombre" | "direccion" | "ciudad" | "brand">,
   duplicateNames?: Set<string>,
+  sameCityDuplicates?: Set<string>,
 ): string {
   const nombre = gym.nombre.trim();
   const street = gym.direccion?.trim() || null;
   const city = gym.ciudad?.trim() || null;
+  const isSameCityDuplicate =
+    Boolean(city) &&
+    (sameCityDuplicates?.has(nameCityKey(nombre, city)) ?? false);
   const isFranchise =
     Boolean(gym.brand?.trim()) ||
     (duplicateNames?.has(normalizeSearchText(nombre)) ?? false);
-  const qualifier = street || (isFranchise ? city : null);
-  if (!qualifier) return nombre;
-  if (normalizeSearchText(nombre).includes(normalizeSearchText(qualifier))) return nombre;
-  return `${nombre} (${qualifier})`;
+  const qualifier = street || (isFranchise && !isSameCityDuplicate ? city : null);
+  const baseName = street ? stripTrailingCity(nombre, city) : nombre;
+  if (!qualifier) return baseName;
+  if (normalizeSearchText(baseName).includes(normalizeSearchText(qualifier))) return baseName;
+  return `${baseName} (${qualifier})`;
 }
 
 export function rankGimnasios(

@@ -37,6 +37,7 @@ import {
   CHART_SCRUB_TOOLTIP_WRAPPER,
 } from "@/components/dashboard/chartScrub";
 import { PAGE_CARD, PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, PROGRESS_CARD_HEADER } from "@/lib/pageStyles";
+import { useMountAfterPaint } from "@/hooks/useMountAfterPaint";
 import { cn } from "@/lib/utils";
 import {
   AnimatedTabsList,
@@ -386,6 +387,7 @@ const WorkoutHistory = () => {
   const [period, setPeriod] = useState<PeriodKey>("4w");
   const now = useMemo(() => new Date(), []);
   const isLoading = loadingGym || loadingCardio;
+  const showPanelWidgets = useMountAfterPaint();
 
   const bounds = useMemo(() => periodBounds(now, period), [now, period]);
   const buckets = useMemo(() => periodBuckets(now, period), [now, period]);
@@ -694,9 +696,20 @@ const WorkoutHistory = () => {
         </CardContent>
       </Card>
 
-      <TrainingLoadWidget flushHeader />
-      <ExerciseProgressWidget flushHeader />
-      <MuscleRankingWidget />
+      {/*
+        * Estos tres widgets son la parte más cara de Progreso (cada uno con su
+        * propia gráfica y sus propias queries). Montarlos en el mismo commit que
+        * el resto bloqueaba el hilo ~1s al entrar en la pestaña, sin que nada se
+        * moviese en pantalla. Van bajo el pliegue, así que se montan tras el
+        * primer pintado.
+        */}
+      {showPanelWidgets && (
+        <>
+          <TrainingLoadWidget flushHeader />
+          <ExerciseProgressWidget flushHeader />
+          <MuscleRankingWidget />
+        </>
+      )}
 
       {!isLoading && (topExercises.length > 0 || topLoads.length > 0) && (
         <div className={cn("grid w-full grid-cols-1 bg-background md:grid-cols-2", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>

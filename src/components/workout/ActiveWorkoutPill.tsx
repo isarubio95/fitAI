@@ -17,17 +17,21 @@ function formatElapsed(startDate: string): string {
 export function ActiveWorkoutPill() {
   const { data: active } = useActiveWorkout();
   const { openActiveWorkout, state } = useGlobalWorkoutDrawer();
-  const [elapsed, setElapsed] = useState("");
+  const [elapsed, setElapsed] = useState("0:00");
   /** En desktop: bottom-24. En móvil: encima del BottomNav (+ holgura). */
   const drag = useDraggablePillPosition("gym-log-pill-active-workout", 96, "activeWorkout");
 
   useEffect(() => {
     if (!active) return;
+    if (!active.hasExercises) {
+      setElapsed("0:00");
+      return;
+    }
     const update = () => setElapsed(formatElapsed(active.fecha));
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [active?.id, active?.fecha]);
+  }, [active?.id, active?.fecha, active?.hasExercises]);
 
   const openFromPill = () => {
     if (!active) return;

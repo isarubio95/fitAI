@@ -18,7 +18,7 @@ import { LiveSessionRehydrator } from "@/components/live/LiveSessionRehydrator";
 import { Loader2 } from "lucide-react";
 // import { SwipeableRoutesWrapper } from "./SwipeableRoutesWrapper";
 import { YOU_TABS, YOU_TAB_LABELS, normalizeYouTab } from "@/lib/youPageTabs";
-import { FLOATING_CREATE_SLOT, SECTION_UNDERLINE_TABS_LIST, sectionUnderlineTabClass } from "@/lib/pageStyles";
+import { FLOATING_CREATE_SLOT } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 import { topBarSurface } from "@/lib/surface-styles";
 import { useQuery } from "@tanstack/react-query";
@@ -31,7 +31,7 @@ import { InAppSocialToastSync } from "@/components/notifications/InAppSocialToas
 import { InAppToastNavigationHost } from "@/components/notifications/InAppToastNavigationHost";
 import { useSafeAreaInsetsSync } from "@/hooks/useSafeAreaInsetsSync";
 import { useLogrosSync } from "@/hooks/useLogrosSync";
-import { useSectionTabUnderlineAnimation } from "@/hooks/useSectionTabUnderlineAnimation";
+import { HeaderSectionTabs } from "./HeaderSectionTabs";
 
 export function AppLayout() {
   useSafeAreaInsetsSync();
@@ -63,8 +63,6 @@ export function AppLayout() {
   });
 
   const currentTab = searchParams.get("tab") || "";
-  const evolutionTabAnimation = useSectionTabUnderlineAnimation();
-  const routinesTabAnimation = useSectionTabUnderlineAnimation();
 
   useEffect(() => {
     if (loading || !user || profileLoading || !profileSetup?.username || !profileSetup.username.trim()) return;
@@ -264,26 +262,10 @@ export function AppLayout() {
                 )}
               >
                 <div className="flex min-w-0 flex-col">
-                  <div
-                    className={cn(SECTION_UNDERLINE_TABS_LIST, "-mx-4 w-[calc(100%+2rem)]")}
-                    {...evolutionTabAnimation.containerProps}
-                  >
-                    {YOU_TABS.map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        data-active={normalizeYouTab(searchParams.get("tab")) === tab ? "true" : undefined}
-                        onClick={() => {
-                          const isActive = normalizeYouTab(searchParams.get("tab")) === tab;
-                          if (!isActive) evolutionTabAnimation.enableAnimation();
-                          setSearchParams({ tab });
-                        }}
-                        className={sectionUnderlineTabClass(normalizeYouTab(searchParams.get("tab")) === tab)}
-                      >
-                        {YOU_TAB_LABELS[tab]}
-                      </button>
-                    ))}
-                  </div>
+                  <HeaderSectionTabs
+                    tabs={YOU_TABS.map((tab) => ({ value: tab, label: YOU_TAB_LABELS[tab] }))}
+                    activeTab={normalizeYouTab(currentTab)}
+                  />
                   <div
                     id="section-pills-actions-slot"
                     className="flex shrink-0 items-center justify-end empty:hidden pt-2"
@@ -302,37 +284,13 @@ export function AppLayout() {
                 )}
               >
                 <div className="flex min-w-0 flex-col">
-                  <div
-                    className={cn(SECTION_UNDERLINE_TABS_LIST, "-mx-4 w-[calc(100%+2rem)]")}
-                    {...routinesTabAnimation.containerProps}
-                  >
-                    <button
-                      type="button"
-                      data-active={(searchParams.get("tab") || "rutinas") === "rutinas" ? "true" : undefined}
-                      onClick={() => {
-                        const isActive = (searchParams.get("tab") || "rutinas") === "rutinas";
-                        if (!isActive) routinesTabAnimation.enableAnimation();
-                        setSearchParams({ tab: "rutinas" });
-                      }}
-                      className={sectionUnderlineTabClass(
-                        (searchParams.get("tab") || "rutinas") === "rutinas",
-                      )}
-                    >
-                      Rutinas
-                    </button>
-                    <button
-                      type="button"
-                      data-active={searchParams.get("tab") === "ejercicios" ? "true" : undefined}
-                      onClick={() => {
-                        const isActive = searchParams.get("tab") === "ejercicios";
-                        if (!isActive) routinesTabAnimation.enableAnimation();
-                        setSearchParams({ tab: "ejercicios" });
-                      }}
-                      className={sectionUnderlineTabClass(searchParams.get("tab") === "ejercicios")}
-                    >
-                      Ejercicios
-                    </button>
-                  </div>
+                  <HeaderSectionTabs
+                    tabs={[
+                      { value: "rutinas", label: "Rutinas" },
+                      { value: "ejercicios", label: "Ejercicios" },
+                    ]}
+                    activeTab={currentTab === "ejercicios" ? "ejercicios" : "rutinas"}
+                  />
                   <div
                     id="section-pills-actions-slot"
                     className="flex shrink-0 items-center justify-end empty:hidden pt-2"

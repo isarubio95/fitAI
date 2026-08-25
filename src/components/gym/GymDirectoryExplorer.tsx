@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGimnasiosCatalog } from "@/hooks/useGimnasios";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
-import { formatGymDistance, formatGimnasioListTitle, duplicateGymNames, rankGimnasios } from "@/lib/gimnasioSearch";
+import {
+  formatGymDistance,
+  formatGimnasioListTitle,
+  duplicateGymNames,
+  duplicateGymNamesInCity,
+  rankGimnasios,
+} from "@/lib/gimnasioSearch";
 import type { GimnasioCatalogItem, SelectedGimnasio } from "@/types/gimnasio";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +38,7 @@ export function GymDirectoryExplorer({
   const [selected, setSelected] = useState<GimnasioCatalogItem | null>(null);
 
   const duplicateNames = useMemo(() => duplicateGymNames(gyms), [gyms]);
+  const sameCityDuplicates = useMemo(() => duplicateGymNamesInCity(gyms), [gyms]);
 
   const suggestions = useMemo(
     () =>
@@ -45,7 +52,7 @@ export function GymDirectoryExplorer({
     if (!selected) return;
     onGymAction({
       id: selected.id,
-      nombre: formatGimnasioListTitle(selected, duplicateNames),
+      nombre: formatGimnasioListTitle(selected, duplicateNames, sameCityDuplicates),
       ciudad: selected.ciudad,
     });
   };
@@ -89,7 +96,7 @@ export function GymDirectoryExplorer({
                   <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">
-                      {formatGimnasioListTitle(gym, duplicateNames)}
+                      {formatGimnasioListTitle(gym, duplicateNames, sameCityDuplicates)}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
                       {[gym.ciudad, formatGymDistance(gym.distanceKm)].filter(Boolean).join(" · ")}
@@ -117,7 +124,7 @@ export function GymDirectoryExplorer({
         >
           <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-border/60 bg-card/95 p-4 shadow-lg backdrop-blur-sm">
             <p className="text-sm font-semibold leading-snug">
-              {formatGimnasioListTitle(selected, duplicateNames)}
+              {formatGimnasioListTitle(selected, duplicateNames, sameCityDuplicates)}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {[selected.ciudad, selected.direccion].filter(Boolean).join(" · ") || "España"}

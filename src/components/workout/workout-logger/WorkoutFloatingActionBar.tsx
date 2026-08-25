@@ -15,6 +15,8 @@ type WorkoutFloatingActionBarProps = {
   onRequestDelete: () => void;
   isPaused: boolean;
   onTogglePause: () => void;
+  /** False mientras el cronómetro espera al primer ejercicio. */
+  canPause?: boolean;
   exercisePickerOpen: boolean;
   onExercisePickerOpenChange: (open: boolean) => void;
   onAddExercise: (
@@ -43,6 +45,7 @@ export function WorkoutFloatingActionBar({
   onRequestDelete,
   isPaused,
   onTogglePause,
+  canPause = true,
   exercisePickerOpen,
   onExercisePickerOpenChange,
   onAddExercise,
@@ -92,6 +95,7 @@ export function WorkoutFloatingActionBar({
               isPaused && "bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 hover:text-amber-600 dark:text-amber-400",
             )}
             onClick={onTogglePause}
+            disabled={!canPause}
             aria-label={isPaused ? "Reanudar tiempo" : "Pausar tiempo"}
           >
             {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}

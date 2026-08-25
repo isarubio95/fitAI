@@ -2,6 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   SECTION_UNDERLINE_TABS_LIST,
   SECTION_UNDERLINE_TABS_ROW,
+  SECTION_TAB_PANEL,
   SECTION_UNDERLINE_TABS_TRIGGER,
 } from "@/lib/pageStyles";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,11 +39,11 @@ export default function Library() {
         <div id="desktop-section-toolbar-slot" className="flex shrink-0 items-center justify-end empty:hidden" />
       </div>
 
-      <TabsContent value="rutinas" className="mt-0 flex flex-1 flex-col data-[state=inactive]:hidden">
+      <TabsContent value="rutinas" className={SECTION_TAB_PANEL}>
         <Routines />
       </TabsContent>
 
-      <TabsContent value="ejercicios" className="mt-0 flex flex-1 flex-col data-[state=inactive]:hidden">
+      <TabsContent value="ejercicios" className={SECTION_TAB_PANEL}>
         <Exercises />
       </TabsContent>
     </Tabs>

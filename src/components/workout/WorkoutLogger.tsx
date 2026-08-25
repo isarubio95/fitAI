@@ -6,7 +6,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkoutById } from "@/hooks/useWorkouts";
-import { useActiveWorkout } from "@/hooks/useActiveWorkout";
+import { useActiveWorkout, type ActiveWorkoutSummary } from "@/hooks/useActiveWorkout";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { fetchUnfinishedWorkoutId } from "@/lib/activeWorkoutGuard";
 import {
@@ -107,6 +107,21 @@ export function WorkoutLogger() {
   const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [pausedAccumMs, setPausedAccumMs] = useState(0);
   const isPaused = pausedAt !== null;
+  /** ISO de arranque del cronómetro; null = visible a 0:00 hasta el primer ejercicio. */
+  const [sessionClockStartedAt, setSessionClockStartedAtState] = useState<string | null>(null);
+  const sessionClockStartedAtRef = useRef<string | null>(null);
+  const liveWorkoutStartedRef = useRef(false);
+  const setSessionClockStartedAt = useCallback((iso: string | null) => {
+    sessionClockStartedAtRef.current = iso;
+    setSessionClockStartedAtState(iso);
+  }, []);
+  const armSessionClock = useCallback((iso?: string) => {
+    if (sessionClockStartedAtRef.current) return sessionClockStartedAtRef.current;
+    const started = iso ?? new Date().toISOString();
+    sessionClockStartedAtRef.current = started;
+    setSessionClockStartedAtState(started);
+    return started;
+  }, []);
   const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
   const [postWorkoutRoutineSnapshot, setPostWorkoutRoutineSnapshot] = useState<WorkoutRoutineSnapshot | null>(null);
   const [postWorkoutLogros, setPostWorkoutLogros] = useState<LogroRow[]>([]);
@@ -172,6 +187,7 @@ export function WorkoutLogger() {
     : hasRecordedWork;
   const hideWorkoutDate = isActiveWorkout && (startedFromRoutine || !!(templateExercises && templateTitle));
   const hydratedWorkoutIdRef = useRef<string | null>(null);
+  const persistInflightRef = useRef(new WeakSet<ExerciseFormData>());
   const linkedPlannedIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -235,6 +251,9 @@ export function WorkoutLogger() {
       setStartedFromRoutine(
         !existingWorkout.fecha_fin && wasWorkoutStartedFromRoutine(existingWorkout.id),
       );
+      if (!existingWorkout.fecha_fin && hydratedExercises.length > 0) {
+        armSessionClock(existingWorkout.fecha);
+      }
       setEditBaseline(
         existingWorkout.fecha_fin
           ? serializeWorkoutFormSnapshot(
@@ -249,7 +268,7 @@ export function WorkoutLogger() {
           : null,
       );
     }
-  }, [isEdit, existingWorkout, open, templateExercises, routineIconsByTitle]);
+  }, [isEdit, existingWorkout, open, templateExercises, routineIconsByTitle, armSessionClock]);
 
   // Crear sesión activa al abrir (desde rutina/plan o entreno en blanco)
   useEffect(() => {
@@ -284,7 +303,21 @@ export function WorkoutLogger() {
 
   // Antes del pintado: un alta nueva no debe mostrar el título/ejercicios del entreno anterior.
   useLayoutEffect(() => {
-    if (open && !workoutId && !activeWorkoutId && !templateExercises) {
+    if (!open || workoutId || activeWorkoutId) return;
+    if (templateExercises && templateTitle) {
+      setTitulo(templateTitle);
+      setExercises(templateExercises);
+      setWorkoutIcon(resolveRoutineIconKey(templateRoutineIcon ?? DEFAULT_ROUTINE_ICON_KEY));
+      setFecha(defaultDate || new Date().toISOString().slice(0, 10));
+      setStartedFromRoutine(true);
+      setEsPublica(false);
+      setGimnasio(initialGimnasio ?? null);
+      setRpe(null);
+      setExercisePickerOpen(false);
+      armSessionClock();
+      return;
+    }
+    if (!templateExercises) {
       setTitulo(getDefaultWorkoutTitle());
       setExercises([]);
       setFecha(defaultDate || new Date().toISOString().slice(0, 10));
@@ -293,8 +326,9 @@ export function WorkoutLogger() {
       setGimnasio(initialGimnasio ?? null);
       setRpe(null);
       setExercisePickerOpen(false);
+      setSessionClockStartedAt(null);
     }
-  }, [open, workoutId, activeWorkoutId, defaultDate, templateExercises, initialGimnasio]);
+  }, [open, workoutId, activeWorkoutId, defaultDate, templateExercises, templateTitle, templateRoutineIcon, initialGimnasio, setSessionClockStartedAt, armSessionClock]);
 
   // Reset al cerrar para que la próxima apertura no herede el formulario anterior.
   useEffect(() => {
@@ -311,10 +345,13 @@ export function WorkoutLogger() {
       setExercises([]);
       setExercisePickerOpen(false);
       setSelectedExerciseDetail(null);
+      setSessionClockStartedAt(null);
+      liveWorkoutStartedRef.current = false;
     }
-  }, [open]);
+  }, [open, setSessionClockStartedAt]);
 
   const togglePause = useCallback(() => {
+    if (!sessionClockStartedAtRef.current) return;
     setPausedAt((prev) => {
       if (prev === null) return Date.now();
       setPausedAccumMs((acc) => acc + (Date.now() - prev));
@@ -350,10 +387,8 @@ export function WorkoutLogger() {
 
   const pushLiveWorkoutNotification = useCallback(
     (mode: "start" | "update" = "update") => {
-      if (!isActiveWorkout || !effectiveWorkoutId) return;
-      const startedAtMs = existingWorkout?.fecha
-        ? new Date(existingWorkout.fecha).getTime()
-        : Date.now();
+      if (!isActiveWorkout || !effectiveWorkoutId || !sessionClockStartedAt) return;
+      const startedAtMs = new Date(sessionClockStartedAt).getTime();
       const { exerciseName, setLabel } = resolveLiveExerciseFields();
       const restFinished = !!restTimer.activeKey && restTimer.finished;
       const resting = restTimer.isRunning;
@@ -385,7 +420,7 @@ export function WorkoutLogger() {
     [
       isActiveWorkout,
       effectiveWorkoutId,
-      existingWorkout?.fecha,
+      sessionClockStartedAt,
       existingWorkout?.titulo,
       resolveLiveExerciseFields,
       restTimer.activeKey,
@@ -403,11 +438,14 @@ export function WorkoutLogger() {
 
   // Keep Android Live Update in sync while an active workout is open in the logger
   useEffect(() => {
-    if (!isActiveWorkout || !effectiveWorkoutId) return;
-    pushLiveWorkoutNotification("update");
+    if (!isActiveWorkout || !effectiveWorkoutId || !sessionClockStartedAt) return;
+    const mode = liveWorkoutStartedRef.current ? "update" : "start";
+    liveWorkoutStartedRef.current = true;
+    pushLiveWorkoutNotification(mode);
   }, [
     isActiveWorkout,
     effectiveWorkoutId,
+    sessionClockStartedAt,
     exercises,
     isPaused,
     pausedAccumMs,
@@ -508,12 +546,28 @@ export function WorkoutLogger() {
       setTitulo(templateTitle);
       setWorkoutIcon(templateIcon);
       setFecha(plannedDate || new Date().toISOString().slice(0, 10));
-      setExercises(updatedExercises);
+      setExercises((prev) => {
+        if (prev.length === 0) return updatedExercises;
+        const merged = updatedExercises.map((created, i) => {
+          const current = prev[i];
+          if (!current) return created;
+          return {
+            ...current,
+            id: created.id,
+            sets: current.sets.map((s, si) => ({
+              ...s,
+              id: created.sets[si]?.id ?? s.id,
+            })),
+          };
+        });
+        return [...merged, ...prev.slice(updatedExercises.length)];
+      });
       setEsPublica(false);
       setGimnasio(gym);
       setStartedFromRoutine(true);
       markWorkoutStartedFromRoutine(actividad.id);
       invalidateActiveWorkoutQueries();
+      liveWorkoutStartedRef.current = true;
       void startLiveWorkout({
         sessionId: actividad.id,
         title: templateTitle.trim() || "Entrenamiento",
@@ -541,7 +595,6 @@ export function WorkoutLogger() {
       }
 
       const now = new Date();
-      const startedAtMs = now.getTime();
       const defaultTitle = getDefaultWorkoutTitle(now);
       const gym = initialGimnasio ?? (await fetchPrefillGimnasioForUser(user.id));
       const { data: actividad, error: actError } = await supabase
@@ -561,18 +614,12 @@ export function WorkoutLogger() {
 
       setActiveWorkoutId(actividad.id);
       setTitulo(defaultTitle);
-      setExercises([]);
       setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
       setFecha(defaultDate || now.toISOString().slice(0, 10));
       setGimnasio(gym);
       setStartedFromRoutine(false);
       clearWorkoutStartedFromRoutine(actividad.id);
       invalidateActiveWorkoutQueries();
-      void startLiveWorkout({
-        sessionId: actividad.id,
-        title: defaultTitle,
-        startedAtMs,
-      });
     } catch (error: unknown) {
       toast({
         title: "Error al crear entrenamiento",
@@ -583,6 +630,126 @@ export function WorkoutLogger() {
       setCreatingActive(false);
     }
   };
+
+  const persistExerciseToWorkout = async (
+    workoutId: string,
+    ex: ExerciseFormData,
+  ): Promise<ExerciseFormData> => {
+    if (!user) throw new Error("No hay usuario");
+    const registro_series = normalizeRegistroSeries(ex.registro_series);
+    const firstSet = ex.sets[0] ?? defaultSetForMode(registro_series, null, null);
+    const setsSource =
+      ex.sets.length > 0
+        ? ex.sets
+        : Array.from({ length: initialSetCountForRegistro(registro_series) }, () => ({ ...firstSet }));
+    const { data: ej, error } = await supabase
+      .from("ejercicio")
+      .insert({
+        actividad_id: workoutId,
+        tipo_ejercicio_id: ex.tipo_ejercicio_id ?? null,
+        usuario_ejercicio_id: ex.usuario_ejercicio_id ?? null,
+        usuario_id: user.id,
+        registro_series,
+        descanso: ex.descanso ?? null,
+        rep_range: ex.repRange ?? null,
+        rir_objetivo: ex.targetRir ?? null,
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    const { data: series, error: seriesError } = await supabase
+      .from("serie")
+      .insert(
+        setsSource.map((s, i) => {
+          const serieFields = serieFieldsForRegistro(registro_series, s);
+          return {
+            ejercicio_id: ej.id,
+            usuario_id: user.id,
+            numero_serie: i + 1,
+            repeticiones: s.repeticiones ?? 0,
+            peso_kg: s.peso_kg ?? 0,
+            ...serieFields,
+            completed: s.completed ?? false,
+          };
+        }),
+      )
+      .select("id, numero_serie");
+    if (seriesError) throw seriesError;
+    const orderedSeries = [...(series ?? [])].sort((a, b) => a.numero_serie - b.numero_serie);
+    return {
+      ...ex,
+      id: ej.id,
+      registro_series,
+      sets: setsSource.map((s, i) => ({
+        ...s,
+        id: orderedSeries[i]?.id,
+        completed: s.completed ?? false,
+      })),
+    };
+  };
+
+  useEffect(() => {
+    if (!open || !effectiveWorkoutId || !user || creatingActive) return;
+    const pending = exercises.filter((ex) => !ex.id && !persistInflightRef.current.has(ex));
+    if (pending.length === 0) return;
+    pending.forEach((ex) => persistInflightRef.current.add(ex));
+    void (async () => {
+      const persisted: ExerciseFormData[] = [];
+      for (const ex of pending) {
+        try {
+          persisted.push(await persistExerciseToWorkout(effectiveWorkoutId, ex));
+        } catch (e: unknown) {
+          toast({
+            title: "Error",
+            description: e instanceof Error ? e.message : "Error desconocido",
+            variant: "destructive",
+          });
+          persisted.push(ex);
+        }
+      }
+      setExercises((prev) =>
+        prev.map((ex) => {
+          const idx = pending.indexOf(ex);
+          return idx === -1 ? ex : (persisted[idx] ?? ex);
+        }),
+      );
+    })();
+  }, [open, effectiveWorkoutId, user, creatingActive, exercises, toast]);
+
+  useEffect(() => {
+    if (!open || !effectiveWorkoutId || !sessionClockStartedAt || !user) return;
+    if (existingWorkout?.fecha_fin) return;
+    const startedIso = sessionClockStartedAt;
+    if (existingWorkout?.fecha === startedIso) {
+      queryClient.setQueryData<ActiveWorkoutSummary | null>(["activeWorkout", user.id], (old) =>
+        old && old.id === effectiveWorkoutId ? { ...old, hasExercises: true, fecha: startedIso } : old,
+      );
+      return;
+    }
+    void supabase
+      .from("actividad")
+      .update({ fecha: startedIso })
+      .eq("id", effectiveWorkoutId)
+      .then(({ error }) => {
+        if (error) return;
+        queryClient.setQueryData<ActividadWithDetails | null>(["workout", effectiveWorkoutId], (old) =>
+          old ? { ...old, fecha: startedIso } : old,
+        );
+        queryClient.setQueryData<ActiveWorkoutSummary | null>(["activeWorkout", user.id], (old) =>
+          old && old.id === effectiveWorkoutId
+            ? { ...old, fecha: startedIso, hasExercises: true }
+            : old,
+        );
+      });
+  }, [
+    open,
+    effectiveWorkoutId,
+    sessionClockStartedAt,
+    user,
+    existingWorkout?.fecha_fin,
+    existingWorkout?.fecha,
+    queryClient,
+  ]);
 
   const addExercise = async (
     catalogRef: {
@@ -596,53 +763,18 @@ export function WorkoutLogger() {
     const registro_series = normalizeRegistroSeries(rs);
     const firstSet = defaultSetForMode(registro_series, null, null);
     const setCount = initialSetCountForRegistro(registro_series);
+    const localExercise: ExerciseFormData = {
+      tipo_ejercicio_id,
+      usuario_ejercicio_id,
+      nombre,
+      registro_series,
+      sets: Array.from({ length: setCount }, () => ({ ...firstSet })),
+    };
     if (effectiveWorkoutId && user) {
       try {
-        const { data: ej, error } = await supabase
-          .from("ejercicio")
-          .insert({
-            actividad_id: effectiveWorkoutId,
-            tipo_ejercicio_id: tipo_ejercicio_id ?? null,
-            usuario_ejercicio_id: usuario_ejercicio_id ?? null,
-            usuario_id: user.id,
-            registro_series,
-          })
-          .select("id")
-          .single();
-        if (error) throw error;
-        const modeNs = normalizeRegistroSeries(registro_series);
-        const serieFields = serieFieldsForRegistro(modeNs, firstSet);
-        const { data: series, error: seriesError } = await supabase
-          .from("serie")
-          .insert(
-            Array.from({ length: setCount }, (_, i) => ({
-              ejercicio_id: ej.id,
-              usuario_id: user.id,
-              numero_serie: i + 1,
-              repeticiones: 0,
-              peso_kg: 0,
-              ...serieFields,
-              completed: false,
-            })),
-          )
-          .select("id, numero_serie");
-        if (seriesError) throw seriesError;
-        const orderedSeries = [...(series ?? [])].sort((a, b) => a.numero_serie - b.numero_serie);
-        setExercises((prev) => [
-          ...prev,
-          {
-            tipo_ejercicio_id,
-            usuario_ejercicio_id,
-            nombre,
-            id: ej.id,
-            registro_series,
-            sets: Array.from({ length: setCount }, (_, i) => ({
-              ...firstSet,
-              id: orderedSeries[i]?.id,
-              completed: false,
-            })),
-          },
-        ]);
+        const persisted = await persistExerciseToWorkout(effectiveWorkoutId, localExercise);
+        armSessionClock();
+        setExercises((prev) => [...prev, persisted]);
       } catch (e: unknown) {
         toast({
           title: "Error",
@@ -651,16 +783,8 @@ export function WorkoutLogger() {
         });
       }
     } else {
-      setExercises((prev) => [
-        ...prev,
-        {
-          tipo_ejercicio_id,
-          usuario_ejercicio_id,
-          nombre,
-          registro_series,
-          sets: Array.from({ length: setCount }, () => ({ ...firstSet })),
-        },
-      ]);
+      armSessionClock();
+      setExercises((prev) => [...prev, localExercise]);
     }
     setExercisePickerOpen(false);
   };
@@ -945,9 +1069,11 @@ export function WorkoutLogger() {
         const restEndAtMs = Date.now() + restSeconds * 1000;
         restTimer.start(`${exerciseIndex}-${setIndex}`, restSeconds, effectiveWorkoutId);
         if (isActiveWorkout && effectiveWorkoutId) {
-          const startedAtMs = existingWorkout?.fecha
-            ? new Date(existingWorkout.fecha).getTime()
-            : Date.now();
+          const startedAtMs = sessionClockStartedAt
+            ? new Date(sessionClockStartedAt).getTime()
+            : existingWorkout?.fecha
+              ? new Date(existingWorkout.fecha).getTime()
+              : Date.now();
           const pauseExtra =
             pausedAccumMs + (pausedAt != null ? Math.max(0, Date.now() - pausedAt) : 0);
           void updateLiveWorkout({
@@ -974,6 +1100,7 @@ export function WorkoutLogger() {
       isActiveWorkout,
       existingWorkout?.fecha,
       existingWorkout?.titulo,
+      sessionClockStartedAt,
       pausedAccumMs,
       pausedAt,
       isPaused,
@@ -1189,9 +1316,11 @@ export function WorkoutLogger() {
 
         if (isActiveWorkout) {
           const endIso = new Date().toISOString();
-          const startIso = existingWorkout?.fecha
-            ? mergeCalendarDatePreservingTime(fecha, existingWorkout.fecha)
-            : new Date().toISOString();
+          const startIso = sessionClockStartedAt
+            ? mergeCalendarDatePreservingTime(fecha, sessionClockStartedAt)
+            : existingWorkout?.fecha
+              ? mergeCalendarDatePreservingTime(fecha, existingWorkout.fecha)
+              : new Date().toISOString();
           const { error } = await supabase
             .from("actividad")
             .update({
@@ -1210,7 +1339,7 @@ export function WorkoutLogger() {
             await persistActividadHeartRate({
               actividadId: effectiveWorkoutId,
               bleSamples: hrMonitor.samples,
-              startIso: existingWorkout?.fecha ?? new Date(fecha).toISOString(),
+              startIso: sessionClockStartedAt ?? existingWorkout?.fecha ?? new Date(fecha).toISOString(),
               endIso,
             });
           } catch {
@@ -1545,16 +1674,15 @@ export function WorkoutLogger() {
                         </>
                       )}
                     </div>
-                    {existingWorkout && (
-                      <div className="shrink-0">
-                        <ElapsedTime
-                          since={existingWorkout.fecha}
-                          pausedAccumMs={pausedAccumMs}
-                          pausedAt={pausedAt}
-                          paused={isPaused}
-                        />
-                      </div>
-                    )}
+                    <div className="shrink-0">
+                      <ElapsedTime
+                        since={sessionClockStartedAt}
+                        running={!!sessionClockStartedAt}
+                        pausedAccumMs={pausedAccumMs}
+                        pausedAt={pausedAt}
+                        paused={isPaused}
+                      />
+                    </div>
                   </div>
                   <RestProgressBar
                     open={!!restTimer.activeKey}
@@ -1615,7 +1743,6 @@ export function WorkoutLogger() {
 
                 <WorkoutExerciseList
                   exercises={exercises}
-                  creatingActive={creatingActive || preparingLiveSession}
                   isActiveWorkout={isActiveWorkout}
                   onDragEnd={handleDragEnd}
                   getExerciseSortId={getExerciseSortId}
@@ -1652,7 +1779,7 @@ export function WorkoutLogger() {
               />
             )}
 
-            {showFloatingActionBar && exercises.length === 0 && !creatingActive && !preparingLiveSession ? (
+            {showFloatingActionBar && exercises.length === 0 ? (
               <WorkoutEmptyExerciseState
                 open={exercisePickerOpen}
                 onOpenChange={setExercisePickerOpen}
@@ -1670,6 +1797,7 @@ export function WorkoutLogger() {
                 onRequestDelete={requestDeleteWorkout}
                 isPaused={isPaused}
                 onTogglePause={togglePause}
+                canPause={!!sessionClockStartedAt}
                 exercisePickerOpen={exercisePickerOpen}
                 onExercisePickerOpenChange={setExercisePickerOpen}
                 onAddExercise={addExercise}

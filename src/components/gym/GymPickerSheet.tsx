@@ -17,7 +17,13 @@ import { GymAddSheet } from "@/components/gym/GymAddSheet";
 import { GymDirectoryDrawer } from "@/components/gym/GymDirectoryDrawer";
 import { useGimnasiosCatalog, useDefaultGimnasio, useLastGimnasio } from "@/hooks/useGimnasios";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
-import { formatGymDistance, formatGimnasioListTitle, duplicateGymNames, rankGimnasios } from "@/lib/gimnasioSearch";
+import {
+  formatGymDistance,
+  formatGimnasioListTitle,
+  duplicateGymNames,
+  duplicateGymNamesInCity,
+  rankGimnasios,
+} from "@/lib/gimnasioSearch";
 import type { GimnasioCatalogItem, SelectedGimnasio } from "@/types/gimnasio";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +57,7 @@ export function GymPickerSheet({
   const [mapOpen, setMapOpen] = useState(false);
 
   const duplicateNames = useMemo(() => duplicateGymNames(gyms), [gyms]);
+  const sameCityDuplicates = useMemo(() => duplicateGymNamesInCity(gyms), [gyms]);
 
   const pinnedId = defaultGym?.id ?? lastGym?.id ?? null;
 
@@ -68,7 +75,7 @@ export function GymPickerSheet({
   const handleSelect = (gym: GimnasioCatalogItem) => {
     onSelect({
       id: gym.id,
-      nombre: formatGimnasioListTitle(gym, duplicateNames),
+      nombre: formatGimnasioListTitle(gym, duplicateNames, sameCityDuplicates),
       ciudad: gym.ciudad,
     });
     onOpenChange(false);
@@ -149,7 +156,7 @@ export function GymPickerSheet({
                         />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-medium">
-                            {formatGimnasioListTitle(gym, duplicateNames)}
+                            {formatGimnasioListTitle(gym, duplicateNames, sameCityDuplicates)}
                           </span>
                           <span className="block truncate text-xs text-muted-foreground">
                             {[gym.ciudad, formatGymDistance(gym.distanceKm), pinLabel]

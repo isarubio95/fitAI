@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,8 @@ import { useActivityLikes } from "@/hooks/useActivityLikes";
 import { useActivityCommentCounts } from "@/hooks/useActivityComments";
 import { useCardioSessionLikes } from "@/hooks/useCardioSessionLikes";
 import { useCardioSessionCommentCounts } from "@/hooks/useCardioSessionComments";
+import { useMountAfterPaint } from "@/hooks/useMountAfterPaint";
+import { usePagedWindow } from "@/hooks/usePagedWindow";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
@@ -29,12 +31,81 @@ const FILTERS: { id: ActivityFilter; label: string }[] = [
   { id: "cardio", label: "Cardio" },
 ];
 
-const YouActivities = () => {
+const PAGE_WRAP_CLASS =
+  "flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3";
+
+function ActivitiesFeedSkeleton() {
+  return (
+    <div
+      className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}
+      aria-busy="true"
+      aria-label="Cargando actividades"
+    >
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div
+          key={i}
+          className="surface-card space-y-4 rounded-2xl bg-card px-6 pb-4 pt-6 md:rounded-3xl"
+        >
+          <div className="flex items-start gap-3">
+            <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1 space-y-2 pt-1">
+              <Skeleton className="h-3.5 w-28" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </div>
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function YouActivitiesFrame({
+  filter,
+  onFilter,
+  children,
+}: {
+  filter: ActivityFilter;
+  onFilter: (next: ActivityFilter) => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className={PAGE_WRAP_CLASS}>
+      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
+        <div className="flex gap-2 overflow-x-auto px-4 py-2 md:px-0">
+          {FILTERS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => onFilter(opt.id)}
+              className={cn(
+                filterPillBase,
+                "whitespace-nowrap",
+                filter === opt.id ? filterPillActive : filterPillInactive,
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Historial, likes y tarjetas (mapas incluidos) son demasiado caros para el
+ * mismo commit que el cambio de pestaña: Progreso ya suele tener el historial
+ * en caché, `isLoading` sale en falso y el skeleton no llegaba a pintarse.
+ */
+function YouActivitiesContent() {
   const { user } = useAuth();
   const { openMyProfile, openUserProfile } = useProfileDrawer();
   const [filter, setFilter] = useState<ActivityFilter>("all");
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
   const [cardioDetailsId, setCardioDetailsId] = useState<string | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const { items, isLoading } = useProfileActivityHistory(user?.id, Number.POSITIVE_INFINITY);
 
@@ -57,21 +128,26 @@ const YouActivities = () => {
     return items.filter((item) => item.type === filter);
   }, [items, filter]);
 
+  const { visible, hasMore, loadMore } = usePagedWindow(filtered, {
+    pageSize: 8,
+    resetKey: filter,
+  });
+
   const publicWorkoutIds = useMemo(() => {
     const ids: string[] = [];
-    for (const item of filtered) {
+    for (const item of visible) {
       if (item.type === "gym" && item.workout.es_publica) ids.push(item.workout.id);
     }
     return ids;
-  }, [filtered]);
+  }, [visible]);
 
   const publicCardioIds = useMemo(() => {
     const ids: string[] = [];
-    for (const item of filtered) {
+    for (const item of visible) {
       if (item.type === "cardio" && item.session.es_publica) ids.push(item.session.id);
     }
     return ids;
-  }, [filtered]);
+  }, [visible]);
 
   const { likeCounts, likedIds, toggleLike, isToggling: isTogglingLike } = useActivityLikes(publicWorkoutIds);
   const { commentCounts, commentedIds } = useActivityCommentCounts(publicWorkoutIds);
@@ -113,55 +189,32 @@ const YouActivities = () => {
     else openUserProfile(authorId);
   };
 
-  return (
-    <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3">
-      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
-        <div className="flex gap-2 overflow-x-auto px-4 py-2 md:px-0">
-          {FILTERS.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setFilter(opt.id)}
-              className={cn(
-                filterPillBase,
-                "whitespace-nowrap",
-                filter === opt.id ? filterPillActive : filterPillInactive,
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasMore || isLoading) return;
 
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { root: null, rootMargin: "300px 0px", threshold: 0 },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, isLoading, loadMore, visible.length]);
+
+  return (
+    <>
+      <YouActivitiesFrame filter={filter} onFilter={setFilter}>
         {isLoading ? (
-          <div
-            className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}
-            aria-busy="true"
-            aria-label="Cargando actividades"
-          >
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className={cn("surface-card space-y-4 rounded-2xl bg-card px-6 pb-4 pt-6 md:rounded-3xl")}
-              >
-                <div className="flex items-start gap-3">
-                  <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
-                  <div className="min-w-0 flex-1 space-y-2 pt-1">
-                    <Skeleton className="h-3.5 w-28" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                </div>
-                <Skeleton className="h-24 w-full rounded-xl" />
-              </div>
-            ))}
-          </div>
+          <ActivitiesFeedSkeleton />
         ) : filtered.length === 0 ? (
           <p className="px-6 py-10 text-center text-sm text-muted-foreground">
             Aún no has registrado actividades.
           </p>
         ) : (
           <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
-            {filtered.map((item) =>
+            {visible.map((item) =>
               item.type === "gym" ? (
                 <WorkoutFeedCard
                   key={`gym-${item.workout.id}`}
@@ -182,9 +235,10 @@ const YouActivities = () => {
                 />
               ),
             )}
+            {hasMore ? <div ref={loadMoreRef} className="h-px w-full" aria-hidden /> : null}
           </div>
         )}
-      </div>
+      </YouActivitiesFrame>
 
       <WorkoutDetailsSheet
         open={!!workoutDetailsId}
@@ -201,8 +255,22 @@ const YouActivities = () => {
         }}
         sessionId={cardioDetailsId}
       />
-    </div>
+    </>
   );
+}
+
+const YouActivities = () => {
+  const ready = useMountAfterPaint();
+
+  if (!ready) {
+    return (
+      <YouActivitiesFrame filter="all" onFilter={() => undefined}>
+        <ActivitiesFeedSkeleton />
+      </YouActivitiesFrame>
+    );
+  }
+
+  return <YouActivitiesContent />;
 };
 
 export default YouActivities;
