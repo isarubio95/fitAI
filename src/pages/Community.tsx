@@ -151,7 +151,7 @@ export default function Community() {
           placeholder="Ej: juan_gym"
           value={usernameQuery}
           onChange={(e) => setUsernameQuery(e.target.value)}
-          className="h-12 bg-transparent"
+          className="h-12"
         />
       </div>
     </>
