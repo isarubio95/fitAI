@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type MouseEvent } from "react";
+import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
 import { Heart, MessageCircle, Loader2, Trash2, Send, Share2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,10 @@ export function ActivitySocialActions({
   const [draft, setDraft] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
+
+  useEffect(() => {
+    if (defaultCommentsOpen) setCommentsOpen(true);
+  }, [defaultCommentsOpen]);
   const commentsPanel = useCalendarDayExpandTransition(commentsOpen ? "comments" : null);
   const commentsMounted = !!commentsPanel;
 

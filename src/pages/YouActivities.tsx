@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfileActivityHistory } from "@/hooks/useProfileActivityHistory";
-import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
+import { useProfileDrawer } from "@/components/layout/profileDrawerContext";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { CardioFeedCard, type CardioFeedCardSocial } from "@/components/cardio/CardioFeedCard";
 import { CardioDetailsSheet } from "@/components/cardio/CardioDetailsSheet";
@@ -22,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
+import { pinFocusedYouActivity } from "@/lib/youActivityHref";
 
 type ActivityFilter = "all" | "gym" | "cardio";
 
@@ -102,10 +104,15 @@ function YouActivitiesFrame({
 function YouActivitiesContent() {
   const { user } = useAuth();
   const { openMyProfile, openUserProfile } = useProfileDrawer();
+  const [searchParams] = useSearchParams();
+  const focusGymId = searchParams.get("gym");
+  const focusCardioId = searchParams.get("cardio");
+  const focusCommentsOpen = searchParams.get("comments") === "1";
   const [filter, setFilter] = useState<ActivityFilter>("all");
   const [workoutDetailsId, setWorkoutDetailsId] = useState<string | null>(null);
   const [cardioDetailsId, setCardioDetailsId] = useState<string | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const focusedRef = useRef<HTMLDivElement | null>(null);
 
   const { items, isLoading } = useProfileActivityHistory(user?.id, Number.POSITIVE_INFINITY);
 
@@ -128,9 +135,14 @@ function YouActivitiesContent() {
     return items.filter((item) => item.type === filter);
   }, [items, filter]);
 
-  const { visible, hasMore, loadMore } = usePagedWindow(filtered, {
+  const displayItems = useMemo(
+    () => pinFocusedYouActivity(filtered, focusGymId, focusCardioId),
+    [filtered, focusGymId, focusCardioId],
+  );
+
+  const { visible, hasMore, loadMore } = usePagedWindow(displayItems, {
     pageSize: 8,
-    resetKey: filter,
+    resetKey: `${filter}:${focusGymId ?? ""}:${focusCardioId ?? ""}`,
   });
 
   const publicWorkoutIds = useMemo(() => {
@@ -167,6 +179,7 @@ function YouActivitiesContent() {
     commented: commentedIds.has(actividadId),
     onToggleLike: () => toggleLike(actividadId),
     isTogglingLike: isTogglingLike.has(actividadId),
+    defaultCommentsOpen: focusCommentsOpen && focusGymId === actividadId,
   });
 
   const cardioSocialFor = (sessionId: string): CardioFeedCardSocial => ({
@@ -176,6 +189,7 @@ function YouActivitiesContent() {
     commented: cardioCommentedIds.has(sessionId),
     onToggleLike: () => toggleCardioLike(sessionId),
     isTogglingLike: isTogglingCardioLike.has(sessionId),
+    defaultCommentsOpen: focusCommentsOpen && focusCardioId === sessionId,
   });
 
   const workoutAuthor: WorkoutFeedCardAuthor = {
@@ -188,6 +202,15 @@ function YouActivitiesContent() {
     if (authorId === user?.id) openMyProfile();
     else openUserProfile(authorId);
   };
+
+  useEffect(() => {
+    if (focusGymId || focusCardioId) setFilter("all");
+  }, [focusGymId, focusCardioId]);
+
+  useEffect(() => {
+    if (!focusGymId && !focusCardioId) return;
+    focusedRef.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+  }, [focusGymId, focusCardioId, isLoading, visible.length]);
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -214,27 +237,45 @@ function YouActivitiesContent() {
           </p>
         ) : (
           <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
-            {visible.map((item) =>
-              item.type === "gym" ? (
-                <WorkoutFeedCard
-                  key={`gym-${item.workout.id}`}
-                  workout={item.workout}
-                  author={workoutAuthor}
-                  onSelectAuthor={openAuthorProfile}
-                  onSelectWorkout={setWorkoutDetailsId}
-                  social={item.workout.es_publica ? socialFor(item.workout.id) : null}
-                />
-              ) : (
-                <CardioFeedCard
+            {visible.map((item) => {
+              if (item.type === "gym") {
+                const isFocused = item.workout.id === focusGymId;
+                return (
+                  <div
+                    key={`gym-${item.workout.id}`}
+                    ref={isFocused ? focusedRef : undefined}
+                    className="scroll-mt-24"
+                    data-focused-activity={isFocused ? "true" : undefined}
+                  >
+                    <WorkoutFeedCard
+                      workout={item.workout}
+                      author={workoutAuthor}
+                      onSelectAuthor={openAuthorProfile}
+                      onSelectWorkout={setWorkoutDetailsId}
+                      social={item.workout.es_publica ? socialFor(item.workout.id) : null}
+                    />
+                  </div>
+                );
+              }
+
+              const isFocused = item.session.id === focusCardioId;
+              return (
+                <div
                   key={`cardio-${item.session.id}`}
-                  session={item.session}
-                  author={workoutAuthor}
-                  onSelectAuthor={openAuthorProfile}
-                  onSelectSession={setCardioDetailsId}
-                  social={item.session.es_publica ? cardioSocialFor(item.session.id) : null}
-                />
-              ),
-            )}
+                  ref={isFocused ? focusedRef : undefined}
+                  className="scroll-mt-24"
+                  data-focused-activity={isFocused ? "true" : undefined}
+                >
+                  <CardioFeedCard
+                    session={item.session}
+                    author={workoutAuthor}
+                    onSelectAuthor={openAuthorProfile}
+                    onSelectSession={setCardioDetailsId}
+                    social={item.session.es_publica ? cardioSocialFor(item.session.id) : null}
+                  />
+                </div>
+              );
+            })}
             {hasMore ? <div ref={loadMoreRef} className="h-px w-full" aria-hidden /> : null}
           </div>
         )}

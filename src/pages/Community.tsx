@@ -11,7 +11,7 @@ import { useActivityLikes } from "@/hooks/useActivityLikes";
 import { useActivityCommentCounts } from "@/hooks/useActivityComments";
 import { useCardioSessionLikes } from "@/hooks/useCardioSessionLikes";
 import { useCardioSessionCommentCounts } from "@/hooks/useCardioSessionComments";
-import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
+import { useProfileDrawer } from "@/components/layout/profileDrawerContext";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import {
   CardioFeedCard,

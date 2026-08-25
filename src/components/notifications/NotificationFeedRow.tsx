@@ -1,6 +1,6 @@
 import { Heart, Info, MessageCircle, UserPlus, Zap, type LucideIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
+import { useProfileDrawer } from "@/components/layout/profileDrawerContext";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { navigateFromInAppToast } from "@/lib/inAppToastNavigation";
 import {

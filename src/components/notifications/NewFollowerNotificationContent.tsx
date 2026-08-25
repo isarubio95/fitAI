@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { User, UserCheck, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
+import { useProfileDrawer } from "@/components/layout/profileDrawerContext";
 import { useFollows } from "@/hooks/useFollows";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { cn } from "@/lib/utils";

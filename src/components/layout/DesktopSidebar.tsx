@@ -5,7 +5,7 @@ import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { ProfileDrawerTrigger } from "./ProfileDrawer";
+import { ProfileDrawerTrigger } from "@/components/layout/ProfileDrawer";
 import { SettingsDrawer } from "./SettingsDrawer";
 import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";

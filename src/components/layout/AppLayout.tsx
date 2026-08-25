@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Outlet } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
 import { DesktopSidebar } from "./DesktopSidebar";
-import { ProfileDrawerProvider, ProfileDrawerTrigger } from "./ProfileDrawer";
+import { ProfileDrawerProvider, ProfileDrawerTrigger } from "@/components/layout/ProfileDrawer";
 import { SettingsDrawer } from "./SettingsDrawer";
 import { ActiveWorkoutPill } from "@/components/workout/ActiveWorkoutPill";
 import { GlobalWorkoutDrawerProvider } from "@/hooks/useGlobalWorkoutDrawer";

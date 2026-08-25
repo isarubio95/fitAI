@@ -1,13 +1,15 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+import {
+  ProfileDrawerProvider as ProfileDrawerContextProvider,
+  useProfileDrawer,
+} from "@/components/layout/profileDrawerContext";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useLogros, pickFeaturedLogros } from "@/hooks/useLogros";
@@ -39,59 +41,14 @@ import { useActivityCommentCounts } from "@/hooks/useActivityComments";
 import { useCardioSessionLikes } from "@/hooks/useCardioSessionLikes";
 import { useCardioSessionCommentCounts } from "@/hooks/useCardioSessionComments";
 
-type ProfileDrawerContextValue = {
-  open: boolean;
-  targetUserId: string | null;
-  openMyProfile: () => void;
-  openUserProfile: (userId: string) => void;
-  onOpenChange: (open: boolean) => void;
-};
-
-const ProfileDrawerContext = createContext<ProfileDrawerContextValue | null>(null);
-
-export function useProfileDrawer() {
-  const ctx = useContext(ProfileDrawerContext);
-  if (!ctx) {
-    throw new Error("useProfileDrawer debe usarse dentro de ProfileDrawerProvider");
-  }
-  return ctx;
-}
+export { useProfileDrawer };
 
 export function ProfileDrawerProvider({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const [targetUserId, setTargetUserId] = useState<string | null>(null);
-
-  const openMyProfile = useCallback(() => {
-    setTargetUserId(null);
-    setOpen(true);
-  }, []);
-
-  const openUserProfile = useCallback((userId: string) => {
-    setTargetUserId(userId);
-    setOpen(true);
-  }, []);
-
-  const onOpenChange = useCallback((next: boolean) => {
-    setOpen(next);
-    if (!next) setTargetUserId(null);
-  }, []);
-
-  const value = useMemo(
-    () => ({
-      open,
-      targetUserId,
-      openMyProfile,
-      openUserProfile,
-      onOpenChange,
-    }),
-    [open, targetUserId, openMyProfile, openUserProfile, onOpenChange],
-  );
-
   return (
-    <ProfileDrawerContext.Provider value={value}>
+    <ProfileDrawerContextProvider>
       {children}
       <ProfileDrawerSheet />
-    </ProfileDrawerContext.Provider>
+    </ProfileDrawerContextProvider>
   );
 }
 

@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useRoutines, useDeleteRoutine, useUpdateRoutineOrder, useDuplicateRoutine, useRoutineLastTrainedByName } from "@/hooks/useRoutines";
 import { cn } from "@/lib/utils";
+import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -408,7 +409,8 @@ const Routines = () => {
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 max-w-2xl flex-1 flex-col gap-3 overflow-x-hidden bg-background px-0 pt-3 pb-6 mx-auto md:px-8 md:pt-6",
+        "flex w-full min-w-0 max-w-2xl flex-1 flex-col overflow-x-hidden bg-background px-0 pb-6 mx-auto pt-2.5 md:px-8 md:pt-6",
+        PAGE_CARD_STACK_GAP,
         "max-md:-mb-24 max-md:pb-[calc(var(--app-bottom-nav-inset,5.5rem)+3.5rem)] md:pb-20",
       )}
     >
@@ -472,7 +474,7 @@ const Routines = () => {
       ) : null}
 
       {isLoading ? (
-        <div className="flex w-full flex-col gap-2.5 bg-background px-4 md:gap-2.75 md:px-0">
+        <div className={cn("flex w-full flex-col bg-background px-4 md:px-0", PAGE_CARD_STACK_GAP)}>
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-28 w-full rounded-xl border border-border/40 bg-card" />
           ))}
@@ -488,7 +490,7 @@ const Routines = () => {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sortedRoutines.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-            <div className="flex w-full flex-col gap-2.5 bg-background px-4 md:gap-2.75 md:px-0">
+            <div className={cn("flex w-full flex-col bg-background px-4 md:px-0", PAGE_CARD_STACK_GAP)}>
               {sortedRoutines.map((r) => (
                 <SortableRoutineCard
                   key={r.id}

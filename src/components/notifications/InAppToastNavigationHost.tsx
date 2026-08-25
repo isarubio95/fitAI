@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
-import { communityActivityHref } from "@/lib/communityActivityHref";
+import { useProfileDrawer } from "@/components/layout/profileDrawerContext";
+import { youActivityHref } from "@/lib/youActivityHref";
 import {
   setInAppToastNavigationHandler,
   type InAppToastDestination,
@@ -9,7 +9,7 @@ import {
 
 /**
  * Recibe destinos de toasts (Sonner vive fuera de los providers) y abre
- * perfil o la tarjeta en Comunidad.
+ * perfil o la actividad propia en Tú > Actividades.
  */
 export function InAppToastNavigationHost() {
   const { openUserProfile } = useProfileDrawer();
@@ -22,7 +22,7 @@ export function InAppToastNavigationHost() {
         return;
       }
       navigate(
-        communityActivityHref({
+        youActivityHref({
           targetType: destination.targetType,
           targetId: destination.targetId,
           openComments: destination.openComments,

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
@@ -23,7 +24,7 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: mockUseAuth,
 }));
 
-vi.mock("@/components/layout/ProfileDrawer", () => ({
+vi.mock("@/components/layout/profileDrawerContext", () => ({
   useProfileDrawer: () => ({
     openMyProfile: vi.fn(),
     openUserProfile: vi.fn(),
@@ -82,15 +83,25 @@ vi.mock("@/components/cardio/CardioDetailsSheet", () => ({
 
 import YouActivities from "@/pages/YouActivities";
 
-const CACHED_GYM = {
+const gymItem = (id: string, titulo: string) => ({
   type: "gym" as const,
   fecha: "2026-08-01",
   workout: {
-    id: "w1",
-    titulo: "Press banca",
+    id,
+    titulo,
     es_publica: false,
   },
-};
+});
+
+const CACHED_GYM = gymItem("w1", "Press banca");
+
+function renderActivities(url = "/evolution?tab=activities") {
+  return render(
+    <MemoryRouter initialEntries={[url]}>
+      <YouActivities />
+    </MemoryRouter>,
+  );
+}
 
 describe("YouActivities", () => {
   beforeEach(() => {
@@ -105,7 +116,7 @@ describe("YouActivities", () => {
   it("muestra skeleton en el primer pintado aunque el historial ya esté en caché", () => {
     mockUseMountAfterPaint.mockReturnValue(false);
 
-    render(<YouActivities />);
+    renderActivities();
 
     expect(screen.getByLabelText("Cargando actividades")).toBeInTheDocument();
     expect(screen.queryByText("Press banca")).not.toBeInTheDocument();
@@ -114,9 +125,23 @@ describe("YouActivities", () => {
   it("muestra las tarjetas cuando el panel ya se ha pintado y hay datos", () => {
     mockUseMountAfterPaint.mockReturnValue(true);
 
-    render(<YouActivities />);
+    renderActivities();
 
     expect(screen.queryByLabelText("Cargando actividades")).not.toBeInTheDocument();
     expect(screen.getByText("Press banca")).toBeInTheDocument();
+  });
+
+  it("pone al frente la actividad a la que apunta la notificación", () => {
+    mockUseMountAfterPaint.mockReturnValue(true);
+    mockUseProfileActivityHistory.mockReturnValue({
+      items: [gymItem("w1", "Press banca"), gymItem("w2", "Sentadilla")],
+      isLoading: false,
+    });
+
+    renderActivities("/evolution?tab=activities&gym=w2");
+
+    const titles = screen.getAllByRole("article").map((el) => el.textContent);
+    expect(titles[0]).toContain("Sentadilla");
+    expect(screen.getByText("Sentadilla").closest("[data-focused-activity='true']")).toBeTruthy();
   });
 });
