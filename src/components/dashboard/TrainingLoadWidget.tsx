@@ -34,7 +34,6 @@ import {
 } from "@/components/dashboard/chartScrub";
 import { FitnessFatigueBars } from "@/components/dashboard/training-load/FitnessFatigueBars";
 import { FormHero } from "@/components/dashboard/training-load/FormHero";
-import { FormScale } from "@/components/dashboard/training-load/FormScale";
 import { getFormZone } from "@/components/dashboard/training-load/formZones";
 import {
   formatAxisValue,
@@ -320,7 +319,6 @@ export function TrainingLoadWidget({
           <>
             <FormHero form={totals.form} />
             <FitnessFatigueBars fitness={totals.fitness} fatigue={totals.fatigue} />
-            <FormScale form={totals.form} />
           </>
         )}
 
