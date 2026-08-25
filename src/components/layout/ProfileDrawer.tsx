@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLogros, pickFeaturedLogros } from "@/hooks/useLogros";
 import { useProfileActivityHistory } from "@/hooks/useProfileActivityHistory";
 import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { Trophy, ChevronRight, Pencil, Loader2 } from "lucide-react";
@@ -33,7 +33,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP, PAGE_STACK_TOP } from "@/lib/pageStyles";
-import { buildAuthAvatarCandidates, useUserAvatar } from "@/hooks/useUserAvatar";
+import { buildAuthAvatarCandidates } from "@/hooks/useUserAvatar";
 import { useProfileAvatarUpload } from "@/hooks/useProfileAvatarUpload";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityLikes } from "@/hooks/useActivityLikes";
@@ -55,7 +55,7 @@ export function ProfileDrawerProvider({ children }: { children: ReactNode }) {
 export function ProfileDrawerTrigger() {
   const { user } = useAuth();
   const { openMyProfile } = useProfileDrawer();
-  const { data: profileAvatar } = useQuery({
+  const { data: profileAvatar, isLoading: loadingProfileAvatar } = useQuery({
     queryKey: ["profile-avatar", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
@@ -69,13 +69,10 @@ export function ProfileDrawerTrigger() {
     },
   });
 
-  const initials = user?.email?.trim()?.[0]?.toUpperCase() || "U";
-  const avatar = useUserAvatar(
-    useMemo(() => {
-      const authCandidates = buildAuthAvatarCandidates(user);
-      return profileAvatar ? [profileAvatar, ...authCandidates] : authCandidates;
-    }, [profileAvatar, user]),
-  );
+  const avatarCandidates = useMemo(() => {
+    const authCandidates = buildAuthAvatarCandidates(user);
+    return profileAvatar ? [profileAvatar, ...authCandidates] : authCandidates;
+  }, [profileAvatar, user]);
 
   return (
     <button
@@ -84,35 +81,14 @@ export function ProfileDrawerTrigger() {
       aria-label="Perfil"
       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <Avatar className="h-6.5 w-6.5">
-        {avatar.src && <AvatarImage src={avatar.src} alt="" onError={avatar.onError} />}
-        <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold ring-1 ring-primary/35 ring-inset">
-          {initials}
-        </AvatarFallback>
-      </Avatar>
+      <UserAvatar
+        candidates={avatarCandidates}
+        username={user?.email}
+        pending={loadingProfileAvatar && avatarCandidates.length === 0}
+        className="h-6.5 w-6.5"
+        fallbackClassName="bg-primary/10 text-primary text-xs font-semibold ring-1 ring-primary/35 ring-inset"
+      />
     </button>
-  );
-}
-
-function initialsFromUsername(username?: string | null) {
-  return username?.trim()?.[0]?.toUpperCase() || "U";
-}
-
-function UserAvatar({
-  avatarUrl,
-  username,
-  className,
-}: {
-  avatarUrl?: string | null;
-  username?: string | null;
-  className?: string;
-}) {
-  const avatar = useUserAvatar([avatarUrl]);
-  return (
-    <Avatar className={className}>
-      {avatar.src ? <AvatarImage src={avatar.src} alt="" onError={avatar.onError} /> : null}
-      <AvatarFallback className="text-[10px]">{initialsFromUsername(username)}</AvatarFallback>
-    </Avatar>
   );
 }
 
@@ -262,32 +238,24 @@ function ProfileDrawerSheet() {
     isTogglingLike: isTogglingCardioLike.has(sessionId),
   });
 
-  const displayAvatar = useUserAvatar(
-    useMemo(() => {
-      if (isViewingSelf && localAvatarPreview) return [localAvatarPreview];
-      const fromProfile = perfilRow?.avatar_url;
-      if (!isViewingSelf) return fromProfile ? [fromProfile] : [];
-      const base = buildAuthAvatarCandidates(user);
-      return fromProfile ? [fromProfile, ...base] : base;
-    }, [isViewingSelf, localAvatarPreview, perfilRow?.avatar_url, user]),
-  );
+  const headerAvatarCandidates = useMemo(() => {
+    if (isViewingSelf && localAvatarPreview) return [localAvatarPreview];
+    const fromProfile = perfilRow?.avatar_url;
+    if (!isViewingSelf) return fromProfile ? [fromProfile] : [];
+    const base = buildAuthAvatarCandidates(user);
+    return fromProfile ? [fromProfile, ...base] : base;
+  }, [isViewingSelf, localAvatarPreview, perfilRow?.avatar_url, user]);
 
   useEffect(() => {
     if (!open) setLocalAvatarPreview(null);
   }, [open]);
 
-  const displayNameLine = loadingPerfil
-    ? "..."
-    : (perfilRow?.username ?? (isViewingSelf ? user?.email : null) ?? "Usuario");
-
-  const headerInitials =
-    isViewingSelf && user?.email && !displayAvatar.src
-      ? user.email.trim()?.[0]?.toUpperCase() || "U"
-      : initialsFromUsername(perfilRow?.username);
+  const displayName =
+    perfilRow?.username ?? (isViewingSelf ? user?.email : null) ?? "Usuario";
 
   const workoutAuthor: WorkoutFeedCardAuthor = {
     id: profileUserId,
-    username: displayNameLine,
+    username: displayName,
     avatar_url: isViewingSelf && localAvatarPreview ? localAvatarPreview : perfilRow?.avatar_url ?? null,
   };
 
@@ -319,17 +287,16 @@ function ProfileDrawerSheet() {
       >
         <div className={cn("min-h-0 flex-1 overflow-y-auto bg-card dark:bg-transparent", drawerSafeAreaBottom)}>
           <DrawerHeader className="bg-card px-6 pb-2 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left dark:bg-transparent">
-            <DrawerTitle className="sr-only">{displayNameLine}</DrawerTitle>
+            <DrawerTitle className="sr-only">{loadingPerfil ? "Perfil" : displayName}</DrawerTitle>
             <div className="flex gap-4 items-start">
             <div className="relative mr-1 shrink-0">
-              <Avatar className="h-16 w-16 ring-2 ring-border/60">
-                {displayAvatar.src && (
-                  <AvatarImage src={displayAvatar.src} alt="" className="object-cover" onError={displayAvatar.onError} />
-                )}
-                <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
-                  {headerInitials}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                candidates={headerAvatarCandidates}
+                username={perfilRow?.username ?? (isViewingSelf ? user?.email : null)}
+                pending={loadingPerfil}
+                className="h-16 w-16 ring-2 ring-border/60"
+                fallbackClassName="bg-primary/10 text-primary text-lg font-bold"
+              />
               {isViewingSelf && (
                 <Button
                   type="button"
@@ -384,7 +351,11 @@ function ProfileDrawerSheet() {
                   />
                 </>
               )}
-              <p className="text-lg font-semibold leading-tight truncate">{displayNameLine}</p>
+              {loadingPerfil ? (
+                <Skeleton className="h-6 w-36" aria-hidden />
+              ) : (
+                <p className="text-lg font-semibold leading-tight truncate">{displayName}</p>
+              )}
               <div className="grid w-full min-w-0 grid-cols-3 gap-x-5 gap-y-0">
                 <div className="min-w-0 w-full flex flex-col items-center text-center" aria-busy={loadingWorkoutHistory}>
                   {loadingWorkoutHistory ? (
@@ -565,7 +536,17 @@ function ProfileDrawerSheet() {
           </DrawerHeader>
           <div className="mt-3 px-6 pb-6">
             {loadingFollowUsers ? (
-              <p className="py-2 text-sm text-muted-foreground">Cargando...</p>
+              <div className="flex flex-col gap-3" aria-busy>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 rounded-md border bg-card px-2 py-2"
+                  >
+                    <Skeleton className="h-8 w-8 rounded-full" aria-hidden />
+                    <Skeleton className="h-4 w-28" aria-hidden />
+                  </div>
+                ))}
+              </div>
             ) : followUsers.length === 0 ? (
               <p className="py-2 text-sm text-muted-foreground">No hay usuarios para mostrar.</p>
             ) : (

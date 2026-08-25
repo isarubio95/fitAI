@@ -1,13 +1,12 @@
 import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
 import { Heart, MessageCircle, Loader2, Trash2, Send, Share2 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityComments } from "@/hooks/useActivityComments";
 import { useCardioSessionComments } from "@/hooks/useCardioSessionComments";
-import { useUserAvatar } from "@/hooks/useUserAvatar";
 import {
   ACTIVITY_COMMENT_MAX_LENGTH,
   normalizeActivityCommentText,
@@ -28,12 +27,12 @@ function CommentAuthorAvatar({
   avatarUrl?: string | null;
   username?: string | null;
 }) {
-  const avatar = useUserAvatar([avatarUrl]);
   return (
-    <Avatar className="mt-0.5 h-7 w-7 shrink-0">
-      {avatar.src ? <AvatarImage src={avatar.src} alt="" onError={avatar.onError} /> : null}
-      <AvatarFallback>{username?.trim()?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-    </Avatar>
+    <UserAvatar
+      avatarUrl={avatarUrl}
+      username={username}
+      className="mt-0.5 h-7 w-7 shrink-0"
+    />
   );
 }
 

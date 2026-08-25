@@ -1,7 +1,6 @@
 import { Heart, Info, MessageCircle, UserPlus, Zap, type LucideIcon } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useProfileDrawer } from "@/components/layout/profileDrawerContext";
-import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { navigateFromInAppToast } from "@/lib/inAppToastNavigation";
 import {
   formatNotificationTimestamp,
@@ -10,12 +9,6 @@ import {
   type NotificationFeedEntry,
 } from "@/lib/notificationFeed";
 import { cn } from "@/lib/utils";
-
-function initialsFromUsername(username?: string | null) {
-  const clean = username?.trim();
-  if (!clean) return "U";
-  return clean.slice(0, 2).toUpperCase();
-}
 
 function UnreadDot() {
   return (
@@ -55,7 +48,6 @@ type Props = {
 export function NotificationFeedRow({ entry, onRead, onNavigate }: Props) {
   const { openUserProfile } = useProfileDrawer();
   const avatarUrl = entry.type === "standard" ? null : entry.avatarUrl;
-  const avatar = useUserAvatar([avatarUrl]);
 
   const username = entry.type === "standard" ? null : entry.username?.trim() || "Usuario";
   const action = notificationEntryAction(entry);
@@ -92,14 +84,12 @@ export function NotificationFeedRow({ entry, onRead, onNavigate }: Props) {
         {entry.type === "standard" ? (
           <StandardIcon entry={entry} />
         ) : (
-          <Avatar className="h-11 w-11 shrink-0">
-            {avatar.src ? (
-              <AvatarImage src={avatar.src} alt="" className="object-cover" onError={avatar.onError} />
-            ) : null}
-            <AvatarFallback className="bg-muted text-xs font-semibold">
-              {initialsFromUsername(username)}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            avatarUrl={avatarUrl}
+            username={username}
+            className="h-11 w-11 shrink-0"
+            fallbackClassName="bg-muted text-xs font-semibold"
+          />
         )}
 
         <div className="min-w-0 flex-1">

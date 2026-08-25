@@ -79,6 +79,7 @@ export function useUserAvatar(candidatesInput: Array<string | null | undefined>)
   }, [candidatesInput]);
   const candidates = useMemo(() => (candidatesKey ? candidatesKey.split("|") : []), [candidatesKey]);
   const [resolvedCandidates, setResolvedCandidates] = useState<string[]>([]);
+  const [resolvedForKey, setResolvedForKey] = useState("");
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -92,6 +93,7 @@ export function useUserAvatar(candidatesInput: Array<string | null | undefined>)
       if (candidates.length === 0) {
         if (!cancelled) {
           setResolvedCandidates((prev) => (prev.length === 0 ? prev : []));
+          setResolvedForKey(candidatesKey);
         }
         return;
       }
@@ -100,20 +102,25 @@ export function useUserAvatar(candidatesInput: Array<string | null | undefined>)
       if (cancelled) return;
       const nextResolved = Array.from(new Set(resolved.filter((v): v is string => Boolean(v))));
       setResolvedCandidates((prev) => (areSameStringArray(prev, nextResolved) ? prev : nextResolved));
+      setResolvedForKey(candidatesKey);
     };
 
-    resolveCandidates();
+    void resolveCandidates();
 
     return () => {
       cancelled = true;
     };
-  }, [candidatesKey]);
+  }, [candidatesKey, candidates]);
 
-  const src = resolvedCandidates[index];
+  const ready = resolvedForKey === candidatesKey;
+  const src = ready ? resolvedCandidates[index] : undefined;
+  const isLoading = !ready;
   const onError = useCallback(() => {
-    setIndex((prev) => (prev < resolvedCandidates.length - 1 ? prev + 1 : prev));
-  }, [resolvedCandidates.length]);
+    if (index >= resolvedCandidates.length - 1) return false;
+    setIndex((prev) => prev + 1);
+    return true;
+  }, [index, resolvedCandidates.length]);
 
-  return { src, onError };
+  return { src, onError, isLoading };
 }
 

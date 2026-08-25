@@ -1,15 +1,10 @@
 import type { ReactNode } from "react";
 import { User, UserCheck, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useProfileDrawer } from "@/components/layout/profileDrawerContext";
 import { useFollows } from "@/hooks/useFollows";
-import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { cn } from "@/lib/utils";
-
-function initialsFromUsername(username?: string | null) {
-  return username?.trim()?.[0]?.toUpperCase() || "U";
-}
 
 type Props = {
   seguidorId: string;
@@ -34,7 +29,6 @@ export function NewFollowerNotificationContent({
 }: Props) {
   const { openUserProfile } = useProfileDrawer();
   const { followingIds, toggleFollow, isToggling } = useFollows();
-  const avatar = useUserAvatar([avatarUrl]);
   const displayName = username?.trim() || "Usuario";
   const isFollowing = followingIds.has(seguidorId);
 
@@ -62,10 +56,12 @@ export function NewFollowerNotificationContent({
           onClick={openProfile}
           className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring -m-1 p-1"
         >
-          <Avatar className={cn("shrink-0", compact ? "h-10 w-10" : "h-11 w-11")}>
-            {avatar.src ? <AvatarImage src={avatar.src} alt="" className="object-cover" onError={avatar.onError} /> : null}
-            <AvatarFallback className="text-xs font-semibold leading-none">{initialsFromUsername(username)}</AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            avatarUrl={avatarUrl}
+            username={username}
+            className={cn("shrink-0", compact ? "h-10 w-10" : "h-11 w-11")}
+            fallbackClassName="text-xs font-semibold leading-none"
+          />
           <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-none">{displayName}</p>
         </button>
 

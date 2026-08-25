@@ -1,13 +1,8 @@
 import { toast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useUserAvatar } from "@/hooks/useUserAvatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { socialInteractionToastMessage } from "@/lib/socialInteractionNotification";
 import { navigateFromInAppToast } from "@/lib/inAppToastNavigation";
 import type { SocialInteractionReceivedRow } from "@/hooks/useMySocialInteractionsReceived";
-
-function initialsFromUsername(username?: string | null) {
-  return username?.trim()?.[0]?.toUpperCase() || "U";
-}
 
 function InAppPersonToastContent({
   avatarUrl,
@@ -22,8 +17,6 @@ function InAppPersonToastContent({
   toastId: string | number;
   onOpen: () => void;
 }) {
-  const avatar = useUserAvatar([avatarUrl]);
-
   return (
     <button
       type="button"
@@ -33,14 +26,12 @@ function InAppPersonToastContent({
       }}
       className="touch-styled flex w-full items-center gap-3 text-left"
     >
-      <Avatar className="h-9 w-9 shrink-0 ring-2 ring-success">
-        {avatar.src ? (
-          <AvatarImage src={avatar.src} alt="" className="object-cover" onError={avatar.onError} />
-        ) : null}
-        <AvatarFallback className="bg-success/25 text-[10px] font-semibold text-success-foreground">
-          {initialsFromUsername(username)}
-        </AvatarFallback>
-      </Avatar>
+      <UserAvatar
+        avatarUrl={avatarUrl}
+        username={username}
+        className="h-9 w-9 shrink-0 ring-2 ring-success"
+        fallbackClassName="bg-success/25 text-[10px] font-semibold text-success-foreground"
+      />
       <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug text-success-foreground">
         {message}
       </p>

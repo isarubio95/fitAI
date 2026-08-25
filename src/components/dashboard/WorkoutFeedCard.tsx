@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ActivitySocialActions,
@@ -6,7 +5,7 @@ import {
 } from "@/components/community/ActivitySocialActions";
 import { WorkoutDetailsContent } from "@/components/dashboard/WorkoutDetailsSheet";
 import { GymStartMetaRow } from "@/components/dashboard/GymStartMetaRow";
-import { useUserAvatar } from "@/hooks/useUserAvatar";
+import { UserAvatar as CommunityAvatar } from "@/components/UserAvatar";
 import { cn } from "@/lib/utils";
 import type { ActividadWithDetails } from "@/types/workout";
 import { PAGE_CARD } from "@/lib/pageStyles";
@@ -33,27 +32,7 @@ export type WorkoutFeedCardSocial = Omit<
   "kind" | "targetId" | "ownerId" | "className"
 >;
 
-function initialsFromUsername(username?: string | null) {
-  return username?.trim()?.[0]?.toUpperCase() || "U";
-}
-
-export function CommunityAvatar({
-  avatarUrl,
-  username,
-  className,
-}: {
-  avatarUrl?: string | null;
-  username?: string | null;
-  className: string;
-}) {
-  const avatar = useUserAvatar([avatarUrl]);
-  return (
-    <Avatar className={className}>
-      {avatar.src ? <AvatarImage src={avatar.src} alt="" onError={avatar.onError} /> : null}
-      <AvatarFallback>{initialsFromUsername(username)}</AvatarFallback>
-    </Avatar>
-  );
-}
+export { CommunityAvatar };
 
 type WorkoutFeedCardBodyProps = {
   workout: ActividadWithDetails;

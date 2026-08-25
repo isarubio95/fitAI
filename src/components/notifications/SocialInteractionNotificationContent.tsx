@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Heart, MessageCircle } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useUserAvatar } from "@/hooks/useUserAvatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { navigateFromInAppToast } from "@/lib/inAppToastNavigation";
 import {
   socialInteractionAuthorName,
@@ -14,10 +13,6 @@ import type {
   SocialInteractionTargetType,
   SocialInteractionType,
 } from "@/types/inAppNotification";
-
-function initialsFromUsername(username?: string | null) {
-  return username?.trim()?.[0]?.toUpperCase() || "U";
-}
 
 type Props = {
   interaction: SocialInteractionType;
@@ -49,7 +44,6 @@ export function SocialInteractionNotificationContent({
   className,
   trailing,
 }: Props) {
-  const avatar = useUserAvatar([avatarUrl]);
   const displayName = socialInteractionAuthorName(username);
 
   const HeaderIcon = interaction === "like" ? Heart : MessageCircle;
@@ -86,14 +80,12 @@ export function SocialInteractionNotificationContent({
         onClick={openTarget}
         className="-m-1 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-0.5 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <Avatar className={cn("shrink-0", compact ? "h-10 w-10" : "h-11 w-11")}>
-          {avatar.src ? (
-            <AvatarImage src={avatar.src} alt="" className="object-cover" onError={avatar.onError} />
-          ) : null}
-          <AvatarFallback className="text-xs font-semibold leading-none">
-            {initialsFromUsername(username)}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          avatarUrl={avatarUrl}
+          username={username}
+          className={cn("shrink-0", compact ? "h-10 w-10" : "h-11 w-11")}
+          fallbackClassName="text-xs font-semibold leading-none"
+        />
         <p className="truncate text-sm font-semibold leading-none">{displayName}</p>
         <p className="col-start-2 line-clamp-2 text-xs leading-snug text-muted-foreground">{detail}</p>
       </button>

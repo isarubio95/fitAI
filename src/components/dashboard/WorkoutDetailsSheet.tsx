@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { useUserAvatar } from "@/hooks/useUserAvatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer } from "@/components/ui/chart";
 import { Check, ListPlus, Trophy } from "lucide-react";
@@ -539,13 +538,13 @@ function WorkoutLeadingRoutineIcon({
 export { WorkoutLeadingRoutineIcon };
 
 function WorkoutLeadingAvatarBadge({ avatar }: { avatar: WorkoutLeadingAvatar }) {
-  const resolved = useUserAvatar([avatar.avatarUrl]);
-  const initials = avatar.username?.trim()?.[0]?.toUpperCase() || "U";
   return (
-    <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/60">
-      {resolved.src ? <AvatarImage src={resolved.src} alt="" onError={resolved.onError} /> : null}
-      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{initials}</AvatarFallback>
-    </Avatar>
+    <UserAvatar
+      avatarUrl={avatar.avatarUrl}
+      username={avatar.username}
+      className="h-9 w-9 shrink-0 ring-1 ring-border/60"
+      fallbackClassName="bg-primary/10 text-primary text-xs font-semibold"
+    />
   );
 }
 
