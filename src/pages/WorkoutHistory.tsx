@@ -536,9 +536,9 @@ const WorkoutHistory = () => {
   const hasAnySession = (workouts?.length ?? 0) > 0 || (cardio?.length ?? 0) > 0;
 
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3">
-      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
-      <div className={cn("flex w-full flex-col", PAGE_CARD_STACK_GAP)}>
+    <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8">
+      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, "pt-3 md:pt-3.5")}>
+      <div className={cn("flex w-full flex-col gap-3 md:gap-3.5")}>
         <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodKey)} className="w-full">
           <AnimatedTabsList value={period} className={cn(pillTabsListClass, "w-full")}>
             {PERIOD_OPTIONS.map((opt) => (
