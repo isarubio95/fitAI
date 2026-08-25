@@ -306,8 +306,8 @@ const Dashboard = () => {
     type RoutineExercise = {
       tipo_ejercicio_id?: string | null;
       usuario_ejercicio_id?: string | null;
-      tipo_ejercicio?: { nombre?: string | null } | null;
-      usuario_ejercicio?: { nombre?: string | null } | null;
+      tipo_ejercicio?: { nombre?: string | null; grupo_muscular?: string | null } | null;
+      usuario_ejercicio?: { nombre?: string | null; grupo_muscular?: string | null } | null;
       repes_min: number;
       repes_max: number;
       rir?: number | null;
