@@ -2,15 +2,9 @@ import type { ReactNode } from "react";
 import { chartColors } from "@/lib/chart-colors";
 import { formatNumber } from "./format";
 
-/**
- * Anchos fijos de las columnas laterales: el pie explicativo se alinea con la
- * pista de las barras usando estos valores.
- */
 const LABEL_WIDTH = 66;
 const VALUE_WIDTH = 40;
 const COLUMN_GAP = 14;
-const TRACK_LEFT = LABEL_WIDTH + COLUMN_GAP;
-const TRACK_RIGHT = VALUE_WIDTH + COLUMN_GAP;
 /**
  * El tramo de forma usa el mismo color de la barra, atenuado sobre la pista
  * (como el área sombreada del gráfico), no mezclado con blanco.
@@ -79,8 +73,7 @@ export function FitnessFatigueBars({
   fitness: number;
   fatigue: number;
 }) {
-  const form = fitness - fatigue;
-  const isFatigued = form < 0;
+  const isFatigued = fitness < fatigue;
   // Un poco de aire al final de la pista para que la barra más larga no llegue al borde.
   const scale = Math.max(fitness, fatigue, 1) / 0.94;
   const fitnessPct = clampPct((fitness / scale) * 100);
@@ -88,11 +81,6 @@ export function FitnessFatigueBars({
   const sharedPct = Math.min(fitnessPct, fatiguePct);
   const surplusPct = Math.abs(fitnessPct - fatiguePct);
   const surplusColor = isFatigued ? chartColors.fatigue : chartColors.fitness;
-  const gapPoints = formatNumber(Math.abs(form));
-  const gapCaption = isFatigued
-    ? `${gapPoints} puntos de fatiga por encima del fitness`
-    : `${gapPoints} puntos de fitness por encima de la fatiga`;
-
   const dimColor = `color-mix(in srgb, ${surplusColor} ${SURPLUS_MIX_PCT}%, hsl(var(--muted)))`;
   const fitnessHasSurplus = surplusPct > 0 && !isFatigued;
   const fatigueHasSurplus = surplusPct > 0 && isFatigued;
@@ -122,15 +110,6 @@ export function FitnessFatigueBars({
           />
         </BarRow>
       </div>
-
-      {surplusPct > 0 && (
-        <p
-          className="mt-3 text-[13px] leading-snug text-muted-foreground"
-          style={{ marginLeft: TRACK_LEFT, marginRight: TRACK_RIGHT }}
-        >
-          El tramo claro es tu forma: {gapCaption}
-        </p>
-      )}
     </div>
   );
 }

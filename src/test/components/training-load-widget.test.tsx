@@ -88,9 +88,6 @@ describe("TrainingLoadWidget", () => {
     expect(screen.getAllByText("−8").length).toBeGreaterThan(0);
     expect(screen.getByText("Buena ventana para una sesión exigente.")).toBeInTheDocument();
     expect(screen.getByTestId("form-surplus")).toBeInTheDocument();
-    expect(
-      screen.getByText(/El tramo claro es tu forma: 8 puntos de fatiga por encima del fitness/),
-    ).toBeInTheDocument();
     expect(screen.queryByText((content) => content.includes("Últimos 7 días"))).not.toBeInTheDocument();
   });
 
