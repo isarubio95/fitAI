@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
-import { Trophy, ChevronRight, Pencil, Loader2 } from "lucide-react";
+import { ChevronRight, Pencil, Loader2 } from "lucide-react";
 import { LogroMedal } from "@/components/logros/LogroMedal";
 import { LogrosDrawer } from "@/components/logros/LogrosDrawer";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
@@ -286,7 +286,7 @@ function ProfileDrawerSheet() {
         }}
       >
         <div className={cn("min-h-0 flex-1 overflow-y-auto bg-card dark:bg-transparent", drawerSafeAreaBottom)}>
-          <DrawerHeader className="bg-card px-6 pb-2 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left dark:bg-transparent">
+          <DrawerHeader className="bg-card px-5 pb-2 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left dark:bg-transparent">
             <DrawerTitle className="sr-only">{loadingPerfil ? "Perfil" : displayName}</DrawerTitle>
             <div className="flex gap-4 items-start">
             <div className="relative mr-1 shrink-0">
@@ -356,8 +356,8 @@ function ProfileDrawerSheet() {
               ) : (
                 <p className="text-lg font-semibold leading-tight truncate">{displayName}</p>
               )}
-              <div className="grid w-full min-w-0 grid-cols-3 gap-x-5 gap-y-0">
-                <div className="min-w-0 w-full flex flex-col items-center text-center" aria-busy={loadingWorkoutHistory}>
+              <div className="flex w-fit gap-5">
+                <div className="flex flex-col items-center text-center" aria-busy={loadingWorkoutHistory}>
                   {loadingWorkoutHistory ? (
                     <Skeleton className="h-4 w-7" aria-hidden />
                   ) : (
@@ -365,7 +365,7 @@ function ProfileDrawerSheet() {
                       {activityTotalCount}
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground leading-tight mt-1 line-clamp-2">
+                  <p className="text-xs text-muted-foreground leading-tight mt-1">
                     Entrenos
                   </p>
                 </div>
@@ -374,7 +374,7 @@ function ProfileDrawerSheet() {
                   onClick={() => setFollowListMode("seguidores")}
                   disabled={loadingFollowCounts}
                   aria-busy={loadingFollowCounts}
-                  className="min-w-0 w-full flex flex-col items-center text-center rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
+                  className="flex flex-col items-center text-center rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
                 >
                   {loadingFollowCounts ? (
                     <Skeleton className="h-4 w-7" aria-hidden />
@@ -390,7 +390,7 @@ function ProfileDrawerSheet() {
                   onClick={() => setFollowListMode("seguidos")}
                   disabled={loadingFollowCounts}
                   aria-busy={loadingFollowCounts}
-                  className="min-w-0 w-full flex flex-col items-center text-center rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
+                  className="flex flex-col items-center text-center rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
                 >
                   {loadingFollowCounts ? (
                     <Skeleton className="h-4 w-7" aria-hidden />
@@ -407,33 +407,31 @@ function ProfileDrawerSheet() {
           </DrawerHeader>
 
           <div className="space-y-6 pb-6">
-          {statsUserId ? <GamificationWidget userId={statsUserId} contentClassName="pt-5 pb-4" /> : null}
+          {statsUserId ? <GamificationWidget userId={statsUserId} contentClassName="pt-5 pb-0" /> : null}
 
           <div className="space-y-3 bg-card dark:bg-transparent">
             <button
               type="button"
               onClick={goToLogros}
-              className="flex w-full items-center justify-between px-6 text-base font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex w-full items-center justify-between px-5 text-base font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <span className="flex items-center gap-2">
-                <Trophy className="h-4 w-4" /> Logros
-              </span>
+              <span>Logros</span>
               <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
                 {loadingLogros ? "…" : `${unlockedLogros.length}/${logros.length}`}
                 <ChevronRight className="h-4 w-4" />
               </span>
             </button>
             {loadingLogros ? (
-              <div className="grid grid-cols-5 gap-1.5 px-6">
+              <div className="grid grid-cols-5 gap-3 px-5">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="mx-auto h-14 w-14 animate-pulse rounded-full bg-muted/50" />
+                  <div key={i} className="aspect-square w-full animate-pulse rounded-full bg-muted/50" />
                 ))}
               </div>
             ) : unlockedLogros.length === 0 ? (
               <button
                 type="button"
                 onClick={goToLogros}
-                className="block w-full px-6 text-left text-xs text-muted-foreground transition-opacity hover:opacity-80"
+                className="block w-full px-5 text-left text-xs text-muted-foreground transition-opacity hover:opacity-80"
               >
                 {isViewingSelf
                   ? "Aún no has desbloqueado logros. Toca para ver todos los retos."
@@ -443,11 +441,11 @@ function ProfileDrawerSheet() {
               <button
                 type="button"
                 onClick={goToLogros}
-                className="grid w-full grid-cols-5 gap-1.5 px-6 transition-opacity hover:opacity-90"
+                className="grid w-full grid-cols-5 gap-2.5 px-5 transition-opacity hover:opacity-90"
               >
                 {featuredLogros.map((l) => (
-                  <div key={l.id} className="flex min-w-0 flex-col items-center gap-1 text-center">
-                    <LogroMedal nivel={l.nivel} icono={l.icono} size={56} />
+                  <div key={l.id} className="flex min-w-0 w-full flex-col items-center gap-1 text-center">
+                    <LogroMedal nivel={l.nivel} icono={l.icono} fill />
                     <p className="w-full truncate text-[10px] font-medium leading-tight">{l.nombre}</p>
                   </div>
                 ))}
@@ -463,7 +461,7 @@ function ProfileDrawerSheet() {
                 ))}
               </div>
             ) : lastWorkouts.length === 0 ? (
-              <p className={cn("px-6 text-xs text-muted-foreground", PAGE_STACK_TOP)}>
+              <p className={cn("px-5 text-xs text-muted-foreground", PAGE_STACK_TOP)}>
                 {isViewingSelf
                   ? "Aún no has registrado entrenos."
                   : "Este usuario no tiene entrenos visibles."}
@@ -529,12 +527,12 @@ function ProfileDrawerSheet() {
         className="z-[125] flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none"
       >
         <div className={cn("min-h-0 flex-1 overflow-y-auto bg-background", drawerSafeAreaBottom)}>
-          <DrawerHeader className="bg-background px-6 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
+          <DrawerHeader className="bg-background px-5 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
             <DrawerTitle className="text-lg font-semibold">
               {followListMode === "seguidores" ? "Seguidores" : "Seguidos"}
             </DrawerTitle>
           </DrawerHeader>
-          <div className="mt-3 px-6 pb-6">
+          <div className="mt-3 px-5 pb-6">
             {loadingFollowUsers ? (
               <div className="flex flex-col gap-3" aria-busy>
                 {Array.from({ length: 5 }).map((_, i) => (

@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useRoutines, useDeleteRoutine, useUpdateRoutineOrder, useDuplicateRoutine, useRoutineLastTrainedByName } from "@/hooks/useRoutines";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -415,7 +415,7 @@ const Routines = () => {
       )}
     >
       {!isLoading && routineCount > 0 ? (
-        <div className="flex items-center justify-between gap-3 px-4 md:px-0">
+        <div className={cn("flex items-center justify-between gap-3", PAGE_STACK_INSET)}>
           <p className="text-sm text-muted-foreground">
             {routineCount} {routineCount === 1 ? "rutina" : "rutinas"}
           </p>
@@ -474,13 +474,13 @@ const Routines = () => {
       ) : null}
 
       {isLoading ? (
-        <div className={cn("flex w-full flex-col bg-background px-4 md:px-0", PAGE_CARD_STACK_GAP)}>
+        <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-28 w-full rounded-xl border border-border/40 bg-card" />
           ))}
         </div>
       ) : !routines?.length ? (
-        <div className="space-y-3 px-4 py-12 text-center md:px-0">
+        <div className={cn("space-y-3 py-12 text-center", PAGE_STACK_INSET)}>
           <Dumbbell className="h-12 w-12 mx-auto text-muted-foreground/50" />
           <p className="text-sm text-muted-foreground">Aún no tienes rutinas creadas.</p>
           <Button onClick={openCreateChoice}>
@@ -490,7 +490,7 @@ const Routines = () => {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sortedRoutines.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-            <div className={cn("flex w-full flex-col bg-background px-4 md:px-0", PAGE_CARD_STACK_GAP)}>
+            <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
               {sortedRoutines.map((r) => (
                 <SortableRoutineCard
                   key={r.id}

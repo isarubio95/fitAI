@@ -79,25 +79,35 @@ interface LogroMedalProps {
   nivel: string;
   icono: string;
   unlocked?: boolean;
-  /** Tamaño del lado en px (la medalla es cuadrada). */
+  /** Tamaño del lado en px (la medalla es cuadrada). Se ignora si `fill` es true. */
   size?: number;
+  /** Ocupa el 100% del ancho del padre y mantiene proporción cuadrada. */
+  fill?: boolean;
   className?: string;
 }
 
-export function LogroMedal({ nivel, icono, unlocked = true, size = 72, className }: LogroMedalProps) {
+export function LogroMedal({
+  nivel,
+  icono,
+  unlocked = true,
+  size = 72,
+  fill = false,
+  className,
+}: LogroMedalProps) {
   const img = MEDAL_IMAGES[nivel] ?? medalBronce;
   const Icon = ICONS[icono] ?? Award;
-  const iconSize = Math.round(size * 0.26);
+  const iconSize = fill ? "26%" : Math.round(size * 0.26);
 
   return (
     <div
       className={cn(
-        "relative inline-flex shrink-0 items-center justify-center transition-all",
+        "relative inline-flex items-center justify-center transition-all",
+        fill ? "aspect-square w-full shrink-0" : "shrink-0",
         // Misma intensidad para todos los bloqueados (iguala bronce…diamante)
         !unlocked && "opacity-40 grayscale brightness-[0.55] contrast-75",
         className
       )}
-      style={{ width: size, height: size }}
+      style={fill ? undefined : { width: size, height: size }}
     >
       <img src={img} alt="" aria-hidden draggable={false} className="h-full w-full object-contain select-none" />
       <Icon

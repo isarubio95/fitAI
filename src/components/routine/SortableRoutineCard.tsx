@@ -222,7 +222,7 @@ export function SortableRoutineCard({
         </DropdownMenuContent>
 
         <CardContent className="p-0">
-          <div className="flex items-stretch gap-1">
+          <div className="flex items-stretch gap-1 px-2 py-3 min-[361px]:px-3">
             {isDragMode && (
               <button
                 type="button"
@@ -242,21 +242,14 @@ export function SortableRoutineCard({
               aria-expanded={isOpen}
               aria-label={isOpen ? `Ocultar ejercicios de ${r.nombre}` : `Ver ejercicios de ${r.nombre}`}
             >
-              <div className="shrink-0 self-stretch py-0.5 pl-0.5">
-                <div
-                  className="flex h-full w-28 items-center justify-center overflow-hidden rounded-xl bg-background p-1 pointer-events-none"
-                  aria-hidden
-                >
-                  <WorkoutMuscleMiniMap
-                    groupSets={groupSets}
-                    maxSets={maxSets}
-                    variant="routine"
-                    size="compact"
-                    className="h-full w-full"
-                  />
-                </div>
-              </div>
-              <div className="min-w-0 flex-1 py-3">
+              <WorkoutMuscleMiniMap
+                groupSets={groupSets}
+                maxSets={maxSets}
+                variant="routine"
+                size="compact"
+                className="h-full w-24 shrink-0 pointer-events-none"
+              />
+              <div className="min-w-0 flex-1">
                 <div className="mb-0.5 flex min-w-0 items-center gap-2">
                   <h2 className="flex min-w-0 items-center gap-2 font-semibold text-base">
                     <RoutineTitleIcon className="h-4 w-4 shrink-0" />
@@ -284,7 +277,7 @@ export function SortableRoutineCard({
             </button>
 
             <div
-              className="flex shrink-0 flex-col items-center justify-center gap-0.5 py-3 pr-2 min-[361px]:pr-3"
+              className="flex shrink-0 flex-col items-center justify-center gap-0.5"
               onPointerDown={(e) => e.stopPropagation()}
             >
               <Button

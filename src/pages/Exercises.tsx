@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { filterButtonActive } from "@/lib/filter-pill-styles";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMediaUrl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -556,7 +556,7 @@ const Exercises = () => {
         )}
       >
         <Card className="w-full max-w-none overflow-hidden rounded-none border-0 bg-background shadow-none">
-          <CardContent className="space-y-4 px-4 py-4 md:px-5 md:py-6">
+          <CardContent className={cn("space-y-4 py-4 md:px-5 md:py-6", PAGE_STACK_INSET)}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -927,7 +927,7 @@ const Exercises = () => {
         </Card>
       )}
 
-      <div className="flex w-full flex-col gap-2.5 bg-background px-4 pt-1 md:gap-2.75 md:px-0">
+      <div className={cn("flex w-full flex-col gap-2.5 bg-background pt-1 md:gap-2.75", PAGE_STACK_INSET)}>
         {catalogLoading || difficultyLoading
           ? Array.from({ length: 6 }).map((_, i) => (
               <div
