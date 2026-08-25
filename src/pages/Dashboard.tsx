@@ -25,7 +25,7 @@ import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears, addMo
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD, PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
+import { PAGE_CARD, PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, PAGE_STACK_TOP } from "@/lib/pageStyles";
 import { usePlannedRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import {
   Dialog,
@@ -404,7 +404,7 @@ const Dashboard = () => {
       case 'calendar':
         return (
           <Card className={PAGE_CARD}>
-            <CardHeader className="space-y-3 px-6 pt-8 pb-4">
+            <CardHeader className="space-y-3 px-6 pt-6 pb-4">
               <div className="flex w-full flex-row items-center justify-between gap-2">
                 <CalendarPeriodPicker
                   view={calendarView}
@@ -661,7 +661,7 @@ const Dashboard = () => {
           items={widgetOrder}
           strategy={verticalListSortingStrategy}
         >
-          <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
+          <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, PAGE_STACK_TOP)}>
             {widgetOrder.map((id) => (
               <SortableWidget key={id} id={id} isDragMode={isDragMode}>
                 {renderWidget(id)}

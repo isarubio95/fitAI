@@ -1,4 +1,4 @@
-import { useLayoutEffect, type CSSProperties, type ReactNode } from "react";
+import { useLayoutEffect, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { TooltipContentProps } from "recharts";
@@ -51,6 +51,55 @@ export function ChartScrubStat({
         {value}
       </p>
     </div>
+  );
+}
+
+/** Índice de dato (0…n-1) a partir de la posición relativa en el área del gráfico. */
+export function chartIndexFromRatio(ratio: number, count: number): number {
+  if (count <= 1) return 0;
+  return Math.round(Math.max(0, Math.min(1, ratio)) * (count - 1));
+}
+
+/**
+ * Capa HTML encima del gráfico: el índice sale de la X del puntero, no del
+ * Tooltip de Recharts (en un toque ese tooltip se queda en el último día).
+ */
+export function ChartScrubLayer({
+  count,
+  marginLeft,
+  marginRight,
+  onIndex,
+  onActiveChange,
+}: {
+  count: number;
+  marginLeft: number;
+  marginRight: number;
+  onIndex: (index: number) => void;
+  onActiveChange: (active: boolean) => void;
+}) {
+  const pick = (event: PointerEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const plotWidth = Math.max(1, rect.width - marginLeft - marginRight);
+    onIndex(chartIndexFromRatio((event.clientX - rect.left - marginLeft) / plotWidth, count));
+  };
+
+  return (
+    <div
+      data-testid="chart-scrub-layer"
+      className="absolute inset-0"
+      style={{ touchAction: "pan-y" }}
+      onPointerDown={(event) => {
+        onActiveChange(true);
+        pick(event);
+      }}
+      onPointerMove={(event) => {
+        onActiveChange(true);
+        pick(event);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") onActiveChange(false);
+      }}
+    />
   );
 }
 

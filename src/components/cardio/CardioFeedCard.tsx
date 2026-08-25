@@ -8,6 +8,7 @@ import {
 import {
   COMMUNITY_CARD_CLASS,
   CommunityAvatar,
+  FEED_CARD_CONTENT_CLASS,
   WORKOUT_COMPACT_CARD_CLASS,
   type WorkoutFeedCardAuthor,
 } from "@/components/dashboard/WorkoutFeedCard";
@@ -133,8 +134,8 @@ export function CardioFeedCompactContent({
           </Suspense>
         </div>
       ) : (
-        <div className="mx-6 flex items-center gap-4 rounded-xl bg-muted/30 px-4 py-5">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-background/80 text-foreground shadow-sm">
+        <div className="mx-6 flex items-center gap-4 px-0 py-2">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-foreground">
             <Icon className="h-7 w-7" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
@@ -226,7 +227,7 @@ type CardioFeedCardProps = CardioFeedCardBodyProps & {
 export function CardioFeedCard({ className, ...bodyProps }: CardioFeedCardProps) {
   return (
     <Card className={cn(COMMUNITY_CARD_CLASS, className)}>
-      <CardContent className="space-y-4 px-0 pb-4 pt-6">
+      <CardContent className={FEED_CARD_CONTENT_CLASS}>
         <CardioFeedCardBody {...bodyProps} />
       </CardContent>
     </Card>

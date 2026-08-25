@@ -239,11 +239,11 @@ function periodBuckets(now: Date, key: PeriodKey): Bucket[] {
 }
 
 function ChangeBadge({ pct }: { pct: number | null }) {
-  if (pct === null) return <span className="text-[10px] text-muted-foreground">sin datos prev.</span>;
+  if (pct === null) return <span className="text-xs text-muted-foreground">sin datos prev.</span>;
   const positive = pct >= 0;
   return (
-    <Badge variant="secondary" className={`text-[10px] gap-0.5 ${positive ? "text-emerald-500" : "text-rose-500"}`}>
-      {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+    <Badge variant="secondary" className={`gap-0.5 text-xs ${positive ? "text-emerald-500" : "text-rose-500"}`}>
+      {positive ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
       {positive ? "+" : ""}{pct}%
     </Badge>
   );
@@ -538,40 +538,29 @@ const WorkoutHistory = () => {
   return (
     <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3">
       <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
-      <Card className={cardClass}>
-        <CardHeader className={PROGRESS_CARD_HEADER}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle asChild className="text-base">
-              <h2>Resumen</h2>
-            </CardTitle>
-            <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodKey)} className="w-full sm:max-w-sm">
-              <AnimatedTabsList value={period} className={cn(pillTabsListClass, "w-full")}>
-                {PERIOD_OPTIONS.map((opt) => (
-                  <TabsTrigger
-                    key={opt.key}
-                    value={opt.key}
-                    className={cn(pillTabsTriggerClass, "min-w-0 flex-1 px-2")}
-                  >
-                    {opt.label}
-                  </TabsTrigger>
-                ))}
-              </AnimatedTabsList>
-            </Tabs>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {/* Baldosas independientes en vez de una rejilla partida por líneas. */}
-          <div className="grid grid-cols-2 gap-2.5 px-4 pb-5">
-            {kpiCards.map((kpi) => {
-              const Icon = kpi.icon;
-              return (
-                <div
-                  key={kpi.label}
-                  className="surface-tile space-y-1 rounded-2xl bg-muted/30 px-4 py-4 dark:bg-white/[0.035]"
-                >
+      <div className={cn("flex w-full flex-col", PAGE_CARD_STACK_GAP)}>
+        <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodKey)} className="w-full">
+          <AnimatedTabsList value={period} className={cn(pillTabsListClass, "w-full")}>
+            {PERIOD_OPTIONS.map((opt) => (
+              <TabsTrigger
+                key={opt.key}
+                value={opt.key}
+                className={cn(pillTabsTriggerClass, "min-w-0 flex-1")}
+              >
+                {opt.label}
+              </TabsTrigger>
+            ))}
+          </AnimatedTabsList>
+        </Tabs>
+        <div className={cn("grid grid-cols-2", PAGE_CARD_STACK_GAP)}>
+          {kpiCards.map((kpi) => {
+            const Icon = kpi.icon;
+            return (
+              <Card key={kpi.label} className={cardClass}>
+                <CardContent className="space-y-1 p-4">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/12 ring-1 ring-inset ring-primary/15">
-                      <Icon className="h-4 w-4 text-primary" />
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary/12 ring-1 ring-inset ring-primary/15">
+                      <Icon className="size-4 text-primary" />
                     </div>
                     {isLoading ? (
                       <Skeleton className="h-6 w-16" />
@@ -579,24 +568,23 @@ const WorkoutHistory = () => {
                       <p className="text-xl font-bold leading-none">{kpi.value}</p>
                     )}
                   </div>
-                  {/* La baldosa es estrecha: etiqueta y comparativa en filas propias. */}
-                  <p className="text-[11px] font-semibold">{kpi.label}</p>
+                  <p className="text-xs font-semibold">{kpi.label}</p>
                   <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                     {isLoading ? (
                       <Skeleton className="h-2.5 w-20" />
                     ) : kpi.sub ? (
-                      <p className="text-[10px] text-muted-foreground">{kpi.sub}</p>
+                      <p className="text-xs text-muted-foreground">{kpi.sub}</p>
                     ) : (
                       <span />
                     )}
                     {isLoading ? <Skeleton className="h-5 w-12 rounded-full" /> : <ChangeBadge pct={kpi.pct} />}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
 
       {!isLoading && !hasAnySession && (
         <Card className={cardClass}>

@@ -280,7 +280,7 @@ export function BodyHeatmap() {
   return (
     <>
       <Card className={PAGE_CARD}>
-        <CardHeader className="space-y-3 px-6 pt-8 pb-4">
+        <CardHeader className="space-y-3 px-6 pt-6 pb-4">
           <div className="flex items-center justify-between gap-2">
             <CardTitle asChild className="text-base font-bold">
               <h2>Carga Muscular</h2>

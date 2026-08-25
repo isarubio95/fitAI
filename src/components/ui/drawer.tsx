@@ -154,7 +154,10 @@ const DrawerContent = React.forwardRef<
       }}
       className={cn(
         "drawer-mobile-scrollbars-hidden fixed z-50 flex bg-background",
+        // Cards a sangre (logger, sheets): sin radio. Excepción: lista tipo
+        // página (`.surface-region-page`) — mismas esquinas que Comunidad.
         "**:data-[slot=card]:rounded-none! **:data-drawer-section:rounded-none!",
+        "[&_.surface-region-page>[data-slot=card]]:rounded-2xl! md:[&_.surface-region-page>[data-slot=card]]:rounded-3xl! [&_.surface-region-page>[data-slot=card]]:border-t!",
         "[&_[data-slot=card]:first-child]:border-t-0!",
         side === "bottom" &&
           cn(

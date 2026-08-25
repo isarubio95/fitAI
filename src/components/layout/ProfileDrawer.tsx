@@ -28,8 +28,9 @@ import {
   type WorkoutFeedCardAuthor,
   type WorkoutFeedCardSocial,
 } from "@/components/dashboard/WorkoutFeedCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { PAGE_CARD_STACK_GAP, PAGE_STACK_TOP } from "@/lib/pageStyles";
 import { buildAuthAvatarCandidates, useUserAvatar } from "@/hooks/useUserAvatar";
 import { useProfileAvatarUpload } from "@/hooks/useProfileAvatarUpload";
 import { useToast } from "@/hooks/use-toast";
@@ -428,10 +429,14 @@ function ProfileDrawerSheet() {
               )}
               <p className="text-lg font-semibold leading-tight truncate">{displayNameLine}</p>
               <div className="grid w-full min-w-0 grid-cols-3 gap-x-5 gap-y-0">
-                <div className="min-w-0 w-full flex flex-col items-start text-left">
-                  <p className="text-base font-bold tabular-nums leading-none">
-                    {loadingWorkoutHistory ? "…" : activityTotalCount}
-                  </p>
+                <div className="min-w-0 w-full flex flex-col items-center text-center" aria-busy={loadingWorkoutHistory}>
+                  {loadingWorkoutHistory ? (
+                    <Skeleton className="h-4 w-7" aria-hidden />
+                  ) : (
+                    <p className="text-base font-bold tabular-nums leading-none">
+                      {activityTotalCount}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground leading-tight mt-1 line-clamp-2">
                     Entrenos
                   </p>
@@ -439,21 +444,33 @@ function ProfileDrawerSheet() {
                 <button
                   type="button"
                   onClick={() => setFollowListMode("seguidores")}
-                  className="min-w-0 w-full flex flex-col items-start text-left rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  disabled={loadingFollowCounts}
+                  aria-busy={loadingFollowCounts}
+                  className="min-w-0 w-full flex flex-col items-center text-center rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
                 >
-                  <p className="text-base font-bold tabular-nums leading-none">
-                    {loadingFollowCounts ? "…" : followCounts?.seguidores ?? 0}
-                  </p>
+                  {loadingFollowCounts ? (
+                    <Skeleton className="h-4 w-7" aria-hidden />
+                  ) : (
+                    <p className="text-base font-bold tabular-nums leading-none">
+                      {followCounts?.seguidores ?? 0}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground leading-tight mt-1">Seguidores</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => setFollowListMode("seguidos")}
-                  className="min-w-0 w-full flex flex-col items-start text-left rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  disabled={loadingFollowCounts}
+                  aria-busy={loadingFollowCounts}
+                  className="min-w-0 w-full flex flex-col items-center text-center rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
                 >
-                  <p className="text-base font-bold tabular-nums leading-none">
-                    {loadingFollowCounts ? "…" : followCounts?.seguidos ?? 0}
-                  </p>
+                  {loadingFollowCounts ? (
+                    <Skeleton className="h-4 w-7" aria-hidden />
+                  ) : (
+                    <p className="text-base font-bold tabular-nums leading-none">
+                      {followCounts?.seguidos ?? 0}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground leading-tight mt-1">Seguidos</p>
                 </button>
               </div>
@@ -468,10 +485,10 @@ function ProfileDrawerSheet() {
             <button
               type="button"
               onClick={goToLogros}
-              className="flex w-full items-center justify-between px-6 text-sm font-medium transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex w-full items-center justify-between px-6 text-base font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span className="flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-muted-foreground" /> Logros
+                <Trophy className="h-4 w-4" /> Logros
               </span>
               <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
                 {loadingLogros ? "…" : `${unlockedLogros.length}/${logros.length}`}
@@ -511,22 +528,20 @@ function ProfileDrawerSheet() {
           </div>
 
           <div className="space-y-3">
-            <p className="px-6 text-sm font-medium pt-3 mb-0">Últimos entrenamientos</p>
-
             {loadingWorkoutHistory ? (
-              <div className={cn("grid grid-cols-1 px-6", PAGE_CARD_STACK_GAP)}>
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="h-16 rounded-none border bg-muted/30 animate-pulse" />
+              <div className={cn("surface-region-page flex flex-col bg-background px-3", PAGE_CARD_STACK_GAP, PAGE_STACK_TOP)}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-28 w-full rounded-2xl bg-card md:rounded-3xl" />
                 ))}
               </div>
             ) : lastWorkouts.length === 0 ? (
-              <p className="px-6 text-xs text-muted-foreground">
+              <p className={cn("px-6 text-xs text-muted-foreground", PAGE_STACK_TOP)}>
                 {isViewingSelf
                   ? "Aún no has registrado entrenos."
                   : "Este usuario no tiene entrenos visibles."}
               </p>
             ) : (
-              <div className={cn("surface-region-page flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+              <div className={cn("surface-region-page flex flex-col bg-background px-3", PAGE_CARD_STACK_GAP, PAGE_STACK_TOP)}>
                 {lastWorkouts.map((item) =>
                   item.type === "gym" ? (
                     <WorkoutFeedCard

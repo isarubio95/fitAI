@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Area,
   CartesianGrid,
@@ -7,7 +7,6 @@ import {
   ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
@@ -16,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CHART_AREA_OPACITY, chartAxis, chartColors } from "@/lib/chart-colors";
+import { CHART_AREA_OPACITY, chartAxis, chartColors, chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
 import {
   AnimatedTabsList,
   pillTabsListClass,
@@ -28,17 +27,17 @@ import { PAGE_CARD, PROGRESS_CARD_HEADER, PROGRESS_CARD_HEADER_SKELETON } from "
 import { cn } from "@/lib/utils";
 import { useTrainingLoad, type TrainingLoadData, type TrainingLoadPoint } from "@/hooks/useTrainingLoad";
 import {
+  ChartScrubLayer,
   ChartScrubStat,
   ChartScrubSummary,
-  ChartScrubSync,
   CHART_SCRUB_CURSOR,
-  CHART_SCRUB_TOOLTIP_WRAPPER,
 } from "@/components/dashboard/chartScrub";
 import { FitnessFatigueBars } from "@/components/dashboard/training-load/FitnessFatigueBars";
 import { FormHero } from "@/components/dashboard/training-load/FormHero";
 import { FormScale } from "@/components/dashboard/training-load/FormScale";
 import { getFormZone } from "@/components/dashboard/training-load/formZones";
 import {
+  formatAxisValue,
   formatNumber,
   formatSigned,
   formatTrainingLoadXTick,
@@ -59,8 +58,8 @@ const TRAINING_LOAD_DATA_STORAGE_KEY = "gym-log.training-load.data.v4";
 const X_AXIS_HEIGHT = 28;
 // Altura del gráfico (ResponsiveContainer) para alinear con `ExerciseProgressWidget` (1RM).
 const CHART_HEIGHT = 190;
-/** Hueco a la derecha para las etiquetas «Fitness» y «Fatiga» pegadas a cada curva. */
-const SERIES_LABEL_GUTTER = 62;
+/** Gutter derecho del área de trazado: margen SVG + ancho del eje Y. */
+const CHART_RIGHT_GUTTER = chartYAxis.marginRight + chartYAxis.width;
 /** Alto reservado encima del gráfico: lo comparten la tendencia y el resumen por día. */
 const CHART_HEADLINE_BLOCK = "mb-3.5";
 
@@ -139,31 +138,6 @@ type ChartRow = TrainingLoadPoint & {
   gapFresh: [number, number] | null;
 };
 
-/** Punto final de una curva, con su nombre escrito al lado. */
-function SeriesEndMarker({
-  row,
-  dataKey,
-  name,
-  color,
-}: {
-  row: ChartRow;
-  dataKey: "fitness" | "fatigue";
-  name: string;
-  color: string;
-}) {
-  return (
-    <ReferenceDot
-      x={row.date}
-      y={row[dataKey]}
-      r={3.5}
-      fill={color}
-      stroke="none"
-      ifOverflow="visible"
-      label={{ value: name, position: "right", offset: 8, fill: color, fontSize: 12 }}
-    />
-  );
-}
-
 export function TrainingLoadWidget({
   flushHeader = false,
 }: {
@@ -234,18 +208,32 @@ export function TrainingLoadWidget({
   }, [chartData]);
 
   const lastRow = chartData[chartData.length - 1];
-  const lastIndex = chartData.length > 0 ? chartData.length - 1 : undefined;
+  const chartBlockRef = useRef<HTMLDivElement>(null);
   const [scrubRow, setScrubRow] = useState<ChartRow | null>(null);
   /** El resumen por día solo aparece mientras el dedo o el ratón recorren el gráfico. */
   const [isScrubbing, setIsScrubbing] = useState(false);
-  const handleScrubPoint = useCallback((point: ChartRow | undefined) => {
-    setScrubRow(point ?? null);
-  }, []);
+  const handleScrubIndex = useCallback(
+    (index: number) => {
+      const row = chartData[index];
+      if (row) setScrubRow(row);
+    },
+    [chartData],
+  );
 
   useEffect(() => {
     setScrubRow(null);
     setIsScrubbing(false);
   }, [range]);
+
+  useEffect(() => {
+    if (!isScrubbing) return;
+    const hideIfOutside = (event: Event) => {
+      if (chartBlockRef.current?.contains(event.target as Node)) return;
+      setIsScrubbing(false);
+    };
+    document.addEventListener("pointerdown", hideIfOutside);
+    return () => document.removeEventListener("pointerdown", hideIfOutside);
+  }, [isScrubbing]);
 
   const displayRow = scrubRow ?? lastRow;
   const displayZone = displayRow ? getFormZone(displayRow.form) : zone;
@@ -390,16 +378,12 @@ export function TrainingLoadWidget({
                 )}
               </div>
             )}
-            <div
-              onPointerMove={() => setIsScrubbing(true)}
-              onPointerLeave={() => setIsScrubbing(false)}
-              onPointerCancel={() => setIsScrubbing(false)}
-            >
+            <div ref={chartBlockRef} className="relative">
               <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <ComposedChart
                   key={range}
                   data={chartData}
-                  margin={{ top: 12, right: SERIES_LABEL_GUTTER, left: 0, bottom: 0 }}
+                  margin={{ top: 12, right: chartYAxis.marginRight, left: 0, bottom: 0 }}
                 >
                   <CartesianGrid
                     stroke={chartAxis.grid}
@@ -418,15 +402,18 @@ export function TrainingLoadWidget({
                     interval={0}
                     tick={(props) => <DayAxisTick {...props} rangeDays={selectedRangeDays} />}
                   />
-                  {/* Eje oculto: las cifras ya están arriba en las barras; aquí solo fija la escala. */}
-                  <YAxis hide type="number" domain={yScale.domain} ticks={yScale.ticks} />
-                  <Tooltip
-                    active
-                    defaultIndex={lastIndex}
-                    cursor={false}
-                    isAnimationActive={false}
-                    wrapperStyle={CHART_SCRUB_TOOLTIP_WRAPPER}
-                    content={<ChartScrubSync onPoint={handleScrubPoint} />}
+                  <YAxis
+                    type="number"
+                    orientation={chartYAxis.orientation}
+                    width={chartYAxis.width}
+                    domain={yScale.domain}
+                    ticks={yScale.ticks}
+                    interval={0}
+                    axisLine={false}
+                    tickLine={false}
+                    tickMargin={0}
+                    tick={<ChartYAxisTick />}
+                    tickFormatter={(value) => formatAxisValue(value as number)}
                   />
                   <Area
                     dataKey="gapFatigue"
@@ -459,7 +446,7 @@ export function TrainingLoadWidget({
                     stroke={chartColors.fitness}
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: 4, stroke: chartAxis.surface, strokeWidth: 2 }}
+                    activeDot={false}
                     isAnimationActive={false}
                   />
                   <Line
@@ -470,36 +457,45 @@ export function TrainingLoadWidget({
                     strokeWidth={2}
                     strokeDasharray="5 4"
                     dot={false}
-                    activeDot={{ r: 4, stroke: chartAxis.surface, strokeWidth: 2 }}
+                    activeDot={false}
                     isAnimationActive={false}
                   />
-                  {lastRow && (
-                    <SeriesEndMarker
-                      row={lastRow}
-                      dataKey="fatigue"
-                      name="Fatiga"
-                      color={chartColors.fatigue}
-                    />
-                  )}
-                  {lastRow && (
-                    <SeriesEndMarker
-                      row={lastRow}
-                      dataKey="fitness"
-                      name="Fitness"
-                      color={chartColors.fitness}
-                    />
-                  )}
                   {isScrubbing && displayRow && (
-                    <ReferenceLine
-                      x={displayRow.date}
-                      stroke={CHART_SCRUB_CURSOR.stroke}
-                      strokeWidth={CHART_SCRUB_CURSOR.strokeWidth}
-                      strokeOpacity={CHART_SCRUB_CURSOR.strokeOpacity}
-                      ifOverflow="visible"
-                    />
+                    <>
+                      <ReferenceLine
+                        x={displayRow.date}
+                        stroke={CHART_SCRUB_CURSOR.stroke}
+                        strokeWidth={CHART_SCRUB_CURSOR.strokeWidth}
+                        strokeOpacity={CHART_SCRUB_CURSOR.strokeOpacity}
+                        ifOverflow="visible"
+                      />
+                      <ReferenceDot
+                        x={displayRow.date}
+                        y={displayRow.fitness}
+                        r={4}
+                        fill={chartColors.fitness}
+                        stroke={chartAxis.surface}
+                        strokeWidth={2}
+                      />
+                      <ReferenceDot
+                        x={displayRow.date}
+                        y={displayRow.fatigue}
+                        r={4}
+                        fill={chartColors.fatigue}
+                        stroke={chartAxis.surface}
+                        strokeWidth={2}
+                      />
+                    </>
                   )}
                 </ComposedChart>
               </ResponsiveContainer>
+              <ChartScrubLayer
+                count={chartData.length}
+                marginLeft={0}
+                marginRight={CHART_RIGHT_GUTTER}
+                onIndex={handleScrubIndex}
+                onActiveChange={setIsScrubbing}
+              />
             </div>
           </>
         )}

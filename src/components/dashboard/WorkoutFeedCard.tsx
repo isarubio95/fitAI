@@ -14,9 +14,12 @@ import { PAGE_CARD } from "@/lib/pageStyles";
 /** Card exterior del feed: superficie de página compartida. */
 export const COMMUNITY_CARD_CLASS = PAGE_CARD;
 
-/** Card interior compacta del entrenamiento: plana, sin borde ni sombra, con hover. */
+/** Card interior compacta: transparente para heredar el fondo de la card exterior (sin corte de color). */
 export const WORKOUT_COMPACT_CARD_CLASS =
-  "w-full max-w-none overflow-hidden border-0 rounded-none shadow-none transition-colors hover:bg-muted/30";
+  "w-full max-w-none overflow-hidden rounded-none border-0 bg-transparent shadow-none";
+
+/** Padding del CardContent exterior: el cuerpo pinta px-6 por tramo para poder ir a sangre (mapa). */
+export const FEED_CARD_CONTENT_CLASS = "space-y-4 px-0 pb-4 pt-6";
 
 export type WorkoutFeedCardAuthor = {
   id: string;
@@ -78,7 +81,7 @@ export function WorkoutFeedCardBody({
   return (
     <>
       {author ? (
-        <div className="mb-4 flex items-start gap-3">
+        <div className="mb-4 flex items-start gap-3 px-6">
           <button
             type="button"
             onClick={() => onSelectAuthor?.(author.id)}
@@ -122,19 +125,21 @@ export function WorkoutFeedCardBody({
       </button>
 
       {showSocial ? (
-        <ActivitySocialActions
-          kind="gym"
-          targetId={workout.id}
-          ownerId={ownerId}
-          likeCount={social.likeCount}
-          liked={social.liked}
-          commentCount={social.commentCount}
-          commented={social.commented}
-          onToggleLike={social.onToggleLike}
-          isTogglingLike={social.isTogglingLike}
-          defaultCommentsOpen={social.defaultCommentsOpen}
-          className="pt-1"
-        />
+        <div className="px-6">
+          <ActivitySocialActions
+            kind="gym"
+            targetId={workout.id}
+            ownerId={ownerId}
+            likeCount={social.likeCount}
+            liked={social.liked}
+            commentCount={social.commentCount}
+            commented={social.commented}
+            onToggleLike={social.onToggleLike}
+            isTogglingLike={social.isTogglingLike}
+            defaultCommentsOpen={social.defaultCommentsOpen}
+            className="pt-1"
+          />
+        </div>
       ) : null}
     </>
   );
@@ -148,7 +153,7 @@ type WorkoutFeedCardProps = WorkoutFeedCardBodyProps & {
 export function WorkoutFeedCard({ className, ...bodyProps }: WorkoutFeedCardProps) {
   return (
     <Card className={cn(COMMUNITY_CARD_CLASS, className)}>
-      <CardContent className="space-y-4 px-6 pb-4 pt-6">
+      <CardContent className={FEED_CARD_CONTENT_CLASS}>
         <WorkoutFeedCardBody {...bodyProps} />
       </CardContent>
     </Card>

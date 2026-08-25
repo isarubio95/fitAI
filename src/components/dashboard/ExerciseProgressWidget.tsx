@@ -293,8 +293,8 @@ export function ExerciseProgressWidget({ flushHeader = false }: { flushHeader?: 
     setSwiping(false);
   };
 
-  const headerClass = flushHeader ? PROGRESS_CARD_HEADER : "px-6 pt-8 pb-4";
-  const skeletonHeaderClass = flushHeader ? PROGRESS_CARD_HEADER_SKELETON : "px-6 pt-8 pb-2";
+  const headerClass = flushHeader ? PROGRESS_CARD_HEADER : "px-6 pt-6 pb-4";
+  const skeletonHeaderClass = flushHeader ? PROGRESS_CARD_HEADER_SKELETON : "px-6 pt-6 pb-2";
 
   if (loadingExercises) {
     return (

@@ -354,10 +354,10 @@
 
   /*
    * Excepción: un tramo con fondo de página dentro de un drawer (una lista de
-   * entradas, por ejemplo). Ahí las cards SÍ son superficies propias y el hueco
-   * entre ellas deja ver el fondo, igual que en el dashboard.
+   * entradas, por ejemplo). Solo la card exterior recupera superficie; las
+   * anidadas (resumen compacto, mapa) siguen planas, igual que en Comunidad.
    */
-  [data-vaul-drawer] .surface-region-page [data-slot="card"] {
+  [data-vaul-drawer] .surface-region-page > [data-slot="card"] {
     background-image: var(--sheen-card);
     border-color: hsl(var(--surface-border));
     box-shadow: var(--shadow-card);

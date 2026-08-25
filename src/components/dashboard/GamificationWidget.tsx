@@ -9,13 +9,13 @@ import { PAGE_CARD } from "@/lib/pageStyles";
 type GamificationWidgetProps = {
   /** Si se omite, usa el usuario autenticado (como en el dashboard). */
   userId?: string;
-  /** Padding del contenido. Por defecto el del dashboard (`py-8`). */
+  /** Padding del contenido. Por defecto el del dashboard (`py-6`). */
   contentClassName?: string;
 };
 
 export function GamificationWidget({ userId, contentClassName }: GamificationWidgetProps) {
   const { data: stats, isLoading } = useProfileStats(userId);
-  const bodyClass = cn("space-y-3 p-0 px-6 py-8", contentClassName);
+  const bodyClass = cn("space-y-3 p-0 px-6 py-6", contentClassName);
 
   if (isLoading) {
     return (

@@ -1,6 +1,9 @@
 /** Espaciado entre cards en páginas (no drawers): las cards flotan, no se pegan. */
 export const PAGE_CARD_STACK_GAP = "gap-2.5 md:gap-3";
 
+/** Espacio bajo el header hasta la primera card: el mismo que PAGE_CARD_STACK_GAP. */
+export const PAGE_STACK_TOP = "pt-2.5 md:pt-3";
+
 /** Cards pegadas en móvil; en escritorio misma separación que PAGE_CARD_STACK_GAP. */
 export const PAGE_CARD_STACK_GAP_FLUSH_MOBILE = "gap-0 md:gap-3";
 

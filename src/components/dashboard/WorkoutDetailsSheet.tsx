@@ -30,6 +30,7 @@ import {
 } from "@/types/workout";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD, PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { formatCardioDuration } from "@/lib/cardioFormat";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import { WorkoutMuscleMiniMap } from "@/components/dashboard/WorkoutMuscleMiniMap";
 import { GymStartMetaRow } from "@/components/dashboard/GymStartMetaRow";
@@ -548,6 +549,23 @@ function WorkoutLeadingAvatarBadge({ avatar }: { avatar: WorkoutLeadingAvatar })
   );
 }
 
+function FeedMetricCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="shrink-0 text-center">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="font-mono text-sm font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function gymSessionDurationSec(workout: ActividadWithDetails): number | null {
+  if (!workout.fecha_fin) return null;
+  const start = new Date(workout.fecha).getTime();
+  const end = new Date(workout.fecha_fin).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  return Math.round((end - start) / 1000);
+}
+
 function WorkoutCompactSummary({
   workout,
   visibleGroups,
@@ -567,39 +585,55 @@ function WorkoutCompactSummary({
 }) {
   const totalSets = countDoneSeries(workout.ejercicios);
   const exerciseCount = workout.ejercicios.filter((ex) => (ex.series ?? []).some(isSerieDone)).length;
-  const statsLabel = `${exerciseCount} ejercicio${exerciseCount === 1 ? "" : "s"} · ${totalSets} series`;
+  const durationSec = gymSessionDurationSec(workout);
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-start gap-3">
-        {leadingRoutineIcon ? (
-          <WorkoutLeadingRoutineIcon iconKey={leadingRoutineIcon} className="mt-0.5 h-4 w-4" />
-        ) : leadingAvatar ? (
-          <WorkoutLeadingAvatarBadge avatar={leadingAvatar} />
-        ) : null}
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex items-baseline justify-between gap-3">
-            <h3
+    <div className="space-y-3 p-0">
+      {leadingRoutineIcon || leadingAvatar ? (
+        <div className="flex items-start gap-3 px-6">
+          {leadingRoutineIcon ? (
+            <WorkoutLeadingRoutineIcon iconKey={leadingRoutineIcon} className="mt-0.5 h-4 w-4" />
+          ) : leadingAvatar ? (
+            <WorkoutLeadingAvatarBadge avatar={leadingAvatar} />
+          ) : null}
+          <div className="min-w-0 flex-1 space-y-1">
+            <p
               className={cn(
-                "min-w-0 flex-1 text-sm font-semibold leading-snug",
+                "truncate text-base font-semibold leading-tight",
                 leadingAvatar && "pt-1.5",
               )}
             >
               {workout.titulo}
-            </h3>
-            <p className="shrink-0 text-right text-[11px] leading-snug text-muted-foreground tabular-nums">
-              {statsLabel}
             </p>
+            {!hideDate ? (
+              <GymStartMetaRow dateTime={workout.fecha} gymName={workout.gimnasio_nombre} />
+            ) : null}
           </div>
+        </div>
+      ) : (
+        <div className="min-w-0 space-y-1 px-6">
+          <p className="truncate text-base font-semibold leading-tight">{workout.titulo}</p>
           {!hideDate ? (
             <GymStartMetaRow dateTime={workout.fecha} gymName={workout.gimnasio_nombre} />
           ) : null}
         </div>
+      )}
+
+      <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-6">
+        <FeedMetricCell
+          label="Tiempo"
+          value={durationSec != null ? formatCardioDuration(durationSec) : "—"}
+        />
+        <FeedMetricCell label="Ejercicios" value={String(exerciseCount)} />
+        <FeedMetricCell label="Series" value={String(totalSets)} />
       </div>
+
       {totalSets === 0 ? (
-        <p className="text-xs text-muted-foreground">Sin series registradas.</p>
+        <p className="px-6 text-xs text-muted-foreground">Sin series registradas.</p>
       ) : visibleGroups.length > 0 ? (
-        <WorkoutMuscleMiniMap groupSets={groupSets} maxSets={maxSets} />
+        <div className="px-6">
+          <WorkoutMuscleMiniMap groupSets={groupSets} maxSets={maxSets} />
+        </div>
       ) : null}
     </div>
   );

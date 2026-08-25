@@ -15,7 +15,6 @@ import { useProfileDrawer } from "@/components/layout/ProfileDrawer";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import {
   CardioFeedCard,
-  CardioFeedCardBody,
   type CardioFeedCardSocial,
 } from "@/components/cardio/CardioFeedCard";
 import { CardioDetailsSheet } from "@/components/cardio/CardioDetailsSheet";
@@ -23,7 +22,6 @@ import {
   CommunityAvatar,
   COMMUNITY_CARD_CLASS,
   WorkoutFeedCard,
-  WorkoutFeedCardBody,
   type WorkoutFeedCardSocial,
 } from "@/components/dashboard/WorkoutFeedCard";
 
@@ -31,7 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
+import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, PAGE_STACK_TOP } from "@/lib/pageStyles";
 import { communityFeedEmptyMessage } from "@/lib/communityFeedVisibility";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +65,6 @@ export default function Community() {
   const { openMyProfile, openUserProfile } = useProfileDrawer();
 
   const showSearchPanel = searching || usernameQuery.trim().length > 0;
-  const communityCardClass = COMMUNITY_CARD_CLASS;
 
   const normalizedFeed = useMemo(() => {
     const items = data?.pages.flatMap((page) => page.items) ?? [];
@@ -147,8 +144,6 @@ export default function Community() {
     else openUserProfile(authorId);
   };
 
-  const hasMergedSecondBlock = !showSearchPanel && (loadingFeed || loadingFocused || displayFeed.length > 0);
-
   const searchFields = (
     <>
       <div className="relative">
@@ -156,7 +151,7 @@ export default function Community() {
           placeholder="Ej: juan_gym"
           value={usernameQuery}
           onChange={(e) => setUsernameQuery(e.target.value)}
-          className="h-12"
+          className="h-12 bg-transparent"
         />
       </div>
     </>
@@ -226,25 +221,6 @@ export default function Community() {
       </div>
     );
 
-  const renderFeedItemBody = (item: CommunityFeedItem) =>
-    item.type === "gym" ? (
-      <WorkoutFeedCardBody
-        workout={item.workout}
-        author={item.author}
-        onSelectAuthor={openAuthorProfile}
-        onSelectWorkout={setWorkoutDetailsId}
-        social={socialFor(item.workout.id)}
-      />
-    ) : (
-      <CardioFeedCardBody
-        session={item.session}
-        author={item.author}
-        onSelectAuthor={openAuthorProfile}
-        onSelectSession={setCardioDetailsId}
-        social={cardioSocialFor(item.session.id)}
-      />
-    );
-
   const renderFeedCard = (item: CommunityFeedItem) =>
     item.type === "gym" ? (
       <WorkoutFeedCard
@@ -274,68 +250,23 @@ export default function Community() {
             "flex w-full flex-col bg-background md:bg-transparent",
             PAGE_CARD_STACK_GAP,
             PAGE_STACK_INSET,
+            PAGE_STACK_TOP,
             showSearchPanel && "flex-1",
           )}
         >
-          {/* Móvil: una sola card sin línea entre búsqueda y el bloque siguiente */}
-          <Card
-            className={cn(
-              communityCardClass,
-              "md:hidden",
-              showSearchPanel && "flex-1",
-            )}
-          >
-            <CardHeader className="px-6 pb-0 pt-6">
+          <Card className={cn(COMMUNITY_CARD_CLASS, showSearchPanel && "flex-1")}>
+            <CardHeader className="px-6 pb-0 pt-6 md:pt-8">
               <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
             </CardHeader>
             <CardContent
-              className={cn(
-                "px-6 pt-3",
-                showSearchPanel ? "pb-4" : hasMergedSecondBlock && "pb-4",
-              )}
+              className={cn("px-6 pt-3 md:pt-4", showSearchPanel ? "pb-3" : "pb-6")}
             >
               {searchFields}
             </CardContent>
             {showSearchPanel && (
-              <CardContent className="space-y-3 px-6 pb-4 pt-0">{searchResultsBody}</CardContent>
-            )}
-            {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 && (
-              <div className="px-6 pb-4 pt-0">
-                <Skeleton className="h-28 w-full rounded-xl bg-muted/30" />
-              </div>
-            )}
-            {!showSearchPanel && displayFeed.length > 0 && (
-              <CardContent
-                className={cn(
-                  "space-y-4 pb-4 pt-6",
-                  displayFeed[0].type === "cardio" ? "px-0" : "px-6",
-                )}
-              >
-                {renderFeedItemBody(displayFeed[0])}
-              </CardContent>
+              <CardContent className="space-y-3 px-6 pb-6 pt-0">{searchResultsBody}</CardContent>
             )}
           </Card>
-
-          {/* Escritorio: cards separadas */}
-          <div className={cn("hidden md:flex md:flex-col", PAGE_CARD_STACK_GAP)}>
-            <Card className={communityCardClass}>
-              <CardHeader className="px-6 pt-8">
-                <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
-              </CardHeader>
-              <CardContent className={cn("px-6 pt-4", showSearchPanel && "pb-4")}>
-                {searchFields}
-              </CardContent>
-              {showSearchPanel && (
-                <CardContent className="space-y-3 px-6 pb-4 pt-0">{searchResultsBody}</CardContent>
-              )}
-            </Card>
-
-            {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 && (
-              <Skeleton className="h-28 w-full rounded-3xl bg-card" />
-            )}
-
-            {!showSearchPanel && displayFeed.length > 0 && renderFeedCard(displayFeed[0])}
-          </div>
 
           {!showSearchPanel && !loadingFeed && !loadingFocused && displayFeed.length === 0 && (
             <p className="px-6 py-6 text-center text-sm text-muted-foreground">
@@ -343,19 +274,12 @@ export default function Community() {
             </p>
           )}
 
-          {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 && (
-            <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-28 w-full rounded-2xl bg-card md:rounded-3xl" />
-              ))}
-            </div>
-          )}
+          {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 &&
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 w-full rounded-2xl bg-card md:rounded-3xl" />
+            ))}
 
-          {!showSearchPanel && displayFeed.length > 1 && (
-            <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP)}>
-              {displayFeed.slice(1).map((item) => renderFeedCard(item))}
-            </div>
-          )}
+          {!showSearchPanel && displayFeed.map((item) => renderFeedCard(item))}
 
           {!showSearchPanel && !loadingFeed && hasNextPage && (
             <div ref={loadMoreRef} className="flex items-center justify-center py-4">

@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
+import { chartIndexFromRatio } from "@/components/dashboard/chartScrub";
 
 const { mockUseTrainingLoad } = vi.hoisted(() => ({
   mockUseTrainingLoad: vi.fn(),
@@ -148,5 +149,46 @@ describe("TrainingLoadWidget", () => {
     expect(screen.queryByText("Carga de hoy")).not.toBeInTheDocument();
     expect(screen.queryByText("Sin entrenamientos hoy")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Registrar" })).not.toBeInTheDocument();
+  });
+
+  it("al tocar el gráfico muestra el día de esa X, no el último", () => {
+    mockUseTrainingLoad.mockReturnValue({
+      data: SAMPLE_DATA,
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TrainingLoadWidget />);
+    const layer = screen.getByTestId("chart-scrub-layer");
+    vi.spyOn(layer, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      width: 300,
+      height: 190,
+      right: 300,
+      bottom: 190,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.pointerDown(layer, { clientX: 12, clientY: 80, pointerType: "touch" });
+
+    expect(screen.getByText(/1 abr\.? 2026/i)).toBeInTheDocument();
+    expect(screen.getByText("Carga")).toBeInTheDocument();
+    expect(screen.queryByText(/2 abr\.? 2026/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("chartIndexFromRatio", () => {
+  it("elige el primer y el último extremo", () => {
+    expect(chartIndexFromRatio(0, 30)).toBe(0);
+    expect(chartIndexFromRatio(1, 30)).toBe(29);
+  });
+
+  it("elige el punto más cercano, no solo las marcas del eje", () => {
+    expect(chartIndexFromRatio(0.5, 31)).toBe(15);
+    expect(chartIndexFromRatio(-0.2, 10)).toBe(0);
+    expect(chartIndexFromRatio(1.4, 10)).toBe(9);
   });
 });
