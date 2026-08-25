@@ -293,8 +293,8 @@ export function ExerciseProgressWidget({ flushHeader = false }: { flushHeader?: 
     setSwiping(false);
   };
 
-  const headerClass = flushHeader ? PROGRESS_CARD_HEADER : "px-6 pt-6 pb-4";
-  const skeletonHeaderClass = flushHeader ? PROGRESS_CARD_HEADER_SKELETON : "px-6 pt-6 pb-2";
+  const headerClass = flushHeader ? PROGRESS_CARD_HEADER : "px-5 pt-6 pb-4";
+  const skeletonHeaderClass = flushHeader ? PROGRESS_CARD_HEADER_SKELETON : "px-5 pt-6 pb-2";
 
   if (loadingExercises) {
     return (
@@ -302,7 +302,7 @@ export function ExerciseProgressWidget({ flushHeader = false }: { flushHeader?: 
         <CardHeader className={skeletonHeaderClass}>
           <Skeleton className="h-5 w-40" />
         </CardHeader>
-        <CardContent className="px-6 pt-0">
+        <CardContent className="px-5 pt-0">
           <Skeleton className="h-44 w-full" />
         </CardContent>
       </Card>
@@ -411,7 +411,7 @@ export function ExerciseProgressWidget({ flushHeader = false }: { flushHeader?: 
           </div>
         </div>
       </CardHeader>
-      <CardContent className="min-w-0 px-6 pt-0">
+      <CardContent className="min-w-0 px-5 pt-0">
         {/* w-0 min-w-full: el select no puede ensanchar al padre con nombres largos */}
         <div className="w-0 min-w-full max-w-full overflow-hidden pb-4">
           <Select

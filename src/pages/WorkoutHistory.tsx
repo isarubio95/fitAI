@@ -588,7 +588,7 @@ const WorkoutHistory = () => {
 
       {!isLoading && !hasAnySession && (
         <Card className={cardClass}>
-          <CardContent className="px-6 py-10 text-center">
+          <CardContent className="px-5 py-10 text-center">
             <p className="text-sm text-muted-foreground">
               Aún no hay sesiones. Cuando entrenes, aquí verás el detalle de tu progreso.
             </p>
@@ -602,7 +602,7 @@ const WorkoutHistory = () => {
             <h2>Constancia</h2>
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-6 pt-0">
+        <CardContent className="px-5 pt-0">
           {isLoading ? (
             <div className="space-y-3 py-2" aria-busy="true" aria-label="Cargando gráfico">
               <div className="space-y-2">
@@ -649,7 +649,7 @@ const WorkoutHistory = () => {
             <h2>Volumen de fuerza</h2>
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-6 pt-0">
+        <CardContent className="px-5 pt-0">
           {isLoading ? (
             <div className="space-y-3 py-2" aria-busy="true" aria-label="Cargando gráfico">
               <div className="space-y-2">
@@ -708,7 +708,7 @@ const WorkoutHistory = () => {
                   <Star className="h-4 w-4 text-primary" /> Top ejercicios
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-1.5 px-6 pt-0">
+              <CardContent className="space-y-1.5 px-5 pt-0">
                 {topExercises.map((ex, i) => (
                   <div key={ex.name} className="flex items-center justify-between text-sm">
                     <span className="truncate text-muted-foreground">
@@ -729,7 +729,7 @@ const WorkoutHistory = () => {
                   <Trophy className="h-4 w-4 text-primary" /> Cargas máximas
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-1.5 px-6 pt-0">
+              <CardContent className="space-y-1.5 px-5 pt-0">
                 {topLoads.map((ex, i) => (
                   <div key={ex.name} className="flex items-center justify-between text-sm">
                     <span className="truncate text-muted-foreground">

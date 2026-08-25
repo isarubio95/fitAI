@@ -38,7 +38,7 @@ export function MuscleRankingWidget() {
               <Flame className="h-4 w-4 text-primary" /> Más Entrenados
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5 px-6 pt-0">
+          <CardContent className="space-y-1.5 px-5 pt-0">
             {data.topGroups.map(({ group, count }, i) => (
               <RankRow
                 key={group}
@@ -58,7 +58,7 @@ export function MuscleRankingWidget() {
               <Snowflake className="h-4 w-4 text-muted-foreground" /> Menos Entrenados
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1.5 px-6 pt-0">
+          <CardContent className="space-y-1.5 px-5 pt-0">
             {data.bottomGroups.map(({ group, count }, i) => (
               <RankRow
                 key={group}

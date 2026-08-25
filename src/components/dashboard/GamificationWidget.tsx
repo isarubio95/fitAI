@@ -15,7 +15,7 @@ type GamificationWidgetProps = {
 
 export function GamificationWidget({ userId, contentClassName }: GamificationWidgetProps) {
   const { data: stats, isLoading } = useProfileStats(userId);
-  const bodyClass = cn("space-y-3 p-0 px-6 py-6", contentClassName);
+  const bodyClass = cn("space-y-3 p-0 px-5 py-6", contentClassName);
 
   if (isLoading) {
     return (

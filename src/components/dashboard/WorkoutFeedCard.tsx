@@ -17,7 +17,7 @@ export const COMMUNITY_CARD_CLASS = PAGE_CARD;
 export const WORKOUT_COMPACT_CARD_CLASS =
   "w-full max-w-none overflow-hidden rounded-none border-0 bg-transparent shadow-none";
 
-/** Padding del CardContent exterior: el cuerpo pinta px-6 por tramo para poder ir a sangre (mapa). */
+/** Padding del CardContent exterior: el cuerpo pinta px-5 por tramo para poder ir a sangre (mapa). */
 export const FEED_CARD_CONTENT_CLASS = "space-y-4 px-0 pb-4 pt-6";
 
 export type WorkoutFeedCardAuthor = {
@@ -60,7 +60,7 @@ export function WorkoutFeedCardBody({
   return (
     <>
       {author ? (
-        <div className="mb-4 flex items-start gap-3 px-6">
+        <div className="mb-4 flex items-start gap-3 px-5">
           <button
             type="button"
             onClick={() => onSelectAuthor?.(author.id)}
@@ -104,7 +104,7 @@ export function WorkoutFeedCardBody({
       </button>
 
       {showSocial ? (
-        <div className="px-6">
+        <div className="px-5">
           <ActivitySocialActions
             kind="gym"
             targetId={workout.id}

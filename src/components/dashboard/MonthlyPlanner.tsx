@@ -353,7 +353,7 @@ export function MonthlyPlanner({
                         : {})}
                       style={calendarDayExpandTransitionStyle(expandPanel.phase)}
                     >
-                      <div className="px-6 py-3">
+                      <div className="px-5 py-3">
                         <p className="text-xs font-medium text-muted-foreground mb-2">
                           {format(expandedDate, "d MMM yyyy", { locale: es })}
                         </p>

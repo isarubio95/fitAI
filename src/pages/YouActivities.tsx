@@ -46,7 +46,7 @@ function ActivitiesFeedSkeleton() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="surface-card space-y-4 rounded-2xl bg-card px-6 pb-4 pt-6 md:rounded-3xl"
+          className="surface-card space-y-4 rounded-2xl bg-card px-5 pb-4 pt-6 md:rounded-3xl"
         >
           <div className="flex items-start gap-3">
             <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
@@ -232,7 +232,7 @@ function YouActivitiesContent() {
         {isLoading ? (
           <ActivitiesFeedSkeleton />
         ) : filtered.length === 0 ? (
-          <p className="px-6 py-10 text-center text-sm text-muted-foreground">
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
             Aún no has registrado actividades.
           </p>
         ) : (

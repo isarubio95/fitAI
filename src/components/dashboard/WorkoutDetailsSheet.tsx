@@ -589,7 +589,7 @@ function WorkoutCompactSummary({
   return (
     <div className="space-y-3 p-0">
       {leadingRoutineIcon || leadingAvatar ? (
-        <div className="flex items-start gap-3 px-6">
+        <div className="flex items-start gap-3 px-5">
           {leadingRoutineIcon ? (
             <WorkoutLeadingRoutineIcon iconKey={leadingRoutineIcon} className="mt-0.5 h-4 w-4" />
           ) : leadingAvatar ? (
@@ -610,7 +610,7 @@ function WorkoutCompactSummary({
           </div>
         </div>
       ) : (
-        <div className="min-w-0 space-y-1 px-6">
+        <div className="min-w-0 space-y-1 px-5">
           <p className="truncate text-base font-semibold leading-tight">{workout.titulo}</p>
           {!hideDate ? (
             <GymStartMetaRow dateTime={workout.fecha} gymName={workout.gimnasio_nombre} />
@@ -618,7 +618,7 @@ function WorkoutCompactSummary({
         </div>
       )}
 
-      <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-6">
+      <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-5">
         <FeedMetricCell
           label="Tiempo"
           value={durationSec != null ? formatCardioDuration(durationSec) : "—"}
@@ -628,9 +628,9 @@ function WorkoutCompactSummary({
       </div>
 
       {totalSets === 0 ? (
-        <p className="px-6 text-xs text-muted-foreground">Sin series registradas.</p>
+        <p className="px-5 text-xs text-muted-foreground">Sin series registradas.</p>
       ) : visibleGroups.length > 0 ? (
-        <div className="px-6">
+        <div className="px-5">
           <WorkoutMuscleMiniMap groupSets={groupSets} maxSets={maxSets} />
         </div>
       ) : null}

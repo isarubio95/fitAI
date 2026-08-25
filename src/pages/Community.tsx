@@ -255,21 +255,21 @@ export default function Community() {
           )}
         >
           <Card className={cn(COMMUNITY_CARD_CLASS, showSearchPanel && "flex-1")}>
-            <CardHeader className="px-6 pb-0 pt-6 md:pt-8">
+            <CardHeader className="px-5 pb-0 pt-6 md:pt-8">
               <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
             </CardHeader>
             <CardContent
-              className={cn("px-6 pt-3 md:pt-4", showSearchPanel ? "pb-3" : "pb-6")}
+              className={cn("px-5 pt-3 md:pt-4", showSearchPanel ? "pb-3" : "pb-6")}
             >
               {searchFields}
             </CardContent>
             {showSearchPanel && (
-              <CardContent className="space-y-3 px-6 pb-6 pt-0">{searchResultsBody}</CardContent>
+              <CardContent className="space-y-3 px-5 pb-6 pt-0">{searchResultsBody}</CardContent>
             )}
           </Card>
 
           {!showSearchPanel && !loadingFeed && !loadingFocused && displayFeed.length === 0 && (
-            <p className="px-6 py-6 text-center text-sm text-muted-foreground">
+            <p className="px-5 py-6 text-center text-sm text-muted-foreground">
               {communityFeedEmptyMessage(followingIds.size)}
             </p>
           )}

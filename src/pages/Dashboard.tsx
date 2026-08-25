@@ -404,7 +404,7 @@ const Dashboard = () => {
       case 'calendar':
         return (
           <Card className={PAGE_CARD}>
-            <CardHeader className="space-y-3 px-6 pt-6 pb-4">
+            <CardHeader className="space-y-3 px-5 pt-6 pb-4">
               <div className="flex w-full flex-row items-center justify-between gap-2">
                 <CalendarPeriodPicker
                   view={calendarView}

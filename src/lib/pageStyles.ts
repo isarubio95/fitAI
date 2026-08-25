@@ -24,8 +24,8 @@ export const PAGE_STACK_INSET = "max-md:px-3";
 export const PAGE_CARD = "w-full overflow-hidden rounded-2xl md:rounded-3xl";
 
 /** Cabecera de cards en Progreso (sin pt-8 extra). */
-export const PROGRESS_CARD_HEADER = "px-6 pb-4";
-export const PROGRESS_CARD_HEADER_SKELETON = "px-6 pb-2";
+export const PROGRESS_CARD_HEADER = "px-5 pb-4";
+export const PROGRESS_CARD_HEADER_SKELETON = "px-5 pb-2";
 
 /** Fila de pills de sección encima del contenido (solo escritorio). */
 export const SECTION_PILLS_ROW =

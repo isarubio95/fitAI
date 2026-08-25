@@ -556,7 +556,7 @@ const Exercises = () => {
         )}
       >
         <Card className="w-full max-w-none overflow-hidden rounded-none border-0 bg-background shadow-none">
-          <CardContent className="space-y-4 px-4 py-4 md:px-6 md:py-6">
+          <CardContent className="space-y-4 px-4 py-4 md:px-5 md:py-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input

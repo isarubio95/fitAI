@@ -83,7 +83,7 @@ export function CardioFeedCompactContent({
 
   return (
     <CardContent className="space-y-3 p-0">
-      <div className="min-w-0 space-y-1 px-6">
+      <div className="min-w-0 space-y-1 px-5">
         <p className="truncate text-base font-semibold leading-tight">{session.titulo}</p>
         {/* Si no hay autor: fecha (+ icono alineado si no hay ciudad) / icono + ubicación. */}
         {!hideDate ? (
@@ -91,7 +91,7 @@ export function CardioFeedCompactContent({
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-6">
+      <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-5">
         <MetricCell label="Tiempo" value={formatCardioDuration(metrics.durationSec)} />
         <MetricCell
           label="Distancia"
@@ -110,7 +110,7 @@ export function CardioFeedCompactContent({
       </div>
 
       {metrics.fcMedia != null || metrics.fcMax != null ? (
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 px-6 text-xs tabular-nums text-muted-foreground">
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 text-xs tabular-nums text-muted-foreground">
           <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400">
             <Heart className="h-3 w-3" />
             {metrics.fcMedia != null ? (
@@ -134,7 +134,7 @@ export function CardioFeedCompactContent({
           </Suspense>
         </div>
       ) : (
-        <div className="mx-6 flex items-center gap-4 px-0 py-2">
+        <div className="mx-5 flex items-center gap-4 px-0 py-2">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-foreground">
             <Icon className="h-7 w-7" aria-hidden />
           </div>
@@ -161,7 +161,7 @@ export function CardioFeedCardBody({
   return (
     <>
       {author ? (
-        <div className="mb-4 flex items-start gap-3 px-6">
+        <div className="mb-4 flex items-start gap-3 px-5">
           <button
             type="button"
             onClick={() => onSelectAuthor?.(author.id)}
@@ -200,7 +200,7 @@ export function CardioFeedCardBody({
       </button>
 
       {showSocial ? (
-        <div className="px-6">
+        <div className="px-5">
           <ActivitySocialActions
             kind="cardio"
             targetId={session.id}

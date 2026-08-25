@@ -290,7 +290,7 @@ const YouHealth = () => {
                   key={card.key}
                   type="button"
                   onClick={() => setMetric(card.key)}
-                  className={cn("space-y-1 px-6 py-8 text-left transition-colors", cellBorder, metric === card.key && "bg-primary/5")}
+                  className={cn("space-y-1 px-5 py-8 text-left transition-colors", cellBorder, metric === card.key && "bg-primary/5")}
                 >
                   <div className="flex items-center gap-2">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
@@ -356,14 +356,14 @@ const YouHealth = () => {
 
       {isLoading ? (
         <Card className={cardClass} aria-busy="true" aria-label="Cargando gráfico">
-          <CardContent className="px-6 py-8">
+          <CardContent className="px-5 py-8">
             <Skeleton className="mb-3 h-4 w-40" />
             <Skeleton className="aspect-2/1 w-full rounded-xl" />
           </CardContent>
         </Card>
       ) : chartHasData ? (
         <Card className={cardClass}>
-          <CardContent className="px-6 py-8">
+          <CardContent className="px-5 py-8">
             <h2 className="text-sm font-semibold mb-3">
               {metric === "peso" && "Evolución del peso"}
               {metric === "calorias" && "Calorías"}

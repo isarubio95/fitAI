@@ -280,7 +280,7 @@ export function BodyHeatmap() {
   return (
     <>
       <Card className={PAGE_CARD}>
-        <CardHeader className="space-y-3 px-6 pt-6 pb-4">
+        <CardHeader className="space-y-3 px-5 pt-6 pb-4">
           <div className="flex items-center justify-between gap-2">
             <CardTitle asChild className="text-base font-bold">
               <h2>Carga Muscular</h2>
@@ -320,7 +320,7 @@ export function BodyHeatmap() {
           )}
         </CardHeader>
 
-        <CardContent className="relative px-6 pt-0" ref={containerRef}>
+        <CardContent className="relative px-5 pt-0" ref={containerRef}>
           <div className="space-y-5">
             {isUsingOfflineFallback && !isOnline && (
               <p className="text-center text-xs text-muted-foreground">

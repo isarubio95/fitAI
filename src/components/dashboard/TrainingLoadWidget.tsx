@@ -245,8 +245,8 @@ export function TrainingLoadWidget({
     return window[window.length - 1].form - window[0].form;
   }, [chartData, selectedRange.deltaDays]);
 
-  const headerClass = flushHeader ? PROGRESS_CARD_HEADER : "px-6 pt-8 pb-4";
-  const skeletonHeaderClass = flushHeader ? PROGRESS_CARD_HEADER_SKELETON : "px-6 pt-8 pb-2";
+  const headerClass = flushHeader ? PROGRESS_CARD_HEADER : "px-5 pt-8 pb-4";
+  const skeletonHeaderClass = flushHeader ? PROGRESS_CARD_HEADER_SKELETON : "px-5 pt-8 pb-2";
 
   if (isLoading && !resolvedData) {
     return (
@@ -254,7 +254,7 @@ export function TrainingLoadWidget({
         <CardHeader className={skeletonHeaderClass}>
           <Skeleton className="h-5 w-40" />
         </CardHeader>
-        <CardContent className="px-6 pt-0">
+        <CardContent className="px-5 pt-0">
           <Skeleton className="h-48 w-full" />
         </CardContent>
       </Card>
@@ -309,7 +309,7 @@ export function TrainingLoadWidget({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 px-6 pt-0">
+      <CardContent className="space-y-4 px-5 pt-0">
         {showDynamicSkeleton ? (
           <div className="space-y-4">
             <Skeleton className="h-24 w-full" />
