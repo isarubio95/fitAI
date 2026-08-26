@@ -12,7 +12,7 @@ export function RecoveryHero({ snapshot }: { snapshot: MuscleRecoverySnapshot })
     <div className="text-center">
       <p className="text-[15px] text-muted-foreground">Tu recuperación</p>
       <RecoveryGauge days={snapshot.days} group={snapshot.group} className="mt-1" />
-      <p className="mt-1 min-h-11 text-[15px] text-muted-foreground">{advice}</p>
+      <p className="mt-2 text-[15px] text-muted-foreground">{advice}</p>
     </div>
   );
 }

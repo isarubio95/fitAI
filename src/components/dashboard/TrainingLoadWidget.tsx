@@ -10,6 +10,7 @@ import { RecoveryHero } from "@/components/dashboard/training-load/RecoveryHero"
 import { GaugeCard } from "@/components/dashboard/training-load/GaugeCard";
 import { FormDetailDrawer } from "@/components/dashboard/training-load/FormDetailDrawer";
 import { FatigueDetailDrawer } from "@/components/dashboard/training-load/FatigueDetailDrawer";
+import { ZONE_GAUGE_ASPECT_RATIO } from "@/components/dashboard/training-load/ZoneGauge";
 
 const TRAINING_LOAD_DATA_STORAGE_KEY = "gym-log.training-load.data.v4";
 const EMPTY_MUSCLE_MAP: Record<string, number> = {};
@@ -45,7 +46,10 @@ function GaugeSkeleton() {
     <Card className={PAGE_CARD}>
       <div className="space-y-2 px-3 pb-4 pt-5">
         <Skeleton className="mx-auto h-4 w-24" />
-        <Skeleton className="mx-auto aspect-square w-full max-w-[200px] rounded-full" />
+        <Skeleton
+          className="mx-auto w-full max-w-[200px] rounded-full"
+          style={{ aspectRatio: ZONE_GAUGE_ASPECT_RATIO }}
+        />
         <Skeleton className="mx-auto h-4 w-32" />
       </div>
     </Card>

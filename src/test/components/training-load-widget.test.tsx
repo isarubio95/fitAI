@@ -121,6 +121,11 @@ describe("TrainingLoadWidget", () => {
     expect(screen.getAllByText("−8").length).toBeGreaterThan(0);
     expect(screen.getByText("Buena ventana para una sesión exigente.")).toBeInTheDocument();
     expect(screen.getByText("Ningún grupo limita el entrenamiento de hoy.")).toBeInTheDocument();
+    // Los extremos del anillo no llevan etiqueta: el estado va en el centro.
+    expect(screen.queryByText("Agotado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Inactivo")).not.toBeInTheDocument();
+    expect(screen.queryByText("Cargado")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Listo")).toHaveLength(1);
     // El histórico y las barras se movieron al detalle de forma.
     expect(screen.queryByTestId("form-surplus")).not.toBeInTheDocument();
     expect(screen.queryByTestId("chart-scrub-layer")).not.toBeInTheDocument();

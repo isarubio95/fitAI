@@ -12,7 +12,7 @@ export function FormHero({ form }: { form: number }) {
     <div className="text-center">
       <p className="text-[15px] text-muted-foreground">Tu forma hoy</p>
       <FormGauge form={form} className="mt-1" />
-      <p className="mt-1 min-h-11 text-[15px] text-muted-foreground">{zone.advice}</p>
+      <p className="mt-2 text-[15px] text-muted-foreground">{zone.advice}</p>
     </div>
   );
 }

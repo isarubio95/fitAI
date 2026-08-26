@@ -77,12 +77,18 @@ function TrainedGroupRow({
   const pct = Math.min(100, (row.fatigue / max) * 100);
 
   return (
-    <li ref={rowRef} className="overflow-hidden rounded-xl bg-card">
+    <li
+      ref={rowRef}
+      className={cn(
+        "overflow-hidden rounded-lg transition-colors",
+        expanded ? "bg-muted/60" : "bg-muted/30",
+      )}
+    >
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        className="touch-styled flex w-full items-start gap-3 p-3 text-left"
+        className="touch-styled flex w-full items-start gap-3 px-2.5 py-2.5 text-left"
       >
         <GroupIcon group={group} />
         <div className="min-w-0 flex-1">
@@ -118,7 +124,8 @@ function TrainedGroupRow({
         />
       </button>
       {expanded && (
-        <div className="border-t border-border/40 px-3 pb-3 pt-3">
+        <div className="space-y-2 border-t border-border/40 px-2.5 pb-3 pt-3">
+          <p className="text-[11px] text-muted-foreground">Series por músculo en el último mes</p>
           <MuscleSpecificBreakdown group={group} specificVolume={specificVolume} />
         </div>
       )}
@@ -192,123 +199,118 @@ export function FatigueDetailDrawer({
       title="Fatiga muscular"
       description="Fatiga local por grupo en los últimos 28 días"
     >
-      <div className="space-y-7">
-        <div className="rounded-2xl bg-card px-4 pb-4 pt-5">
-          <RecoveryHero snapshot={snapshot} />
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
+      <DetailSection>
+        <RecoveryHero snapshot={snapshot} />
+        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border/40 pt-4">
           {[
             { label: "Cargados", value: counts.cargado, color: RECOVERY_ZONES[3].color },
             { label: "Recuperando", value: counts.pendiente, color: RECOVERY_ZONES[2].color },
             { label: "Listos", value: counts.listo, color: RECOVERY_ZONES[0].color },
           ].map((chip) => (
-            <div key={chip.label} className="rounded-xl bg-card p-3 text-center">
-              <p className="text-2xl font-light leading-none tabular-nums" style={{ color: chip.color }}>
+            <div key={chip.label} className="text-center">
+              <p
+                className="text-2xl font-light leading-none tabular-nums"
+                style={{ color: chip.color }}
+              >
                 {chip.value}
               </p>
               <p className="mt-1 text-[11px] text-muted-foreground">{chip.label}</p>
             </div>
           ))}
         </div>
+      </DetailSection>
 
+      <DetailSection title="Mapa de carga" hint="Toca un músculo para ver su desglose más abajo.">
+        <MuscleLoadPanel onZoneSelect={handleZoneSelect} />
+      </DetailSection>
+
+      {trained.length > 0 && (
         <DetailSection
-          title="Mapa de carga"
-          hint="Toca un músculo para ver su desglose más abajo."
+          title={`Entrenados recientemente (${trained.length})`}
+          hint="Ordenados por lo que les queda para volver a baseline."
         >
-          <div className="rounded-2xl bg-card p-4">
-            <MuscleLoadPanel onZoneSelect={handleZoneSelect} />
-          </div>
+          <ul className="space-y-1.5">
+            {trained.map((row) => (
+              <TrainedGroupRow
+                key={row.group}
+                row={row}
+                max={max}
+                series={fatigueData?.fatigueSeries?.[row.group]}
+                specificVolume={specificVolume}
+                expanded={expanded === row.group}
+                onToggle={() =>
+                  setExpanded((current) =>
+                    current === row.group ? null : (row.group as MainMuscleGroup),
+                  )
+                }
+                rowRef={(node) => {
+                  if (node) rowRefs.current.set(row.group, node);
+                  else rowRefs.current.delete(row.group);
+                }}
+              />
+            ))}
+          </ul>
         </DetailSection>
+      )}
 
-        {trained.length > 0 && (
-          <DetailSection
-            title={`Entrenados recientemente (${trained.length})`}
-            hint="Ordenados por lo que les queda para volver a baseline."
-          >
-            <ul className="space-y-2">
-              {trained.map((row) => (
-                <TrainedGroupRow
-                  key={row.group}
-                  row={row}
-                  max={max}
-                  series={fatigueData?.fatigueSeries?.[row.group]}
-                  specificVolume={specificVolume}
-                  expanded={expanded === row.group}
-                  onToggle={() =>
-                    setExpanded((current) =>
-                      current === row.group ? null : (row.group as MainMuscleGroup),
-                    )
-                  }
-                  rowRef={(node) => {
-                    if (node) rowRefs.current.set(row.group, node);
-                    else rowRefs.current.delete(row.group);
-                  }}
-                />
-              ))}
-            </ul>
-          </DetailSection>
-        )}
-
-        {fresh.length > 0 && (
-          <DetailSection
-            title={`Frescos y listos (${fresh.length})`}
-            hint="Sin fatiga pendiente: disponibles para hoy."
-          >
-            <ul className="grid grid-cols-2 gap-2">
-              {fresh.map((row) => (
-                <li
-                  key={row.group}
-                  className="flex items-center gap-2 rounded-xl bg-card p-3"
-                >
-                  <GroupIcon group={row.group as MainMuscleGroup} />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{row.group}</p>
-                    <p className="text-[11px]" style={{ color: RECOVERY_ZONES[0].color }}>
-                      Listo
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </DetailSection>
-        )}
-
-        {timeline.length > 1 && (
-          <DetailSection title="Cuándo estará listo cada grupo">
-            <ol className="space-y-2">
-              {timeline.map(({ day, groups }) => (
-                <li key={day} className="flex items-start gap-3 rounded-xl bg-card p-3">
-                  <span className="w-16 shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
-                    {day === 0
-                      ? "Hoy"
-                      : day === 1
-                        ? "Mañana"
-                        : day >= TIMELINE_DAYS
-                          ? `${TIMELINE_DAYS}+ días`
-                          : `En ${day} días`}
-                  </span>
-                  <span className="min-w-0 flex-1 text-sm">{groups.join(" · ")}</span>
-                </li>
-              ))}
-            </ol>
-          </DetailSection>
-        )}
-
-        <DetailSection title="Cómo funciona la fatiga local">
-          <div className="space-y-2 rounded-xl bg-card p-4 text-sm text-muted-foreground">
-            <p>
-              Cada serie reparte su impulso entre los músculos que trabaja: el principal recibe la
-              carga completa y los secundarios la mitad. Ese impulso se acumula por grupo y decae de
-              forma exponencial con una constante de ~{LOCAL_MUSCLE_TIME_CONSTANT_DAYS} días.
-            </p>
-            <p>
-              Los días a baseline son el tiempo estimado hasta que la fatiga del grupo vuelve a un
-              nivel despreciable. La ventana de cálculo son los últimos 28 días.
-            </p>
-          </div>
+      {fresh.length > 0 && (
+        <DetailSection
+          title={`Frescos y listos (${fresh.length})`}
+          hint="Sin fatiga pendiente: disponibles para hoy."
+        >
+          <ul className="grid grid-cols-2 gap-1.5">
+            {fresh.map((row) => (
+              <li
+                key={row.group}
+                className="flex items-center gap-2 rounded-lg bg-muted/50 px-2.5 py-2"
+              >
+                <GroupIcon group={row.group as MainMuscleGroup} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{row.group}</p>
+                  <p className="text-[11px]" style={{ color: RECOVERY_ZONES[0].color }}>
+                    Listo
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </DetailSection>
-      </div>
+      )}
+
+      {timeline.length > 1 && (
+        <DetailSection title="Cuándo estará listo cada grupo">
+          <ol className="space-y-1">
+            {timeline.map(({ day, groups }) => (
+              <li key={day} className="flex items-start gap-3 rounded-lg px-1 py-1.5">
+                <span className="w-16 shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
+                  {day === 0
+                    ? "Hoy"
+                    : day === 1
+                      ? "Mañana"
+                      : day >= TIMELINE_DAYS
+                        ? `${TIMELINE_DAYS}+ días`
+                        : `En ${day} días`}
+                </span>
+                <span className="min-w-0 flex-1 text-sm">{groups.join(" · ")}</span>
+              </li>
+            ))}
+          </ol>
+        </DetailSection>
+      )}
+
+      <DetailSection title="Cómo funciona la fatiga local">
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <p>
+            Cada serie reparte su impulso entre los músculos que trabaja: el principal recibe la
+            carga completa y los secundarios la mitad. Ese impulso se acumula por grupo y decae de
+            forma exponencial con una constante de ~{LOCAL_MUSCLE_TIME_CONSTANT_DAYS} días.
+          </p>
+          <p>
+            Los días a baseline son el tiempo estimado hasta que la fatiga del grupo vuelve a un
+            nivel despreciable. La ventana de cálculo son los últimos 28 días.
+          </p>
+        </div>
+      </DetailSection>
     </DetailDrawerShell>
   );
 }

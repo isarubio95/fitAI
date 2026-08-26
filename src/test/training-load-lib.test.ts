@@ -209,3 +209,54 @@ describe("fosterSessionLoad", () => {
   });
 });
 
+
+describe("rankGroupsByRecovery", () => {
+  const GROUPS = ["Pecho", "Espalda", "Glúteo", "Core"];
+
+  it("ordena por días a baseline y deja los grupos sin datos como Listo", () => {
+    const rows = rankGroupsByRecovery(
+      GROUPS,
+      { Pecho: 18, Espalda: 9 },
+      { Pecho: 3, Espalda: 1 },
+      { Pecho: "2026-04-02" },
+    );
+
+    expect(rows.map((r) => r.group)).toEqual(["Pecho", "Espalda", "Core", "Glúteo"]);
+    expect(rows[0].zone.key).toBe("recuperando");
+    expect(rows[0].lastTrainedAt).toBe("2026-04-02");
+    expect(rows[1].zone.key).toBe("casi");
+    // Sin fatiga ni días registrados: presentes y listos, no ausentes.
+    expect(rows[2]).toMatchObject({ group: "Core", fatigue: 0, days: 0 });
+    expect(rows[2].zone.key).toBe("listo");
+    expect(rows[3].lastTrainedAt).toBeNull();
+  });
+
+  it("desempata por fatiga y luego por nombre", () => {
+    const rows = rankGroupsByRecovery(
+      ["Espalda", "Pecho", "Core"],
+      { Pecho: 12, Espalda: 20, Core: 12 },
+      { Pecho: 2, Espalda: 2, Core: 2 },
+    );
+    expect(rows.map((r) => r.group)).toEqual(["Espalda", "Core", "Pecho"]);
+  });
+
+  it("devuelve todos los grupos exactamente una vez", () => {
+    const rows = rankGroupsByRecovery(GROUPS, {}, {});
+    expect(rows).toHaveLength(GROUPS.length);
+    expect(new Set(rows.map((r) => r.group)).size).toBe(GROUPS.length);
+  });
+});
+
+describe("projectFatigue", () => {
+  it("decae con la constante local", () => {
+    const tau = LOCAL_MUSCLE_TIME_CONSTANT_DAYS;
+    expect(projectFatigue(20, 0)).toBe(20);
+    expect(projectFatigue(20, tau)).toBeCloseTo(20 / Math.E, 5);
+    expect(projectFatigue(20, tau * 3)).toBeLessThan(20 * 0.06);
+  });
+
+  it("no proyecta fatiga inexistente", () => {
+    expect(projectFatigue(0, 3)).toBe(0);
+    expect(projectFatigue(-5, 3)).toBe(0);
+  });
+});

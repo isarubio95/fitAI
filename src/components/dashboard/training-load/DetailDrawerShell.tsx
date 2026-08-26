@@ -1,4 +1,5 @@
 import { ArrowLeft } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Drawer,
   DrawerClose,
@@ -8,6 +9,7 @@ import {
   DrawerTitle,
   drawerSafeAreaBottom,
 } from "@/components/ui/drawer";
+import { PAGE_CARD, PAGE_CARD_STACK_GAP, PAGE_STACK_TOP } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 
 /**
@@ -57,34 +59,54 @@ export function DetailDrawerShell({
             </div>
           </DrawerHeader>
 
-          <div className="mx-auto w-full max-w-2xl px-4 pb-10 pt-4">{children}</div>
+          {/*
+            `surface-region-page` es la excepción que devuelve a las cards su
+            radio y su superficie dentro de un drawer (ver `drawer.tsx`), así
+            que las secciones se ven igual que las cards de cualquier página.
+            Las cards tienen que ser hijas directas de este contenedor.
+          */}
+          <div
+            className={cn(
+              "surface-region-page mx-auto flex w-full max-w-2xl flex-col bg-background px-3 pb-10",
+              PAGE_CARD_STACK_GAP,
+              PAGE_STACK_TOP,
+            )}
+          >
+            {children}
+          </div>
         </div>
       </DrawerContent>
     </Drawer>
   );
 }
 
-/** Bloque titulado dentro de un detalle. */
+/** Sección de un detalle: una card con el mismo criterio que el resto de páginas. */
 export function DetailSection({
   title,
   hint,
-  className,
+  contentClassName,
   children,
 }: {
   title?: string;
   hint?: string;
-  className?: string;
+  contentClassName?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className={cn("space-y-3", className)}>
+    <Card className={PAGE_CARD}>
       {(title || hint) && (
-        <div className="space-y-0.5">
-          {title && <h3 className="text-sm font-semibold">{title}</h3>}
+        <CardHeader className="px-5 pb-3 pt-5">
+          {title && (
+            <CardTitle asChild className="text-base font-bold">
+              <h3>{title}</h3>
+            </CardTitle>
+          )}
           {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-        </div>
+        </CardHeader>
       )}
-      {children}
-    </section>
+      <CardContent className={cn("px-5 pb-5", !title && !hint && "pt-5", contentClassName)}>
+        {children}
+      </CardContent>
+    </Card>
   );
 }

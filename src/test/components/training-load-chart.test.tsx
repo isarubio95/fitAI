@@ -90,7 +90,8 @@ describe("TrainingLoadChart", () => {
 
   it("persiste el rango elegido", () => {
     render(<TrainingLoadChart points={POINTS} />);
-    fireEvent.click(screen.getByRole("tab", { name: "2 meses" }));
+    // Radix activa la pestaña en mousedown, no en click.
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "2 meses" }), { button: 0 });
     expect(localStorage.getItem("gym-log.training-load.range")).toBe("2m");
   });
 });

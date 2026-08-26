@@ -21,10 +21,6 @@ function degOf(px: number) {
  * huecos —también los de los extremos— miden lo mismo.
  */
 const SEGMENT_PAD_DEG = degOf(STROKE / 2 + SEGMENT_GAP / 2);
-/** Punta visible del anillo, ya sin la tapa redondeada. */
-const TIP_DEG = degOf(SEGMENT_GAP / 2);
-/** Cuánto bajan las etiquetas de los extremos respecto a la punta del arco. */
-const END_LABEL_OFFSET = 14;
 
 function pointAt(deg: number) {
   const rad = (deg * Math.PI) / 180;
@@ -41,21 +37,12 @@ function arcPath(fromDeg: number, toDeg: number) {
   return `M ${from.x} ${from.y} A ${RADIUS} ${RADIUS} 0 ${largeArc} 1 ${to.x} ${to.y}`;
 }
 
-function pct(value: number) {
-  return `${(value / SIZE) * 100}%`;
-}
-
-function EndLabel({ deg, children }: { deg: number; children: string }) {
-  const point = pointAt(deg);
-  return (
-    <span
-      className="absolute -translate-x-1/2 whitespace-nowrap text-[12px] text-muted-foreground"
-      style={{ left: pct(point.x), top: pct(point.y + END_LABEL_OFFSET) }}
-    >
-      {children}
-    </span>
-  );
-}
+/**
+ * El anillo no cierra por abajo: recortamos el cuadrado hasta la punta del
+ * arco para que el texto de debajo no quede separado por un hueco vacío.
+ */
+const VIEW_HEIGHT = Math.ceil(pointAt(START_DEG).y + STROKE / 2 + 2);
+export const ZONE_GAUGE_ASPECT_RATIO = `${SIZE} / ${VIEW_HEIGHT}`;
 
 export type ZoneGaugeZone = {
   key: string;
@@ -91,9 +78,12 @@ export function ZoneGauge({
     zones.find((zone) => value < zone.max)?.key ?? last.key;
 
   return (
-    <div className={cn("relative mx-auto aspect-square w-full max-w-[200px]", className)}>
+    <div
+      className={cn("relative mx-auto w-full max-w-[200px]", className)}
+      style={{ aspectRatio: ZONE_GAUGE_ASPECT_RATIO }}
+    >
       <svg
-        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        viewBox={`0 0 ${SIZE} ${VIEW_HEIGHT}`}
         className="absolute inset-0 h-full w-full"
         role="meter"
         aria-valuenow={Math.round(value)}
@@ -117,7 +107,10 @@ export function ZoneGauge({
         })}
       </svg>
 
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
+      <div
+        className="absolute left-0 flex w-full flex-col items-center"
+        style={{ top: `${(CENTER / VIEW_HEIGHT) * 100}%`, transform: "translateY(-50%)" }}
+      >
         <span className="text-[52px] font-light leading-none tracking-tight tabular-nums text-foreground">
           {valueLabel}
         </span>
@@ -125,9 +118,6 @@ export function ZoneGauge({
           {zoneLabel}
         </span>
       </div>
-
-      <EndLabel deg={START_DEG + TIP_DEG}>{first.label}</EndLabel>
-      <EndLabel deg={START_DEG + SWEEP_DEG - TIP_DEG}>{last.label}</EndLabel>
     </div>
   );
 }
