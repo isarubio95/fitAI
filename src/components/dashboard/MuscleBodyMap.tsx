@@ -17,8 +17,10 @@ const SKELETON_FILL = "hsl(var(--muted))";
 
 const BODY_MAP_SVG_CLASS = "h-auto w-full max-w-[126px] sm:max-w-[140px]";
 const BODY_MAP_COMPACT_SVG_CLASS = "h-full w-auto max-h-full max-w-full";
+/** Detalle de fatiga: el mapa es el protagonista, no un accesorio de la card. */
+const BODY_MAP_HERO_SVG_CLASS = "h-auto w-full max-w-[176px] sm:max-w-[220px]";
 
-export type MuscleBodyMapSize = "default" | "compact";
+export type MuscleBodyMapSize = "default" | "compact" | "hero";
 
 export interface MuscleBodyMapProps {
   getLevel: (group: MainMuscleGroup) => MuscleLoadLevel;
@@ -130,6 +132,11 @@ export function MuscleBodyMap({
   const interactiveClick = compact ? undefined : onZoneClick;
   const interactiveHover = compact ? undefined : onZoneHover;
   const interactiveLeave = compact ? undefined : onZoneLeave;
+  const svgSizeClass = compact
+    ? BODY_MAP_COMPACT_SVG_CLASS
+    : size === "hero"
+      ? BODY_MAP_HERO_SVG_CLASS
+      : BODY_MAP_SVG_CLASS;
 
   return (
     <div
@@ -147,7 +154,7 @@ export function MuscleBodyMap({
           viewBox={FRONT_BODY_MAP_VIEWBOX}
           viewKey="front"
           ariaLabel="Vista frontal del cuerpo"
-          svgSizeClass={compact ? BODY_MAP_COMPACT_SVG_CLASS : BODY_MAP_SVG_CLASS}
+          svgSizeClass={svgSizeClass}
           getLevel={getLevel}
           colors={colors}
           isLoading={isLoading}
@@ -162,7 +169,7 @@ export function MuscleBodyMap({
           viewBox={BACK_BODY_MAP_VIEWBOX}
           viewKey="back"
           ariaLabel="Vista trasera del cuerpo"
-          svgSizeClass={compact ? BODY_MAP_COMPACT_SVG_CLASS : BODY_MAP_SVG_CLASS}
+          svgSizeClass={svgSizeClass}
           getLevel={getLevel}
           colors={colors}
           isLoading={isLoading}

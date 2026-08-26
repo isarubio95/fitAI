@@ -49,16 +49,3 @@ export function getFormZone(form: number): FormZone {
   const def = getFormZoneDef(form);
   return FORM_ZONES.find((zone) => zone.key === def.key) ?? FORM_ZONES[FORM_ZONES.length - 1];
 }
-
-/**
- * Posición 0–100 del valor de forma en la escala visual.
- * Cada zona ocupa el mismo ancho; el marcador se interpola dentro de su zona.
- */
-export function formToScalePct(form: number): number {
-  const clamped = Math.min(Math.max(form, FORM_SCALE_MIN), FORM_SCALE_MAX);
-  const zone = getFormZone(clamped);
-  const index = FORM_ZONES.findIndex((z) => z.key === zone.key);
-  const span = zone.max - zone.min;
-  const progress = span <= 0 ? 0 : (clamped - zone.min) / span;
-  return ((index + progress) / FORM_ZONES.length) * 100;
-}

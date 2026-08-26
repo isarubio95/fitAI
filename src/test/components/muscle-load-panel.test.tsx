@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
-import type { MouseEvent, ReactNode, Ref } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
 const { mockUseMuscleVolume, mockUseMuscleFatigue } = vi.hoisted(() => ({
   mockUseMuscleVolume: vi.fn(),
@@ -18,15 +18,6 @@ vi.mock("@/hooks/useMuscleFatigue", () => ({
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ user: { id: "u1" } }),
-}));
-
-vi.mock("@/components/ui/card", () => ({
-  Card: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  CardHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  CardContent: ({ children, ref }: { children: ReactNode; ref?: Ref<HTMLDivElement> }) => (
-    <div ref={ref}>{children}</div>
-  ),
-  CardTitle: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/components/ui/tabs", () => ({
@@ -53,10 +44,6 @@ vi.mock("@/components/ui/tabs", () => ({
   TabsTrigger: ({ value, children }: { value: string; children: ReactNode }) => (
     <button data-value={value}>{children}</button>
   ),
-}));
-
-vi.mock("@/components/dashboard/MuscleDetailSheet", () => ({
-  MuscleDetailSheet: ({ open }: { open: boolean }) => <div data-testid="detail-sheet">{String(open)}</div>,
 }));
 
 vi.mock("@/components/dashboard/MuscleBodyMap", () => ({
@@ -86,9 +73,9 @@ vi.mock("@/components/dashboard/MuscleBodyMap", () => ({
   MuscleMapLegend: ({ period }: { period: "week" | "month" }) => <div data-testid="legend">{period}</div>,
 }));
 
-import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
+import { MuscleLoadPanel } from "@/components/dashboard/MuscleLoadPanel";
 
-describe("BodyHeatmap", () => {
+describe("MuscleLoadPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
@@ -101,6 +88,9 @@ describe("BodyHeatmap", () => {
         groupFatigue: {},
         daysToBaseline: {},
         maxGroupFatigue: 0,
+        fatigueSeries: {},
+        lastTrainedAt: {},
+        dayKeys: [],
       },
       isLoading: false,
     });
@@ -112,12 +102,12 @@ describe("BodyHeatmap", () => {
       isLoading: true,
     });
 
-    render(<BodyHeatmap />);
+    render(<MuscleLoadPanel />);
     expect(screen.getByTestId("legend")).toBeInTheDocument();
     expect(document.querySelector('[data-loading="true"]')).toBeInTheDocument();
   });
 
-  it("renderiza tooltip al pasar por una zona y abre detalle al clicar", () => {
+  it("renderiza tooltip al pasar por una zona y avisa del grupo al clicar", () => {
     mockUseMuscleVolume.mockReturnValue({
       data: {
         groupVolume: { Pecho: 4 },
@@ -127,14 +117,15 @@ describe("BodyHeatmap", () => {
       isLoading: false,
     });
 
-    render(<BodyHeatmap />);
+    const onZoneSelect = vi.fn();
+    render(<MuscleLoadPanel onZoneSelect={onZoneSelect} />);
     const zone = screen.getByLabelText("zona-pecho");
     fireEvent.mouseMove(zone, { clientX: 40, clientY: 20 });
     expect(screen.getByText("Pecho")).toBeInTheDocument();
     expect(screen.getByText("4 series")).toBeInTheDocument();
 
     fireEvent.click(zone);
-    expect(screen.getByTestId("detail-sheet")).toHaveTextContent("true");
+    expect(onZoneSelect).toHaveBeenCalledWith("Pecho");
   });
 
   it("usa fallback offline desde cache local", () => {
@@ -160,8 +151,19 @@ describe("BodyHeatmap", () => {
       isLoading: false,
     });
 
-    render(<BodyHeatmap />);
+    render(<MuscleLoadPanel />);
     expect(screen.getByText("Mostrando datos guardados sin conexión.")).toBeInTheDocument();
+  });
+
+  it("ofrece las dos lecturas del mapa", () => {
+    mockUseMuscleVolume.mockReturnValue({
+      data: { groupVolume: {}, specificVolume: {}, maxGroupVolume: 0 },
+      isLoading: false,
+    });
+
+    render(<MuscleLoadPanel />);
+    expect(screen.getByText("Volumen")).toBeInTheDocument();
+    expect(screen.getByText("Fatiga")).toBeInTheDocument();
   });
 });
 

@@ -14,7 +14,6 @@ import { MonthlyPlanner } from "@/components/dashboard/MonthlyPlanner";
 import { WeekCalendar } from "@/components/dashboard/WeekCalendar";
 import { CalendarPeriodPicker } from "@/components/dashboard/CalendarPeriodPicker";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
-import { BodyHeatmap } from "@/components/dashboard/BodyHeatmap";
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
 import { AnimatedTabsList, pillTabsListClass, pillTabsTriggerClass, Tabs, TabsTrigger } from "@/components/ui/tabs";
@@ -73,7 +72,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { AnimatePresence, motion } from "framer-motion";
 
-const DEFAULT_WIDGET_ORDER = ['calendar', 'gamification', 'heatmap', 'progress', 'training-load'];
+// 'heatmap' se retiró: su mapa corporal vive ahora en el detalle de fatiga muscular.
+// El filtro de `widgetOrder` descarta los ids desconocidos, así que los órdenes
+// ya guardados se migran solos sin perder la posición del resto.
+const DEFAULT_WIDGET_ORDER = ['calendar', 'gamification', 'progress', 'training-load'];
 
 const CALENDAR_VIEW_STORAGE_KEY = "gym-log.dashboard.calendar-view";
 
@@ -395,12 +397,10 @@ const Dashboard = () => {
     switch (id) {
       case 'gamification':
         return <GamificationWidget />;
-      case 'heatmap':
-        return <BodyHeatmap />;
       case 'progress':
         return <ExerciseProgressWidget />;
       case 'training-load':
-        return <TrainingLoadWidget />;
+        return <TrainingLoadWidget interactive={!isDragMode} />;
       case 'calendar':
         return (
           <Card className={PAGE_CARD}>

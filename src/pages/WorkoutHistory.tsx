@@ -693,7 +693,7 @@ const WorkoutHistory = () => {
         */}
       {showPanelWidgets && (
         <>
-          <TrainingLoadWidget flushHeader />
+          <TrainingLoadWidget />
           <ExerciseProgressWidget flushHeader />
           <MuscleRankingWidget />
         </>

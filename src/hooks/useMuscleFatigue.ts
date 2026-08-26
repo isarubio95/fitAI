@@ -20,6 +20,12 @@ export interface MuscleFatigueData {
   /** Días estimados a baseline por grupo. */
   daysToBaseline: Record<string, number>;
   maxGroupFatigue: number;
+  /** Serie de fatiga por grupo: un valor por cada día de `dayKeys`. */
+  fatigueSeries: Record<string, number[]>;
+  /** Último día con impulso (`yyyy-MM-dd`) por grupo. */
+  lastTrainedAt: Record<string, string | null>;
+  /** Eje temporal compartido por todas las series. */
+  dayKeys: string[];
 }
 
 function normalizeExerciseType(value: unknown): {
@@ -172,19 +178,30 @@ export function useMuscleFatigue(period: MuscleFatiguePeriod = "week") {
 
       const groupFatigue: Record<string, number> = {};
       const daysToBaseline: Record<string, number> = {};
+      const fatigueSeries: Record<string, number[]> = {};
+      const lastTrainedAt: Record<string, string | null> = {};
       let maxGroupFatigue = 0;
 
       for (const group of groups) {
-        const series = localMuscleFatigueSeries(
-          dayKeys.map((k) => impulseByDayGroup[k]?.[group] ?? 0),
-        );
+        const impulses = dayKeys.map((k) => impulseByDayGroup[k]?.[group] ?? 0);
+        const series = localMuscleFatigueSeries(impulses);
         const current = series[series.length - 1] ?? 0;
         groupFatigue[group] = current;
         daysToBaseline[group] = estimatedDaysToBaseline(current);
+        fatigueSeries[group] = series;
+        // Último día con trabajo real: recorre hacia atrás y se queda con el primero que encuentra.
+        let last: string | null = null;
+        for (let i = impulses.length - 1; i >= 0; i -= 1) {
+          if (impulses[i] > 0) {
+            last = dayKeys[i];
+            break;
+          }
+        }
+        lastTrainedAt[group] = last;
         if (current > maxGroupFatigue) maxGroupFatigue = current;
       }
 
-      return { groupFatigue, daysToBaseline, maxGroupFatigue };
+      return { groupFatigue, daysToBaseline, maxGroupFatigue, fatigueSeries, lastTrainedAt, dayKeys };
     },
   });
 }

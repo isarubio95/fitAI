@@ -3,6 +3,7 @@ export * from "./strengthImpulse";
 export * from "./cardioImpulse";
 export * from "./sessionLoad";
 export * from "./form";
+export * from "./recovery";
 export * from "./banister";
 export * from "./localMuscle";
 

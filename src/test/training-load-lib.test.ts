@@ -8,9 +8,15 @@ import {
   estimatedDaysToBaseline,
   estimatedStrengthDurationSec,
   fosterSessionLoad,
+  formatRecoveryDays,
   getFormLabel,
+  getRecoveryZoneDef,
   intensityFromRir,
+  pickMuscleRecoveryBottleneck,
+  projectFatigue,
+  rankGroupsByRecovery,
   localMuscleFatigueSeries,
+  LOCAL_MUSCLE_TIME_CONSTANT_DAYS,
   MAX_STRENGTH_CLOCK_SEC,
   resolveSessionDurationSec,
   resolveSessionRpe,
@@ -114,6 +120,44 @@ describe("localMuscleFatigue", () => {
     const series = localMuscleFatigueSeries([40, 0, 0, 0, 0, 0, 0, 0]);
     expect(series[0]).toBeGreaterThan(0);
     expect(estimatedDaysToBaseline(series[0])).toBeGreaterThan(0);
+  });
+});
+
+describe("muscle recovery bottleneck", () => {
+  it("elige el grupo con más días a baseline", () => {
+    const snapshot = pickMuscleRecoveryBottleneck(
+      { Pecho: 3, Espalda: 1, Core: 0 },
+      { Pecho: 12, Espalda: 40, Core: 2 },
+    );
+    expect(snapshot).toEqual({ group: "Pecho", days: 3, fatigue: 12 });
+  });
+
+  it("en empate de días usa la fatiga, y si no el nombre", () => {
+    expect(
+      pickMuscleRecoveryBottleneck({ Pecho: 2, Espalda: 2 }, { Pecho: 8, Espalda: 11 }).group,
+    ).toBe("Espalda");
+    expect(
+      pickMuscleRecoveryBottleneck({ Pecho: 2, Espalda: 2 }, { Pecho: 10, Espalda: 10 }).group,
+    ).toBe("Espalda");
+  });
+
+  it("sin fatiga residual no hay cuello de botella", () => {
+    expect(pickMuscleRecoveryBottleneck({}, {})).toEqual({ group: null, days: 0, fatigue: 0 });
+    expect(pickMuscleRecoveryBottleneck({ Pecho: 0, Core: 0 }, { Pecho: 4, Core: 1 })).toEqual({
+      group: null,
+      days: 0,
+      fatigue: 4,
+    });
+  });
+
+  it("clasifica días en las zonas del anillo", () => {
+    expect(getRecoveryZoneDef(0).key).toBe("listo");
+    expect(getRecoveryZoneDef(1).key).toBe("casi");
+    expect(getRecoveryZoneDef(2).key).toBe("recuperando");
+    expect(getRecoveryZoneDef(3).key).toBe("recuperando");
+    expect(getRecoveryZoneDef(4).key).toBe("cargado");
+    expect(getRecoveryZoneDef(12).key).toBe("cargado");
+    expect(formatRecoveryDays(3)).toBe("3d");
   });
 });
 

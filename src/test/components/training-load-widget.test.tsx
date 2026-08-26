@@ -1,25 +1,41 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
-import { chartIndexFromRatio } from "@/components/dashboard/chartScrub";
 
-const { mockUseTrainingLoad } = vi.hoisted(() => ({
+const { mockUseTrainingLoad, mockUseMuscleFatigue, mockUseMuscleVolume } = vi.hoisted(() => ({
   mockUseTrainingLoad: vi.fn(),
+  mockUseMuscleFatigue: vi.fn(),
+  mockUseMuscleVolume: vi.fn(),
 }));
 
 vi.mock("@/hooks/useTrainingLoad", () => ({
   useTrainingLoad: mockUseTrainingLoad,
 }));
 
+vi.mock("@/hooks/useMuscleFatigue", () => ({
+  useMuscleFatigue: mockUseMuscleFatigue,
+}));
+
+vi.mock("@/hooks/useMuscleVolume", () => ({
+  useMuscleVolume: mockUseMuscleVolume,
+}));
+
+vi.mock("@/components/dashboard/MuscleBodyMap", () => ({
+  MuscleBodyMap: () => <div data-testid="body-map" />,
+  MuscleMapLegend: () => null,
+}));
+
 vi.mock("recharts", () => ({
   ResponsiveContainer: ({ children }: { children: ReactNode }) => <svg>{children}</svg>,
   ComposedChart: ({ children }: { children: ReactNode }) => <g>{children}</g>,
+  BarChart: ({ children }: { children: ReactNode }) => <g>{children}</g>,
   CartesianGrid: () => null,
   XAxis: () => null,
   YAxis: () => null,
   Tooltip: () => null,
   Line: () => null,
   Area: () => null,
+  Bar: () => null,
   ReferenceLine: () => null,
   ReferenceDot: () => null,
 }));
@@ -57,10 +73,28 @@ const SAMPLE_DATA = {
   totals: { fitness: 42, fatigue: 50, form: -8 },
 };
 
+const EMPTY_FATIGUE = {
+  data: {
+    groupFatigue: {},
+    daysToBaseline: {},
+    maxGroupFatigue: 0,
+    fatigueSeries: {},
+    lastTrainedAt: {},
+    dayKeys: [],
+  },
+  isLoading: false,
+  isFetching: false,
+};
+
 describe("TrainingLoadWidget", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    mockUseMuscleFatigue.mockReturnValue(EMPTY_FATIGUE);
+    mockUseMuscleVolume.mockReturnValue({
+      data: { groupVolume: {}, specificVolume: {}, maxGroupVolume: 0 },
+      isLoading: false,
+    });
   });
 
   it("muestra skeleton durante la carga inicial", () => {
@@ -74,7 +108,7 @@ describe("TrainingLoadWidget", () => {
     expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
   });
 
-  it("renderiza métricas con datos del hook", () => {
+  it("muestra los dos anillos con sus leyendas y nada más", () => {
     mockUseTrainingLoad.mockReturnValue({
       data: SAMPLE_DATA,
       isLoading: false,
@@ -82,13 +116,71 @@ describe("TrainingLoadWidget", () => {
     });
 
     render(<TrainingLoadWidget />);
-    expect(screen.getAllByText("Fitness").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("42").length).toBeGreaterThan(0);
     expect(screen.getByText("Tu forma hoy")).toBeInTheDocument();
+    expect(screen.getByText("Tu recuperación")).toBeInTheDocument();
     expect(screen.getAllByText("−8").length).toBeGreaterThan(0);
     expect(screen.getByText("Buena ventana para una sesión exigente.")).toBeInTheDocument();
-    expect(screen.getByTestId("form-surplus")).toBeInTheDocument();
-    expect(screen.queryByText((content) => content.includes("Últimos 7 días"))).not.toBeInTheDocument();
+    expect(screen.getByText("Ningún grupo limita el entrenamiento de hoy.")).toBeInTheDocument();
+    // El histórico y las barras se movieron al detalle de forma.
+    expect(screen.queryByTestId("form-surplus")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("chart-scrub-layer")).not.toBeInTheDocument();
+    expect(screen.queryByText(/en los últimos 7 días/)).not.toBeInTheDocument();
+  });
+
+  it("cada anillo es un botón que abre su detalle", () => {
+    mockUseTrainingLoad.mockReturnValue({
+      data: SAMPLE_DATA,
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TrainingLoadWidget />);
+    const formCard = screen.getByRole("button", { name: "Ver el detalle de tu forma" });
+    expect(screen.getByRole("button", { name: "Ver el detalle de tu fatiga muscular" })).toBeInTheDocument();
+
+    fireEvent.click(formCard);
+    expect(screen.getByText("Las cinco zonas")).toBeInTheDocument();
+    expect(screen.getByTestId("chart-scrub-layer")).toBeInTheDocument();
+  });
+
+  it("abre el detalle de fatiga con el desglose por grupo", () => {
+    mockUseTrainingLoad.mockReturnValue({
+      data: SAMPLE_DATA,
+      isLoading: false,
+      isFetching: false,
+    });
+    mockUseMuscleFatigue.mockReturnValue({
+      data: {
+        groupFatigue: { Pecho: 18 },
+        daysToBaseline: { Pecho: 3 },
+        maxGroupFatigue: 18,
+        fatigueSeries: { Pecho: [0, 18] },
+        lastTrainedAt: { Pecho: "2026-04-02" },
+        dayKeys: ["2026-04-01", "2026-04-02"],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TrainingLoadWidget />);
+    fireEvent.click(screen.getByRole("button", { name: "Ver el detalle de tu fatiga muscular" }));
+    expect(screen.getByText("Entrenados recientemente (1)")).toBeInTheDocument();
+    expect(screen.getByText("Frescos y listos (10)")).toBeInTheDocument();
+  });
+
+  it("en modo ordenar las cards no abren nada", () => {
+    mockUseTrainingLoad.mockReturnValue({
+      data: SAMPLE_DATA,
+      isLoading: false,
+      isFetching: false,
+    });
+
+    render(<TrainingLoadWidget interactive={false} />);
+    const formCard = screen.getByRole("button", { name: "Ver el detalle de tu forma" });
+    expect(formCard).toBeDisabled();
+
+    fireEvent.click(formCard);
+    expect(screen.queryByText("Las cinco zonas")).not.toBeInTheDocument();
   });
 
   it("usa caché local cuando no hay respuesta de red", () => {
@@ -116,76 +208,31 @@ describe("TrainingLoadWidget", () => {
     });
 
     render(<TrainingLoadWidget />);
-    expect(screen.getAllByText("30").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("+2").length).toBeGreaterThan(0);
   });
 
-  it("no muestra textos didácticos del modo explicación", () => {
+  it("muestra el grupo más fatigado en el anillo de recuperación", () => {
     mockUseTrainingLoad.mockReturnValue({
       data: SAMPLE_DATA,
       isLoading: false,
       isFetching: false,
     });
-
-    render(<TrainingLoadWidget />);
-    expect(screen.queryByText(/La fatiga se pasa/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Equilibrio entre entrenar/)).not.toBeInTheDocument();
-  });
-
-  it("resume la tendencia de la forma en vez del detalle por día", () => {
-    mockUseTrainingLoad.mockReturnValue({
-      data: SAMPLE_DATA,
+    mockUseMuscleFatigue.mockReturnValue({
+      data: {
+        groupFatigue: { Pecho: 18, Espalda: 9 },
+        daysToBaseline: { Pecho: 3, Espalda: 1 },
+        maxGroupFatigue: 18,
+        fatigueSeries: {},
+        lastTrainedAt: {},
+        dayKeys: [],
+      },
       isLoading: false,
       isFetching: false,
     });
 
     render(<TrainingLoadWidget />);
-    expect(screen.getByText(/en los últimos 7 días/)).toBeInTheDocument();
-    // El desglose por día solo aparece al recorrer el gráfico.
-    expect(screen.queryByText("Carga")).not.toBeInTheDocument();
-    expect(screen.queryByText(/2 abr\.? 2026/i)).not.toBeInTheDocument();
-    expect(screen.queryByText("Carga de hoy")).not.toBeInTheDocument();
-    expect(screen.queryByText("Sin entrenamientos hoy")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Registrar" })).not.toBeInTheDocument();
-  });
-
-  it("al tocar el gráfico muestra el día de esa X, no el último", () => {
-    mockUseTrainingLoad.mockReturnValue({
-      data: SAMPLE_DATA,
-      isLoading: false,
-      isFetching: false,
-    });
-
-    render(<TrainingLoadWidget />);
-    const layer = screen.getByTestId("chart-scrub-layer");
-    vi.spyOn(layer, "getBoundingClientRect").mockReturnValue({
-      x: 0,
-      y: 0,
-      top: 0,
-      left: 0,
-      width: 300,
-      height: 190,
-      right: 300,
-      bottom: 190,
-      toJSON: () => ({}),
-    });
-
-    fireEvent.pointerDown(layer, { clientX: 12, clientY: 80, pointerType: "touch" });
-
-    expect(screen.getByText(/1 abr\.? 2026/i)).toBeInTheDocument();
-    expect(screen.getByText("Carga")).toBeInTheDocument();
-    expect(screen.queryByText(/2 abr\.? 2026/i)).not.toBeInTheDocument();
-  });
-});
-
-describe("chartIndexFromRatio", () => {
-  it("elige el primer y el último extremo", () => {
-    expect(chartIndexFromRatio(0, 30)).toBe(0);
-    expect(chartIndexFromRatio(1, 30)).toBe(29);
-  });
-
-  it("elige el punto más cercano, no solo las marcas del eje", () => {
-    expect(chartIndexFromRatio(0.5, 31)).toBe(15);
-    expect(chartIndexFromRatio(-0.2, 10)).toBe(0);
-    expect(chartIndexFromRatio(1.4, 10)).toBe(9);
+    expect(screen.getByText("3d")).toBeInTheDocument();
+    expect(screen.getByText("Pecho necesita un par de días más.")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Recuperación: 3d, Recuperando, Pecho/)).toBeInTheDocument();
   });
 });
