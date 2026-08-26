@@ -244,8 +244,8 @@ export function TrainingLoadWidget({
     return window[window.length - 1].form - window[0].form;
   }, [chartData, selectedRange.deltaDays]);
 
-  const headerClass = flushHeader ? PROGRESS_CARD_HEADER : "px-5 pt-8 pb-4";
-  const skeletonHeaderClass = flushHeader ? PROGRESS_CARD_HEADER_SKELETON : "px-5 pt-8 pb-2";
+  const headerClass = flushHeader ? PROGRESS_CARD_HEADER : "px-5 pt-6 pb-4";
+  const skeletonHeaderClass = flushHeader ? PROGRESS_CARD_HEADER_SKELETON : "px-5 pt-6 pb-2";
 
   if (isLoading && !resolvedData) {
     return (

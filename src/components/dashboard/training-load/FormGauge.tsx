@@ -2,16 +2,16 @@ import { cn } from "@/lib/utils";
 import { formatSigned } from "./format";
 import { FORM_ZONES, getFormZone } from "./formZones";
 
-const SIZE = 200;
+const SIZE = 195;
 const CENTER = SIZE / 2;
 const RADIUS = 76;
-const STROKE = 8;
+const STROKE = 9;
 /** Apertura inferior del anillo, en grados: el corte donde acaba la escala. */
 const GAP_DEG = 84;
 const SWEEP_DEG = 360 - GAP_DEG;
 const START_DEG = -SWEEP_DEG / 2;
 const SEGMENT_DEG = SWEEP_DEG / FORM_ZONES.length;
-/** Hueco entre tramos, en px de arco: el mismo aire que daba el gap de las barras. */
+/** Hueco visible entre tramos, en px de arco: el mismo aire que daba el gap de las barras. */
 const SEGMENT_GAP = 4;
 
 /** Grados que ocupa una longitud de arco a este radio. */
@@ -20,18 +20,15 @@ function degOf(px: number) {
 }
 
 /**
- * Los cortes entre tramos son radiales y rectos, así el hueco mide lo mismo
- * en cualquier punto del anillo: media separación por lado.
+ * Recorte a cada lado del tramo. Las tapas redondeadas sobresalen media línea,
+ * así que se descuentan: los cinco tramos quedan del mismo largo visible y
+ * todos los huecos —también los de los extremos— miden lo mismo.
  */
-const GAP_PAD_DEG = degOf(SEGMENT_GAP / 2);
-/**
- * Las dos puntas exteriores sí van redondeadas (un círculo sobre el final del
- * trazo), por eso se recortan media línea más: los cinco tramos acaban
- * midiendo lo mismo.
- */
-const END_PAD_DEG = degOf(SEGMENT_GAP / 2 + STROKE / 2);
+const SEGMENT_PAD_DEG = degOf(STROKE / 2 + SEGMENT_GAP / 2);
+/** Punta visible del anillo, ya sin la tapa redondeada. */
+const TIP_DEG = degOf(SEGMENT_GAP / 2);
 /** Cuánto bajan las etiquetas de los extremos respecto a la punta del arco. */
-const END_LABEL_OFFSET = 15;
+const END_LABEL_OFFSET = 14;
 
 /** Punto del anillo para un ángulo: 0 arriba, positivo en sentido horario. */
 function pointAt(deg: number) {
@@ -75,22 +72,8 @@ function EndLabel({ deg, children }: { deg: number; children: string }) {
  */
 export function FormGauge({ form, className }: { form: number; className?: string }) {
   const zone = getFormZone(form);
-  const lastIndex = FORM_ZONES.length - 1;
-
-  const segments = FORM_ZONES.map((z, index) => {
-    const isFirst = index === 0;
-    const isLast = index === lastIndex;
-    const from = START_DEG + index * SEGMENT_DEG + (isFirst ? END_PAD_DEG : GAP_PAD_DEG);
-    const to = START_DEG + (index + 1) * SEGMENT_DEG - (isLast ? END_PAD_DEG : GAP_PAD_DEG);
-    return {
-      zone: z,
-      from,
-      to,
-      color: z.key === zone.key ? z.color : "hsl(var(--muted))",
-      /** Extremo del anillo, el único que lleva punta redonda. */
-      roundedAt: isFirst ? from : isLast ? to : null,
-    };
-  });
+  const first = FORM_ZONES[0];
+  const last = FORM_ZONES[FORM_ZONES.length - 1];
 
   return (
     <div className={cn("relative mx-auto aspect-square w-full max-w-[200px]", className)}>
@@ -99,23 +82,23 @@ export function FormGauge({ form, className }: { form: number; className?: strin
         className="absolute inset-0 h-full w-full"
         role="meter"
         aria-valuenow={Math.round(form)}
-        aria-valuemin={FORM_ZONES[0].min}
-        aria-valuemax={FORM_ZONES[lastIndex].max}
+        aria-valuemin={first.min}
+        aria-valuemax={last.max}
         aria-label={`Forma: ${formatSigned(form)}, ${zone.label}`}
       >
-        {segments.map((segment) => {
-          const tip = segment.roundedAt === null ? null : pointAt(segment.roundedAt);
+        {FORM_ZONES.map((z, index) => {
+          const isActive = z.key === zone.key;
+          const from = START_DEG + index * SEGMENT_DEG + SEGMENT_PAD_DEG;
+          const to = START_DEG + (index + 1) * SEGMENT_DEG - SEGMENT_PAD_DEG;
           return (
-            <g key={segment.zone.key}>
-              <path
-                d={arcPath(segment.from, segment.to)}
-                fill="none"
-                strokeWidth={STROKE}
-                strokeLinecap="butt"
-                stroke={segment.color}
-              />
-              {tip && <circle cx={tip.x} cy={tip.y} r={STROKE / 2} fill={segment.color} />}
-            </g>
+            <path
+              key={z.key}
+              d={arcPath(from, to)}
+              fill="none"
+              strokeWidth={STROKE}
+              strokeLinecap="round"
+              stroke={isActive ? z.color : "hsl(var(--muted))"}
+            />
           );
         })}
       </svg>
@@ -129,8 +112,8 @@ export function FormGauge({ form, className }: { form: number; className?: strin
         </span>
       </div>
 
-      <EndLabel deg={START_DEG + END_PAD_DEG}>{FORM_ZONES[0].label}</EndLabel>
-      <EndLabel deg={START_DEG + SWEEP_DEG - END_PAD_DEG}>{FORM_ZONES[lastIndex].label}</EndLabel>
+      <EndLabel deg={START_DEG + TIP_DEG}>{first.label}</EndLabel>
+      <EndLabel deg={START_DEG + SWEEP_DEG - TIP_DEG}>{last.label}</EndLabel>
     </div>
   );
 }
