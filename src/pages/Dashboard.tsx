@@ -44,12 +44,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { type ExerciseFormData } from "@/types/workout";
 import {
-  type ExerciseFormData,
-  normalizeRegistroSeries,
-  defaultSetForMode,
-  formatRitmoSegKmLabel,
-} from "@/types/workout";
+  routineExercisesToFormData,
+  type RoutineExerciseLike,
+} from "@/lib/seriesPlan";
 
 // Importaciones de DND-Kit iguales a las de Rutinas
 import { 
@@ -305,60 +304,13 @@ const Dashboard = () => {
   };
 
   const startPlanned = (planned: PlannedRoutine) => {
-    type RoutineExercise = {
-      tipo_ejercicio_id?: string | null;
-      usuario_ejercicio_id?: string | null;
-      tipo_ejercicio?: { nombre?: string | null; grupo_muscular?: string | null } | null;
-      usuario_ejercicio?: { nombre?: string | null; grupo_muscular?: string | null } | null;
-      repes_min: number;
-      repes_max: number;
-      rir?: number | null;
-      descanso?: number | null;
-      superset_id?: string | null;
-      series_objetivo: number;
-      orden?: number | null;
-      registro_series?: string | null;
-      duracion_objetivo_seg?: number | null;
-      ritmo_objetivo_seg_km?: number | null;
-    };
-
     type PlannedRoutineWithExercises = {
-      ejercicios?: RoutineExercise[] | null;
+      ejercicios?: RoutineExerciseLike[] | null;
       nombre?: string | null;
     };
 
     const routine = planned.rutina as unknown as PlannedRoutineWithExercises;
-
-    const ejercicios: ExerciseFormData[] = (routine.ejercicios ?? [])
-      .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
-      .map((ej) => {
-        const registro_series = normalizeRegistroSeries(ej.registro_series);
-        const durObj = ej.duracion_objetivo_seg;
-        const ritmoObj = ej.ritmo_objetivo_seg_km;
-        const nombre =
-          ej.tipo_ejercicio?.nombre ?? ej.usuario_ejercicio?.nombre ?? "";
-        return {
-          tipo_ejercicio_id: ej.tipo_ejercicio_id ?? undefined,
-          usuario_ejercicio_id: ej.usuario_ejercicio_id ?? undefined,
-          nombre,
-          registro_series,
-          repRange:
-            registro_series === "duracion_ritmo"
-              ? `${durObj != null ? `${durObj}s` : "Tiempo"} · ${formatRitmoSegKmLabel(ritmoObj ?? null)}`
-              : registro_series === "duracion"
-                ? durObj != null
-                  ? `${durObj} s`
-                  : "Tiempo"
-                : `${ej.repes_min}-${ej.repes_max}`,
-          targetRir: ej.rir ?? 1,
-          grupo_muscular: ej.tipo_ejercicio?.grupo_muscular ?? ej.usuario_ejercicio?.grupo_muscular ?? null,
-          descanso: ej.descanso ?? 120,
-          superset_id: ej.superset_id ?? null,
-          sets: Array.from({ length: ej.series_objetivo }, () =>
-            defaultSetForMode(registro_series, durObj ?? null, ritmoObj ?? null)
-          ),
-        };
-      });
+    const ejercicios: ExerciseFormData[] = routineExercisesToFormData(routine.ejercicios);
 
     const activeEl = document.activeElement as HTMLElement | null;
     activeEl?.blur?.();

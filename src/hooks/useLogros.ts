@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { calculateLevel } from "@/hooks/useGamification";
 import { computeStreakStats, weekStartKeyFromDayStr } from "@/lib/streakWeeks";
+import { isWorkingSet } from "@/lib/setTypes";
 
 export type LogroNivel = "bronce" | "plata" | "oro" | "platino" | "diamante" | "reto";
 
@@ -108,7 +109,7 @@ export async function fetchLogroStats(userId: string): Promise<LogroStats> {
     ? await selectInChunks(ejercicioIds, async (idsChunk) => {
         const { data, error } = await supabase
           .from("serie")
-          .select("ejercicio_id, peso_kg, repeticiones, completed")
+          .select("ejercicio_id, peso_kg, repeticiones, completed, tipo_serie")
           .in("ejercicio_id", idsChunk);
         if (error) throw error;
         return data ?? [];
@@ -136,6 +137,8 @@ export async function fetchLogroStats(userId: string): Promise<LogroStats> {
 
   for (const s of series) {
     if (!s.completed) continue;
+    // El calentamiento no suma tonelaje ni cuenta como serie de la sesión.
+    if (!isWorkingSet(s.tipo_serie)) continue;
     volumenTotalKg += (s.peso_kg ?? 0) * (s.repeticiones ?? 0);
     if ((s.peso_kg ?? 0) > maxPesoSerieKg) maxPesoSerieKg = s.peso_kg;
     const actId = actIdByEjId.get(s.ejercicio_id);

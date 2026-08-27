@@ -3,11 +3,8 @@ import { useLastPerformance } from "@/hooks/useLastPerformance";
 import { useMuscleFatigue } from "@/hooks/useMuscleFatigue";
 import { useTrainingLoad } from "@/hooks/useTrainingLoad";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
-import {
-  parseRepRange,
-  suggestProgressiveOverload,
-  type OverloadSuggestion,
-} from "@/lib/progressiveOverload";
+import { suggestProgressiveOverload, type OverloadSuggestion } from "@/lib/progressiveOverload";
+import { parseRepTarget } from "@/lib/seriesPlan";
 import { normalizeRegistroSeries, type ExerciseFormData } from "@/types/workout";
 
 type ExerciseOverloadSource = Pick<
@@ -29,7 +26,11 @@ export function useProgressiveOverload(
   return useMemo(() => {
     if (mode !== "peso_reps" || !lastPerf?.sets.length) return null;
 
-    const repRange = parseRepRange(exercise.repRange) ?? { min: 8, max: 12 };
+    const parsed = parseRepTarget(exercise.repRange);
+    // Rango abierto (AMRAP, "8+"): sin techo se usa el mínimo como objetivo.
+    const repRange = parsed
+      ? { min: parsed.min, max: parsed.max ?? parsed.min }
+      : { min: 8, max: 12 };
     const muscleGroup = resolveMainMuscleGroup(exercise.grupo_muscular);
     const fatigueNorm =
       muscleGroup && fatigue && fatigue.maxGroupFatigue > 0
@@ -41,6 +42,7 @@ export function useProgressiveOverload(
         peso_kg: s.peso_kg,
         repeticiones: s.repeticiones,
         rir: s.rir,
+        tipo_serie: s.tipo_serie,
       })),
       target: {
         repesMin: repRange.min,

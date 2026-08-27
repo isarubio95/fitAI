@@ -65,12 +65,8 @@ import {
   circleCenterTransitionStyle,
   useCircleCenterTransition,
 } from "@/lib/circleCenterTransition";
-import {
-  type ExerciseFormData,
-  normalizeRegistroSeries,
-  defaultSetForMode,
-  formatRitmoSegKmLabel,
-} from "@/types/workout";
+import { type ExerciseFormData } from "@/types/workout";
+import { routineExercisesToFormData } from "@/lib/seriesPlan";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -296,35 +292,7 @@ const Routines = () => {
   };
 
   const startRoutine = (routine: RutinaWithDetails, origin?: PillCircleOrigin) => {
-    const exercises: ExerciseFormData[] = routine.ejercicios
-      .sort((a, b) => a.orden - b.orden)
-      .map((ej) => {
-        const registro_series = normalizeRegistroSeries(ej.registro_series);
-        const durObj = ej.duracion_objetivo_seg;
-        const ritmoObj = ej.ritmo_objetivo_seg_km;
-        return {
-          tipo_ejercicio_id: ej.tipo_ejercicio_id ?? undefined,
-          usuario_ejercicio_id: ej.usuario_ejercicio_id ?? undefined,
-          nombre: ej.tipo_ejercicio.nombre,
-          registro_series,
-          repRange:
-            registro_series === "duracion_ritmo"
-              ? `${durObj != null ? `${durObj}s` : "Tiempo"} · ${formatRitmoSegKmLabel(ritmoObj ?? null)}`
-              : registro_series === "duracion"
-                ? durObj != null
-                  ? `${durObj} s`
-                  : "Tiempo"
-                : `${ej.repes_min}-${ej.repes_max}`,
-          targetRir: ej.rir ?? 1,
-          grupo_muscular: ej.tipo_ejercicio?.grupo_muscular ?? null,
-          descanso: ej.descanso ?? 120,
-          superset_id: ej.superset_id ?? null,
-          sets: Array.from({ length: ej.series_objetivo }, () =>
-            defaultSetForMode(registro_series, durObj ?? null, ritmoObj ?? null)
-          ),
-        };
-      });
-
+    const exercises: ExerciseFormData[] = routineExercisesToFormData(routine.ejercicios);
     openFromTemplate(routine.nombre, exercises, routine.icono, origin);
   };
 

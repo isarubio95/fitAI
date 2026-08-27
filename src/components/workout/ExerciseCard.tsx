@@ -29,6 +29,8 @@ import {
   formPatchFromLastSet,
   setHasWork,
 } from "@/types/workout";
+import { formatRepTarget } from "@/lib/seriesPlan";
+import { isWorkingSet, tipoSerieLabel, tipoSerieShort } from "@/lib/setTypes";
 import { ActiveWorkoutCheckbox } from "./ActiveWorkoutCheckbox";
 import { SwipeToDeleteRow } from "./SwipeToDeleteRow";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
@@ -116,11 +118,16 @@ export function ExerciseCard({
   }, [exercise.sets, lastPerf, mode]);
 
   useEffect(() => {
-    if (!onSeedSetFromPrevious || !lastPerf?.sets.length) return;
+    if (!onSeedSetFromPrevious) return;
     exercise.sets.forEach((s, si) => {
-      const prev = lastPerf.sets[si];
-      if (!prev || !setIsUnlogged(s, mode)) return;
-      const patch = formPatchFromLastSet(mode, prev);
+      if (!setIsUnlogged(s, mode)) return;
+      const prev = lastPerf?.sets[si];
+      const patch: Partial<SetFormData> = prev ? formPatchFromLastSet(mode, prev) : {};
+      // Un peso prescrito en la rutina (pirámide, calentamiento) es una
+      // decisión explícita del usuario: gana sobre lo que hizo la última vez.
+      if (mode === "peso_reps" && s.objetivo_peso_kg != null) {
+        patch.peso_kg = s.objetivo_peso_kg;
+      }
       if (!setHasWork({ ...s, ...patch })) return;
       onSeedSetFromPrevious(si, patch);
     });
@@ -129,6 +136,8 @@ export function ExerciseCard({
   const handleApplyOverload = () => {
     if (!overloadSuggestion || !onApplySuggestionToSet) return;
     exercise.sets.forEach((s, si) => {
+      // La sugerencia es para las series efectivas; un calentamiento no sube.
+      if (!isWorkingSet(s.tipo_serie)) return;
       if (!setCanApplyOverloadPatch(s, mode)) return;
       const keepWeightOnRepProgress =
         overloadSuggestion.action === "increase_reps" && Number(s.peso_kg) > 0;
@@ -173,6 +182,48 @@ export function ExerciseCard({
       {formatPreviousSet(mode, lastPerf?.sets[si])}
     </span>
   );
+
+  /**
+   * Número de serie con marca del tipo cuando no es una serie efectiva
+   * (W = calentamiento, D = dropset, A = AMRAP).
+   */
+  const setNumberCell = (s: SetFormData, si: number, spacing: string) => {
+    const short = tipoSerieShort(s.tipo_serie);
+    return (
+      <span
+        data-num-cell
+        className={cn(
+          spacing,
+          "w-max justify-self-start whitespace-nowrap text-left text-sm tabular-nums text-muted-foreground",
+        )}
+      >
+        {si + 1}
+        {short ? (
+          <span
+            title={tipoSerieLabel(s.tipo_serie)}
+            className={cn(
+              "ml-0.5 align-super text-[9px] font-semibold",
+              s.tipo_serie === "calentamiento" ? "text-amber-500" : "text-primary",
+            )}
+          >
+            {short}
+          </span>
+        ) : null}
+      </span>
+    );
+  };
+
+  /** Fila de calentamiento: atenuada para que no compita con las efectivas. */
+  const setRowClass = (s: SetFormData) =>
+    !isWorkingSet(s.tipo_serie) ? "opacity-70" : undefined;
+
+  /** Objetivo de reps de ESTA serie; cae al del ejercicio si no hay plan. */
+  const repsPlaceholder = (s: SetFormData) => {
+    if (s.objetivo_repes_min != null || s.objetivo_repes_max != null) {
+      return formatRepTarget(s.objetivo_repes_min, s.objetivo_repes_max);
+    }
+    return exercise.repRange || "0";
+  };
 
   const lastSessionLabel = lastPerf?.fecha
     ? `Última: ${new Date(lastPerf.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}`
@@ -260,8 +311,8 @@ export function ExerciseCard({
               onDelete={() => onRemoveSet(si)}
               className={surfaceBg}
             >
-              <div className={SETS_GRID_TWO_INPUTS}>
-                <span data-num-cell className="mr-0.5 w-max justify-self-start text-left text-sm tabular-nums text-muted-foreground">{si + 1}</span>
+              <div className={cn(SETS_GRID_TWO_INPUTS, setRowClass(s))}>
+                {setNumberCell(s, si, "mr-0.5")}
                 {previousCell(si)}
                 <SetValueInput
                   field="repeticiones"
@@ -269,7 +320,7 @@ export function ExerciseCard({
                   onValueChange={(v) => onUpdateSet(si, "repeticiones", v ?? 0)}
                   onCommit={() => onAutoSaveSet?.(si)}
                   className="h-11 text-center"
-                  placeholder={exercise.repRange || "0"}
+                  placeholder={repsPlaceholder(s)}
                 />
                 <SetValueInput
                   field="peso_kg"
@@ -278,7 +329,7 @@ export function ExerciseCard({
                   onValueChange={(v) => onUpdateSet(si, "peso_kg", v ?? 0)}
                   onCommit={() => onAutoSaveSet?.(si)}
                   className="h-11 text-center"
-                  placeholder="0"
+                  placeholder={s.objetivo_peso_kg != null ? String(s.objetivo_peso_kg) : "0"}
                 />
                 {setDoneControl(s, si)}
               </div>
@@ -300,8 +351,8 @@ export function ExerciseCard({
               onDelete={() => onRemoveSet(si)}
               className={surfaceBg}
             >
-              <div className={SETS_GRID_ONE_INPUT}>
-                <span data-num-cell className="mx-0.5 w-max justify-self-start text-left text-sm tabular-nums text-muted-foreground">{si + 1}</span>
+              <div className={cn(SETS_GRID_ONE_INPUT, setRowClass(s))}>
+                {setNumberCell(s, si, "mx-0.5")}
                 {previousCell(si)}
                 <SetValueInput
                   field="duracion_seg"
@@ -336,8 +387,8 @@ export function ExerciseCard({
               onDelete={() => onRemoveSet(si)}
               className={surfaceBg}
             >
-              <div className={SETS_GRID_TWO_INPUTS}>
-                <span data-num-cell className="mx-0.5 w-max justify-self-start text-left text-sm tabular-nums text-muted-foreground">{si + 1}</span>
+              <div className={cn(SETS_GRID_TWO_INPUTS, setRowClass(s))}>
+                {setNumberCell(s, si, "mx-0.5")}
                 {previousCell(si)}
                 <SetValueInput
                   field="duracion_seg"

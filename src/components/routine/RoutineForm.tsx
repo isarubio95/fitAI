@@ -42,14 +42,32 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Loader2, GripVertical, Link, Unlink, Info } from "lucide-react";
+import { Trash2, Loader2, GripVertical, Link, Unlink, Info, ListOrdered } from "lucide-react";
 import { badgeVariants } from "@/components/ui/badge";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { WorkoutEmptyExerciseState } from "@/components/workout/workout-logger/WorkoutEmptyExerciseState";
 import { RoutineIconPicker } from "@/components/routine/RoutineIconPicker";
 import { useToast } from "@/hooks/use-toast";
-import type { RoutineExerciseFormData, RoutineFormSnapshot, RutinaEjercicioWithDetails } from "@/types/routine";
+import type {
+  RoutineExerciseFormData,
+  RoutineFormSnapshot,
+  RoutineSetPlan,
+  RutinaEjercicioWithDetails,
+} from "@/types/routine";
 import { type RegistroSeries, normalizeRegistroSeries } from "@/types/workout";
+import {
+  PLAN_PRESETS,
+  applyPlanPreset,
+  blankSetPlan,
+  buildSimplePlan,
+  formatRepTarget,
+  parseRepTarget,
+  planFromRows,
+  reindexPlan,
+  withSeriesPlan,
+  type PlanPresetKey,
+} from "@/lib/seriesPlan";
+import { TIPOS_SERIE, tipoSerieLabel, type TipoSerie } from "@/lib/setTypes";
 import {
   DEFAULT_ROUTINE_ICON_KEY,
   resolveRoutineIconKey,
@@ -109,6 +127,7 @@ function mapRoutineExercisesFromApi(ejercicios: RutinaEjercicioWithDetails[]): R
     registro_series: normalizeRegistroSeries((ej as { registro_series?: string }).registro_series),
     duracion_objetivo_seg: (ej as { duracion_objetivo_seg?: number | null }).duracion_objetivo_seg ?? null,
     ritmo_objetivo_seg_km: (ej as { ritmo_objetivo_seg_km?: number | null }).ritmo_objetivo_seg_km ?? null,
+    series_plan: planFromRows(ej.rutina_ejercicio_serie),
   }));
 }
 
@@ -126,6 +145,19 @@ function exerciseSnapshotKey(ej: RoutineExerciseFormData) {
     registro_series: ej.registro_series,
     duracion_objetivo_seg: ej.duracion_objetivo_seg,
     ritmo_objetivo_seg_km: ej.ritmo_objetivo_seg_km,
+    // Sin esto, editar solo el plan por serie no marcaría el formulario como sucio.
+    series_plan:
+      ej.series_plan?.map((s) => [
+        s.orden,
+        s.tipo_serie,
+        s.repes_min,
+        s.repes_max,
+        s.rir,
+        s.peso_objetivo_kg,
+        s.descanso,
+        s.duracion_objetivo_seg,
+        s.ritmo_objetivo_seg_km,
+      ]) ?? null,
   });
 }
 
@@ -249,6 +281,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
                   : 45
                 : null,
             ritmo_objetivo_seg_km: registro_series === "duracion_ritmo" ? 300 : null,
+            series_plan: null,
           };
           // Insert after afterIndex
           const result = [
@@ -281,6 +314,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
                   : 45
                 : null,
             ritmo_objetivo_seg_km: registro_series === "duracion_ritmo" ? 300 : null,
+            series_plan: null,
           },
         ]);
       }
@@ -315,6 +349,16 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
   ) => {
     setEjercicios((prev) =>
       prev.map((ej, i) => (i === index ? ({ ...ej, [field]: value } as RoutineExerciseFormData) : ej))
+    );
+  };
+
+  /**
+   * Sustituye el plan por serie de un ejercicio manteniendo sincronizados los
+   * escalares de resumen. `null` vuelve al modo simple.
+   */
+  const updateSeriesPlan = (index: number, plan: RoutineSetPlan[] | null) => {
+    setEjercicios((prev) =>
+      prev.map((ej, i) => (i === index ? withSeriesPlan(ej, plan) : ej))
     );
   };
 
@@ -384,8 +428,41 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
       }));
 
       if (inserts.length > 0) {
-        const { error } = await supabase.from("rutina_ejercicio").insert(inserts);
+        // Se necesitan los ids devueltos para colgar de ellos el plan por serie.
+        // Se mapea por `orden` (único dentro de la rutina) en vez de por
+        // posición: PostgREST no garantiza el orden de las filas devueltas.
+        const { data: insertedRows, error } = await supabase
+          .from("rutina_ejercicio")
+          .insert(inserts)
+          .select("id, orden");
         if (error) throw error;
+
+        const planInserts: TablesInsert<"rutina_ejercicio_serie">[] = [];
+        (insertedRows ?? []).forEach((row) => {
+          const plan = ejercicios[row.orden]?.series_plan;
+          if (!plan?.length) return;
+          plan.forEach((s, orden) => {
+            planInserts.push({
+              rutina_ejercicio_id: row.id,
+              orden,
+              tipo_serie: s.tipo_serie,
+              repes_min: s.repes_min,
+              repes_max: s.repes_max,
+              rir: s.rir,
+              peso_objetivo_kg: s.peso_objetivo_kg,
+              descanso: s.descanso,
+              duracion_objetivo_seg: s.duracion_objetivo_seg,
+              ritmo_objetivo_seg_km: s.ritmo_objetivo_seg_km,
+            });
+          });
+        });
+
+        if (planInserts.length > 0) {
+          const { error: planError } = await supabase
+            .from("rutina_ejercicio_serie")
+            .insert(planInserts);
+          if (planError) throw planError;
+        }
       }
 
       toast({ title: isEdit ? "¡Rutina actualizada!" : "¡Rutina creada!" });
@@ -507,6 +584,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
                                       exercise={ej}
                                       index={i}
                                       onUpdateField={updateExerciseField}
+                                      onUpdatePlan={updateSeriesPlan}
                                       onRemove={removeExercise}
                                       onLinkSuperset={startSupersetLink}
                                       onBreakSuperset={breakSuperset}
@@ -527,6 +605,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
                               exercise={ej}
                               index={i}
                               onUpdateField={updateExerciseField}
+                              onUpdatePlan={updateSeriesPlan}
                               onRemove={removeExercise}
                               onLinkSuperset={startSupersetLink}
                               onBreakSuperset={breakSuperset}
@@ -580,6 +659,7 @@ function SortableExerciseRow({ sortId, ...props }: {
     field: K,
     value: RoutineExerciseFormData[K]
   ) => void;
+  onUpdatePlan: (index: number, plan: RoutineSetPlan[] | null) => void;
   onRemove: (index: number) => void;
   onLinkSuperset: (index: number) => void;
   onBreakSuperset: (index: number) => void;
@@ -606,6 +686,7 @@ function ExerciseRow({
   exercise: ej,
   index: i,
   onUpdateField,
+  onUpdatePlan,
   onRemove,
   onLinkSuperset,
   onBreakSuperset,
@@ -620,6 +701,7 @@ function ExerciseRow({
     field: K,
     value: RoutineExerciseFormData[K]
   ) => void;
+  onUpdatePlan: (index: number, plan: RoutineSetPlan[] | null) => void;
   onRemove: (index: number) => void;
   onLinkSuperset: (index: number) => void;
   onBreakSuperset: (index: number) => void;
@@ -628,6 +710,8 @@ function ExerciseRow({
   onViewExerciseInfo: (ej: RoutineExerciseFormData) => void;
 }) {
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
+  const [confirmSimplify, setConfirmSimplify] = useState(false);
+  const plan = ej.series_plan;
   const wrapperClass = cn(
     "px-6 py-4 space-y-3",
     isInSuperset ? "bg-primary/5" : "bg-card",
@@ -658,6 +742,21 @@ function ExerciseRow({
           )}
         </div>
         <div className="flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-8 w-8",
+              plan ? "text-primary" : "text-muted-foreground hover:text-primary",
+            )}
+            title={plan ? "Volver a series iguales" : "Personalizar series (pirámide, calentamiento…)"}
+            onClick={() => {
+              if (plan) setConfirmSimplify(true);
+              else onUpdatePlan(i, buildSimplePlan(ej));
+            }}
+          >
+            <ListOrdered className="h-4 w-4" />
+          </Button>
           {isInSuperset ? (
             <Button
               variant="ghost"
@@ -713,6 +812,37 @@ function ExerciseRow({
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={confirmSimplify} onOpenChange={setConfirmSimplify}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Volver a series iguales?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se descartará el plan serie a serie de &quot;{ej.nombre}&quot;. El ejercicio
+              pasará a {ej.series_objetivo} series de {formatRepTarget(ej.repes_min, ej.repes_max)} reps.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onUpdatePlan(i, null);
+                setConfirmSimplify(false);
+              }}
+            >
+              Simplificar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {plan ? (
+        <SeriesPlanEditor
+          exercise={ej}
+          plan={plan}
+          onChange={(next) => onUpdatePlan(i, next)}
+          onChangeRest={(val) => onUpdateField(i, "descanso", val)}
+        />
+      ) : (
       <div className="space-y-2">
         <div className="grid grid-cols-5 gap-2">
           <div className="space-y-1">
@@ -818,12 +948,318 @@ function ExerciseRow({
           />
         </div>
       </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Editor del plan serie a serie: pirámides, calentamientos, dropsets y AMRAP.
+ * Solo se muestra cuando el ejercicio está en modo avanzado (`series_plan`).
+ */
+function SeriesPlanEditor({
+  exercise: ej,
+  plan,
+  onChange,
+  onChangeRest,
+}: {
+  exercise: RoutineExerciseFormData;
+  plan: RoutineSetPlan[];
+  onChange: (plan: RoutineSetPlan[]) => void;
+  onChangeRest: (seconds: number) => void;
+}) {
+  const isStrength = ej.registro_series === "peso_reps";
+
+  const updateSet = (index: number, patch: Partial<RoutineSetPlan>) => {
+    onChange(plan.map((s, idx) => (idx === index ? { ...s, ...patch } : s)));
+  };
+
+  const addSet = () => {
+    const last = plan.length ? plan[plan.length - 1] : blankSetPlan(ej, 0);
+    onChange(reindexPlan([...plan, { ...last, id: undefined, orden: plan.length }]));
+  };
+
+  const removeSet = (index: number) => {
+    if (plan.length <= 1) return;
+    onChange(reindexPlan(plan.filter((_, idx) => idx !== index)));
+  };
+
+  return (
+    <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/[0.03] p-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-xs font-medium text-muted-foreground mr-1">Plantillas:</span>
+        {PLAN_PRESETS.map((preset) => (
+          <Button
+            key={preset.key}
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 rounded-full px-2.5 text-xs font-normal"
+            title={preset.description}
+            onClick={() => onChange(applyPlanPreset(preset.key as PlanPresetKey, plan, ej))}
+          >
+            {preset.label}
+          </Button>
+        ))}
+      </div>
+
+      <div className="space-y-2.5">
+        {plan.map((s, idx) => (
+          <div
+            key={s.id ?? idx}
+            className={cn(
+              "space-y-1.5 rounded-md border p-2",
+              s.tipo_serie === "calentamiento"
+                ? "border-dashed border-border bg-muted/30"
+                : "border-border bg-card",
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-5 shrink-0 text-center text-xs font-semibold text-muted-foreground">
+                {idx + 1}
+              </span>
+              <Select
+                value={s.tipo_serie}
+                onValueChange={(val) => {
+                  const tipo = val as TipoSerie;
+                  updateSet(idx, {
+                    tipo_serie: tipo,
+                    // AMRAP = rango abierto por definición.
+                    ...(tipo === "amrap" ? { repes_max: null } : {}),
+                    // Un dropset se encadena sin descanso.
+                    ...(tipo === "dropset" ? { descanso: 0 } : {}),
+                  });
+                }}
+              >
+                <SelectTrigger className="h-8 flex-1 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS_SERIE.map((t) => (
+                    <SelectItem key={t} value={t} className="text-xs">
+                      {tipoSerieLabel(t)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                disabled={plan.length <= 1}
+                title="Quitar serie"
+                onClick={() => removeSet(idx)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-4 gap-1.5">
+              {isStrength ? (
+                <>
+                  <RepTargetInput
+                    label="Reps"
+                    min={s.repes_min}
+                    max={s.repes_max}
+                    onChange={(next) => updateSet(idx, next)}
+                  />
+                  <PlanNumberInput
+                    label="RIR"
+                    value={s.rir}
+                    placeholder="—"
+                    onChange={(v) => updateSet(idx, { rir: v })}
+                  />
+                  <PlanNumberInput
+                    label="Peso (kg)"
+                    value={s.peso_objetivo_kg}
+                    placeholder="—"
+                    step="0.5"
+                    onChange={(v) => updateSet(idx, { peso_objetivo_kg: v })}
+                  />
+                </>
+              ) : (
+                <>
+                  <PlanNumberInput
+                    label="Tiempo (s)"
+                    value={s.duracion_objetivo_seg}
+                    placeholder="—"
+                    onChange={(v) => updateSet(idx, { duracion_objetivo_seg: v })}
+                  />
+                  {ej.registro_series === "duracion_ritmo" ? (
+                    <PlanNumberInput
+                      label="Ritmo (s/km)"
+                      value={s.ritmo_objetivo_seg_km}
+                      placeholder="300"
+                      onChange={(v) => updateSet(idx, { ritmo_objetivo_seg_km: v })}
+                    />
+                  ) : (
+                    <div />
+                  )}
+                  <div />
+                </>
+              )}
+              <PlanRestInput
+                value={s.descanso}
+                fallback={ej.descanso}
+                onChange={(v) => updateSet(idx, { descanso: v })}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs"
+          onClick={addSet}
+        >
+          + Añadir serie
+        </Button>
+        <div className="min-w-0">
+          <RestTimeInput value={ej.descanso} onChange={onChangeRest} label="Descanso base" />
+        </div>
+      </div>
+
+      <p className="text-[11px] leading-snug text-muted-foreground">
+        Las series de calentamiento no cuentan para volumen, carga ni XP.
+      </p>
+    </div>
+  );
+}
+
+/** Rango de reps como texto: "8-12", "8+" (abierto) o "10". */
+function RepTargetInput({
+  label,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  min: number | null;
+  max: number | null;
+  onChange: (next: { repes_min: number | null; repes_max: number | null }) => void;
+}) {
+  const [draft, setDraft] = useState(() => formatRepTarget(min, max));
+
+  useEffect(() => {
+    setDraft(formatRepTarget(min, max));
+  }, [min, max]);
+
+  const commit = () => {
+    const parsed = parseRepTarget(draft);
+    if (!parsed) {
+      setDraft(formatRepTarget(min, max));
+      return;
+    }
+    onChange({ repes_min: parsed.min, repes_max: parsed.max });
+    setDraft(formatRepTarget(parsed.min, parsed.max));
+  };
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-[10px] text-muted-foreground">{label}</Label>
+      <Input
+        value={draft}
+        inputMode="numeric"
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        className="h-9 px-2 text-center text-sm"
+        placeholder="8-12"
+      />
+    </div>
+  );
+}
+
+function PlanNumberInput({
+  label,
+  value,
+  placeholder,
+  step,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  placeholder?: string;
+  step?: string;
+  onChange: (value: number | null) => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-[10px] text-muted-foreground">{label}</Label>
+      <Input
+        type="number"
+        min={0}
+        step={step}
+        value={value ?? ""}
+        placeholder={placeholder}
+        onChange={(e) => {
+          const v = e.target.value;
+          onChange(v === "" ? null : Number(v));
+        }}
+        className="h-9 px-2 text-center text-sm"
+      />
+    </div>
+  );
+}
+
+/** Descanso de una serie; vacío = hereda el del ejercicio. */
+function PlanRestInput({
+  value,
+  fallback,
+  onChange,
+}: {
+  value: number | null;
+  fallback: number;
+  onChange: (value: number | null) => void;
+}) {
+  const [draft, setDraft] = useState(() => (value == null ? "" : formatMSS(value)));
+
+  useEffect(() => {
+    setDraft(value == null ? "" : formatMSS(value));
+  }, [value]);
+
+  const commit = () => {
+    if (draft.trim() === "") {
+      onChange(null);
+      return;
+    }
+    const parsed = parseMSS(draft);
+    if (parsed == null) {
+      setDraft(value == null ? "" : formatMSS(value));
+      return;
+    }
+    onChange(parsed);
+    setDraft(formatMSS(parsed));
+  };
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-[10px] text-muted-foreground">Descanso</Label>
+      <Input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        className="h-9 px-2 text-center text-sm"
+        placeholder={formatMSS(fallback)}
+      />
     </div>
   );
 }
 
 /** M:SS rest time input */
-function RestTimeInput({ value, onChange }: { value: number; onChange: (seconds: number) => void }) {
+function RestTimeInput({
+  value,
+  onChange,
+  label = "Descanso",
+}: {
+  value: number;
+  onChange: (seconds: number) => void;
+  label?: string;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [display, setDisplay] = useState(formatMSS(value));
 
@@ -843,7 +1279,7 @@ function RestTimeInput({ value, onChange }: { value: number; onChange: (seconds:
 
   return (
     <div className="space-y-1">
-      <Label className="text-xs text-muted-foreground">Descanso</Label>
+      <Label className="text-xs text-muted-foreground">{label}</Label>
       <Input
         ref={inputRef}
         value={display}

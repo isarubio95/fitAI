@@ -1,4 +1,5 @@
 import type { Tables } from "@/integrations/supabase/types";
+import { DEFAULT_TIPO_SERIE, normalizeTipoSerie, type TipoSerie } from "@/lib/setTypes";
 
 export type TipoEjercicio = Tables<"tipo_ejercicio">;
 export type UsuarioEjercicio = Tables<"usuario_ejercicio">;
@@ -151,6 +152,46 @@ export function serieFieldsForRegistro(mode: RegistroSeries, s: SetFormData): {
   return { duracion_seg: null, ritmo_seg_km: null };
 }
 
+/**
+ * Objetivos prescritos de la serie, tal como se guardan en BD.
+ * Separado de `serieFieldsForRegistro` porque no dependen del modo de registro.
+ */
+export function serieTargetFields(s: SetFormData): {
+  tipo_serie: TipoSerie;
+  objetivo_repes_min: number | null;
+  objetivo_repes_max: number | null;
+  objetivo_rir: number | null;
+  objetivo_peso_kg: number | null;
+} {
+  return {
+    tipo_serie: normalizeTipoSerie(s.tipo_serie),
+    objetivo_repes_min: s.objetivo_repes_min ?? null,
+    objetivo_repes_max: s.objetivo_repes_max ?? null,
+    objetivo_rir: s.objetivo_rir ?? null,
+    objetivo_peso_kg: s.objetivo_peso_kg ?? null,
+  };
+}
+
+/** Reconstruye los objetivos de una serie leída de BD (rehidratación / edición). */
+export function serieTargetsFromRow(row: {
+  tipo_serie?: string | null;
+  objetivo_repes_min?: number | null;
+  objetivo_repes_max?: number | null;
+  objetivo_rir?: number | null;
+  objetivo_peso_kg?: number | null;
+}): Pick<
+  SetFormData,
+  "tipo_serie" | "objetivo_repes_min" | "objetivo_repes_max" | "objetivo_rir" | "objetivo_peso_kg"
+> {
+  return {
+    tipo_serie: normalizeTipoSerie(row.tipo_serie ?? DEFAULT_TIPO_SERIE),
+    objetivo_repes_min: row.objetivo_repes_min ?? null,
+    objetivo_repes_max: row.objetivo_repes_max ?? null,
+    objetivo_rir: row.objetivo_rir ?? null,
+    objetivo_peso_kg: row.objetivo_peso_kg ?? null,
+  };
+}
+
 // Form types for the workout logger
 export interface SetFormData {
   repeticiones: number;
@@ -164,6 +205,17 @@ export interface SetFormData {
   completed?: boolean;
   /** Valores copiados del último entreno; no cuentan como serie registrada hasta editar o marcar hecha. */
   seededFromPrevious?: boolean;
+  /** Calentamiento / efectiva / dropset / amrap. Solo la efectiva es el caso por defecto. */
+  tipo_serie?: TipoSerie;
+  /**
+   * Objetivo prescrito para ESTA serie (viene del plan de la rutina).
+   * Se persiste en `serie` para sobrevivir a la rehidratación de la sesión
+   * activa y para que el histórico conserve lo que se prescribió.
+   */
+  objetivo_repes_min?: number | null;
+  objetivo_repes_max?: number | null;
+  objetivo_rir?: number | null;
+  objetivo_peso_kg?: number | null;
 }
 
 export interface ExerciseFormData {

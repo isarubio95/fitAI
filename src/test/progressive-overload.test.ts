@@ -1,25 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   computeReadiness,
-  parseRepRange,
   roundToWeightIncrement,
   shouldDeload,
   suggestProgressiveOverload,
 } from "@/lib/progressiveOverload";
 
 const baseTarget = { repesMin: 8, repesMax: 12, targetRir: 2 };
-
-describe("parseRepRange", () => {
-  it("parsea rangos tipo 8-12", () => {
-    expect(parseRepRange("8-12")).toEqual({ min: 8, max: 12 });
-    expect(parseRepRange("6 - 10")).toEqual({ min: 6, max: 10 });
-  });
-
-  it("devuelve null si no hay rango", () => {
-    expect(parseRepRange("Tiempo")).toBeNull();
-    expect(parseRepRange(undefined)).toBeNull();
-  });
-});
 
 describe("computeReadiness", () => {
   it("reduce readiness con fatiga y forma negativa", () => {
@@ -97,6 +84,33 @@ describe("suggestProgressiveOverload", () => {
     expect(
       suggestProgressiveOverload({
         lastSets: [{ peso_kg: 0, repeticiones: 0 }],
+        target: baseTarget,
+      }),
+    ).toBeNull();
+  });
+
+  it("ignora los calentamientos al medir el rendimiento", () => {
+    // Sin filtrar, el calentamiento ligero hundiría la media de peso y de reps
+    // y la sugerencia sería mantener en vez de subir.
+    const result = suggestProgressiveOverload({
+      lastSets: [
+        { peso_kg: 40, repeticiones: 15, rir: 5, tipo_serie: "calentamiento" },
+        { peso_kg: 80, repeticiones: 12, rir: 2 },
+        { peso_kg: 80, repeticiones: 12, rir: 1 },
+      ],
+      target: baseTarget,
+      muscleFatigueNorm: 0.1,
+      trainingForm: 5,
+    });
+
+    expect(result?.action).toBe("increase_weight");
+    expect(result?.suggestedWeight).toBeGreaterThan(80);
+  });
+
+  it("devuelve null si solo hubo calentamiento", () => {
+    expect(
+      suggestProgressiveOverload({
+        lastSets: [{ peso_kg: 40, repeticiones: 15, tipo_serie: "calentamiento" }],
         target: baseTarget,
       }),
     ).toBeNull();

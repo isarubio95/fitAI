@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
+import { isWorkingSet } from "@/lib/setTypes";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks } from "date-fns";
 
 export type TimePeriod = "week" | "month";
@@ -87,13 +88,15 @@ export function useMuscleVolume(period: TimePeriod = "week") {
       // Contar series con datos (marcadas completadas O con reps/peso): así el mapa refleja lo que realmente hiciste
       const { data: series, error: sErr } = await supabase
         .from("serie")
-        .select("ejercicio_id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km, completed")
+        .select("ejercicio_id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km, completed, tipo_serie")
         .in("ejercicio_id", ejercicioIds);
 
       if (sErr) throw sErr;
 
       const setCountMap: Record<string, number> = {};
       for (const s of series || []) {
+        // Un calentamiento no es volumen de entrenamiento.
+        if (!isWorkingSet(s.tipo_serie)) continue;
         const hasData =
           Number(s.repeticiones) > 0 ||
           Number(s.peso_kg) > 0 ||

@@ -51,6 +51,52 @@ describe("workoutToRoutine", () => {
     });
   });
 
+  it("no genera plan por serie si todas las series fueron iguales", () => {
+    const [ejercicio] = exercisesToRoutineExercises([
+      {
+        nombre: "Press banca",
+        registro_series: "peso_reps",
+        sets: [
+          { repeticiones: 10, peso_kg: 60, completed: true },
+          { repeticiones: 10, peso_kg: 60, completed: true },
+        ],
+      },
+    ]);
+
+    expect(ejercicio.series_plan).toBeNull();
+    expect(ejercicio.series_objetivo).toBe(2);
+  });
+
+  it("conserva la pirámide al guardar el entreno como rutina", () => {
+    const [ejercicio] = exercisesToRoutineExercises([
+      {
+        nombre: "Press banca",
+        registro_series: "peso_reps",
+        targetRir: 1,
+        sets: [
+          { repeticiones: 15, peso_kg: 40, completed: true, tipo_serie: "calentamiento" },
+          { repeticiones: 12, peso_kg: 60, completed: true },
+          { repeticiones: 10, peso_kg: 70, completed: true },
+          { repeticiones: 8, peso_kg: 80, completed: true },
+        ],
+      },
+    ]);
+
+    expect(ejercicio.series_plan).toHaveLength(4);
+    expect(ejercicio.series_plan!.map((s) => s.tipo_serie)).toEqual([
+      "calentamiento",
+      "efectiva",
+      "efectiva",
+      "efectiva",
+    ]);
+    // Los pesos que se levantaron pasan a ser el objetivo de cada serie.
+    expect(ejercicio.series_plan!.map((s) => s.peso_objetivo_kg)).toEqual([40, 60, 70, 80]);
+    // El resumen ignora el calentamiento (15 reps no ensancha el rango).
+    expect(ejercicio.repes_min).toBe(8);
+    expect(ejercicio.repes_max).toBe(12);
+    expect(ejercicio.series_objetivo).toBe(4);
+  });
+
   it("ignora ejercicios sin series registradas", () => {
     const snapshot = buildWorkoutRoutineSnapshot("Pierna", "dumbbell", [
       {

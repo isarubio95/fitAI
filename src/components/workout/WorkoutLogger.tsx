@@ -74,9 +74,13 @@ import {
   serieCountsAsRecorded,
   countRecordedSets,
   serieFieldsForRegistro,
+  serieTargetFields,
+  serieTargetsFromRow,
   setIsUnlogged,
   setCanApplyOverloadPatch,
 } from "@/types/workout";
+import { restForSet } from "@/lib/seriesPlan";
+import { DEFAULT_TIPO_SERIE, isWorkingSet } from "@/lib/setTypes";
 
 export function WorkoutLogger() {
   const { state, setOpen, close, openActiveWorkout } = useGlobalWorkoutDrawer();
@@ -230,6 +234,10 @@ export function WorkoutLogger() {
             ritmo_seg_km: s.ritmo_seg_km ?? null,
             id: s.id,
             completed: s.completed,
+            descanso: s.descanso ?? undefined,
+            // Sin esto, rehidratar una sesión perdería el plan por serie
+            // (pirámide, calentamientos) y todas las filas parecerían iguales.
+            ...serieTargetsFromRow(s),
           })),
       }));
       setTitulo(hydratedTitulo);
@@ -522,6 +530,9 @@ export function WorkoutLogger() {
               durRit.duracion_seg != null ? durRit.duracion_seg : mode !== "peso_reps" ? 0 : null,
             ritmo_seg_km: durRit.ritmo_seg_km,
             completed: false,
+            descanso: s.descanso ?? null,
+            // El objetivo de cada serie viaja desde la rutina y se guarda aquí.
+            ...serieTargetFields(s),
           };
         });
       });
@@ -670,6 +681,8 @@ export function WorkoutLogger() {
             peso_kg: s.peso_kg ?? 0,
             ...serieFields,
             completed: s.completed ?? false,
+            descanso: s.descanso ?? null,
+            ...serieTargetFields(s),
           };
         }),
       )
@@ -809,10 +822,21 @@ export function WorkoutLogger() {
 
   const addSet = async (exerciseIndex: number) => {
     const ex = exercises[exerciseIndex];
+    const mode = normalizeRegistroSeries(ex.registro_series);
+    // La serie añadida a mano hereda el objetivo de la última efectiva: si el
+    // ejercicio es una pirámide, continuarla es más útil que empezar en blanco.
+    const lastWorking = [...ex.sets].reverse().find((s) => isWorkingSet(s.tipo_serie));
+    const blank: SetFormData = {
+      ...defaultSetForMode(mode, null, null),
+      tipo_serie: DEFAULT_TIPO_SERIE,
+      objetivo_repes_min: lastWorking?.objetivo_repes_min ?? null,
+      objetivo_repes_max: lastWorking?.objetivo_repes_max ?? null,
+      objetivo_rir: lastWorking?.objetivo_rir ?? null,
+      objetivo_peso_kg: lastWorking?.objetivo_peso_kg ?? null,
+    };
+
     if (ex.id && effectiveWorkoutId && user) {
       try {
-        const mode = normalizeRegistroSeries(ex.registro_series);
-        const blank = defaultSetForMode(mode, null, null);
         const ins = serieFieldsForRegistro(mode, blank);
         const { data, error } = await supabase
           .from("serie")
@@ -825,6 +849,7 @@ export function WorkoutLogger() {
             duracion_seg: ins.duracion_seg != null ? ins.duracion_seg : mode !== "peso_reps" ? 0 : null,
             ritmo_seg_km: ins.ritmo_seg_km,
             completed: false,
+            ...serieTargetFields(blank),
           })
           .select("id")
           .single();
@@ -845,8 +870,6 @@ export function WorkoutLogger() {
         });
       }
     }
-    const mode = normalizeRegistroSeries(ex.registro_series);
-    const blank = defaultSetForMode(mode, null, null);
     setExercises((prev) =>
       prev.map((e, i) =>
         i === exerciseIndex
@@ -1065,7 +1088,10 @@ export function WorkoutLogger() {
       }
 
       if (completed) {
-        const restSeconds = ex.descanso ?? 120;
+        // Una serie con descanso propio (p. ej. el 0 de un dropset, o el
+        // descanso largo de la serie pesada de una pirámide) manda sobre el
+        // descanso base del ejercicio.
+        const restSeconds = set ? restForSet(set, ex.descanso) : (ex.descanso ?? 120);
         const restEndAtMs = Date.now() + restSeconds * 1000;
         restTimer.start(`${exerciseIndex}-${setIndex}`, restSeconds, effectiveWorkoutId);
         if (isActiveWorkout && effectiveWorkoutId) {
@@ -1216,9 +1242,12 @@ export function WorkoutLogger() {
       if (wasCompleted && oldIds.length) {
         const { data: series } = await supabase
           .from("serie")
-          .select("id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km")
+          .select("id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km, tipo_serie")
           .in("ejercicio_id", oldIds);
-        const seriesCompletadas = (series ?? []).filter((s) => setHasWork(s)).length;
+        // Mismo criterio que al otorgarla, o la XP retirada no cuadraría.
+        const seriesCompletadas = (series ?? []).filter(
+          (s) => isWorkingSet(s.tipo_serie) && setHasWork(s),
+        ).length;
         if (seriesCompletadas > 0) {
           await removeXP(targetId, seriesCompletadas);
         }
@@ -1350,9 +1379,12 @@ export function WorkoutLogger() {
 
           await finalizeLinkedPlannedRoutine();
 
-          // Calculate XP and show post-workout modal
+          // Calculate XP and show post-workout modal.
+          // El calentamiento no da XP: si no cuenta como volumen, tampoco premia.
           const completedSets = exercises.reduce(
-            (acc, ex) => acc + ex.sets.filter((s) => serieCountsAsRecorded(s)).length,
+            (acc, ex) =>
+              acc +
+              ex.sets.filter((s) => isWorkingSet(s.tipo_serie) && serieCountsAsRecorded(s)).length,
             0
           );
           try {
@@ -1404,8 +1436,11 @@ export function WorkoutLogger() {
       } else {
         const createdId = await handleCreate(ejerciciosLimpios, resolvedTitulo);
 
-        // Also award XP for manual workouts
-        const completedSets = ejerciciosLimpios.reduce((acc, ex) => acc + ex.sets.length, 0);
+        // Also award XP for manual workouts (sin contar calentamientos)
+        const completedSets = ejerciciosLimpios.reduce(
+          (acc, ex) => acc + ex.sets.filter((s) => isWorkingSet(s.tipo_serie)).length,
+          0,
+        );
         try {
           const breakdown = await calculateAndAwardXP("manual", completedSets, fecha);
           const logrosResult = await checkAndAwardLogros(user!.id).catch(() => ({ nuevos: [] as LogroRow[] }));
@@ -1495,6 +1530,8 @@ export function WorkoutLogger() {
           duracion_seg: dr.duracion_seg,
           ritmo_seg_km: dr.ritmo_seg_km,
           completed: true,
+          descanso: s.descanso ?? null,
+          ...serieTargetFields(s),
         };
       });
     });

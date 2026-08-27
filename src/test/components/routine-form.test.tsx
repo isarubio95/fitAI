@@ -81,4 +81,86 @@ describe("RoutineForm", () => {
     expect(screen.getByRole("button", { name: "Guardar" })).toBeEnabled();
     expect(screen.getByText("Press banca")).toBeInTheDocument();
   });
+
+  describe("plan por serie", () => {
+    /** Añade un ejercicio y entra en el modo avanzado. */
+    const openPlanEditor = () => {
+      render(wrap(<RoutineForm open onOpenChange={() => undefined} />));
+      fireEvent.click(screen.getByRole("button", { name: "Agregar Ejercicio" }));
+      fireEvent.click(
+        screen.getByTitle("Personalizar series (pirámide, calentamiento…)"),
+      );
+    };
+
+    it("un ejercicio nuevo empieza en modo simple", () => {
+      render(wrap(<RoutineForm open onOpenChange={() => undefined} />));
+      fireEvent.click(screen.getByRole("button", { name: "Agregar Ejercicio" }));
+
+      expect(screen.getByText("Series")).toBeInTheDocument();
+      expect(screen.getByText("Reps mín")).toBeInTheDocument();
+      expect(screen.queryByText("Plantillas:")).not.toBeInTheDocument();
+    });
+
+    it("materializa las series actuales al personalizar, sin cambiar el objetivo", () => {
+      openPlanEditor();
+
+      expect(screen.getByText("Plantillas:")).toBeInTheDocument();
+      // 3 series por defecto, todas con el rango base del ejercicio.
+      const repInputs = screen.getAllByDisplayValue("8-12");
+      expect(repInputs).toHaveLength(3);
+      // Los inputs escalares desaparecen: el plan es ahora la fuente.
+      expect(screen.queryByText("Reps mín")).not.toBeInTheDocument();
+    });
+
+    it("la pirámide descendente deja rangos distintos por serie", () => {
+      openPlanEditor();
+      fireEvent.click(screen.getByRole("button", { name: "Pirámide ↓" }));
+
+      expect(screen.getByDisplayValue("8-12")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("6-10")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("4-8")).toBeInTheDocument();
+    });
+
+    it("añadir y quitar series actualiza el plan", () => {
+      openPlanEditor();
+      expect(screen.getAllByDisplayValue("8-12")).toHaveLength(3);
+
+      fireEvent.click(screen.getByRole("button", { name: "+ Añadir serie" }));
+      expect(screen.getAllByDisplayValue("8-12")).toHaveLength(4);
+
+      fireEvent.click(screen.getAllByTitle("Quitar serie")[0]);
+      expect(screen.getAllByDisplayValue("8-12")).toHaveLength(3);
+    });
+
+    it("un rango abierto se acepta y se conserva como 8+", () => {
+      openPlanEditor();
+      const first = screen.getAllByDisplayValue("8-12")[0];
+
+      fireEvent.change(first, { target: { value: "8+" } });
+      fireEvent.blur(first);
+
+      expect(screen.getByDisplayValue("8+")).toBeInTheDocument();
+    });
+
+    it("un rango inválido revierte al valor anterior", () => {
+      openPlanEditor();
+      const first = screen.getAllByDisplayValue("8-12")[0];
+
+      fireEvent.change(first, { target: { value: "no soy un rango" } });
+      fireEvent.blur(first);
+
+      expect(screen.getAllByDisplayValue("8-12")).toHaveLength(3);
+    });
+
+    it("volver a series iguales pide confirmación", () => {
+      openPlanEditor();
+      fireEvent.click(screen.getByTitle("Volver a series iguales"));
+
+      expect(screen.getByText("¿Volver a series iguales?")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Simplificar" }));
+
+      expect(screen.queryByText("Plantillas:")).not.toBeInTheDocument();
+      expect(screen.getByText("Reps mín")).toBeInTheDocument();
+    });
+  });
 });

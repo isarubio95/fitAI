@@ -4,6 +4,8 @@ import {
   E2E_CARDIO_SESSION_ID,
   E2E_CARDIO_TRACK_ID,
   E2E_EXERCISE_ID,
+  E2E_ROUTINE_EXERCISE_ID,
+  E2E_ROUTINE_ID,
   E2E_SERIE_ID,
   E2E_TIPO_EJERCICIO_ID,
   E2E_USER_EMAIL,
@@ -27,6 +29,10 @@ export type SupabaseMockState = {
   cardioSesion: Record<string, unknown> | null;
   lastCardioTrack: Record<string, unknown> | null;
   lastCardioTrackPoints: unknown[] | null;
+  rutina: Record<string, unknown> | null;
+  rutinaEjercicios: Record<string, unknown>[];
+  /** Plan por serie persistido (pirámides, calentamientos, dropsets). */
+  rutinaEjercicioSeries: Record<string, unknown>[];
 };
 
 function json(route: Route, status: number, body: unknown, extraHeaders: Record<string, string> = {}) {
@@ -79,6 +85,9 @@ export async function installSupabaseMock(page: Page): Promise<SupabaseMockState
     cardioSesion: null,
     lastCardioTrack: null,
     lastCardioTrackPoints: null,
+    rutina: null,
+    rutinaEjercicios: [],
+    rutinaEjercicioSeries: [],
   };
 
   // Evita que el service worker de la PWA intercepte fetch en E2E
@@ -420,6 +429,39 @@ async function handlePost(
     case "cardio_sesion_running":
     case "cardio_sesion_cycling":
       return json(route, 201, returnRep ? { id: `${table}-1`, ...row } : null);
+
+    case "rutina": {
+      state.rutina = {
+        id: E2E_ROUTINE_ID,
+        usuario_id: E2E_USER_ID,
+        ...row,
+      };
+      return json(route, 201, returnRep ? state.rutina : null);
+    }
+
+    // Se insertan en bloque y el cliente lee `id, orden` para colgar el plan
+    // por serie de cada uno, así que la respuesta debe ser un ARRAY.
+    case "rutina_ejercicio": {
+      const created = asArray(body).map((r, i) => {
+        const item = r as Record<string, unknown>;
+        return {
+          ...item,
+          id: `${E2E_ROUTINE_EXERCISE_ID}-${i}`,
+          orden: typeof item.orden === "number" ? item.orden : i,
+        };
+      });
+      state.rutinaEjercicios.push(...created);
+      return json(route, 201, returnRep ? created : null);
+    }
+
+    case "rutina_ejercicio_serie": {
+      const created = asArray(body).map((r, i) => ({
+        ...(r as Record<string, unknown>),
+        id: `rutina-serie-${state.rutinaEjercicioSeries.length + i}`,
+      }));
+      state.rutinaEjercicioSeries.push(...created);
+      return json(route, 201, returnRep ? created : null);
+    }
 
     case "rpc":
       return json(route, 200, []);

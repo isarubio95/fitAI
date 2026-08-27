@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
+import { WORKING_SET_TYPES } from "@/lib/setTypes";
 
 export interface MuscleStatistics {
   mainGroupCounts: Record<MainMuscleGroup, number>;
@@ -75,6 +76,8 @@ export function useMuscleStatistics() {
           .from("serie")
           .select("ejercicio_id")
           .in("ejercicio_id", chunk)
+          // Los calentamientos no cuentan como volumen.
+          .in("tipo_serie", WORKING_SET_TYPES as unknown as string[])
           .eq("completed", true);
         if (error) throw error;
         if (data) allSeries.push(...data);

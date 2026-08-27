@@ -1,15 +1,6 @@
+import { isWorkingSet } from "@/lib/setTypes";
 import { computeReadiness, shouldDeload } from "./readinessScore";
 import type { OverloadInput, OverloadSetInput, OverloadSuggestion, OverloadTarget } from "./types";
-
-export function parseRepRange(repRange?: string): { min: number; max: number } | null {
-  if (!repRange) return null;
-  const match = repRange.match(/(\d+)\s*-\s*(\d+)/);
-  if (!match) return null;
-  const min = Number(match[1]);
-  const max = Number(match[2]);
-  if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
-  return { min: Math.max(1, min), max: Math.max(min, max) };
-}
 
 export function resolveWeightIncrement(weightKg: number): number {
   if (weightKg <= 0) return 0;
@@ -23,8 +14,12 @@ export function roundToWeightIncrement(weightKg: number, increment: number): num
   return Math.round(rounded * 100) / 100;
 }
 
+/**
+ * Series que cuentan para la progresión: con reps registradas y que no sean
+ * calentamiento. Un calentamiento ligero hundiría la media de peso y de reps.
+ */
 function workingSets(sets: OverloadSetInput[]): OverloadSetInput[] {
-  return sets.filter((s) => Number(s.repeticiones) > 0);
+  return sets.filter((s) => Number(s.repeticiones) > 0 && isWorkingSet(s.tipo_serie));
 }
 
 function summarizeWorkingSets(sets: OverloadSetInput[]): {

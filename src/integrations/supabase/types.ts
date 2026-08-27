@@ -1245,6 +1245,59 @@ export type Database = {
           },
         ]
       }
+      rutina_ejercicio_serie: {
+        Row: {
+          created_at: string
+          descanso: number | null
+          duracion_objetivo_seg: number | null
+          id: string
+          orden: number
+          peso_objetivo_kg: number | null
+          repes_max: number | null
+          repes_min: number | null
+          rir: number | null
+          ritmo_objetivo_seg_km: number | null
+          rutina_ejercicio_id: string
+          tipo_serie: string
+        }
+        Insert: {
+          created_at?: string
+          descanso?: number | null
+          duracion_objetivo_seg?: number | null
+          id?: string
+          orden: number
+          peso_objetivo_kg?: number | null
+          repes_max?: number | null
+          repes_min?: number | null
+          rir?: number | null
+          ritmo_objetivo_seg_km?: number | null
+          rutina_ejercicio_id: string
+          tipo_serie?: string
+        }
+        Update: {
+          created_at?: string
+          descanso?: number | null
+          duracion_objetivo_seg?: number | null
+          id?: string
+          orden?: number
+          peso_objetivo_kg?: number | null
+          repes_max?: number | null
+          repes_min?: number | null
+          rir?: number | null
+          ritmo_objetivo_seg_km?: number | null
+          rutina_ejercicio_id?: string
+          tipo_serie?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rutina_ejercicio_serie_rutina_ejercicio_id_fkey"
+            columns: ["rutina_ejercicio_id"]
+            isOneToOne: false
+            referencedRelation: "rutina_ejercicio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rutina_programada: {
         Row: {
           actividad_id: string | null
@@ -1379,10 +1432,15 @@ export type Database = {
           ejercicio_id: string
           id: string
           numero_serie: number
+          objetivo_peso_kg: number | null
+          objetivo_repes_max: number | null
+          objetivo_repes_min: number | null
+          objetivo_rir: number | null
           peso_kg: number
           repeticiones: number
           rir: number | null
           ritmo_seg_km: number | null
+          tipo_serie: string
           usuario_id: string
         }
         Insert: {
@@ -1393,10 +1451,15 @@ export type Database = {
           ejercicio_id: string
           id?: string
           numero_serie?: number
+          objetivo_peso_kg?: number | null
+          objetivo_repes_max?: number | null
+          objetivo_repes_min?: number | null
+          objetivo_rir?: number | null
           peso_kg?: number
           repeticiones?: number
           rir?: number | null
           ritmo_seg_km?: number | null
+          tipo_serie?: string
           usuario_id?: string
         }
         Update: {
@@ -1407,10 +1470,15 @@ export type Database = {
           ejercicio_id?: string
           id?: string
           numero_serie?: number
+          objetivo_peso_kg?: number | null
+          objetivo_repes_max?: number | null
+          objetivo_repes_min?: number | null
+          objetivo_rir?: number | null
           peso_kg?: number
           repeticiones?: number
           rir?: number | null
           ritmo_seg_km?: number | null
+          tipo_serie?: string
           usuario_id?: string
         }
         Relationships: [

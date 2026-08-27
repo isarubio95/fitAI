@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { useAuth } from "./useAuth";
 import type { RutinaWithDetails, RutinaEjercicioWithDetails } from "@/types/routine";
 import { migrateRoutineIconsFromLocalStorage } from "@/lib/routineIcons";
@@ -11,6 +11,8 @@ let localIconMigrationDone = false;
 type RutinaEjercicioJoinRow = Tables<"rutina_ejercicio"> & {
   tipo_ejercicio: Tables<"tipo_ejercicio"> | null;
   usuario_ejercicio: Tables<"usuario_ejercicio"> | null;
+  /** Plan por serie; vacío = ejercicio en modo simple. */
+  rutina_ejercicio_serie: Tables<"rutina_ejercicio_serie">[] | null;
 };
 
 function mapRutinaEjercicio(ej: RutinaEjercicioJoinRow): RutinaEjercicioWithDetails {
@@ -18,6 +20,7 @@ function mapRutinaEjercicio(ej: RutinaEjercicioJoinRow): RutinaEjercicioWithDeta
   return {
     ...ej,
     tipo_ejercicio: tipo!,
+    rutina_ejercicio_serie: ej.rutina_ejercicio_serie ?? null,
   };
 }
 
@@ -45,7 +48,7 @@ export function useRoutines() {
       const rutinaIds = rutinas.map((r) => r.id);
       const { data: ejercicios, error: ejError } = await supabase
         .from("rutina_ejercicio")
-        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
+        .select("*, tipo_ejercicio(*), usuario_ejercicio(*), rutina_ejercicio_serie(*)")
         .in("rutina_id", rutinaIds)
         .order("orden");
       if (ejError) throw ejError;
@@ -79,7 +82,7 @@ export function useRoutineById(id: string | null) {
 
       const { data: ejercicios, error: ejError } = await supabase
         .from("rutina_ejercicio")
-        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
+        .select("*, tipo_ejercicio(*), usuario_ejercicio(*), rutina_ejercicio_serie(*)")
         .eq("rutina_id", id)
         .order("orden");
       if (ejError) throw ejError;
@@ -178,7 +181,46 @@ function remapSupersetIds<T extends { superset_id: string | null }>(
   });
 }
 
-/** Duplica una rutina del usuario (incl. ejercicios y superseries). */
+/**
+ * Copia el plan por serie a los rutina_ejercicio recién insertados.
+ *
+ * `sourceByOrden` debe estar indexado por el mismo `orden` con el que se
+ * insertaron las filas; se mapea por `orden` y no por posición porque
+ * PostgREST no garantiza el orden de las filas devueltas.
+ */
+export async function copySeriesPlans(
+  sourceByOrden: Array<Tables<"rutina_ejercicio_serie">[] | null | undefined>,
+  insertedRows: Array<{ id: string; orden: number }>,
+): Promise<void> {
+  const planInserts: TablesInsert<"rutina_ejercicio_serie">[] = [];
+
+  for (const row of insertedRows) {
+    const plan = sourceByOrden[row.orden];
+    if (!plan?.length) continue;
+    [...plan]
+      .sort((a, b) => a.orden - b.orden)
+      .forEach((s, orden) => {
+        planInserts.push({
+          rutina_ejercicio_id: row.id,
+          orden,
+          tipo_serie: s.tipo_serie,
+          repes_min: s.repes_min,
+          repes_max: s.repes_max,
+          rir: s.rir,
+          peso_objetivo_kg: s.peso_objetivo_kg,
+          descanso: s.descanso,
+          duracion_objetivo_seg: s.duracion_objetivo_seg,
+          ritmo_objetivo_seg_km: s.ritmo_objetivo_seg_km,
+        });
+      });
+  }
+
+  if (!planInserts.length) return;
+  const { error } = await supabase.from("rutina_ejercicio_serie").insert(planInserts);
+  if (error) throw error;
+}
+
+/** Duplica una rutina del usuario (incl. ejercicios, superseries y plan por serie). */
 export function useDuplicateRoutine() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -221,8 +263,16 @@ export function useDuplicateRoutine() {
           duracion_objetivo_seg: ej.duracion_objetivo_seg,
           ritmo_objetivo_seg_km: ej.ritmo_objetivo_seg_km,
         }));
-        const { error: ejInsertErr } = await supabase.from("rutina_ejercicio").insert(inserts);
+        const { data: insertedRows, error: ejInsertErr } = await supabase
+          .from("rutina_ejercicio")
+          .insert(inserts)
+          .select("id, orden");
         if (ejInsertErr) throw ejInsertErr;
+
+        await copySeriesPlans(
+          withNewSupersets.map((ej) => ej.rutina_ejercicio_serie),
+          insertedRows ?? [],
+        );
       }
 
       return newRutina.id;

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { chunkIds, fetchAllPages } from "@/lib/supabaseBatch";
 import { setHasWork } from "@/types/workout";
+import { isWorkingSet } from "@/lib/setTypes";
 import type { MainMuscleGroup } from "@/constants/muscleGroups";
 import {
   estimatedDaysToBaseline,
@@ -126,6 +127,7 @@ export function useMuscleFatigue(period: MuscleFatiguePeriod = "week") {
             duracion_seg: number | null;
             ritmo_seg_km: number | null;
             rir: number | null;
+            tipo_serie: string | null;
           }[] = [];
 
           for (const chunk of chunkIds(ejercicios.map((e) => e.id))) {
@@ -136,10 +138,11 @@ export function useMuscleFatigue(period: MuscleFatiguePeriod = "week") {
               duracion_seg: number | null;
               ritmo_seg_km: number | null;
               rir: number | null;
+              tipo_serie: string | null;
             }>((from, to) =>
               supabase
                 .from("serie")
-                .select("ejercicio_id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km, rir")
+                .select("ejercicio_id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km, rir, tipo_serie")
                 .in("ejercicio_id", chunk)
                 .range(from, to),
             );
@@ -147,6 +150,8 @@ export function useMuscleFatigue(period: MuscleFatiguePeriod = "week") {
           }
 
           for (const s of series) {
+            // Un calentamiento no genera fatiga local reseñable.
+            if (!isWorkingSet(s.tipo_serie)) continue;
             if (!setHasWork(s)) continue;
             const meta = exerciseMeta.get(s.ejercicio_id);
             if (!meta) continue;

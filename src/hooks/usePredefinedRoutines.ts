@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "./useAuth";
+import { copySeriesPlans } from "./useRoutines";
 import { toast } from "@/hooks/use-toast";
 
 export interface PredefinedRoutine {
@@ -142,7 +143,7 @@ export function useCloneRoutine() {
       // Fetch exercises
       const { data: ejercicios, error: eErr } = await supabase
         .from("rutina_ejercicio")
-        .select("*")
+        .select("*, rutina_ejercicio_serie(*)")
         .eq("rutina_id", templateId)
         .order("orden");
       if (eErr) throw eErr;
@@ -160,22 +161,45 @@ export function useCloneRoutine() {
         .single();
       if (insertErr) throw insertErr;
 
-      // Clone exercises
+      // Clone exercises. Se copian TODOS los campos: antes se perdían
+      // registro_series, superset_id y los objetivos de duración/ritmo, así que
+      // una plantilla de cardio o con superseries se clonaba degradada.
       if (ejercicios?.length) {
-        const clonedEjercicios = ejercicios.map((ej) => ({
-          rutina_id: newRutina.id,
-          tipo_ejercicio_id: ej.tipo_ejercicio_id,
-          series_objetivo: ej.series_objetivo,
-          repes_min: ej.repes_min,
-          repes_max: ej.repes_max,
-          rir: ej.rir,
-          orden: ej.orden,
-          descanso: ej.descanso,
-        }));
-        const { error: ejInsertErr } = await supabase
+        const supersetRemap = new Map<string, string>();
+        const clonedEjercicios = ejercicios.map((ej) => {
+          const sid = ej.superset_id?.trim() || null;
+          let newSid: string | null = null;
+          if (sid) {
+            newSid = supersetRemap.get(sid) ?? crypto.randomUUID();
+            supersetRemap.set(sid, newSid);
+          }
+          return {
+            rutina_id: newRutina.id,
+            tipo_ejercicio_id: ej.tipo_ejercicio_id,
+            usuario_ejercicio_id: ej.usuario_ejercicio_id,
+            series_objetivo: ej.series_objetivo,
+            repes_min: ej.repes_min,
+            repes_max: ej.repes_max,
+            rir: ej.rir,
+            orden: ej.orden,
+            descanso: ej.descanso,
+            superset_id: newSid,
+            registro_series: ej.registro_series,
+            duracion_objetivo_seg: ej.duracion_objetivo_seg,
+            ritmo_objetivo_seg_km: ej.ritmo_objetivo_seg_km,
+          };
+        });
+        const { data: insertedRows, error: ejInsertErr } = await supabase
           .from("rutina_ejercicio")
-          .insert(clonedEjercicios);
+          .insert(clonedEjercicios)
+          .select("id, orden");
         if (ejInsertErr) throw ejInsertErr;
+
+        const plansByOrden: Array<Tables<"rutina_ejercicio_serie">[] | null> = [];
+        ejercicios.forEach((ej) => {
+          plansByOrden[ej.orden] = ej.rutina_ejercicio_serie ?? null;
+        });
+        await copySeriesPlans(plansByOrden, insertedRows ?? []);
       }
 
       return newRutina.id;

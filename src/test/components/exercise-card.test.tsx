@@ -149,4 +149,85 @@ describe("ExerciseCard", () => {
       expect(screen.getByDisplayValue("57.5")).toBeInTheDocument();
     });
   });
+
+  describe("objetivos por serie", () => {
+    it("cada serie muestra su propio rango de reps como placeholder", () => {
+      render(
+        <ActiveExerciseHarness
+          initialSets={[
+            { ...emptySet(), objetivo_repes_min: 12, objetivo_repes_max: 12 },
+            { ...emptySet(), objetivo_repes_min: 8, objetivo_repes_max: 10 },
+          ]}
+        />,
+      );
+
+      expect(screen.getByPlaceholderText("12")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("8-10")).toBeInTheDocument();
+    });
+
+    it("marca las series que no son efectivas", () => {
+      render(
+        <ActiveExerciseHarness
+          initialSets={[
+            { ...emptySet(), tipo_serie: "calentamiento" },
+            { ...emptySet(), tipo_serie: "amrap" },
+          ]}
+        />,
+      );
+
+      expect(screen.getByTitle("Calentamiento")).toHaveTextContent("W");
+      expect(screen.getByTitle("AMRAP")).toHaveTextContent("A");
+    });
+
+    it("el peso prescrito gana sobre el del último entreno", async () => {
+      // lastPerf trae 60 y 62.5; la rutina prescribe 40 y 80.
+      render(
+        <ActiveExerciseHarness
+          initialSets={[
+            { ...emptySet(), tipo_serie: "calentamiento", objetivo_peso_kg: 40 },
+            { ...emptySet(), objetivo_peso_kg: 80 },
+          ]}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue("40")).toBeInTheDocument();
+        expect(screen.getByDisplayValue("80")).toBeInTheDocument();
+      });
+      expect(screen.queryByDisplayValue("62.5")).not.toBeInTheDocument();
+    });
+
+    it("la sugerencia de sobrecarga no toca los calentamientos", async () => {
+      mockOverloadSuggestion = {
+        action: "increase_weight",
+        suggestedWeight: 90,
+        suggestedReps: 8,
+        confidence: 0.8,
+        reason: "Sube peso",
+      };
+
+      render(
+        <ActiveExerciseHarness
+          initialSets={[
+            {
+              ...emptySet(),
+              tipo_serie: "calentamiento",
+              peso_kg: 40,
+              repeticiones: 15,
+              seededFromPrevious: true,
+            },
+            { ...emptySet(), peso_kg: 80, repeticiones: 8, seededFromPrevious: true },
+          ]}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue("90")).toBeInTheDocument();
+      });
+      // El calentamiento conserva sus 40 kg.
+      expect(screen.getByDisplayValue("40")).toBeInTheDocument();
+    });
+  });
 });

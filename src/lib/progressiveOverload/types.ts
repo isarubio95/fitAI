@@ -4,6 +4,8 @@ export interface OverloadSetInput {
   peso_kg: number;
   repeticiones: number;
   rir?: number | null;
+  /** Los calentamientos no cuentan para la progresión. Ausente = efectiva. */
+  tipo_serie?: string | null;
 }
 
 export interface OverloadTarget {

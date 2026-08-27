@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { normalizeTipoSerie, type TipoSerie } from "@/lib/setTypes";
 
 export interface LastSetData {
   numero_serie: number;
@@ -9,6 +10,8 @@ export interface LastSetData {
   duracion_seg: number | null;
   ritmo_seg_km: number | null;
   rir: number | null;
+  /** Permite excluir calentamientos de la sobrecarga progresiva. */
+  tipo_serie: TipoSerie;
 }
 
 export interface LastPerformanceData {
@@ -58,7 +61,7 @@ export function useLastPerformance(opts: {
 
       const { data: series, error: sError } = await supabase
         .from("serie")
-        .select("numero_serie, peso_kg, repeticiones, duracion_seg, ritmo_seg_km, rir")
+        .select("numero_serie, peso_kg, repeticiones, duracion_seg, ritmo_seg_km, rir, tipo_serie")
         .eq("ejercicio_id", lastEj.id)
         .order("numero_serie", { ascending: true });
 
@@ -74,6 +77,7 @@ export function useLastPerformance(opts: {
           duracion_seg: s.duracion_seg ?? null,
           ritmo_seg_km: s.ritmo_seg_km ?? null,
           rir: s.rir ?? null,
+          tipo_serie: normalizeTipoSerie(s.tipo_serie),
         })),
       };
     },

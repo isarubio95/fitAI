@@ -1,4 +1,4 @@
-import type { RutinaEjercicioWithDetails } from "@/types/routine";
+import type { RutinaEjercicioSerie, RutinaEjercicioWithDetails } from "@/types/routine";
 import { normalizeRegistroSeries } from "@/types/workout";
 
 /** Segundos de trabajo estimados por serie en modo peso/reps. */
@@ -16,12 +16,15 @@ type DurationInput = Pick<
   | "duracion_objetivo_seg"
   | "superset_id"
   | "orden"
->;
+> & {
+  /** Plan por serie; si existe manda sobre los escalares. */
+  rutina_ejercicio_serie?: RutinaEjercicioSerie[] | null;
+};
 
-function workSecPerSet(ej: DurationInput): number {
+function workSecPerSet(ej: DurationInput, duracionObjetivoSeg?: number | null): number {
   const mode = normalizeRegistroSeries(ej.registro_series);
   if (mode === "duracion" || mode === "duracion_ritmo") {
-    const d = Number(ej.duracion_objetivo_seg ?? 0);
+    const d = Number(duracionObjetivoSeg ?? ej.duracion_objetivo_seg ?? 0);
     return d > 0 ? d : DEFAULT_WORK_SEC_PER_SET;
   }
   return DEFAULT_WORK_SEC_PER_SET;
@@ -30,6 +33,44 @@ function workSecPerSet(ej: DurationInput): number {
 function restSec(ej: DurationInput): number {
   const r = Number(ej.descanso ?? DEFAULT_REST_SEC);
   return Number.isFinite(r) && r >= 0 ? r : DEFAULT_REST_SEC;
+}
+
+function sortedPlan(ej: DurationInput): RutinaEjercicioSerie[] | null {
+  const rows = ej.rutina_ejercicio_serie;
+  if (!rows?.length) return null;
+  return [...rows].sort((a, b) => a.orden - b.orden);
+}
+
+function setCount(ej: DurationInput): number {
+  const plan = sortedPlan(ej);
+  if (plan) return plan.length;
+  return Math.max(1, Number(ej.series_objetivo) || 1);
+}
+
+/**
+ * Tiempo de un ejercicio suelto: trabajo de cada serie + los descansos que hay
+ * ENTRE ellas (n-1). Con plan por serie se usa el descanso propio de cada una,
+ * así un dropset a 0 s o el descanso largo de una serie pesada se reflejan.
+ */
+function singleBlockSec(ej: DurationInput): number {
+  const plan = sortedPlan(ej);
+  if (!plan) {
+    const sets = setCount(ej);
+    return sets * workSecPerSet(ej) + Math.max(0, sets - 1) * restSec(ej);
+  }
+
+  const fallbackRest = restSec(ej);
+  return plan.reduce((sum, s, i) => {
+    const work = workSecPerSet(ej, s.duracion_objetivo_seg);
+    // El descanso de la última serie no cuenta: lo cubre la transición.
+    const rest =
+      i < plan.length - 1
+        ? (s.descanso != null && Number.isFinite(s.descanso) && s.descanso >= 0
+            ? s.descanso
+            : fallbackRest)
+        : 0;
+    return sum + work + rest;
+  }, 0);
 }
 
 /**
@@ -71,15 +112,9 @@ export function estimateRoutineDurationMinutes(
   for (let b = 0; b < blocks.length; b++) {
     const block = blocks[b];
     if (block.kind === "single") {
-      const sets = Math.max(1, Number(block.ej.series_objetivo) || 1);
-      const work = workSecPerSet(block.ej);
-      const rest = restSec(block.ej);
-      totalSec += sets * work + Math.max(0, sets - 1) * rest;
+      totalSec += singleBlockSec(block.ej);
     } else {
-      const rounds = Math.max(
-        1,
-        ...block.items.map((ej) => Math.max(1, Number(ej.series_objetivo) || 1)),
-      );
+      const rounds = Math.max(1, ...block.items.map(setCount));
       const workPerRound = block.items.reduce((sum, ej) => sum + workSecPerSet(ej), 0);
       const restBetween = Math.max(...block.items.map(restSec));
       totalSec += rounds * workPerRound + Math.max(0, rounds - 1) * restBetween;

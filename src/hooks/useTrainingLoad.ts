@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { chunkIds, fetchAllPages } from "@/lib/supabaseBatch";
 import { setHasWork } from "@/types/workout";
+import { isWorkingSet } from "@/lib/setTypes";
 import {
   banisterSeries,
   cardioBlockImpulse,
@@ -138,6 +139,7 @@ export function useTrainingLoad() {
             ritmo_seg_km: number | null;
             rir: number | null;
             completed: boolean | null;
+            tipo_serie: string | null;
           }[] = [];
           for (const chunk of chunkIds(exerciseIds)) {
             const chunkSeries = await fetchAllPages<{
@@ -148,10 +150,11 @@ export function useTrainingLoad() {
               ritmo_seg_km: number | null;
               rir: number | null;
               completed: boolean | null;
+              tipo_serie: string | null;
             }>((from, to) =>
               supabase
                 .from("serie")
-                .select("ejercicio_id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km, rir, completed")
+                .select("ejercicio_id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km, rir, completed, tipo_serie")
                 .in("ejercicio_id", chunk)
                 .range(from, to),
             );
@@ -162,6 +165,13 @@ export function useTrainingLoad() {
             if (!setHasWork(s)) continue;
             const activityId = activityByExerciseId.get(s.ejercicio_id);
             if (!activityId) continue;
+
+            // El calentamiento SÍ ocupa tiempo, así que cuenta para la duración
+            // estimada de la sesión (setCountByActivity → estimatedStrengthDurationSec),
+            // pero no aporta impulso mecánico ni define el RPE de la sesión.
+            setCountByActivity.set(activityId, (setCountByActivity.get(activityId) ?? 0) + 1);
+            if (!isWorkingSet(s.tipo_serie)) continue;
+
             const impulse = strengthSetMechanicalImpulse(
               {
                 repeticiones: s.repeticiones,
@@ -175,7 +185,6 @@ export function useTrainingLoad() {
             const rirs = rirsByActivity.get(activityId) ?? [];
             rirs.push(s.rir);
             rirsByActivity.set(activityId, rirs);
-            setCountByActivity.set(activityId, (setCountByActivity.get(activityId) ?? 0) + 1);
           }
         }
 
