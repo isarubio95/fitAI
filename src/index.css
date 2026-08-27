@@ -306,10 +306,10 @@
     box-shadow: var(--shadow-card);
   }
 
-  /* Chrome flotante (bottom nav, cabecera): translúcido y desenfocado. */
+  /* Chrome flotante (bottom nav, cabecera): casi opaco, con un velo de cristal. */
   .surface-float {
     border: 1px solid hsl(var(--surface-border));
-    background-color: hsl(var(--surface-elevated) / 0.85);
+    background-color: hsl(var(--surface-elevated) / 0.94);
     background-image: linear-gradient(to bottom, hsl(var(--sheen-from)) 0, hsl(var(--sheen-to)) 64px);
     box-shadow: var(--shadow-float);
     backdrop-filter: blur(22px) saturate(1.5);
@@ -323,9 +323,9 @@
     }
   }
 
-  /* Cristal de las barras fijas (cabecera móvil): translúcido, sin borde propio. */
+  /* Cristal de las barras fijas (cabecera móvil): casi opaco, sin borde propio. */
   .surface-glass {
-    background-color: hsl(var(--background) / 0.78);
+    background-color: hsl(var(--background) / 0.94);
     backdrop-filter: blur(22px) saturate(1.5);
     -webkit-backdrop-filter: blur(22px) saturate(1.5);
   }

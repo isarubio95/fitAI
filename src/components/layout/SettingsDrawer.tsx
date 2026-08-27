@@ -23,6 +23,7 @@ import {
 import { Bell, Settings, SunMoon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
+import { PAGE_CARD_STACK_GAP, PAGE_STACK_TOP } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 
 const settingsSectionCardClass = cn(
@@ -72,7 +73,13 @@ export function SettingsDrawer() {
           <DrawerTitle className="text-lg">Ajustes</DrawerTitle>
         </DrawerHeader>
 
-        <div className="mt-3 flex-1 space-y-4 overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+        <div
+          className={cn(
+            "flex flex-1 flex-col overflow-y-auto px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]",
+            PAGE_CARD_STACK_GAP,
+            PAGE_STACK_TOP,
+          )}
+        >
           <div className={settingsSectionCardClass}>
             <p className="flex items-center gap-2 text-sm font-medium">
               <SunMoon className="h-4 w-4 text-muted-foreground" />
