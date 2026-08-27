@@ -118,17 +118,24 @@ function TrainedGroupRow({
         <ChevronDown
           aria-hidden
           className={cn(
-            "mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+            "mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
             expanded && "rotate-180",
           )}
         />
       </button>
-      {expanded && (
-        <div className="space-y-2 border-t border-border/40 px-2.5 pb-3 pt-3">
-          <p className="text-[11px] text-muted-foreground">Series por músculo en el último mes</p>
-          <MuscleSpecificBreakdown group={group} specificVolume={specificVolume} />
+      <div
+        className={cn(
+          "grid transition-all duration-200 ease-out",
+          expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+        )}
+      >
+        <div className="overflow-hidden" inert={!expanded ? true : undefined}>
+          <div className="space-y-2 border-t border-border/40 px-2.5 pb-3 pt-3">
+            <p className="text-[11px] text-muted-foreground">Series por músculo en el último mes</p>
+            <MuscleSpecificBreakdown group={group} specificVolume={specificVolume} />
+          </div>
         </div>
-      )}
+      </div>
     </li>
   );
 }

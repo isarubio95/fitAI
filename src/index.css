@@ -547,7 +547,7 @@
   }
 }
 
-/* Pestañas de sección: la barra activa aparece de izquierda a derecha; al desactivar desaparece al instante. */
+/* Pestañas de sección: la barra activa aparece desde el centro hacia los lados; al desactivar desaparece al instante. */
 @keyframes section-tab-underline-in {
   from {
     transform: scaleX(0);
@@ -588,7 +588,7 @@
   height: 2px;
   background-color: hsl(var(--primary));
   transform: scaleX(1);
-  transform-origin: left center;
+  transform-origin: center;
   pointer-events: none;
 }
 
