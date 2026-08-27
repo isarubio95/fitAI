@@ -11,7 +11,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: cn(
-          "h-11 rounded-xl ring-1 ring-inset px-4 text-sm font-semibold leading-none shadow-[var(--shadow-accent)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(0,0,0,0.2)] active:translate-y-[1px] active:scale-[0.99]",
+          "h-11 rounded-xl ring-1 ring-inset px-4 text-sm font-semibold leading-none shadow-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-none active:translate-y-[1px] active:scale-[0.99]",
           accentSurfaceRing,
           "bg-primary-solid text-primary-foreground [@media(hover:hover)]:hover:bg-primary-solid/90",
         ),
@@ -23,7 +23,7 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-accent/55 dark:hover:bg-accent/30",
         ghost: "hover:bg-accent/55 hover:text-accent-foreground dark:hover:bg-accent/30",
         link: "text-primary underline-offset-4 hover:underline",
-        new: "min-h-9 !h-9 shrink-0 gap-1.5 rounded-full ring-1 ring-inset ring-primary/20 bg-primary-solid px-4 py-0 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-accent)] transition-[colors,box-shadow] hover:ring-primary/48 hover:bg-primary-solid/90 hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&_svg]:size-[1.1rem] dark:ring-primary/30 dark:bg-primary-solid dark:text-primary-foreground dark:hover:ring-primary/40 dark:hover:bg-primary-solid/90 dark:hover:text-primary-foreground",
+        new: "min-h-9 !h-9 shrink-0 gap-1.5 rounded-full ring-1 ring-inset ring-primary/20 bg-primary-solid px-4 py-0 text-sm font-semibold text-primary-foreground shadow-none transition-[colors,box-shadow] hover:ring-primary/48 hover:bg-primary-solid/90 hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&_svg]:size-[1.1rem] dark:ring-primary/30 dark:bg-primary-solid dark:text-primary-foreground dark:hover:ring-primary/40 dark:hover:bg-primary-solid/90 dark:hover:text-primary-foreground",
       },
       size: {
         default: "h-10 px-4 py-2",
