@@ -31,10 +31,13 @@ import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
 import { MUSCLE_GROUP_ICON_SRC, type MainMuscleGroup } from "@/constants/muscleGroups";
 
+/** Handlers inertes para la copia de solo lectura del DragOverlay. */
+const noop = () => {};
+
 const LONG_PRESS_MS = 480;
 const LONG_PRESS_MOVE_PX = 12;
 
-interface SortableRoutineCardProps {
+interface RoutineCardProps {
   routine: RutinaWithDetails;
   isDragMode: boolean;
   isOpen: boolean;
@@ -46,7 +49,15 @@ interface SortableRoutineCardProps {
   onStart: (routine: RutinaWithDetails, origin?: PillCircleOrigin) => void;
 }
 
-export function SortableRoutineCard({
+interface RoutineCardBaseProps extends RoutineCardProps {
+  /** Ref del nodo sortable. Ausente en la copia que pinta el DragOverlay. */
+  cardRef?: (node: HTMLElement | null) => void;
+  style?: React.CSSProperties;
+  dragHandleProps?: Record<string, unknown>;
+  isDragging?: boolean;
+}
+
+function RoutineCardBase({
   routine: r,
   isDragMode,
   isOpen,
@@ -56,7 +67,11 @@ export function SortableRoutineCard({
   onDelete,
   onDuplicate,
   onStart,
-}: SortableRoutineCardProps) {
+  cardRef,
+  style,
+  dragHandleProps,
+  isDragging = false,
+}: RoutineCardBaseProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const suppressClickRef = useRef(false);
   const longPressRef = useRef<{
@@ -102,22 +117,6 @@ export function SortableRoutineCard({
     }
     return { totalSeries: series, repsMinTotal: repsMin, repsMaxTotal: repsMax };
   }, [r.ejercicios]);
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: r.id, disabled: !isDragMode });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : undefined,
-  };
 
   const sortedEjercicios = [...r.ejercicios].sort((a, b) => a.orden - b.orden);
 
@@ -182,11 +181,13 @@ export function SortableRoutineCard({
       }}
     >
       <Card
-        ref={setNodeRef}
+        ref={cardRef}
         style={style}
         className={cn(
           "relative w-full select-none overflow-hidden rounded-xl border border-border/40 bg-card shadow-none [-webkit-touch-callout:none]",
-          isDragging && "shadow-lg ring-2 ring-primary/30",
+          // La tarjeta visible durante el arrastre la pinta el DragOverlay;
+          // esta se queda como hueco atenuado en su sitio.
+          isDragging && "opacity-30",
         )}
         onPointerDown={handleCardPointerDown}
         onPointerMove={handleCardPointerMove}
@@ -226,8 +227,7 @@ export function SortableRoutineCard({
             {isDragMode && (
               <button
                 type="button"
-                {...attributes}
-                {...listeners}
+                {...dragHandleProps}
                 className="cursor-grab active:cursor-grabbing touch-none self-center text-muted-foreground hover:text-foreground p-1 -ml-1"
                 onPointerDown={(e) => e.stopPropagation()}
               >
@@ -422,5 +422,42 @@ export function SortableRoutineCard({
         </CardContent>
       </Card>
     </DropdownMenu>
+  );
+}
+
+export function SortableRoutineCard(props: RoutineCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.routine.id,
+    disabled: !props.isDragMode,
+  });
+
+  return (
+    <RoutineCardBase
+      {...props}
+      cardRef={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      dragHandleProps={{ ...attributes, ...listeners }}
+      isDragging={isDragging}
+    />
+  );
+}
+
+/**
+ * Copia inerte de la tarjeta para el `DragOverlay`: no registra nada en dnd-kit
+ * (registrar el mismo id dos veces rompería la detección de colisiones) y se
+ * muestra siempre plegada.
+ */
+export function RoutineCardDragPreview({ routine }: { routine: RutinaWithDetails }) {
+  return (
+    <RoutineCardBase
+      routine={routine}
+      isDragMode
+      isOpen={false}
+      onOpenChange={noop}
+      onEdit={noop}
+      onDelete={noop}
+      onDuplicate={noop}
+      onStart={noop}
+    />
   );
 }

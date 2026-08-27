@@ -8,6 +8,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -45,7 +46,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RoutineForm } from "@/components/routine/RoutineForm";
-import { SortableRoutineCard } from "@/components/routine/SortableRoutineCard";
+import { SortableRoutineCard, RoutineCardDragPreview } from "@/components/routine/SortableRoutineCard";
+import { SortableDragOverlay } from "@/components/ui/sortable-drag-overlay";
+import { restrictToVerticalAxis } from "@/lib/dndModifiers";
 import { ImportRoutineFromCsvDialog } from "@/components/routine/ImportRoutineFromCsvDialog";
 import { PredefinedRoutinesExplorer } from "@/components/routine/PredefinedRoutinesExplorer";
 import { estimateRoutineDurationMinutes } from "@/lib/estimateRoutineDuration";
@@ -222,7 +225,18 @@ const Routines = () => {
     }
   };
 
+  /** id de la rutina en arrastre; alimenta la tarjeta del DragOverlay. */
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const draggingRoutine = draggingId
+    ? sortedRoutines.find((r) => r.id === draggingId) ?? null
+    : null;
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setDraggingId(String(event.active.id));
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setDraggingId(null);
     const { active, over } = event;
     if (!over || active.id === over.id || !customOrder) return;
     const oldIndex = customOrder.findIndex((r) => r.id === active.id);
@@ -456,7 +470,14 @@ const Routines = () => {
           </Button>
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setDraggingId(null)}
+        >
           <SortableContext items={sortedRoutines.map((r) => r.id)} strategy={verticalListSortingStrategy}>
             <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
               {sortedRoutines.map((r) => (
@@ -475,6 +496,10 @@ const Routines = () => {
               ))}
             </div>
           </SortableContext>
+
+          <SortableDragOverlay>
+            {draggingRoutine ? <RoutineCardDragPreview routine={draggingRoutine} /> : null}
+          </SortableDragOverlay>
         </DndContext>
       )}
 

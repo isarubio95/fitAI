@@ -9,6 +9,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
   type DraggableSyntheticListeners,
 } from "@dnd-kit/core";
 import {
@@ -27,6 +28,8 @@ import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { Card, CardContent } from "@/components/ui/card";
+import { SortableDragOverlay } from "@/components/ui/sortable-drag-overlay";
+import { restrictToVerticalAxis } from "@/lib/dndModifiers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,6 +85,9 @@ interface RoutineFormProps {
   routineId?: string | null;
   prefillSnapshot?: RoutineFormSnapshot | null;
 }
+
+/** Handlers inertes para la copia de solo lectura que muestra el DragOverlay. */
+const noop = () => {};
 
 function generateUUID(): string {
   return crypto.randomUUID();
@@ -190,6 +196,8 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
   // When linking a superset, we store the index + generated superset_id
   const [supersetLink, setSupersetLink] = useState<{ afterIndex: number; supersetId: string } | null>(null);
   const [initialSnapshot, setInitialSnapshot] = useState<RoutineFormEditSnapshot | null>(null);
+  /** Índice del ejercicio en arrastre; alimenta la tarjeta del DragOverlay. */
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
   const isEdit = !!routineId;
 
@@ -328,7 +336,12 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const handleRoutineDragStart = (event: DragStartEvent) => {
+    setDraggingIndex(Number(event.active.id));
+  };
+
   const handleRoutineDragEnd = (event: DragEndEvent) => {
+    setDraggingIndex(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     setEjercicios((prev) => {
@@ -481,6 +494,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
   };
 
   const groups = groupExercises(ejercicios);
+  const draggingExercise = draggingIndex == null ? null : ejercicios[draggingIndex] ?? null;
 
   const handleViewExerciseInfo = useCallback(
     (ej: RoutineExerciseFormData) => {
@@ -564,7 +578,14 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
                     </div>
                   </div>
 
-                  <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleRoutineDragEnd}>
+                  <DndContext
+                    sensors={dndSensors}
+                    collisionDetection={closestCenter}
+                    modifiers={[restrictToVerticalAxis]}
+                    onDragStart={handleRoutineDragStart}
+                    onDragEnd={handleRoutineDragEnd}
+                    onDragCancel={() => setDraggingIndex(null)}
+                  >
                     <SortableContext items={ejercicios.map((_, i) => i)} strategy={verticalListSortingStrategy}>
                       <div className="flex flex-col gap-1 bg-background">
                         {groups.map((group) => {
@@ -616,6 +637,22 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
                         })}
                       </div>
                     </SortableContext>
+
+                    <SortableDragOverlay>
+                      {draggingExercise ? (
+                        <ExerciseRow
+                          exercise={draggingExercise}
+                          index={draggingIndex ?? 0}
+                          onUpdateField={noop}
+                          onUpdatePlan={noop}
+                          onRemove={noop}
+                          onLinkSuperset={noop}
+                          onBreakSuperset={noop}
+                          isInSuperset={!!draggingExercise.superset_id}
+                          onViewExerciseInfo={noop}
+                        />
+                      ) : null}
+                    </SortableDragOverlay>
                   </DndContext>
 
                   <div className="px-6 py-4">
@@ -670,12 +707,17 @@ function SortableExerciseRow({ sortId, ...props }: {
   const shouldAnimate = isSorting && !isDragging;
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    transition: shouldAnimate ? 'transform 150ms ease' : 'none',
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : undefined,
+    transition: shouldAnimate ? 'transform 200ms cubic-bezier(0.2, 0, 0, 1)' : 'none',
   };
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      // La tarjeta visible durante el arrastre la pinta el DragOverlay; esta
+      // fila se queda como hueco atenuado en su sitio.
+      className={cn(isDragging && 'opacity-30')}
+      {...attributes}
+    >
       <ExerciseRow {...props} dragHandleProps={listeners} />
     </div>
   );
