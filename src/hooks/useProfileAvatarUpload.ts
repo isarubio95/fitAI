@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isDirectAvatarUrl } from "@/lib/avatarUrl";
 
 export const PROFILE_AVATAR_BUCKET = "profile-avatars";
 export const PROFILE_AVATAR_MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
@@ -14,7 +15,7 @@ function normalizeAvatarStoragePath(value: string | null | undefined): string | 
   if (!value) return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
-  if (/^(https?:|blob:|data:)/i.test(trimmed)) return null;
+  if (isDirectAvatarUrl(trimmed)) return null;
   if (trimmed.startsWith(`${PROFILE_AVATAR_BUCKET}/`)) {
     return trimmed.slice(PROFILE_AVATAR_BUCKET.length + 1);
   }
