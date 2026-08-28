@@ -1,5 +1,6 @@
 import type { RegistroSeries } from "@/types/workout";
 import { serieCountsAsRecorded } from "@/types/workout";
+import { DEFAULT_TIPO_SERIE, type TipoSerie } from "@/lib/setTypes";
 import type { LyftaExercise, LyftaSet, LyftaWorkout } from "@/lib/lyfta/types";
 import { normalizeExerciseName } from "@/lib/matchExerciseByName";
 
@@ -8,6 +9,7 @@ export type MappedLyftaSet = {
   peso_kg: number;
   duracion_seg: number | null;
   rir: number | null;
+  tipo_serie: TipoSerie;
 };
 
 export type MappedLyftaExercise = {
@@ -84,6 +86,20 @@ export function mapLyftaExerciseType(type: string | null | undefined): RegistroS
   return "peso_reps";
 }
 
+/**
+ * `set_type_id` 0 = normal (docs). El ejemplo de la API contrapone normal vs warmup,
+ * así que 1 = calentamiento. 2/3 siguen el enum clásico Strong (dropset / failure→AMRAP)
+ * y no cambian volumen: `isWorkingSet` los cuenta. Cualquier otro id (Right, Left,
+ * Negative, Partial, …) queda efectiva para no recortar métricas.
+ */
+export function mapLyftaSetType(raw: string | number | null | undefined): TipoSerie {
+  const n = parseNumber(raw);
+  if (n === 1) return "calentamiento";
+  if (n === 2) return "dropset";
+  if (n === 3) return "amrap";
+  return DEFAULT_TIPO_SERIE;
+}
+
 function mapSet(raw: LyftaSet, mode: RegistroSeries): MappedLyftaSet | null {
   const reps = Math.max(0, Math.round(parseNumber(raw.reps) ?? 0));
   const weight = Math.max(0, parseNumber(raw.weight) ?? 0);
@@ -94,6 +110,7 @@ function mapSet(raw: LyftaSet, mode: RegistroSeries): MappedLyftaSet | null {
     peso_kg: weight,
     duracion_seg: durationSec && durationSec > 0 ? durationSec : null,
     rir: parseRir(raw.rir),
+    tipo_serie: mapLyftaSetType(raw.set_type_id),
   };
   if (
     !serieCountsAsRecorded({
