@@ -106,6 +106,7 @@ describe("workoutToRoutine", () => {
     ]);
 
     expect(snapshot).toBeNull();
+    expect(workoutSnapshotToRoutineFormSnapshot(snapshot)).toBeNull();
   });
 
   it("genera snapshot listo para el formulario de rutina", () => {

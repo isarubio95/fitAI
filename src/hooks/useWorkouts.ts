@@ -12,6 +12,7 @@ import {
   type UsuarioEjercicio,
   setHasWork,
 } from "@/types/workout";
+import { isWorkingSet } from "@/lib/setTypes";
 import { useRemoveWorkoutXP } from "@/hooks/useGamification";
 import { useToast } from "@/hooks/use-toast";
 
@@ -260,14 +261,19 @@ export function useDeleteWorkout() {
         .eq("actividad_id", workoutId);
       const oldIds = oldEjercicios?.length ? oldEjercicios.map((e) => e.id) : [];
 
-      // Solo restar XP si el entreno estaba completado (la XP se otorga al finalizar)
-      if (actividad.fecha_fin && oldIds.length) {
-        const { data: series } = await supabase
-          .from("serie")
-          .select("id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km")
-          .in("ejercicio_id", oldIds);
-        const seriesCompletadas = (series ?? []).filter((s) => setHasWork(s)).length;
-        if (seriesCompletadas > 0) await removeXP(workoutId, seriesCompletadas);
+      // Solo restar XP si el entreno estaba completado (la XP se otorga al finalizar).
+      if (actividad.fecha_fin) {
+        let seriesCompletadas = 0;
+        if (oldIds.length) {
+          const { data: series } = await supabase
+            .from("serie")
+            .select("id, repeticiones, peso_kg, duracion_seg, ritmo_seg_km, tipo_serie")
+            .in("ejercicio_id", oldIds);
+          seriesCompletadas = (series ?? []).filter(
+            (s) => isWorkingSet(s.tipo_serie) && setHasWork(s),
+          ).length;
+        }
+        await removeXP(workoutId, seriesCompletadas);
       }
       if (oldIds.length) {
         await supabase.from("serie").delete().in("ejercicio_id", oldIds);

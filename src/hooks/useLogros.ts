@@ -243,8 +243,8 @@ export async function fetchLogroStats(userId: string): Promise<LogroStats> {
     if (sabado && domingo) tieneFindeCompleto = true;
   }
 
-  // Racha semanal: mismo cálculo que la gamificación (solo entrenos de fuerza)
-  const { maxima: rachaMaxima } = computeStreakStats(strengthDays);
+  // Racha semanal: gym y cardio en el mismo calendario.
+  const { maxima: rachaMaxima } = computeStreakStats(allDays);
 
   return {
     entrenamientosCompletados: actividades.length,

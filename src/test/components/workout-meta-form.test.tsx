@@ -30,6 +30,8 @@ const baseProps = {
   onGimnasioChange: vi.fn(),
   rpe: null,
   onRpeChange: vi.fn(),
+  comentarios: "",
+  onComentariosChange: vi.fn(),
 };
 
 describe("WorkoutMetaForm", () => {
@@ -69,5 +71,22 @@ describe("WorkoutMetaForm", () => {
     );
 
     expect(screen.getByText("¿Qué tan duro se sintió?")).toBeInTheDocument();
+    expect(screen.getByLabelText("Comentarios")).toBeInTheDocument();
+  });
+
+  it("pide comentarios, RPE y comunidad en alta manual", () => {
+    render(
+      <WorkoutMetaForm
+        {...baseProps}
+        hideWorkoutDate={false}
+        isActiveWorkout={false}
+        isEditingCompletedWorkout={false}
+      />,
+    );
+
+    expect(screen.getByLabelText("Comentarios")).toBeInTheDocument();
+    expect(screen.getByText("¿Qué tan duro se sintió?")).toBeInTheDocument();
+    expect(screen.getByText("Publicar en comunidad")).toBeInTheDocument();
+    expect(screen.getByLabelText("Gimnasio")).toBeInTheDocument();
   });
 });
