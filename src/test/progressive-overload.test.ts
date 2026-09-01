@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyOverloadToSet,
   computeReadiness,
   roundToWeightIncrement,
   shouldDeload,
@@ -114,6 +115,59 @@ describe("suggestProgressiveOverload", () => {
         target: baseTarget,
       }),
     ).toBeNull();
+  });
+});
+
+describe("applyOverloadToSet", () => {
+  const increaseReps = {
+    action: "increase_reps" as const,
+    suggestedWeight: 10,
+    suggestedReps: 12,
+    confidence: 0.8,
+    reason: "Añade 1 rep (11 → 12) antes de subir peso",
+  };
+
+  it("al subir reps suma 1 por serie y conserva el peso de cada una", () => {
+    expect(applyOverloadToSet({ peso_kg: 10, repeticiones: 12 }, increaseReps, 10)).toEqual({
+      peso_kg: 10,
+      repeticiones: 12,
+    });
+    expect(applyOverloadToSet({ peso_kg: 10, repeticiones: 10 }, increaseReps, 10)).toEqual({
+      peso_kg: 10,
+      repeticiones: 11,
+    });
+    expect(applyOverloadToSet({ peso_kg: 9, repeticiones: 9 }, increaseReps, 10)).toEqual({
+      peso_kg: 9,
+      repeticiones: 10,
+    });
+  });
+
+  it("respeta el tope de reps prescrito por serie", () => {
+    expect(
+      applyOverloadToSet(
+        { peso_kg: 10, repeticiones: 10, objetivo_repes_max: 10 },
+        increaseReps,
+        10,
+      ),
+    ).toEqual({ peso_kg: 10, repeticiones: 10 });
+  });
+
+  it("al subir peso solo cambia las series cercanas a la carga máxima", () => {
+    const increaseWeight = {
+      action: "increase_weight" as const,
+      suggestedWeight: 12.5,
+      suggestedReps: 8,
+      confidence: 0.8,
+      reason: "Sube peso",
+    };
+    expect(applyOverloadToSet({ peso_kg: 10, repeticiones: 12 }, increaseWeight, 10)).toEqual({
+      peso_kg: 12.5,
+      repeticiones: 8,
+    });
+    expect(applyOverloadToSet({ peso_kg: 9, repeticiones: 9 }, increaseWeight, 10)).toEqual({
+      peso_kg: 9,
+      repeticiones: 10,
+    });
   });
 });
 

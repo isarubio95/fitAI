@@ -174,6 +174,35 @@ describe("ExerciseCard", () => {
     expect(screen.getByDisplayValue("57.5")).not.toHaveClass("set-value-flash");
   });
 
+  it("al aplicar subir reps suma 1 por serie y no aplana la pirámide", async () => {
+    mockOverloadSuggestion = {
+      action: "increase_reps",
+      suggestedWeight: 10,
+      suggestedReps: 12,
+      confidence: 0.8,
+      reason: "Añade 1 rep (11 -> 12) antes de subir peso",
+    };
+
+    render(
+      <ActiveExerciseHarness
+        initialSets={[
+          { ...emptySet(), peso_kg: 10, repeticiones: 12, seededFromPrevious: true },
+          { ...emptySet(), peso_kg: 10, repeticiones: 10, seededFromPrevious: true },
+          { ...emptySet(), peso_kg: 9, repeticiones: 9, seededFromPrevious: true },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+
+    await waitFor(() => {
+      const reps = [...document.querySelectorAll<HTMLInputElement>('[data-set-field="repeticiones"]')];
+      const weights = [...document.querySelectorAll<HTMLInputElement>('[data-set-field="peso_kg"]')];
+      expect(reps.map((el) => el.value)).toEqual(["12", "11", "10"]);
+      expect(weights.map((el) => el.value)).toEqual(["10", "10", "9"]);
+    });
+  });
+
   describe("objetivos por serie", () => {
     it("cada serie muestra su propio rango de reps como placeholder", () => {
       render(

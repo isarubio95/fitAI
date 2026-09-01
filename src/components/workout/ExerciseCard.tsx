@@ -30,6 +30,7 @@ import {
   setHasWork,
 } from "@/types/workout";
 import { formatRepTarget } from "@/lib/seriesPlan";
+import { applyOverloadToSet, overloadPatchChangesSet } from "@/lib/progressiveOverload";
 import { isWorkingSet, tipoSerieLabel, tipoSerieShort } from "@/lib/setTypes";
 import { ActiveWorkoutCheckbox } from "./ActiveWorkoutCheckbox";
 import { SwipeToDeleteRow } from "./SwipeToDeleteRow";
@@ -170,14 +171,18 @@ export function ExerciseCard({
       from: number;
       to: number;
     }> = [];
+    const topWeight = Math.max(
+      0,
+      ...exercise.sets
+        .filter((s) => isWorkingSet(s.tipo_serie))
+        .map((s) => Number(s.peso_kg) || 0),
+    );
     exercise.sets.forEach((s, si) => {
       // La sugerencia es para las series efectivas; un calentamiento no sube.
       if (!isWorkingSet(s.tipo_serie)) return;
       if (!setCanApplyOverloadPatch(s, mode)) return;
-      const keepWeightOnRepProgress =
-        overloadSuggestion.action === "increase_reps" && Number(s.peso_kg) > 0;
-      const nextWeight = keepWeightOnRepProgress ? s.peso_kg : overloadSuggestion.suggestedWeight;
-      const nextReps = overloadSuggestion.suggestedReps;
+      const patch = applyOverloadToSet(s, overloadSuggestion, topWeight);
+      if (!overloadPatchChangesSet(s, patch)) return;
       snapshot.push({
         setIndex: si,
         peso_kg: s.peso_kg,
@@ -185,13 +190,10 @@ export function ExerciseCard({
         seededFromPrevious: s.seededFromPrevious,
       });
       flashes.push(
-        { setIndex: si, field: "peso_kg", from: s.peso_kg, to: nextWeight },
-        { setIndex: si, field: "repeticiones", from: s.repeticiones, to: nextReps },
+        { setIndex: si, field: "peso_kg", from: s.peso_kg, to: patch.peso_kg },
+        { setIndex: si, field: "repeticiones", from: s.repeticiones, to: patch.repeticiones },
       );
-      onApplySuggestionToSet(si, {
-        peso_kg: nextWeight,
-        repeticiones: nextReps,
-      });
+      onApplySuggestionToSet(si, patch);
     });
     if (snapshot.length === 0) return;
     overloadSnapshotRef.current = snapshot;
