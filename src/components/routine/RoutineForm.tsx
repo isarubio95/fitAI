@@ -27,6 +27,7 @@ import { useRoutineById } from "@/hooks/useRoutines";
 import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
+import { vaulSafeDragHandleProps } from "@/lib/vaulSafeDragHandle";
 import { Card, CardContent } from "@/components/ui/card";
 import { SortableDragOverlay } from "@/components/ui/sortable-drag-overlay";
 import { restrictToVerticalAxis } from "@/lib/dndModifiers";
@@ -763,7 +764,14 @@ function ExerciseRow({
     <div className={wrapperClass}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap min-w-0">
-          <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing shrink-0">
+          <div
+            {...vaulSafeDragHandleProps(dragHandleProps)}
+            aria-label={dragHandleProps ? "Reordenar ejercicio" : undefined}
+            className={cn(
+              "-ml-2 flex h-11 w-11 shrink-0 items-center justify-center",
+              dragHandleProps && "cursor-grab touch-none active:cursor-grabbing",
+            )}
+          >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
           <h3 className="font-semibold text-sm truncate">{ej.nombre}</h3>

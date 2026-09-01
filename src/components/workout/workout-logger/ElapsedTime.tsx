@@ -49,7 +49,7 @@ export function ElapsedTime({
   return (
     <span
       className={cn(
-        "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-mono tabular-nums transition-colors",
+        "inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-mono leading-none tabular-nums transition-colors",
         clockOn && paused
           ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
           : "border-border/60 bg-muted/60 text-foreground",

@@ -41,6 +41,7 @@ import { WorkoutEmptyExerciseState } from "./workout-logger/WorkoutEmptyExercise
 import { SWIPE_DISMISS_WINDOW_MS } from "./workout-logger/constants";
 import { ElapsedTime } from "./workout-logger/ElapsedTime";
 import { RestProgressBar } from "./workout-logger/RestProgressBar";
+import { WorkoutSessionOptions } from "./workout-logger/WorkoutSessionOptions";
 import { WorkoutFloatingActionBar } from "./workout-logger/WorkoutFloatingActionBar";
 import { WorkoutDeleteDialog } from "./workout-logger/WorkoutDeleteDialog";
 import { WorkoutMetaForm } from "./workout-logger/WorkoutMetaForm";
@@ -1726,6 +1727,9 @@ export function WorkoutLogger() {
         onOpenChange={handleDrawerOpenChange}
         onDrag={handleDrawerDrag}
         shouldScaleBackground={false}
+        // Solo el asidero mueve el sheet: reordenar, scroll y swipe-to-delete
+        // son gestos verticales/horizontales que Vaul interpretaría como cierre.
+        handleOnly
       >
         <DrawerContent
           className="mt-0 h-lvh max-h-lvh min-h-0 overflow-hidden rounded-none p-0"
@@ -1767,12 +1771,12 @@ export function WorkoutLogger() {
             <>
             <DrawerHeader
               data-active-workout-sheet-header
-              className="relative z-10 shrink-0 border-b border-border bg-card px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left"
+              className="relative z-10 shrink-0 overflow-visible border-b border-border bg-card px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left"
             >
               {isActiveWorkout ? (
                 <div className="flex flex-col">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
+                  <div className="relative flex items-center justify-between gap-3">
+                    <div className="flex h-8 min-w-0 flex-1 items-center">
                       {startedFromRoutine ? (
                         <>
                           <DrawerTitle className="sr-only">
@@ -1787,13 +1791,12 @@ export function WorkoutLogger() {
                             onChange={(e) => setTitulo(e.target.value)}
                             placeholder="Ej: Día de Pierna"
                             disabled={creatingActive || preparingLiveSession}
-                            className="w-full min-w-0 truncate bg-transparent text-lg font-semibold leading-none tracking-tight outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            className="h-8 w-full min-w-0 truncate bg-transparent text-lg font-semibold leading-8 tracking-tight outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           />
-                          <DrawerDescription>{activeWorkoutHeading}</DrawerDescription>
                         </>
                       ) : (
                         <>
-                          <DrawerTitle className="truncate text-lg font-semibold leading-none tracking-tight">
+                          <DrawerTitle className="h-8 min-w-0 truncate text-lg font-semibold leading-8 tracking-tight">
                             {activeWorkoutHeading}
                           </DrawerTitle>
                           <DrawerDescription className="sr-only">
@@ -1802,7 +1805,8 @@ export function WorkoutLogger() {
                         </>
                       )}
                     </div>
-                    <div className="shrink-0">
+                    <div className="flex h-8 shrink-0 items-center gap-1.5">
+                      <WorkoutSessionOptions />
                       <ElapsedTime
                         since={sessionClockStartedAt}
                         running={!!sessionClockStartedAt}
@@ -1812,6 +1816,9 @@ export function WorkoutLogger() {
                       />
                     </div>
                   </div>
+                  {startedFromRoutine ? (
+                    <DrawerDescription>{activeWorkoutHeading}</DrawerDescription>
+                  ) : null}
                   <RestProgressBar
                     open={!!restTimer.activeKey}
                     remaining={restTimer.remaining}

@@ -2,6 +2,7 @@ import { useContext, useEffect, useLayoutEffect, useRef, useState, type CSSPrope
 import { DrawerInContentContext } from "@/components/ui/drawer";
 import { useLastPerformance, type LastSetData } from "@/hooks/useLastPerformance";
 import { useProgressiveOverload } from "@/hooks/useProgressiveOverload";
+import { useProgressiveOverloadPreferences } from "@/hooks/useProgressiveOverloadPreferences";
 import { OverloadSuggestionBanner } from "./OverloadSuggestion";
 import { formatMSS } from "@/hooks/useRestTimer";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ import { isWorkingSet, tipoSerieLabel, tipoSerieShort } from "@/lib/setTypes";
 import { ActiveWorkoutCheckbox } from "./ActiveWorkoutCheckbox";
 import { SwipeToDeleteRow } from "./SwipeToDeleteRow";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
+import { vaulSafeDragHandleProps } from "@/lib/vaulSafeDragHandle";
 
 function formatPreviousSet(
   mode: ReturnType<typeof normalizeRegistroSeries>,
@@ -94,7 +96,10 @@ export function ExerciseCard({
     tipo_ejercicio_id: exercise.tipo_ejercicio_id,
     usuario_ejercicio_id: exercise.usuario_ejercicio_id,
   });
-  const overloadSuggestion = useProgressiveOverload(exercise);
+  const { enabled: overloadSuggestionsEnabled } = useProgressiveOverloadPreferences();
+  const overloadSuggestion = useProgressiveOverload(exercise, {
+    enabled: overloadSuggestionsEnabled,
+  });
   const mode = normalizeRegistroSeries(exercise.registro_series);
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
   const [overloadApplied, setOverloadApplied] = useState(false);
@@ -318,7 +323,14 @@ export function ExerciseCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex min-w-0 items-center gap-2">
-            <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing shrink-0">
+            <div
+              {...vaulSafeDragHandleProps(dragHandleProps)}
+              aria-label={dragHandleProps ? "Reordenar ejercicio" : undefined}
+              className={cn(
+                "-ml-2 flex h-11 w-11 shrink-0 items-center justify-center",
+                dragHandleProps && "cursor-grab touch-none active:cursor-grabbing",
+              )}
+            >
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
             <h3 className="truncate text-sm font-semibold">{exercise.nombre}</h3>
@@ -365,7 +377,7 @@ export function ExerciseCard({
         </div>
       </div>
 
-      {mode === "peso_reps" && overloadSuggestion ? (
+      {mode === "peso_reps" && overloadSuggestionsEnabled && overloadSuggestion ? (
         <OverloadSuggestionBanner
           suggestion={overloadSuggestion}
           canApply={!!onApplySuggestionToSet}

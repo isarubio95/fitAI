@@ -14,17 +14,20 @@ type ExerciseOverloadSource = Pick<
 
 export function useProgressiveOverload(
   exercise: ExerciseOverloadSource,
+  options?: { enabled?: boolean },
 ): OverloadSuggestion | null {
+  const enabled = options?.enabled ?? true;
   const mode = normalizeRegistroSeries(exercise.registro_series);
+  const queriesEnabled = enabled && mode === "peso_reps";
   const { data: lastPerf } = useLastPerformance({
     tipo_ejercicio_id: exercise.tipo_ejercicio_id,
     usuario_ejercicio_id: exercise.usuario_ejercicio_id,
   });
-  const { data: fatigue } = useMuscleFatigue("week");
-  const { data: trainingLoad } = useTrainingLoad();
+  const { data: fatigue } = useMuscleFatigue("week", { enabled: queriesEnabled });
+  const { data: trainingLoad } = useTrainingLoad({ enabled: queriesEnabled });
 
   return useMemo(() => {
-    if (mode !== "peso_reps" || !lastPerf?.sets.length) return null;
+    if (!enabled || mode !== "peso_reps" || !lastPerf?.sets.length) return null;
 
     const parsed = parseRepTarget(exercise.repRange);
     // Rango abierto (AMRAP, "8+"): sin techo se usa el mínimo como objetivo.
@@ -53,6 +56,7 @@ export function useProgressiveOverload(
       trainingForm: trainingLoad?.totals.form ?? 0,
     });
   }, [
+    enabled,
     mode,
     lastPerf,
     exercise.repRange,
