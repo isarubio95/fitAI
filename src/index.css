@@ -436,6 +436,30 @@
   }
 }
 
+/*
+ * Destello al aplicar/deshacer la sugerencia de sobrecarga:
+ * el fondo del input sube un poco de luminosidad y vuelve.
+ */
+@keyframes set-value-flash {
+  0%,
+  100% {
+    background-color: hsl(var(--background));
+  }
+  32% {
+    background-color: color-mix(in srgb, hsl(var(--background)) 88%, white 12%);
+  }
+}
+
+.set-value-flash {
+  animation: set-value-flash 0.68s cubic-bezier(0.33, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .set-value-flash {
+    animation: none;
+  }
+}
+
 /* En móvil ocultamos barras de scroll para una experiencia más nativa (desktop sin cambios) */
 @media (max-width: 767px) {
   html,

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import {
   formatCommittedNumber,
   parseDecimalInput,
@@ -16,6 +17,8 @@ type SetValueInputProps = {
   min?: number;
   placeholder?: string;
   className?: string;
+  /** Cambia para repetir el destello de fondo (aplicar / deshacer sugerencia). */
+  flashToken?: number;
 };
 
 function committedDisplay(value: number | null | undefined, emptyAs: "zero" | "null"): string {
@@ -34,6 +37,7 @@ export function SetValueInput({
   min = 0,
   placeholder,
   className,
+  flashToken,
 }: SetValueInputProps) {
   const [draft, setDraft] = useState<string | null>(null);
   const display = draft ?? committedDisplay(value, emptyAs);
@@ -50,6 +54,7 @@ export function SetValueInput({
 
   return (
     <Input
+      key={flashToken ?? "idle"}
       type="text"
       inputMode={allowDecimal ? "decimal" : "numeric"}
       pattern={allowDecimal ? undefined : "[0-9]*"}
@@ -58,7 +63,7 @@ export function SetValueInput({
       data-set-field={field}
       value={display}
       placeholder={placeholder}
-      className={className}
+      className={cn(className, flashToken ? "set-value-flash" : undefined)}
       onChange={(e) => {
         const next = sanitizeDecimalDraft(e.target.value, allowDecimal);
         setDraft(next);

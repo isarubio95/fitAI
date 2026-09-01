@@ -37,7 +37,12 @@ export type WorkoutExerciseListProps = {
     value: number | null,
   ) => void;
   onSeedSetFromPrevious: (exerciseIndex: number, setIndex: number, patch: Partial<SetFormData>) => void;
-  onApplySuggestionToSet: (exerciseIndex: number, setIndex: number, patch: Partial<SetFormData>) => void;
+  onApplySuggestionToSet: (
+    exerciseIndex: number,
+    setIndex: number,
+    patch: Partial<SetFormData>,
+    options?: { revert?: boolean },
+  ) => void;
   onAutoSaveSet: (exerciseIndex: number, setIndex: number) => void;
   onSetCompleted: (exerciseIndex: number, setIndex: number, completed: boolean) => void;
   onViewExerciseDetails: (exercise: ExerciseFormData) => void;
@@ -133,7 +138,8 @@ export function WorkoutExerciseList({
                                 }
                                 onApplySuggestionToSet={
                                   isActiveWorkout
-                                    ? (si, patch) => onApplySuggestionToSet(ei, si, patch)
+                                    ? (si, patch, options) =>
+                                        onApplySuggestionToSet(ei, si, patch, options)
                                     : undefined
                                 }
                                 onAutoSaveSet={(si) => onAutoSaveSet(ei, si)}
@@ -167,7 +173,8 @@ export function WorkoutExerciseList({
                         }
                         onApplySuggestionToSet={
                           isActiveWorkout
-                            ? (si, patch) => onApplySuggestionToSet(ei, si, patch)
+                            ? (si, patch, options) =>
+                                onApplySuggestionToSet(ei, si, patch, options)
                             : undefined
                         }
                         onAutoSaveSet={(si) => onAutoSaveSet(ei, si)}

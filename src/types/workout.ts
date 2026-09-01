@@ -203,7 +203,7 @@ export interface SetFormData {
   descanso?: number; // rest time in seconds
   id?: string;
   completed?: boolean;
-  /** Valores copiados del último entreno; no cuentan como serie registrada hasta editar o marcar hecha. */
+  /** Valores del último entreno o de una sugerencia; no cuentan como serie hecha hasta editar o marcar. */
   seededFromPrevious?: boolean;
   /** Calentamiento / efectiva / dropset / amrap. Solo la efectiva es el caso por defecto. */
   tipo_serie?: TipoSerie;

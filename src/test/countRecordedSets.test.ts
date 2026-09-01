@@ -47,4 +47,14 @@ describe("countRecordedSets", () => {
       ]),
     ).toBe(1);
   });
+
+  it("ignora sugerencias de sobrecarga aún no confirmadas", () => {
+    expect(
+      countRecordedSets([
+        {
+          sets: [{ repeticiones: 8, peso_kg: 18.75, seededFromPrevious: true }],
+        },
+      ]),
+    ).toBe(0);
+  });
 });

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
+import { countRecordedSets } from "@/types/workout";
 import type { OverloadSuggestion } from "@/lib/progressiveOverload";
 
 beforeAll(() => {
@@ -54,7 +55,9 @@ function ActiveExerciseHarness({
   });
 
   return (
-    <ExerciseCard
+    <div>
+      <span data-testid="recorded-sets">{countRecordedSets([exercise])}</span>
+      <ExerciseCard
       exercise={exercise}
       exerciseIndex={0}
       onRemoveExercise={() => undefined}
@@ -69,16 +72,23 @@ function ActiveExerciseHarness({
           ),
         }));
       }}
-      onApplySuggestionToSet={(si, patch) => {
+      onApplySuggestionToSet={(si, patch, options) => {
         setExercise((ex) => ({
           ...ex,
           sets: ex.sets.map((s, i) =>
-            i === si ? { ...s, ...patch, seededFromPrevious: false } : s,
+            i === si
+              ? {
+                  ...s,
+                  ...patch,
+                  seededFromPrevious: options?.revert ? Boolean(patch.seededFromPrevious) : true,
+                }
+              : s,
           ),
         }));
       }}
       onSetCompleted={() => undefined}
     />
+    </div>
   );
 }
 
@@ -118,7 +128,7 @@ describe("ExerciseCard", () => {
     expect(screen.queryByDisplayValue("60")).not.toBeInTheDocument();
   });
 
-  it("aplica la sugerencia de sobrecarga en series precargadas", async () => {
+  it("aplica la sugerencia de sobrecarga y permite deshacerla", async () => {
     mockOverloadSuggestion = {
       action: "increase_reps",
       suggestedWeight: 57.5,
@@ -147,7 +157,21 @@ describe("ExerciseCard", () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue("8")).toBeInTheDocument();
       expect(screen.getByDisplayValue("57.5")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Deshacer" })).toBeInTheDocument();
     });
+    expect(screen.getByDisplayValue("8")).toHaveClass("set-value-flash");
+    expect(screen.getByDisplayValue("57.5")).not.toHaveClass("set-value-flash");
+    expect(screen.getByTestId("recorded-sets")).toHaveTextContent("0");
+
+    fireEvent.click(screen.getByRole("button", { name: "Deshacer" }));
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("7")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("57.5")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Aplicar" })).toBeInTheDocument();
+    });
+    expect(screen.getByDisplayValue("7")).toHaveClass("set-value-flash");
+    expect(screen.getByDisplayValue("57.5")).not.toHaveClass("set-value-flash");
   });
 
   describe("objetivos por serie", () => {

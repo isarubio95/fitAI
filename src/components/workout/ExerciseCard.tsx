@@ -63,7 +63,11 @@ interface ExerciseCardProps {
   onRemoveSet: (setIndex: number) => void;
   onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number | null) => void;
   onSeedSetFromPrevious?: (setIndex: number, patch: Partial<SetFormData>) => void;
-  onApplySuggestionToSet?: (setIndex: number, patch: Partial<SetFormData>) => void;
+  onApplySuggestionToSet?: (
+    setIndex: number,
+    patch: Partial<SetFormData>,
+    options?: { revert?: boolean },
+  ) => void;
   onAutoSaveSet?: (setIndex: number) => void;
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
   dragHandleProps?: DraggableSyntheticListeners & Partial<DraggableAttributes>;
@@ -92,6 +96,17 @@ export function ExerciseCard({
   const overloadSuggestion = useProgressiveOverload(exercise);
   const mode = normalizeRegistroSeries(exercise.registro_series);
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
+  const [overloadApplied, setOverloadApplied] = useState(false);
+  const [overloadFlash, setOverloadFlash] = useState<Record<string, number>>({});
+  const overloadSnapshotRef = useRef<
+    Array<{
+      setIndex: number;
+      peso_kg: number;
+      repeticiones: number;
+      seededFromPrevious?: boolean;
+    }>
+  >([]);
+  const overloadFlashSeq = useRef(0);
   const setsTableRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -133,19 +148,85 @@ export function ExerciseCard({
     });
   }, [exercise.sets, lastPerf, mode, onSeedSetFromPrevious]);
 
+  const flashOverloadFields = (
+    entries: Array<{ setIndex: number; field: "repeticiones" | "peso_kg"; from: number; to: number }>,
+  ) => {
+    const patch: Record<string, number> = {};
+    for (const { setIndex, field, from, to } of entries) {
+      if (Number(from) === Number(to)) continue;
+      overloadFlashSeq.current += 1;
+      patch[`${setIndex}:${field}`] = overloadFlashSeq.current;
+    }
+    if (Object.keys(patch).length === 0) return;
+    setOverloadFlash((prev) => ({ ...prev, ...patch }));
+  };
+
   const handleApplyOverload = () => {
     if (!overloadSuggestion || !onApplySuggestionToSet) return;
+    const snapshot: typeof overloadSnapshotRef.current = [];
+    const flashes: Array<{
+      setIndex: number;
+      field: "repeticiones" | "peso_kg";
+      from: number;
+      to: number;
+    }> = [];
     exercise.sets.forEach((s, si) => {
       // La sugerencia es para las series efectivas; un calentamiento no sube.
       if (!isWorkingSet(s.tipo_serie)) return;
       if (!setCanApplyOverloadPatch(s, mode)) return;
       const keepWeightOnRepProgress =
         overloadSuggestion.action === "increase_reps" && Number(s.peso_kg) > 0;
+      const nextWeight = keepWeightOnRepProgress ? s.peso_kg : overloadSuggestion.suggestedWeight;
+      const nextReps = overloadSuggestion.suggestedReps;
+      snapshot.push({
+        setIndex: si,
+        peso_kg: s.peso_kg,
+        repeticiones: s.repeticiones,
+        seededFromPrevious: s.seededFromPrevious,
+      });
+      flashes.push(
+        { setIndex: si, field: "peso_kg", from: s.peso_kg, to: nextWeight },
+        { setIndex: si, field: "repeticiones", from: s.repeticiones, to: nextReps },
+      );
       onApplySuggestionToSet(si, {
-        peso_kg: keepWeightOnRepProgress ? s.peso_kg : overloadSuggestion.suggestedWeight,
-        repeticiones: overloadSuggestion.suggestedReps,
+        peso_kg: nextWeight,
+        repeticiones: nextReps,
       });
     });
+    if (snapshot.length === 0) return;
+    overloadSnapshotRef.current = snapshot;
+    setOverloadApplied(true);
+    flashOverloadFields(flashes);
+  };
+
+  const handleUndoOverload = () => {
+    if (!onApplySuggestionToSet || overloadSnapshotRef.current.length === 0) return;
+    const flashes: Array<{
+      setIndex: number;
+      field: "repeticiones" | "peso_kg";
+      from: number;
+      to: number;
+    }> = [];
+    overloadSnapshotRef.current.forEach((prev) => {
+      if (prev.setIndex >= exercise.sets.length) return;
+      const current = exercise.sets[prev.setIndex];
+      flashes.push(
+        { setIndex: prev.setIndex, field: "peso_kg", from: current.peso_kg, to: prev.peso_kg },
+        { setIndex: prev.setIndex, field: "repeticiones", from: current.repeticiones, to: prev.repeticiones },
+      );
+      onApplySuggestionToSet(
+        prev.setIndex,
+        {
+          peso_kg: prev.peso_kg,
+          repeticiones: prev.repeticiones,
+          seededFromPrevious: prev.seededFromPrevious,
+        },
+        { revert: true },
+      );
+    });
+    overloadSnapshotRef.current = [];
+    setOverloadApplied(false);
+    flashOverloadFields(flashes);
   };
 
   const restSeconds = exercise.descanso ?? 120;
@@ -286,7 +367,9 @@ export function ExerciseCard({
         <OverloadSuggestionBanner
           suggestion={overloadSuggestion}
           canApply={!!onApplySuggestionToSet}
+          applied={overloadApplied}
           onApply={handleApplyOverload}
+          onUndo={handleUndoOverload}
         />
       ) : null}
 
@@ -321,6 +404,7 @@ export function ExerciseCard({
                   onCommit={() => onAutoSaveSet?.(si)}
                   className="h-11 text-center"
                   placeholder={repsPlaceholder(s)}
+                  flashToken={overloadFlash[`${si}:repeticiones`]}
                 />
                 <SetValueInput
                   field="peso_kg"
@@ -330,6 +414,7 @@ export function ExerciseCard({
                   onCommit={() => onAutoSaveSet?.(si)}
                   className="h-11 text-center"
                   placeholder={s.objetivo_peso_kg != null ? String(s.objetivo_peso_kg) : "0"}
+                  flashToken={overloadFlash[`${si}:peso_kg`]}
                 />
                 {setDoneControl(s, si)}
               </div>

@@ -967,7 +967,12 @@ export function WorkoutLogger() {
   );
 
   const applySuggestionToSet = useCallback(
-    (exerciseIndex: number, setIndex: number, patch: Partial<SetFormData>) => {
+    (
+      exerciseIndex: number,
+      setIndex: number,
+      patch: Partial<SetFormData>,
+      options?: { revert?: boolean },
+    ) => {
       setExercises((prev) =>
         prev.map((ex, i) => {
           if (i !== exerciseIndex) return ex;
@@ -975,8 +980,15 @@ export function WorkoutLogger() {
           return {
             ...ex,
             sets: ex.sets.map((s, si) => {
-              if (si !== setIndex || !setCanApplyOverloadPatch(s, mode)) return s;
-              return { ...s, ...patch, seededFromPrevious: false };
+              if (si !== setIndex || s.completed) return s;
+              if (!options?.revert && !setCanApplyOverloadPatch(s, mode)) return s;
+              return {
+                ...s,
+                ...patch,
+                // Aplicar solo rellena el objetivo: no cuenta como serie hecha
+                // hasta editar o marcar el check (igual que la precarga anterior).
+                seededFromPrevious: options?.revert ? Boolean(patch.seededFromPrevious) : true,
+              };
             }),
           };
         }),
