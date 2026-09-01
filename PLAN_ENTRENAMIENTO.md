@@ -3,15 +3,16 @@
 > **Propósito de este documento:** servir como base de conocimiento "megadetallada" del historial real de entrenamiento del usuario, para que una IA pueda generar rutinas totalmente personalizadas basadas en su progresión, preferencias de ejercicios, rangos de repeticiones, RIR y volumen por grupo muscular.
 
 - **Usuario:** `isarubio95` (isarubio95@gmail.com)
-- **Nivel app:** 21 · **XP:** 20.960 · **Racha:** 5 días (máx. 20)
-- **Periodo analizado:** 7 feb 2026 → 2 ago 2026
-- **Sesiones de fuerza completadas:** 90 (88 de fuerza + 2 de "Abs")
-- **Series registradas:** 1.754 · **Ejercicios ejecutados:** 532
-- **Sesiones de cardio (ciclismo):** 4 salidas largas, todas en domingo (jul–ago)
+- **Nivel app:** 25 · **XP:** 24.855 · **Racha:** 8 días
+- **Periodo analizado:** 7 feb 2026 → 22 ago 2026
+- **Sesiones de fuerza completadas:** 99 (97 de fuerza + 2 de "Abs")
+- **Series registradas:** 1.997 · **Ejercicios ejecutados:** 592
+- **Sesiones de cardio:** 6 salidas en bici (domingos, jul–ago) + 1 caminata
 - **Estructura actual:** Full-body A/B/C, 3 días/semana (mar–jue–sáb) + tirada larga de bici el domingo
 - **Estructura previa (Meso 1-4):** Torso / Pierna (split TP, 4 días/semana) con variantes A/B alternas
+- **⚠️ Estado a 1 sep 2026:** **esguince de ligamento colateral fibular (LCF) del tobillo derecho**, ocurrido el ~22 ago. Día 10 de evolución, en fase de recuperación pero aún sintomático. El Mesociclo 6 quedó cortado en la semana 3. El Mesociclo 7 arranca con dos semanas de rutinas adaptadas (ver sección 7).
 - **Fuente de datos:** base de datos de la app (`actividad` → `ejercicio` → `serie`, y `cardio_sesion` → `cardio_bloque`)
-- **Última actualización de este documento:** 4 ago 2026
+- **Última actualización de este documento:** 1 sep 2026
 
 ---
 
@@ -26,10 +27,12 @@ Estas advertencias son clave para que la IA no saque conclusiones erróneas:
 5. **Plancha:** en Meso 1-4 las repeticiones representan **segundos**. Desde el Meso 5 el ejercicio usa registro `duracion`, y el tiempo va en el campo de duración (las reps aparecen como 0).
 6. **El Meso 5 tiene menos sesiones por semana (3 en vez de 4)**: no comparar volumen total de bloque sin normalizar por semana. El volumen *por sesión* subió.
 7. **El cardio no está en `actividad`**: vive en `cardio_sesion`. Por eso los conteos de "sesiones" de fuerza no incluyen las salidas en bici.
+8. **El Meso 6 solo tiene 3 semanas de las 5 previstas** (se cortó por la lesión del 22 ago). Su volumen *total* no es comparable con el de bloques completos; usar siempre volumen por sesión o por semana.
+9. **El campo `rpe` de `actividad` solo tiene 2 registros** en todo el historial (20 y 22 ago). No hay serie temporal de RPE con la que trabajar todavía.
 
 ---
 
-## 1. Resumen global de los 5 mesociclos
+## 1. Resumen global de los 6 mesociclos
 
 | Meso | Fechas | Sesiones | Rutinas | Foco / cambios principales |
 |------|--------|----------|---------|----------------------------|
@@ -38,6 +41,7 @@ Estas advertencias son clave para que la IA no saque conclusiones erróneas:
 | **3** | 07 abr – 14 may | 20 | Torso A/B, Pierna A/B | Mayor volumen de pierna (pico histórico). Sentadilla + Prensa altas. Más trabajo de Core y brazo. |
 | **4** | 16 may – 21 jun | 22 | Torso A/B, Pierna A/B (+2 Abs) | Más volumen de torso. Hack Squat y Aductores nuevos. Press Banca estancado en 60 kg. |
 | **5** | 30 jun – 01 ago | 15 | **Día A/B/C (full-body)** | **Cambio de estructura**: de Torso/Pierna 4 días a **full-body 3 días** (mar-jue-sáb) para dejar el domingo libre a la bici. Vuelve la Sentadilla libre. Sábado deliberadamente ligero de pierna. |
+| **6** | 04 ago – 22 ago | 9 | Día A/B/C (6) | Vuelve la Prensa Inclinada, primer trabajo de deltoides posterior del historial, Dominadas con lastre. **Cortado en la semana 3 por el esguince de tobillo** (previsto 5 semanas, ejecutadas 3). |
 
 ### Volumen total por mesociclo (kg levantados = Σ peso×reps)
 
@@ -48,8 +52,9 @@ Estas advertencias son clave para que la IA no saque conclusiones erróneas:
 | 3 | 5,5 | 20 | 121.095 | 417 | 4.755 | 6.055 |
 | 4 | 5 | 22 | 131.429 | 413 | 5.028 | 5.974 |
 | 5 | 5 | 15 | 101.111 | 361 | 3.897 | **6.741** |
+| 6 | 3 | 9 | 82.384 | 243 | 2.670 | **9.154** |
 
-> El volumen **total** de bloque baja en el Meso 5 (101 t vs 131 t) simplemente porque son 3 sesiones/semana en vez de 4-5. El indicador honesto es el volumen **por sesión**, que marca máximo histórico (6.741 kg, +13 % sobre el Meso 4). La densidad de trabajo por sesión ha crecido en los 5 bloques sin excepción.
+> El volumen **total** de bloque baja en el Meso 5 (101 t vs 131 t) simplemente porque son 3 sesiones/semana en vez de 4-5. El indicador honesto es el volumen **por sesión**, que marca máximo histórico bloque tras bloque: 6.741 kg en el Meso 5 y **9.154 kg en el Meso 6** (+36 %). La densidad de trabajo por sesión ha crecido en los 6 bloques sin excepción.
 
 ### Carga semanal comparada (fuerza + bici)
 
@@ -57,8 +62,11 @@ Estas advertencias son clave para que la IA no saque conclusiones erróneas:
 |------|:-------------------:|:----------:|-----------------:|--------|
 | 4 | ~4,4 | 83 | 26.286 | — |
 | 5 | 3,0 | 72 | 20.222 | ~1 salida/sem, 1-1,75 h |
+| 6 | 3,0 | 81 | 27.461 | 1 salida/sem, 2-2,6 h |
 
 > El Meso 5 recortó ~23 % del volumen semanal de gimnasio y lo sustituyó por ciclismo de resistencia. Es un cambio de reparto, no una bajada de carga total.
+>
+> ⚠️ **El Meso 6 subió las dos cosas a la vez**: el volumen semanal de gimnasio recuperó el nivel del Meso 4 (27,5 t, máximo histórico) *y* las salidas de bici pasaron de 1 h 44 min a 2 h 37 min en tres semanas. Es la ventana en la que aparece la lesión, y conviene tenerlo presente al planificar el retorno.
 
 ---
 
@@ -66,30 +74,31 @@ Estas advertencias son clave para que la IA no saque conclusiones erróneas:
 
 e1RM estimado (kg). Recordar la advertencia de cargas del Meso 1.
 
-| Ejercicio | Meso 1 | Meso 2 | Meso 3 | Meso 4 | Meso 5 | Tendencia |
-|-----------|:------:|:------:|:------:|:------:|:------:|-----------|
-| Sentadilla con Barra | 52,4 | — | 70,9 | — | 70,9 | ▲ +35 % · recuperada tras ausencia en Meso 4 |
-| Press Banca con Barra | (20,4)* | — | 72,0 | 74,0 | 74,0 | ⏸ **meseta de 3 bloques** |
-| Peso Muerto con Barra | (72,0)* | — | — | 82,3 | — | (fuera del Meso 5) |
-| Peso Muerto Rumano | 53,3 | 66,7 | 70,0 | 78,6 | 80,0 | ▲ frenando (se estancó en 60 kg todo el Meso 5) |
-| Hip Thrust con Barra | 76,0 | 80,2 | 85,5 | 91,0 | 91,0 | ⏸ plano por primera vez |
-| Prensa Inclinada | (69,3)* | 145,6 | 181,9 | — | — | (sin usar desde el Meso 3) |
-| Press Militar Barra | 31,7 | — | — | 33,3 | **38,0** | ▲▲ **se desbloquea** (25 → 30 kg) |
-| Remo en Pronación Barra | — | — | 53,3 | 56,0 | 58,1 | ▲ constante |
-| Press Inclinado con Barra | — | 55,5 | 63,0 | 63,0 | 61,7 | ⏸ e1RM plano, pero carga real ↑ (45 → 47,5 kg) |
-| Jalón Abierto en Polea Alta | — | — | 54,6 | 57,8 | 57,8 | ⏸ plano |
-| Remo Horizontal Cerrado en Polea | 54,6 | — | — | 57,8 | 61,0 | ▲ |
-| Extensión de Cuádriceps | 40,8 | 43,4 | 48,0 | 51,4 | 51,4 | ⏸ plano |
-| Curl Femoral Vertical | 33,3 | 45,7 | 54,9 | — | 54,9 | ⏸ plano |
+| Ejercicio | Meso 1 | Meso 2 | Meso 3 | Meso 4 | Meso 5 | Meso 6 | Tendencia |
+|-----------|:------:|:------:|:------:|:------:|:------:|:------:|-----------|
+| Sentadilla con Barra | 52,4 | — | 70,9 | — | 70,9 | 70,9 | ⏸ plano dos bloques (57,5 kg) |
+| Press Banca con Barra | (20,4)* | — | 72,0 | 74,0 | 74,0 | 75,0 | ⏸ **meseta de 4 bloques** |
+| Peso Muerto con Barra | (72,0)* | — | — | 82,3 | — | — | (fuera del programa desde el Meso 4) |
+| Peso Muerto Rumano | 53,3 | 66,7 | 70,0 | 78,6 | 80,0 | 80,0 | ⏸ plano (60 kg, con series de descarga a 55) |
+| Hip Thrust con Barra | 76,0 | 80,2 | 85,5 | 91,0 | 91,0 | 91,0 | ⏸ plano tres bloques (65 kg) |
+| Prensa Inclinada | (69,3)* | 145,6 | 181,9 | — | — | 170,8 | ▲ recuperada (115 → 125 kg) |
+| Press Militar Barra | 31,7 | — | — | 33,3 | **38,0** | 38,0 | ⏸ consolida los 30 kg |
+| Remo en Pronación Barra | — | — | 53,3 | 56,0 | 58,1 | **60,0** | ▲ constante (42,5 → 45 kg) |
+| Press Inclinado con Barra | — | 55,5 | 63,0 | 63,0 | 61,7 | **68,2** | ▲▲ PR de carga (52,5 kg) |
+| Jalón Abierto en Polea Alta | — | — | 54,6 | 57,8 | 57,8 | 57,8 | ⏸ plano, pero cierra las 4 series a 12 reps |
+| Remo Horizontal Cerrado en Polea | 54,6 | — | — | 57,8 | 61,0 | 61,0 | ⏸ plano (43,6 kg) |
+| Extensión de Cuádriceps | 40,8 | 43,4 | 48,0 | 51,4 | 51,4 | 51,4 | ⏸ plano tres bloques |
+| Curl Femoral Vertical | 33,3 | 45,7 | 54,9 | — | 54,9 | 51,4 | ▼ bajó de 36,6 a 34,3 kg |
+| Dominada (lastre) | 0 | 0 | 0 | 0 | 0 | **+5 kg** | ▲▲ nuevo: pasa de peso corporal a lastre |
 
 `*` valores del Meso 1 con probable infrarregistro de carga (ver Nota 2).
 
 ### Lecturas para la IA
-- **Gran ganador del Meso 5:** el **Press Militar**, plano durante 4 bloques, sube de 25 a 30 kg en 5 semanas. La causa más probable es haberlo colocado en fresco dentro de una sesión full-body en vez de al final de un día de torso.
-- **El Press Banca sigue sin moverse:** tercer bloque consecutivo con e1RM 74. En el Meso 5 se probó a bajar el rango a 4-6 reps y tampoco funcionó: las series terminan en 60×6, 60×5, 60×4, es decir, **cae mucho la repetición entre series**, que es señal de fatiga acumulada dentro del ejercicio más que de falta de fuerza máxima. Merece la pena atacarlo con más reps y menos carga relativa antes que con más intensidad.
-- **La cadena posterior se ha aplanado:** RDL clavado en 60 kg e Hip Thrust en 65 kg durante las 5 semanas del Meso 5. Coincide con la introducción de la bici del domingo; probablemente el jueves llega con algo de fatiga residual de la salida. La reps sí mejoraron dentro del rango (Hip Thrust 10→12), así que toca subir carga.
-- **Aislamientos en meseta de repeticiones:** elevaciones laterales tocando techo del rango (6 kg × 20), extensión de cuádriceps 34,3 × 15 y jalón 41,3 × 12 repetidos semana tras semana. Todos piden **subir peso**, no más reps.
-- **Hueco estructural detectado:** en 5 mesociclos **no hay ni una sola serie directa de deltoides posterior**. Es el déficit más claro del programa para un objetivo de hipertrofia.
+- **El Press Banca sigue sin moverse:** cuarto bloque consecutivo alrededor de e1RM 74-75. Se ha probado con 4-6 reps (Meso 5) y con 6-8 reps (Meso 6) y ninguna de las dos ha desbloqueado los 60 kg. Lo que sí mejoró en el Meso 6 es la **caída de reps entre series** (de 6-6-5-4 a 6-6-6-5), lo que apunta a que el problema es de fatiga intra-ejercicio y de descansos, no de fuerza máxima.
+- **El Meso 6 sí cerró la doble progresión** en Remo con Barra, Press Inclinado, Elevaciones Laterales, Extensión de Tríceps y Crunch. Es la lección más útil del bloque: el sistema funciona cuando se sube la carga al tocar el techo del rango.
+- **La cadena posterior lleva tres bloques plana:** RDL en 60 kg (con las series 3-4 bajando a 55) e Hip Thrust en 65 kg desde el Meso 5. Coincide en el tiempo con la escalada de la bici del domingo, que pasó de 18 km a 61 km.
+- **Deltoides posterior ya no es un hueco:** el Meso 6 introdujo *Pájaros Aislados en Polea*, pero la carga se quedó en 2,3-3,55 kg. Migrarlo a máquina permite progresar de forma medible.
+- **Gemelo es el peor gestionado del programa:** 25 → 22,5 kg entre el Meso 5 y el 6, es decir, dos bloques *retrocediendo*. Y es, además, el tejido directamente implicado en la lesión actual.
 
 ---
 
@@ -155,9 +164,22 @@ Series efectivas y volumen (kg). Útil para equilibrar el reparto en futuras rut
 | Bíceps | 30 | 325 | 4.154 | 6,0 |
 | Core | 15 | 252 | 0 (peso corporal) | 3,0 |
 
+### Mesociclo 6 *(3 semanas, bloque incompleto)*
+| Grupo | Series | Reps | Volumen (kg) | Series/semana |
+|-------|:------:|:----:|-------------:|:-------------:|
+| Pierna | 72 | 799 | 40.695 | 24,0 |
+| Espalda | 45 | 439 | 15.639 | 15,0 |
+| Pecho | 45 | 410 | 11.896 | 15,0 |
+| Tríceps | 18 | 229 | 4.119 | 6,0 |
+| Hombro | 36 | 477 | 3.856 | 12,0 |
+| Core | 9 | 119 | 3.522 | 3,0 |
+| Bíceps | 18 | 197 | 2.657 | 6,0 |
+
 > **Observación:** Pierna domina siempre (~50 % del volumen). Espalda > Pecho hasta Meso 4, donde Pecho casi iguala a Espalda por el aumento de trabajo de pectoral. **Hombro, Bíceps y Tríceps reciben relativamente poco volumen** comparado con tren inferior.
 >
-> El Meso 5 corrige parcialmente ese desequilibrio: al ser full-body, cada grupo recibe **2-3 exposiciones semanales** en vez de 1-2. Hombro sube a 9 series/semana (récord) y espalda y pecho quedan casi igualados, que es lo deseable. Los dos huecos que quedan son **deltoides posterior (0 series)** y **core (3 series/semana, con registro irregular)**.
+> El Meso 5 corrige parcialmente ese desequilibrio: al ser full-body, cada grupo recibe **2-3 exposiciones semanales** en vez de 1-2. Hombro sube a 9 series/semana (récord) y espalda y pecho quedan casi igualados, que es lo deseable.
+>
+> El Meso 6 lleva Hombro a **12 series/semana** (nuevo récord, con el estreno de deltoides posterior) y deja Espalda y Pecho empatados a 15. **Core sigue siendo el hueco**: 3 series/semana, todas en la misma sesión del sábado, porque el ejercicio de core del Día A nunca se ejecutó.
 
 ---
 
@@ -171,14 +193,19 @@ Bloque de cardio incorporado a partir del **Meso 5**. Todas las salidas caen en 
 | 12 jul | Domingo | 27,1 km | 1:15:35 | 21,5 km/h | 206 m |
 | 19 jul | Domingo | 32,0 km | 1:29:39 | 21,4 km/h | 494 m |
 | 02 ago | Domingo | 42,2 km | 1:44:19 | **24,2 km/h** | 434 m |
+| 09 ago | Domingo | 51,1 km | 2:15:28 | 22,6 km/h | — |
+| 16 ago | Domingo | 60,6 km | 2:36:53 | 23,2 km/h | 326 m |
+| 23 ago | Domingo | — | — | — | *(sin salida: lesión)* |
+| 30 ago | Domingo | — | — | — | *(sin salida: lesión)* |
 
-**Totales del bloque:** 119,5 km · 5 h 20 min · 1.346 m de desnivel positivo.
+**Totales acumulados:** 231,2 km · 10 h 12 min · 1.672 m de desnivel positivo (7 salidas).
+**Otros:** 13 ago — caminata de 45:36 (sin distancia registrada).
 
 ### Lecturas
-- **Progresión muy clara y rápida:** la distancia se ha más que duplicado en un mes (18 → 42 km) y en la última salida la velocidad media sube 2,7 km/h *pese a* llevar 434 m de desnivel. Es la mejora más marcada de todo el periodo analizado, en cualquier disciplina.
-- **El domingo 26 jul no hay salida registrada**, así que la cadencia real fue de 3 salidas en 4 semanas más una en la quinta.
-- La duración objetivo del usuario es de **~2 h**; la última salida (1 h 44 min) ya está muy cerca. El Meso 6 debe asumir tiradas de 2 h completas, es decir, **más carga de fondo sobre cuádriceps e isquiotibiales cada domingo**.
-- **Faltan datos de frecuencia cardiaca, potencia y cadencia** en las 4 sesiones. Sin ellos no se puede estimar la carga interna de la bici ni cruzarla con la fatiga del gimnasio. Si el dispositivo lo permite, registrarlos multiplicaría el valor de este análisis.
+- **Progresión muy clara y rápida:** la distancia se ha más que triplicado en seis semanas (18 → 61 km). Es la mejora más marcada de todo el periodo analizado, en cualquier disciplina.
+- **El objetivo de las 2 h se superó el 09 ago y se rebasó ampliamente el 16 ago (2 h 37 min).** Ese salto de 1:44 → 2:15 → 2:37 en tres domingos consecutivos es un +50 % de tiempo en sillín en tres semanas, muy por encima de la regla habitual del 10 % semanal.
+- **Coincidencia relevante con la lesión:** las tres semanas de mayor volumen de bici son también las tres semanas de mayor volumen de gimnasio del historial (27,5 t/semana). El esguince llega justo al final de esa ventana. No es una relación causal demostrable, pero sí un patrón de carga acumulada que conviene no repetir en el retorno.
+- **Faltan datos de frecuencia cardiaca, potencia y cadencia** en las 7 sesiones. Sin ellos no se puede estimar la carga interna de la bici ni cruzarla con la fatiga del gimnasio. Si el dispositivo lo permite, registrarlos multiplicaría el valor de este análisis.
 
 ### Implicación para el diseño del gimnasio
 La bici del domingo condiciona la semana entera:
@@ -965,39 +992,170 @@ Formato de cada ejercicio: **Nombre** *(grupo)* `rango reps · RIR objetivo` →
 
 ---
 
+# 🟫 MESOCICLO 6 (04 ago – 22 ago 2026) — *interrumpido por lesión*
+
+**9 sesiones · 3 semanas de las 5 previstas.** Se ejecutó exactamente el diseño de la sección 6. El bloque se corta el **22 ago**, cuando aparece el **esguince del ligamento colateral fibular del tobillo derecho**. No hay sesiones registradas entre el 23 ago y el 1 sep (10 días de parón).
+
+**Rutinas guardadas en la app:** `Día A (6)`, `Día B (6)`, `Día C (6)`.
+
+> ⚠️ **La Elevación de piernas estiradas Colgado del Día A no se registró ni una sola vez** en las 3 semanas, pese a estar en la rutina. Es el único ejercicio prescrito con 0 % de adherencia del historial; conviene sustituirlo por una variante más accesible.
+
+### Día A (6) — 04 ago *(martes)*
+- **Press Banca con Barra** *(Pecho)* `6-8 · RIR2` → 62,5×6, 60×6, 60×5, 60×4
+- **Sentadilla con Barra** *(Pierna)* `6-8 · RIR2` → 57,5×7, 57,5×6, 55×7, 55×5
+- **Remo en Pronación con Barra** *(Espalda)* `8-10 · RIR1` → 42,5×11, 42,5×10, 42,5×10, 42,5×10
+- **Press Militar con Barra (Overhead)** *(Hombro)* `6-8 · RIR1` → 30×8, 30×7, 30×6
+- **Prensa Inclinada** *(Pierna)* `10-12 · RIR1` → 115×12, 125×10, 125×8 *(vuelve tras 2 bloques)*
+- **Elevaciones Laterales en Máquina** *(Hombro)* `12-15 · RIR0` → 6×20, 5×15, 5×15
+- **Press Francés con Barra Z** *(Tríceps)* `10-12 · RIR1` → 20×13, 20×10, 15×11
+
+### Día B (6) — 06 ago *(jueves)*
+- **Peso Muerto Rumano con Barra** *(Pierna)* `8-10 · RIR2` → 60×10, 60×9, 55×8, 55×8
+- **Dominada** *(Espalda)* `6-8 · RIR1` → 5×6, 2,5×6, 1,25×6, 1,25×6 *(primera vez con lastre)*
+- **Press Inclinado con Barra** *(Pecho)* `8-10 · RIR1` → 47,5×9, 47,5×9, 45×8, 40×9
+- **Hip Thrust con Barra** *(Pierna)* `8-12 · RIR1` → 65×12, 65×11, 65×10
+- **Remo Horizontal Cerrado Neutro en Polea** *(Espalda)* `10-12 · RIR1` → 43,6×12, 43,6×12, 43,6×11
+- **Pájaros Aislados en Polea** *(Hombro)* `15-20 · RIR0` → 2,3×15, 2,3×14, 2,3×12 *(estreno de deltoides posterior)*
+- **Curl en Supinación con Barra** *(Bíceps)* `10-12 · RIR1` → 20×12, 15×12, 15×11
+- **Extensión Vertical en Pronación en Polea Alta** *(Tríceps)* `12-15 · RIR0` → 15,8×15, 15,8×15, 15,8×13
+
+### Día C (6) — 08 ago *(sábado)*
+- **Press Banca con Mancuernas** *(Pecho)* `8-12 · RIR1` → 20×12, 20×10, 20×8, 18×8
+- **Jalón Abierto en Pronación en Polea Alta** *(Espalda)* `10-12 · RIR1` → 41,3×12, 41,3×12, 41,3×11, 36,6×10
+- **Extensión de Cuádriceps en Máquina** *(Pierna)* `12-15 · RIR1` → 34,3×15, 34,3×14, 34,3×13
+- **Curl Femoral Vertical en Máquina** *(Pierna)* `12-15 · RIR1` → 34,3×15, 34,3×13, 34,3×12
+- **Cruce de Poleas (Alto a Bajo)** *(Pecho)* `12-15 · RIR0` → 6,8×15, 6,8×13, 6,8×12
+- **Elevaciones Laterales en Máquina** *(Hombro)* `15-20 · RIR0` → 6×20, 5×16, 5×14
+- **Curl en Martillo Alterno con Mancuernas** *(Bíceps)* `10-12 · RIR1` → 10×12, 10×10, 10×8
+- **Extensión de Gemelos de pie** *(Pierna)* `12-15 · RIR1` → 22,5×15, 22,5×14, 22,5×14, 22,5×12
+- **Crunch Superior** *(Core)* `12-15 · RIR1` → 32×12, 32×14, 32×12 *(PR de carga en core)*
+
+> 🚴 **Domingo 09 ago — 51,1 km en 2:15:28**
+
+### Día A (6) — 11 ago
+- **Press Banca con Barra** → 62,5×6, 60×6, 60×5, 60×5
+- **Sentadilla con Barra** → 57,5×7, 57,5×6, 55×7, 55×6
+- **Remo en Pronación con Barra** → 42,5×11, 42,5×11, 42,5×10, 42,5×10
+- **Press Militar con Barra (Overhead)** → 30×8, 30×7, 30×6
+- **Prensa Inclinada** → 115×12, 125×11, 125×9
+- **Elevaciones Laterales en Máquina** → 6×20, 5×13, 5×12
+- **Press Francés con Barra Z** → 20×13, 20×10, 15×12
+
+### Día B (6) — 13 ago
+- **Peso Muerto Rumano con Barra** → 60×10, 60×9, 55×9, 55×8
+- **Dominada** → 5×7, 5×6, 2,5×6, 1,25×6
+- **Press Inclinado con Barra** → 52,5×9, 47,5×9, 45×7, 40×9 *(PR de carga: 52,5 kg)*
+- **Hip Thrust con Barra** → 65×12, 65×11, 65×10
+- **Remo Horizontal Cerrado Neutro en Polea** → 43,6×12, 43,6×12, 43,6×11
+- **Pájaros Aislados en Polea** → 2,3×16, 2,3×15, 2,3×16
+- **Curl en Supinación con Barra** → 20×12, 15×12, 15×10
+- **Extensión Vertical en Pronación en Polea Alta** → 18,1×15, 18,1×15, 18,1×13
+
+*(Ese mismo día, caminata de 45:36.)*
+
+### Día C (6) — 15 ago
+- **Press Banca con Mancuernas** → 20×12, 20×11, 20×9, 18×8
+- **Jalón Abierto en Pronación en Polea Alta** → 41,3×12, 41,3×12, 41,3×12, 36,6×11
+- **Extensión de Cuádriceps en Máquina** → 34,3×15, 34,3×14, 34,3×13
+- **Curl Femoral Vertical en Máquina** → 34,3×15, 34,3×15, 34,3×13
+- **Cruce de Poleas (Alto a Bajo)** → 6,8×15, 6,8×14, 6,8×12
+- **Elevaciones Laterales en Máquina** → 6×20, 5×17, 5×14
+- **Curl en Martillo Alterno con Mancuernas** → 10×12, 10×10, 9×9
+- **Extensión de Gemelos de pie** → 22,5×15, 22,5×15, 22,5×14, 22,5×13
+- **Crunch Superior** → 32×12, 27×15, 27×12
+
+> 🚴 **Domingo 16 ago — 60,6 km en 2:36:53 (+326 m) · salida más larga del historial**
+
+### Día A (6) — 18 ago
+- **Press Banca con Barra** → 62,5×6, 60×6, 60×6, 60×5
+- **Sentadilla con Barra** → 57,5×7, 57,5×6, 55×7, 55×7
+- **Remo en Pronación con Barra** → 45×10, 45×10, 45×8, 45×8 *(sube a 45 kg)*
+- **Press Militar con Barra (Overhead)** → 30×8, 30×7, 30×7
+- **Prensa Inclinada** → 120×12, 125×10, 125×8
+- **Elevaciones Laterales en Máquina** → 7×15, 7×12, 6×11 *(sube a 7 kg)*
+- **Press Francés con Barra Z** → 20×13, 20×10, 20×9
+
+### Día B (6) — 20 ago · **RPE 10**
+- **Peso Muerto Rumano con Barra** → 60×10, 60×9, 55×9, 55×8
+- **Dominada** → 5×7, 5×6, 2,5×6, 2,5×6
+- **Press Inclinado con Barra** → 52,5×9, 47,5×9, 45×7, 45×8
+- **Hip Thrust con Barra** → 65×12, 65×11, 65×10
+- **Remo Horizontal Cerrado Neutro en Polea** → 43,6×12, 43,6×12, 43,6×12
+- **Pájaros Aislados en Polea** → 3,55×14, 3,55×13, 3,55×12
+- **Curl en Supinación con Barra** → 20×12, 15×12, 15×12
+- **Extensión Vertical en Pronación en Polea Alta** → 18×15, 18×15, 18×12
+
+### Día C (6) — 22 ago · **RPE 9** *(última sesión antes de la lesión)*
+- **Press Banca con Mancuernas** → 20×12, 20×11, 20×9, 18×9
+- **Jalón Abierto en Pronación en Polea Alta** → 41,3×12, 41,3×12, 41,3×12, 36,6×12
+- **Extensión de Cuádriceps en Máquina** → 34,3×15, 34,3×14, 34,3×13
+- **Curl Femoral Vertical en Máquina** → 34,3×15, 34,3×15, 34,3×14
+- **Cruce de Poleas (Alto a Bajo)** → 6,8×15, 6,8×15, 6,8×12
+- **Elevaciones Laterales en Máquina** → 6×20, 5×18, 5×14
+- **Curl en Martillo Alterno con Mancuernas** → 10×12, 10×10, 9×9
+- **Extensión de Gemelos de pie** → 22,5×15, 22,5×15, 22,5×14, 22,5×14
+- **Crunch Superior** → 29,2×15, 29,2×12, 27×15
+
+### Volumen del Meso 6 por grupo muscular
+
+| Grupo | Series | Reps | Volumen (kg) | Series/semana |
+|-------|:------:|:----:|-------------:|:-------------:|
+| Pierna | 72 | 799 | 40.695 | 24,0 |
+| Espalda | 45 | 439 | 15.639 | 15,0 |
+| Pecho | 45 | 410 | 11.896 | 15,0 |
+| Hombro | 36 | 477 | 3.856 | 12,0 |
+| Tríceps | 18 | 229 | 4.119 | 6,0 |
+| Bíceps | 18 | 197 | 2.657 | 6,0 |
+| Core | 9 | 119 | 3.522 | 3,0 |
+| **Total** | **243** | **2.670** | **82.384** | **81,0** |
+
+### Diagnóstico del Meso 6
+- **Lo que funcionó:** se rompió el estancamiento generalizado del Meso 5. En 3 semanas hay subida de carga real en **Remo con Barra** (42,5 → 45 kg), **Press Inclinado** (47,5 → 52,5 kg, PR), **Elevaciones Laterales** (6 → 7 kg), **Extensión de Tríceps** (15,8 → 18 kg), **Pájaros** (2,3 → 3,55 kg) y **Crunch Superior** (29,2 → 32 kg). La doble progresión sí se cerró esta vez.
+- **Las Dominadas con lastre funcionaron muy bien:** de 0×10-7-5-5 en el Meso 5 a 5×7, 5×6, 2,5×6, 2,5×6. Al forzar el rango 6-8 con lastre, las series dejaron de desplomarse.
+- **El Press Banca sigue clavado:** 62,5×6 + 60×6/5/5 las tres semanas. Cuarto bloque consecutivo sin mover el e1RM. La caída de reps entre series se ha suavizado un poco (6-6-6-5 en la semana 3 frente a 6-6-5-4 en la primera), pero la carga no sube.
+- **Sentadilla e Hip Thrust planos otra vez:** 57,5 kg y 65 kg respectivamente, idénticos a los del Meso 5, pese a que el diseño pedía 4×8 → +2,5 kg. El RDL incluso *bajó* la carga de las series 3-4 a 55 kg. Es coherente con el volumen de bici acumulado los domingos.
+- **RPE 10 el 20 ago y RPE 9 el 22 ago:** son los dos únicos RPE registrados del historial, y son los dos más altos posibles, en las dos últimas sesiones antes de la lesión. Combinado con la salida de 2 h 37 min del 16 ago, el bloque terminó con fatiga muy alta.
+- **Los gemelos siguen sin progresar:** 22,5 kg todo el bloque, arrastrado desde el Meso 5. Es el ejercicio con peor gestión de carga del programa y, además, el tejido que ahora queda directamente afectado por el esguince.
+
+---
+
 ## 5. Patrones, preferencias y conclusiones para la IA
 
-### Estructura preferida (actualizada tras el Meso 5)
+### Estructura preferida (actualizada tras el Meso 6)
 - **Meso 1-4:** split Torso/Pierna (A/B), 4 sesiones/semana, ~5-7 ejercicios por sesión.
-- **Meso 5 en adelante:** **full-body A/B/C, 3 sesiones/semana** (martes, jueves, sábado), 7-8 ejercicios por sesión, 3-4 series por ejercicio, más la tirada larga de bici del domingo. Esta es la estructura que el usuario quiere mantener.
+- **Meso 5 en adelante:** **full-body A/B/C, 3 sesiones/semana** (martes, jueves, sábado), 7-9 ejercicios por sesión, 3-4 series por ejercicio, más la tirada larga de bici del domingo. Esta es la estructura que el usuario quiere mantener, y se respeta también en las rutinas adaptadas del Meso 7.
 - Mesociclos de **~5 semanas**, cambiando parte de la selección de ejercicios entre bloques pero manteniendo el patrón de movimiento y los básicos que progresan.
 - **Restricción fija:** el sábado no lleva básicos de pierna, para llegar descansado a la bici del domingo.
+- **Adherencia excelente:** 24 de 24 sesiones programadas completadas entre los Meso 5 y 6. Cuando algo no se hace, no es por falta de constancia sino porque el ejercicio no encaja (caso de la Elevación de piernas estiradas Colgado).
 
 ### Rangos y RIR habituales
 - **Básicos:** 5-8 reps, RIR 2.
 - **Accesorios:** 8-12 reps, RIR 1.
 - **Aislamientos / máquina:** 12-15 (hasta 20 en laterales), RIR 0-1.
-- Tendencia reciente: rangos algo más altos en brazo (Curl y Press Francés a 12-15) y más bajos en Press Banca (4-6 en el Meso 5, sin éxito).
+- Tendencia reciente: rangos algo más altos en brazo (Curl y Press Francés a 12-15). En Press Banca se ha probado 4-6 (Meso 5) y 6-8 (Meso 6) sin desbloquear los 60 kg.
 
 ### Fortalezas (progresan bien)
-- **Ciclismo:** la progresión más rápida de todo el historial (18 → 42 km y +2,7 km/h de media en 4 salidas).
-- Cadena posterior y glúteo: **Hip Thrust** (76 → 91 e1RM) y **Peso Muerto Rumano** (53 → 80), aunque ambos se aplanaron en el Meso 5.
-- **Press Militar:** desbloqueado en el Meso 5 (33,3 → 38,0) tras 4 bloques plano.
-- Cuádriceps en máquina: **Prensa** y **Hack Squat** muy sólidos (ambos sin usar desde hace 1-2 bloques).
-- Resistencia de Core: Plancha 45s → **90s**.
+- **Ciclismo:** la progresión más rápida de todo el historial (18 → 61 km en seis semanas), aunque el ritmo de aumento fue excesivo y precedió a la lesión.
+- **Empuje horizontal inclinado:** Press Inclinado con Barra rompe meseta en el Meso 6 y marca PR a 52,5 kg.
+- **Tracción vertical con lastre:** las Dominadas pasan de peso corporal a +5 kg manteniendo 6-7 reps.
+- **Press Militar:** desbloqueado en el Meso 5 (33,3 → 38,0) y consolidado en el 6.
+- Cuádriceps en máquina: **Prensa** (115 → 125 kg en 3 semanas) y **Hack Squat** muy sólidos.
+- Resistencia de Core: Plancha 45s → **90s**; Crunch Superior con carga hasta 32 kg.
 
 ### Puntos a mejorar (estancados)
-- **Press Banca**: clavado en 60 kg desde mediados del Meso 3, ya son **3 bloques**. Bajar el rango a 4-6 reps en el Meso 5 no funcionó. El patrón de caída de reps entre series (6-6-5-4) sugiere fatiga intra-ejercicio más que falta de fuerza máxima.
-- **Doble progresión sin cerrar**: es el problema transversal del Meso 5. Muchos ejercicios llevan semanas tocando el techo del rango de reps sin subir carga.
-- **Deltoides posterior: 0 series directas en todo el historial.** Hueco más grave para hipertrofia equilibrada.
-- **Gemelos y elevaciones laterales** trabajando con cargas demasiado bajas.
-- **Sentadilla libre**: recuperada en el Meso 5 pero sin progresar (57,5 kg todo el bloque).
+- **Press Banca**: clavado en 60 kg desde mediados del Meso 3, ya son **4 bloques**. Ni 4-6 ni 6-8 reps lo han movido. Siguiente hipótesis a probar: descansos reales de 3 minutos y revisión técnica, antes que otro cambio de rango.
+- **Sentadilla, RDL e Hip Thrust planos** desde el Meso 5 (57,5 / 60 / 65 kg). Es la parte del programa que más compite con la bici del domingo.
+- **Gemelos retrocediendo:** 25 → 22,5 kg en dos bloques. Peor gestión de carga del programa.
+- **Deltoides posterior:** ya existe (Meso 6) pero con cargas de 2,3-3,55 kg, demasiado bajas para medir progresión.
+- **Gestión de la carga total:** el Meso 6 subió a la vez el volumen de gimnasio (máximo histórico, 27,5 t/semana) y el de bici (+50 % de tiempo en tres domingos), y terminó con RPE 10 y 9 y una lesión. Los próximos bloques deben progresar **una sola variable a la vez**.
 
 ---
 
-## 6. MESOCICLO 6 — Diseño propuesto (a partir del 04 ago 2026)
+## 6. MESOCICLO 6 — Diseño (ejecutado 04 ago – 22 ago 2026)
 
-**Parámetros acordados:** full-body **3 días/semana** (martes, jueves, sábado), foco **hipertrofia**, **sin semana de deload**, tirada larga de bici los domingos (~2 h). Duración: **5 semanas** (04 ago – 05 sep).
+> ℹ️ Este es el diseño con el que se programó el bloque. **Se ejecutó tal cual durante 3 semanas y se interrumpió el 22 ago por el esguince de tobillo.** El registro real serie a serie y el diagnóstico están arriba, en el bloque 🟫 MESOCICLO 6 de la sección 4.
+
+**Parámetros acordados:** full-body **3 días/semana** (martes, jueves, sábado), foco **hipertrofia**, **sin semana de deload**, tirada larga de bici los domingos (~2 h). Duración prevista: **5 semanas** (04 ago – 05 sep); duración real: 3 semanas.
 
 ### Los 5 cambios respecto al Meso 5 y por qué
 
@@ -1090,6 +1248,189 @@ Formato de cada ejercicio: **Nombre** *(grupo)* `rango reps · RIR objetivo` →
 - Si el **jueves** se llega con las piernas cargadas de la bici del domingo, adelantar el Hip Thrust por delante del RDL para repartir la fatiga.
 - Cuando las salidas lleguen a las 2 h completas, revisar si la Sentadilla del martes sigue progresando. Si se aplana dos semanas seguidas, la bici está compitiendo por la recuperación y habría que bajar a 3 series.
 - **Registrar frecuencia cardiaca y potencia en la bici** para poder cruzar carga interna con rendimiento en el gimnasio en el próximo análisis.
+
+---
+
+## 7. MESOCICLO 7 — Retorno tras el esguince (02 sep – 04 oct 2026)
+
+### Contexto clínico
+
+| Dato | Valor |
+|------|-------|
+| Lesión | Esguince del **ligamento colateral fibular (LCF)**, tobillo derecho |
+| Fecha | ~22 ago 2026 (misma fecha que la última sesión registrada) |
+| Días de evolución a 1 sep | **10** |
+| Estado referido | En recuperación, sin dolor incapacitante, todavía no al 100 % |
+| Parón real | 10 días sin gimnasio y 2 domingos sin bici |
+
+> ⚠️ **Esto no es un diagnóstico ni una pauta de fisioterapia.** El plan asume un esguince leve-moderado con evolución favorable y organiza la carga de gimnasio en consecuencia. Si hay dolor, inestabilidad o inflamación que aumenta tras una sesión, hay que parar y consultar con un profesional.
+
+### Estructura del bloque: dos fases
+
+El bloque mantiene **full-body 3 días/semana (martes, jueves, sábado)** y dura **5 semanas**, pero se parte en dos fases con rutinas distintas:
+
+| Fase | Semanas | Fechas | Rutinas | Objetivo |
+|------|:-------:|--------|---------|----------|
+| **1 · Protección** | 1-2 | 02 – 13 sep | `Día A · Tobillo`, `Día B · Tobillo`, `Día C · Tobillo` | Cero carga axial y cero exigencia de equilibrio sobre el tobillo. Mantener el tren superior progresando con normalidad. |
+| **2 · Retorno** | 3-5 | 15 sep – 04 oct | `Día A (7)`, `Día B (7)`, `Día C (7)` | Reintroducir sentadilla, RDL, hip thrust y gemelo con rampa de carga de tres semanas. |
+
+Las 6 rutinas están **ya creadas en la base de datos** del usuario. Las del Meso 6 se conservan (movidas al final del listado) por si hiciera falta consultarlas.
+
+### Criterios usados para la Fase 1
+
+Un esguince lateral de tobillo tolera mal tres cosas: **carga axial en apoyo**, **demanda de equilibrio** y **movimientos laterales o de inversión**. Todo ejercicio que cumpliera alguna de ellas se ha sustituido:
+
+| Ejercicio retirado | Motivo | Sustituto (Fase 1) |
+|--------------------|--------|--------------------|
+| Sentadilla con Barra | Carga axial máxima sobre el tobillo | Extensión de Cuádriceps en Máquina (4 series) |
+| Peso Muerto Rumano con Barra | Carga axial de pie + estabilización | Curl Femoral Vertical en Máquina (4 series) |
+| Prensa Inclinada | Dorsiflexión cargada al final del recorrido | Prensa Horizontal, ligera y con pies altos |
+| Remo en Pronación con Barra | Posición inclinada de pie bajo carga | Remo Horizontal en Pronación en Máquina |
+| Press Militar con Barra (Overhead) | De pie, con carga sobre la cabeza | Press Militar Neutro en Máquina (sentado) |
+| Dominada | Impacto en la caída | Jalón Cerrado Neutro en Polea Alta |
+| Hip Thrust con Barra | Mucha presión a través de los pies | Hip Thrust con Mancuerna (carga ligera) |
+| Extensión de Gemelos de pie | Peso corporal sobre el tobillo lesionado | Extensión de Gemelo Aislado con Banda (sentado) |
+| Pájaros Aislados en Polea | De pie, a una mano | Aperturas Traseras Neutras en Máquina |
+| Cruce de Poleas (Alto a Bajo) | Postura escalonada de pie | Aperturas con Mancuernas (Flyes), tumbado |
+| Elevación de piernas Colgado | Impacto en la caída | Cocoons / Crunch Superior |
+
+Se añaden además **Aductor Externo** y **Aductor Interno en Máquina** (sentado, sin implicación del tobillo). El externo trabaja glúteo medio, que es un aporte real a la estabilidad del miembro inferior durante el retorno.
+
+**El tren superior no cambia de exigencia:** Press Banca, Press Inclinado, Press Banca con Mancuernas, jalones, remos, bíceps y tríceps siguen su progresión normal desde donde quedaron el 22 ago.
+
+---
+
+### Fase 1 · Día A · Tobillo — Martes (2 y 9 sep)
+
+| # | Ejercicio | Grupo | Series | Reps | RIR | Descanso | Carga de arranque |
+|---|-----------|-------|:------:|:----:|:---:|:--------:|------------------|
+| 1 | Press Banca con Barra | Pecho | 4 | 6-8 | 2 | 180s | 60 kg |
+| 2 | Press Militar Neutro en Máquina | Hombro | 3 | 8-10 | 1 | 120s | tantear, RIR 1 |
+| 3 | Remo Horizontal en Pronación en Máquina | Espalda | 4 | 10-12 | 1 | 120s | tantear, RIR 1 |
+| 4 | Extensión de Cuádriceps en Máquina | Pierna | 4 | 12-15 | 2 | 90s | 34,3 kg |
+| 5 | Aductor Externo en Máquina | Pierna | 3 | 15-20 | 1 | 60s | 32 kg |
+| 6 | Elevaciones Laterales en Máquina | Hombro | 3 | 12-15 | 0 | 60s | 7 kg |
+| 7 | Press Francés con Barra Z | Tríceps | 3 | 10-12 | 1 | 90s | 20 kg |
+| 8 | Crunch Superior | Core | 3 | 12-15 | 1 | 60s | 32 kg |
+
+### Fase 1 · Día B · Tobillo — Jueves (4 y 11 sep)
+
+| # | Ejercicio | Grupo | Series | Reps | RIR | Descanso | Carga de arranque |
+|---|-----------|-------|:------:|:----:|:---:|:--------:|------------------|
+| 1 | Jalón Cerrado Neutro en Polea Alta | Espalda | 4 | 8-10 | 1 | 150s | 43,6 kg |
+| 2 | Press Inclinado con Barra | Pecho | 4 | 8-10 | 1 | 150s | 52,5 kg |
+| 3 | Curl Femoral Vertical en Máquina | Pierna | 4 | 10-12 | 2 | 90s | 34,3 kg |
+| 4 | Hip Thrust con Mancuerna | Pierna | 3 | 12-15 | 2 | 120s | 20-24 kg |
+| 5 | Remo Horizontal Cerrado Neutro en Polea | Espalda | 3 | 10-12 | 1 | 90s | 46 kg |
+| 6 | Aperturas Traseras Neutras en Máquina | Hombro | 3 | 15-20 | 0 | 60s | tantear, RIR 0 |
+| 7 | Curl en Supinación con Barra | Bíceps | 3 | 10-12 | 1 | 90s | 20 kg |
+| 8 | Extensión Vertical en Pronación en Polea Alta | Tríceps | 3 | 12-15 | 0 | 75s | 18 kg |
+
+### Fase 1 · Día C · Tobillo — Sábado (6 y 13 sep)
+
+| # | Ejercicio | Grupo | Series | Reps | RIR | Descanso | Carga de arranque |
+|---|-----------|-------|:------:|:----:|:---:|:--------:|------------------|
+| 1 | Press Banca con Mancuernas | Pecho | 4 | 8-12 | 1 | 120s | 20 kg |
+| 2 | Jalón Abierto en Pronación en Polea Alta | Espalda | 4 | 10-12 | 1 | 90s | 43,6 kg |
+| 3 | Prensa Horizontal | Pierna | 3 | 12-15 | **3** | 120s | 60-70 kg, pies altos |
+| 4 | Aductor Interno en Máquina | Pierna | 3 | 15-20 | 1 | 60s | 41,3 kg |
+| 5 | Aperturas con Mancuernas (Flyes) | Pecho | 3 | 12-15 | 0 | 75s | 9 kg |
+| 6 | Elevaciones Laterales en Máquina | Hombro | 3 | 15-20 | 0 | 60s | 6 kg |
+| 7 | Curl en Martillo Alterno con Mancuernas | Bíceps | 3 | 10-12 | 1 | 75s | 10 kg |
+| 8 | Extensión de Gemelo Aislado con Banda | Pierna | 3 | 15-20 | 2 | 60s | banda suave |
+| 9 | Cocoons | Core | 3 | 15-20 | 1 | 60s | peso corporal |
+
+**Notas de ejecución de la Fase 1:**
+- **Prensa Horizontal, semana 1:** haz solo 2 series de tanteo, con los pies altos en la plataforma y sin bajar hasta el tope. Si no hay molestia, semana 2 pasa a las 3 series y sube carga.
+- **Extensión de Gemelo Aislado con Banda:** es trabajo de reintroducción del tobillo, no de hipertrofia. Recorrido controlado, sin buscar el fallo, y parar si tira del lateral del tobillo.
+- **Press Banca:** pies apoyados en plano, sin empuje de piernas ni arqueo forzado.
+
+---
+
+### Fase 2 · Rampa de reintroducción (semanas 3-5)
+
+Las tres cargas que vuelven son **Sentadilla, RDL y Hip Thrust**, y lo hacen por debajo de donde estaban para dejar margen:
+
+| Ejercicio | Semana 3 (15 sep) | Semana 4 (22 sep) | Semana 5 (29 sep) | Referencia Meso 6 |
+|-----------|:-----------------:|:-----------------:|:-----------------:|:-----------------:|
+| Sentadilla con Barra | 47,5 kg · 3 series · RIR3 | 52,5 kg · 4 series · RIR2 | 57,5 kg · 4 series · RIR2 | 57,5 kg |
+| Peso Muerto Rumano | 50 kg · RIR3 | 55 kg · RIR2 | 60 kg · RIR2 | 60 kg |
+| Hip Thrust con Barra | 60 kg | 65 kg | 70 kg | 65 kg |
+| Prensa Inclinada | 100 kg | 110 kg | 120 kg | 125 kg |
+| Extensión de Gemelos sentado en Máquina | ligero, tanteo | +1 paso de placa | +1 paso de placa | 22,5 kg de pie |
+
+El resto de ejercicios continúa desde la carga de la Fase 1 con doble progresión normal.
+
+### Fase 2 · Día A (7) — Martes · Empuje + cuádriceps
+
+| # | Ejercicio | Grupo | Series | Reps | RIR | Descanso |
+|---|-----------|-------|:------:|:----:|:---:|:--------:|
+| 1 | Press Banca con Barra | Pecho | 4 | 6-8 | 2 | 180s |
+| 2 | Sentadilla con Barra | Pierna | 4 | 6-8 | 2 | 180s |
+| 3 | Remo en Pronación con Barra | Espalda | 4 | 8-10 | 1 | 120s |
+| 4 | Press Militar con Barra (Overhead) | Hombro | 3 | 6-8 | 1 | 120s |
+| 5 | Prensa Inclinada | Pierna | 3 | 10-12 | 1 | 120s |
+| 6 | Elevaciones Laterales en Máquina | Hombro | 3 | 12-15 | 0 | 60s |
+| 7 | Press Francés con Barra Z | Tríceps | 3 | 10-12 | 1 | 90s |
+| 8 | Elevación de piernas flexionadas Colgado | Core | 3 | 12-15 | 1 | 60s |
+
+### Fase 2 · Día B (7) — Jueves · Tracción + cadena posterior
+
+| # | Ejercicio | Grupo | Series | Reps | RIR | Descanso |
+|---|-----------|-------|:------:|:----:|:---:|:--------:|
+| 1 | Peso Muerto Rumano con Barra | Pierna | 4 | 8-10 | 2 | 180s |
+| 2 | Dominada *(con lastre)* | Espalda | 4 | 6-8 | 1 | 150s |
+| 3 | Press Inclinado con Barra | Pecho | 4 | 8-10 | 1 | 150s |
+| 4 | Hip Thrust con Barra | Pierna | 3 | 8-12 | 1 | 150s |
+| 5 | Remo Horizontal Cerrado Neutro en Polea | Espalda | 3 | 10-12 | 1 | 90s |
+| 6 | Aperturas Traseras Neutras en Máquina | Hombro | 3 | 15-20 | 0 | 60s |
+| 7 | Curl en Supinación con Barra | Bíceps | 3 | 10-12 | 1 | 90s |
+| 8 | Extensión Vertical en Pronación en Polea Alta | Tríceps | 3 | 12-15 | 0 | 75s |
+
+### Fase 2 · Día C (7) — Sábado · Hipertrofia + pierna ligera (pre-bici)
+
+| # | Ejercicio | Grupo | Series | Reps | RIR | Descanso |
+|---|-----------|-------|:------:|:----:|:---:|:--------:|
+| 1 | Press Banca con Mancuernas | Pecho | 4 | 8-12 | 1 | 120s |
+| 2 | Jalón Abierto en Pronación en Polea Alta | Espalda | 4 | 10-12 | 1 | 90s |
+| 3 | Extensión de Cuádriceps en Máquina | Pierna | 3 | 12-15 | 1 | 90s |
+| 4 | Curl Femoral Vertical en Máquina | Pierna | 3 | 12-15 | 1 | 90s |
+| 5 | Cruce de Poleas (Alto a Bajo) | Pecho | 3 | 12-15 | 0 | 75s |
+| 6 | Elevaciones Laterales en Máquina | Hombro | 3 | 15-20 | 0 | 60s |
+| 7 | Curl en Martillo Alterno con Mancuernas | Bíceps | 3 | 10-12 | 1 | 75s |
+| 8 | Extensión de Gemelos sentado en Máquina | Pierna | 4 | 12-15 | 1 | 60s |
+| 9 | Crunch Superior | Core | 3 | 12-15 | 1 | 60s |
+
+---
+
+### Cambios de la Fase 2 respecto al Meso 6 (más allá de la lesión)
+
+1. **Deltoides posterior pasa de polea a máquina.** Los *Pájaros Aislados en Polea* se quedaron en 2,3-3,55 kg, cargas demasiado bajas para progresar de forma medible. Las *Aperturas Traseras Neutras en Máquina* permiten subir por pasos de placa.
+2. **Gemelo sentado en lugar de gemelo de pie.** Doble motivo: el de pie llevaba dos bloques bajando de carga (25 → 22,5 kg) y, tras un esguince, cargar el peso corporal sobre el tobillo lesionado es lo último que debe volver. El sentado además enfatiza el sóleo, que es justo el que más se resiente en un tobillo inmovilizado.
+3. **El core del Día A cambia a Elevación de piernas flexionadas Colgado.** La versión con piernas estiradas estaba prescrita en el Meso 6 y no se hizo ni un solo día. La flexionada es más accesible y sí se va a ejecutar.
+4. **Sin cambios en el resto.** Después de un parón de 10 días y con una lesión de por medio, lo prudente es cambiar lo mínimo y recuperar el hilo de progresión que el Meso 6 sí había desbloqueado.
+
+### Ciclismo durante el bloque
+
+La bici es la parte del programa que más riesgo tiene de rebrote, porque el pedaleo mueve el tobillo en cada vuelta y la salida del 16 ago (2 h 37 min) ya fue un salto grande. Rampa propuesta:
+
+| Domingo | Propuesta |
+|---------|-----------|
+| 06 sep | Rodillo o llano suave, 30-40 min. Si molesta el tobillo, no salir. |
+| 13 sep | Llano, 60-75 min, sin levantarse del sillín |
+| 20 sep | 90 min, desnivel suave |
+| 27 sep | 2 h |
+| 04 oct | 2 h - 2 h 15 min |
+
+**No volver a los 2 h 30 min hasta que el tobillo esté asintomático caminando y en las sesiones de gimnasio.** El pico de 60 km del 16 ago debe ser el techo del bloque, no el punto de partida.
+
+### Qué vigilar
+
+- **La regla de las 24 h:** si el tobillo está más hinchado o dolorido al día siguiente de una sesión, esa sesión fue demasiado. Retrocede un paso, no dos.
+- **No pases a la Fase 2 por calendario, sino por síntomas.** Si el 15 sep el tobillo sigue molestando al caminar rápido o al bajar escaleras, repite una semana más de Fase 1: está diseñada para poder alargarse sin perder estímulo en el tren superior.
+- **Press Banca:** cuarto bloque estancado en 60 kg. Este bloque no es el momento de atacarlo con más intensidad; mantén 4×6-8 a 60 kg y céntrate en que las 4 series salgan a 8. Si al acabar el Meso 7 sigue igual, toca revisar técnica y descansos reales de 3 minutos.
+- **Registra el RPE de sesión.** Los únicos dos RPE del historial son un 10 y un 9, justo antes de la lesión. Ese dato, tomado de forma sistemática, es la señal de alarma más barata que tienes.
+- **Registra frecuencia cardiaca y potencia en la bici** para poder cruzar carga interna y fatiga en el próximo análisis.
 
 ---
 
