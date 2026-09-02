@@ -7,12 +7,35 @@ export type Actividad = Tables<"actividad">;
 export type Ejercicio = Tables<"ejercicio">;
 export type Serie = Tables<"serie">;
 
-export type RegistroSeries = "peso_reps" | "duracion" | "duracion_ritmo";
+/**
+ * Cómo se registra una serie.
+ *
+ * `solo_reps` es para el trabajo balístico sin carga externa —saltos,
+ * lanzamientos, pliometría—: pedir kilos ahí no significa nada y ensucia la
+ * sobrecarga progresiva, que en ese modo debe subir repeticiones y no peso.
+ */
+export type RegistroSeries = "peso_reps" | "solo_reps" | "duracion" | "duracion_ritmo";
 
 export function normalizeRegistroSeries(v: unknown): RegistroSeries {
   if (v === "duracion") return "duracion";
   if (v === "duracion_ritmo") return "duracion_ritmo";
+  if (v === "solo_reps") return "solo_reps";
   return "peso_reps";
+}
+
+/** Modos que registran carga externa. Solo `peso_reps` pide kilos. */
+export function registroUsesWeight(mode: RegistroSeries): boolean {
+  return mode === "peso_reps";
+}
+
+/** Modos que cuentan repeticiones, con carga o sin ella. */
+export function registroUsesReps(mode: RegistroSeries): boolean {
+  return mode === "peso_reps" || mode === "solo_reps";
+}
+
+/** Modos cronometrados. */
+export function registroUsesDuration(mode: RegistroSeries): boolean {
+  return mode === "duracion" || mode === "duracion_ritmo";
 }
 
 /** Ritmo en segundos/km → etiqueta tipo 5:00/km */
@@ -78,6 +101,7 @@ export function setIsUnlogged(s: SetFormData, mode: RegistroSeries): boolean {
   if (mode === "duracion_ritmo") {
     return !(Number(s.duracion_seg) > 0) && !(Number(s.ritmo_seg_km) > 0);
   }
+  if (mode === "solo_reps") return !Number(s.repeticiones);
   return !Number(s.repeticiones) && !Number(s.peso_kg);
 }
 
@@ -97,6 +121,9 @@ export function formPatchFromLastSet(mode: RegistroSeries, last: LastSetLike): P
       duracion_seg: last.duracion_seg ?? 0,
       ritmo_seg_km: last.ritmo_seg_km ?? null,
     };
+  }
+  if (mode === "solo_reps") {
+    return { repeticiones: last.repeticiones, peso_kg: 0 };
   }
   return {
     repeticiones: last.repeticiones,
@@ -127,7 +154,7 @@ export function defaultSetForMode(
 export const DEFAULT_STRENGTH_SET_COUNT = 3;
 
 export function initialSetCountForRegistro(mode: RegistroSeries): number {
-  return mode === "peso_reps" ? DEFAULT_STRENGTH_SET_COUNT : 1;
+  return registroUsesReps(mode) ? DEFAULT_STRENGTH_SET_COUNT : 1;
 }
 
 export function initialSetsForNewExercise(mode: RegistroSeries): SetFormData[] {

@@ -24,6 +24,7 @@ import {
   type ExerciseFormData,
   type SetFormData,
   normalizeRegistroSeries,
+  registroUsesReps,
   formatRitmoSegKmLabel,
   setIsUnlogged,
   setCanApplyOverloadPatch,
@@ -49,6 +50,7 @@ function formatPreviousSet(
     return `${set.duracion_seg ?? 0}s · ${formatRitmoSegKmLabel(pace ?? null)}`;
   }
   if (mode === "duracion" || seg) return `${set.duracion_seg ?? 0}s`;
+  if (mode === "solo_reps") return `${set.repeticiones} reps`;
   return `${set.peso_kg}x${set.repeticiones}`;
 }
 
@@ -377,7 +379,7 @@ export function ExerciseCard({
         </div>
       </div>
 
-      {mode === "peso_reps" && overloadSuggestionsEnabled && overloadSuggestion ? (
+      {registroUsesReps(mode) && overloadSuggestionsEnabled && overloadSuggestion ? (
         <OverloadSuggestionBanner
           suggestion={overloadSuggestion}
           canApply={!!onApplySuggestionToSet}
@@ -429,6 +431,38 @@ export function ExerciseCard({
                   className="h-11 text-center"
                   placeholder={s.objetivo_peso_kg != null ? String(s.objetivo_peso_kg) : "0"}
                   flashToken={overloadFlash[`${si}:peso_kg`]}
+                />
+                {setDoneControl(s, si)}
+              </div>
+            </SwipeToDeleteRow>
+          ))}
+        </>
+      ) : mode === "solo_reps" ? (
+        <>
+          <div className={cn(SETS_GRID_ONE_INPUT, "text-xs text-muted-foreground")}>
+            <span aria-hidden className="mx-0.5" />
+            <span data-anterior-cell className="w-max justify-self-center">Anterior</span>
+            <span>Reps</span>
+            <span className="sr-only">Hecho</span>
+          </div>
+          {exercise.sets.map((s, si) => (
+            <SwipeToDeleteRow
+              key={s.id ?? si}
+              label={`serie ${si + 1}`}
+              onDelete={() => onRemoveSet(si)}
+              className={surfaceBg}
+            >
+              <div className={cn(SETS_GRID_ONE_INPUT, setRowClass(s))}>
+                {setNumberCell(s, si, "mx-0.5")}
+                {previousCell(si)}
+                <SetValueInput
+                  field="repeticiones"
+                  value={s.repeticiones}
+                  onValueChange={(v) => onUpdateSet(si, "repeticiones", v ?? 0)}
+                  onCommit={() => onAutoSaveSet?.(si)}
+                  className="h-11 text-center"
+                  placeholder={repsPlaceholder(s)}
+                  flashToken={overloadFlash[`${si}:repeticiones`]}
                 />
                 {setDoneControl(s, si)}
               </div>

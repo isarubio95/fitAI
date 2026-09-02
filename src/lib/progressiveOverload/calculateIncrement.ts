@@ -100,6 +100,9 @@ export function suggestProgressiveOverload(input: OverloadInput): OverloadSugges
   const working = workingSets(lastSets);
   if (!working.length) return null;
 
+  // Sin carga externa la única palanca son las repeticiones.
+  const repsOnly = input.mode === "solo_reps";
+
   const { lastWeight, avgReps, avgRir } = summarizeWorkingSets(lastSets);
   const performanceFactor = computePerformanceFactor(avgReps, target, avgRir);
   const fatigueNorm = input.muscleFatigueNorm ?? 0;
@@ -116,8 +119,11 @@ export function suggestProgressiveOverload(input: OverloadInput): OverloadSugges
       suggestedWeight: deloadWeight,
       suggestedReps: target.repesMin,
       confidence: 0.55,
-      reason:
-        fatigueNorm > 0.8
+      reason: repsOnly
+        ? fatigueNorm > 0.8
+          ? "Fatiga muscular alta; recorta el volumen de contactos esta sesión"
+          : "Carga acumulada elevada; semana de descarga sugerida"
+        : fatigueNorm > 0.8
           ? "Fatiga muscular alta; reduce un 10% esta sesión"
           : "Carga acumulada elevada; semana de descarga sugerida",
     };
@@ -148,8 +154,22 @@ export function suggestProgressiveOverload(input: OverloadInput): OverloadSugges
     }
   }
 
+  // Sin carga que subir, cumplir el techo del rango significa añadir una
+  // repetición más. Progresar de verdad pasa por una variante más exigente,
+  // pero eso lo decide la persona, no el motor.
+  if (repsOnly && avgReps >= target.repesMax && performanceFactor >= 0.5) {
+    const nextReps = Math.round(avgReps) + 1;
+    return {
+      action: "increase_reps",
+      suggestedWeight: 0,
+      suggestedReps: nextReps,
+      confidence: Math.min(0.9, 0.65 + performanceFactor * 0.2),
+      reason: `Cumpliste ${target.repesMax} reps; añade una más o pasa a una variante más exigente`,
+    };
+  }
+
   // Fase 2: subir peso con curva logarítmica × readiness.
-  if (avgReps >= target.repesMax && performanceFactor >= 0.5 && lastWeight > 0) {
+  if (!repsOnly && avgReps >= target.repesMax && performanceFactor >= 0.5 && lastWeight > 0) {
     const readiness = computeReadiness(fatigueNorm, form);
     const logBonus = Math.log(1 + performanceFactor * 2);
     const deltaKg = increment * logBonus * readiness;

@@ -3,6 +3,14 @@ import { normalizeRegistroSeries } from "@/types/workout";
 
 /** Segundos de trabajo estimados por serie en modo peso/reps. */
 const DEFAULT_WORK_SEC_PER_SET = 45;
+/**
+ * Segundos por serie en modo solo reps.
+ *
+ * Una serie pliométrica son 3-5 contactos con pausa entre ellos: mucho más
+ * corta que una de fuerza. Con los 45 s por defecto, una sesión de saltos salía
+ * sobreestimada en varios minutos.
+ */
+const SOLO_REPS_WORK_SEC_PER_SET = 20;
 /** Descanso por defecto si el ejercicio no lo define (coincide con el form). */
 const DEFAULT_REST_SEC = 120;
 /** Transición aproximada entre bloques (ejercicio o superserie). */
@@ -27,6 +35,7 @@ function workSecPerSet(ej: DurationInput, duracionObjetivoSeg?: number | null): 
     const d = Number(duracionObjetivoSeg ?? ej.duracion_objetivo_seg ?? 0);
     return d > 0 ? d : DEFAULT_WORK_SEC_PER_SET;
   }
+  if (mode === "solo_reps") return SOLO_REPS_WORK_SEC_PER_SET;
   return DEFAULT_WORK_SEC_PER_SET;
 }
 
