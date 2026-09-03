@@ -18,25 +18,8 @@ import {
 } from "@/hooks/useExerciseFavorites";
 import { useToast } from "@/hooks/use-toast";
 import { fetchExerciseCatalogDetail } from "@/hooks/useExerciseCatalog";
+import { difficultyToLevel } from "@/lib/exerciseDifficulty";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMediaUrl";
-
-function difficultyToLevel(d: unknown): 1 | 2 | 3 | null {
-  if (d == null) return null;
-  if (typeof d === "number" && Number.isFinite(d)) {
-    const n = Math.max(1, Math.min(3, Math.round(d)));
-    return n as 1 | 2 | 3;
-  }
-  const s = String(d).trim().toLowerCase();
-  const num = Number.parseInt(s, 10);
-  if (Number.isFinite(num)) {
-    const n = Math.max(1, Math.min(3, num));
-    return n as 1 | 2 | 3;
-  }
-  if (s.includes("baja")) return 1;
-  if (s.includes("media")) return 2;
-  if (s.includes("alta")) return 3;
-  return null;
-}
 
 function DifficultyBars({ level }: { level: 1 | 2 | 3 }) {
   const color =

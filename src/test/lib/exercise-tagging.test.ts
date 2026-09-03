@@ -118,6 +118,30 @@ describe("tagExercise · unilateral", () => {
     expect(tag("Bulgarian Split Squat", ["Dumbbell"]).unilateral).toBe(true);
   });
 
+  it("no confunde el agarre invertido con un acarreo", () => {
+    // "bottoms up" es un estilo de agarre de kettlebell, no un transporte:
+    // etiquetaba como `carry` presses y levantadas turcas.
+    const t = tag("Kettlebell Standing Bottoms Up One Arm Shoulder Press", ["Kettlebell"]);
+    expect(t.patron_movimiento).toContain("empuje_vertical");
+    expect(t.patron_movimiento).not.toContain("carry");
+    expect(t.registro_series).toBe("peso_reps");
+  });
+
+  it("una patada de glúteo no es locomoción", () => {
+    // "kick" estaba en `desplazamiento`, así que un kickback analítico salía
+    // como el mejor ejercicio para fútbol al puntuar los perfiles deportivos.
+    expect(tag("Glute Kickback", ["Cable"]).patron_movimiento).toEqual(["aislado"]);
+    expect(tag("Triceps Kickback", ["Dumbbell"]).patron_movimiento).toEqual(["aislado"]);
+    // Las patadas de artes marciales son golpeos.
+    expect(tag("Roundhouse Kick. Kickboxing", ["Body weight"]).patron_movimiento).toContain(
+      "lanzamiento",
+    );
+    // El talón al glúteo sí es técnica de carrera.
+    expect(tag("Double Leg Butt Kick", ["Body weight"]).patron_movimiento).toContain(
+      "desplazamiento",
+    );
+  });
+
   it("no confunde alternar con unilateral", () => {
     // Alternar sigue siendo trabajo de los dos lados en la misma serie.
     expect(tag("Alternating Kettlebell Row", ["Kettlebell"]).unilateral).toBe(false);
@@ -143,6 +167,29 @@ describe("tagExercise · modo de registro", () => {
     expect(tag("Front Plank", ["Body weight"]).registro_series).toBe("duracion");
     expect(tag("Farmers Walk", ["Kettlebell"]).registro_series).toBe("duracion");
     expect(tag("Wall Sit", ["Body weight"]).registro_series).toBe("duracion");
+  });
+
+  it("no confunde la halterofilia colgante con una suspensión", () => {
+    // "hang" a secas marcaba como cronometradas 20 filas de halterofilia:
+    // un hang clean es un levantamiento por repeticiones, no un colgarse.
+    expect(tag("Hang Clean", ["Barbell"]).registro_series).toBe("peso_reps");
+    expect(tag("Hang Snatch", ["Barbell"]).registro_series).toBe("peso_reps");
+    expect(tag("Hanging Leg Raise", ["Body weight"]).registro_series).toBe("peso_reps");
+    // La suspensión pasiva sí es tiempo.
+    expect(tag("Dead Hang", ["Body weight"]).registro_series).toBe("duracion");
+    expect(tag("One Handed Hang", ["Body weight"]).registro_series).toBe("duracion");
+  });
+
+  it("los acarreos y sujeciones van a duracion", () => {
+    for (const [n, eq] of [
+      ["Farmer's Walk", "Dumbbell"],
+      ["Yoke Walk", "Weighted"],
+      ["Sled Drag - Harness", "Sled machine"],
+      ["Plate Pinch", "Weighted"],
+      ["StrongMan Hercules Hold", "Weighted"],
+    ] as [string, string][]) {
+      expect(tag(n, [eq]).registro_series, n).toBe("duracion");
+    }
   });
 
   it("los estiramientos van a duracion", () => {
@@ -178,6 +225,101 @@ describe("tagExercise · vocabulario de equipo de las dos fuentes", () => {
     for (const eq of ["kettlebells", "bands", "dumbbell", "e-z curl bar", "cable"]) {
       const t = tag("Preacher Curl", [eq]);
       expect(t.cualidad.length, eq).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("tagExercise · palabras que significan lo contrario según el contexto", () => {
+  // Los cinco fallos que destapó auditar el etiquetado contra reglas mecánicas
+  // sobre el catálogo real: eran el 8,8% de los casos comprobables. Todos son
+  // la misma familia de bug —un término que se dispara donde no toca— que ya
+  // había aparecido con `kick`/`Glute Kickback` y con `bottoms up`/`carry`.
+
+  it("los fondos son empuje vertical, no horizontal", () => {
+    // Estaban en la lista de empuje_horizontal: las 12 filas con 'dip' del
+    // catálogo salían mal, paralelas y anillas incluidas.
+    for (const n of ["Parallel Bar Dip", "Ring Dips", "Triceps Dip", "Korean dips"]) {
+      const t = tag(n);
+      expect(t.patron_movimiento, n).toContain("empuje_vertical");
+      expect(t.patron_movimiento, n).not.toContain("empuje_horizontal");
+    }
+    // El fondo en banco sí es el gesto horizontal de tríceps.
+    expect(tag("Bench Dip").patron_movimiento).toContain("empuje_horizontal");
+  });
+
+  it("un reverse fly es tracción, no la apertura de pecho", () => {
+    // Las cuatro grafías y con palabras intercaladas: con listas de frases
+    // solas se escapaban "Reverse Flyes" y "Reverse Machine Flyes".
+    const variantes = [
+      "Lever Seated Reverse Fly",
+      "Band reverse fly",
+      "Rear Delt Fly",
+      "Reverse Peck Deck",
+      "Reverse Flyes",
+      "Reverse Flyes With External Rotation",
+      "Reverse Machine Flyes",
+      "Sled Reverse Flye",
+      "Back Flyes - With Bands",
+      "Dumbbell Lying Rear Lateral Raise",
+    ];
+    for (const n of variantes) {
+      const t = tag(n);
+      expect(t.patron_movimiento, n).toContain("traccion_horizontal");
+      expect(t.patron_movimiento, n).not.toContain("empuje_horizontal");
+    }
+    // La apertura de pecho de toda la vida sigue siendo empuje horizontal.
+    expect(tag("Dumbbell Chest Fly").patron_movimiento).toContain("empuje_horizontal");
+  });
+
+  it("un drag curl no es un acarreo", () => {
+    for (const n of ["Barbell Drag Curl", "Cable Drag Curl"]) {
+      const t = tag(n);
+      expect(t.patron_movimiento, n).not.toContain("carry");
+      expect(t.patron_movimiento, n).toContain("aislado");
+    }
+    // El arrastre de trineo sí lo es.
+    expect(tag("Sled Drag").patron_movimiento).toContain("carry");
+  });
+
+  it("'overhead' y 'pulldown' no convierten un analítico en empuje ni en jalón", () => {
+    expect(tag("Standing Overhead Barbell Triceps Extension").patron_movimiento).toEqual(["aislado"]);
+    expect(tag("Band one arm overhead biceps curl").patron_movimiento).toEqual(["aislado"]);
+    expect(tag("Cable Pulldown Bicep Curl").patron_movimiento).toEqual(["aislado"]);
+    // Y el press por encima de la cabeza sigue siendo empuje vertical.
+    expect(tag("Barbell Overhead Press").patron_movimiento).toContain("empuje_vertical");
+  });
+
+  it("tumbado se empuja en horizontal aunque el nombre no diga 'bench'", () => {
+    for (const n of ["Dumbbell Lying Elbow Press", "Dumbbell Lying Hammer Press", "Barbell Floor Press"]) {
+      const t = tag(n);
+      expect(t.patron_movimiento, n).toContain("empuje_horizontal");
+      expect(t.patron_movimiento, n).not.toContain("empuje_vertical");
+    }
+  });
+
+  it("'cross body' no es el directo de boxeo", () => {
+    const t = tag("Dumbbell Cross Body Hammer Curl");
+    expect(t.patron_movimiento).not.toContain("lanzamiento");
+    expect(t.patron_movimiento).toContain("aislado");
+    // El directo sí.
+    expect(tag("Boxing Cross").patron_movimiento).toContain("lanzamiento");
+  });
+
+  it("el aparato donde se hace no manda sobre el gesto", () => {
+    // El nombre del asset arrastra a veces la máquina: "Lever Calf Raise
+    // bench press machine" no es un press de banca.
+    const t = tag("Lever Calf Raise bench press machine");
+    expect(t.patron_movimiento).toContain("aislado");
+    expect(t.patron_movimiento).not.toContain("empuje_horizontal");
+  });
+});
+
+describe("tagExercise · cruce de poleas", () => {
+  it("un crossover es aducción de pecho, no un lanzamiento", () => {
+    for (const n of ["Cable Crossover", "Band Crossover", "Low Cable Crossover"]) {
+      const t = tag(n);
+      expect(t.patron_movimiento, n).toContain("empuje_horizontal");
+      expect(t.patron_movimiento, n).not.toContain("lanzamiento");
     }
   });
 });

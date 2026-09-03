@@ -94,6 +94,40 @@ const PATRON_A_GRUPO = {
   braceo: "Espalda",
 };
 
+/**
+ * Último recurso: el grupo por palabra clave del nombre.
+ *
+ * Lo necesitan las filas cuyo `body_part` es "Plyometrics" o "Full body"
+ * —que no son regiones anatómicas— y cuyo patrón tampoco basta para decidir,
+ * como un "Alternating Hamstring Curl" o un "Battling Ropes Side Raise".
+ */
+const NOMBRE_A_GRUPO = [
+  [["hamstring", "leg curl"], "Femoral"],
+  [["calf", "calves", "soleus", "gastrocnemius"], "Pantorrilla"],
+  [["quad", "quadriceps", "leg extension"], "Cuádriceps"],
+  [["glute", "hip thrust", "bridge"], "Glúteo"],
+  [["shoulder", "delt", "lateral raise", "side raise", "front raise", "press"], "Hombro"],
+  [["chest", "pec", "bench", "fly", "push up", "pushup"], "Pecho"],
+  [["lat", "row", "pull up", "pullup", "pulldown", "back"], "Espalda"],
+  [["bicep", "curl"], "Bíceps"],
+  [["tricep", "pushdown", "dip"], "Tríceps"],
+  [["wrist", "forearm", "grip"], "Antebrazo"],
+  [["abs", "crunch", "plank", "sit up", "core", "waist", "oblique"], "Core"],
+  [["neck"], "Cuello"],
+  [["stretch", "mobility", "pose", "smr"], "Movilidad"],
+  [["squat", "lunge", "jump", "hop", "bound", "step", "sprint", "run", "leg", "stand"], "Pierna"],
+];
+
+function grupoPorNombre(nombre) {
+  const n = " " + norm(nombre) + " ";
+  for (const [claves, grupo] of NOMBRE_A_GRUPO) {
+    for (const c of claves) {
+      if (n.includes(" " + c + " ") || n.includes(" " + c)) return grupo;
+    }
+  }
+  return null;
+}
+
 /** Los "Upper Arms" de Lyfta se resuelven por el nombre. */
 function grupoDeBrazo(nombre) {
   const n = norm(nombre);
@@ -135,7 +169,7 @@ export function musclesFromFdb(row, patrones = []) {
   const grupo =
     primarios.map((m) => FDB_MUSCLE[m]?.grupo).find(Boolean) ??
     patrones.map((p) => PATRON_A_GRUPO[p]).find(Boolean) ??
-    null;
+    grupoPorNombre(row.name);
 
   const musculos = [];
   for (const m of [...primarios, ...secundarios]) {
@@ -160,6 +194,7 @@ export function musclesFromLyfta(row, patrones = []) {
 
   if (!grupo && partes.includes("upper arms")) grupo = grupoDeBrazo(row.name);
   if (!grupo) grupo = patrones.map((p) => PATRON_A_GRUPO[p]).find(Boolean) ?? null;
+  if (!grupo) grupo = grupoPorNombre(row.name);
 
   // Lyfta no desglosa músculos: se rellenan los típicos del grupo para que las
   // vistas de volumen y el mapa corporal no se queden en blanco.
@@ -169,10 +204,10 @@ export function musclesFromLyfta(row, patrones = []) {
 }
 
 /** El `tipo` que ya usa la BD: Fuerza | Cardio | Estiramiento. */
-export function tipoFromTags({ grupo, cualidad = [], registro_series }) {
-  if (grupo === "Cardio" || cualidad.includes("resistencia") && registro_series === "duracion" && grupo === "Cardio") {
-    return "Cardio";
-  }
+export function tipoFromTags({ grupo, cualidad = [] }) {
+  // La segunda mitad de esta condición exigía grupo === "Cardio" otra vez, así
+  // que no añadía nada. Cardio es el grupo; el resto se decide por cualidad.
+  if (grupo === "Cardio") return "Cardio";
   if (grupo === "Movilidad" || cualidad.includes("movilidad")) return "Estiramiento";
   return "Fuerza";
 }

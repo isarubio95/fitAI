@@ -122,10 +122,13 @@ comment on column public.tipo_ejercicio.origen_externo_id is 'Id en la fuente ex
 
 ${indexes("tipo_ejercicio")}
 
--- Reimportar no debe duplicar. Parcial: las filas nativas siguen con origen null.
+-- Reimportar no debe duplicar. No parcial: ON CONFLICT necesita un índice
+-- que no lleve WHERE para poder usarlo como destino de inferencia. Las filas
+-- nativas (origen y origen_externo_id ambos null) no chocan entre sí de
+-- todos modos, porque Postgres trata cada NULL como distinto en un índice
+-- único.
 create unique index if not exists tipo_ejercicio_origen_externo_uidx
-  on public.tipo_ejercicio (origen, origen_externo_id)
-  where origen is not null and origen_externo_id is not null;
+  on public.tipo_ejercicio (origen, origen_externo_id);
 
 -- ── Ejercicios creados por el usuario ─────────────────────────────────────
 -- Mismas etiquetas para que un ejercicio propio también entre en rutinas

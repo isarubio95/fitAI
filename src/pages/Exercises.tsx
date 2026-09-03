@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { filterButtonActive } from "@/lib/filter-pill-styles";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
+import { EQUIPOS, parseEquipoList } from "@/constants/exerciseEquipment";
+import { difficultyToLevel } from "@/lib/exerciseDifficulty";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMediaUrl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -145,11 +147,17 @@ function difficultyLabel(level: DifficultyLevel) {
   return DIFFICULTY_OPTIONS.find((o) => o.level === level)?.label ?? String(level);
 }
 
-function splitEquipmentUnits(value: unknown): string[] {
-  return String(value ?? "")
-    .split(",")
-    .map((x) => x.trim())
-    .filter(Boolean);
+/**
+ * Átomos de equipo de un ejercicio. `equipment_list` es la columna canónica;
+ * el string `equipment` es solo el respaldo para filas que aún no la tengan
+ * (ejercicios creados por el usuario antes de la normalización).
+ */
+function equipmentUnits(ex: { equipment_list?: unknown; equipment?: unknown }): string[] {
+  const lista = ex.equipment_list;
+  if (Array.isArray(lista) && lista.length) {
+    return lista.map((x) => String(x).trim()).filter(Boolean);
+  }
+  return parseEquipoList(ex.equipment == null ? null : String(ex.equipment));
 }
 
 function normalizeText(s: unknown) {
@@ -209,24 +217,6 @@ const MUSCLE_GROUP_ICONS: Record<MainMuscleGroup, typeof Dumbbell> = {
 function getExerciseIcon(ex: { musculos_involucrados?: string[] | null }) {
   const group = getMainGroupFromBodyPart(ex.musculos_involucrados as string[] | null);
   return group ? MUSCLE_GROUP_ICONS[group] : Dumbbell;
-}
-
-function difficultyToLevel(d: unknown): 1 | 2 | 3 | null {
-  if (d == null) return null;
-  if (typeof d === "number" && Number.isFinite(d)) {
-    const n = Math.max(1, Math.min(3, Math.round(d)));
-    return n as 1 | 2 | 3;
-  }
-  const s = String(d).trim().toLowerCase();
-  const num = Number.parseInt(s, 10);
-  if (Number.isFinite(num)) {
-    const n = Math.max(1, Math.min(3, num));
-    return n as 1 | 2 | 3;
-  }
-  if (s.includes("baja")) return 1;
-  if (s.includes("media")) return 2;
-  if (s.includes("alta")) return 3;
-  return null;
 }
 
 function DifficultyBars({ level }: { level: 1 | 2 | 3 }) {
@@ -327,13 +317,18 @@ const Exercises = () => {
       ),
     [exercises],
   );
-  const equipmentOptions = useMemo(
-    () =>
-      uniqNonEmpty(exercises.flatMap((x) => splitEquipmentUnits(x.equipment))).sort((a, b) =>
-        a.localeCompare(b, undefined, { sensitivity: "base" }),
-      ),
-    [exercises],
-  );
+  // En el orden de EQUIPOS, no alfabetico: agrupa lo relacionado (las barras
+  // juntas, los bancos juntos) y es estable aunque cambien los datos.
+  const equipmentOptions = useMemo(() => {
+    const presentes = new Set(exercises.flatMap((x) => equipmentUnits(x)));
+    const canonicos = EQUIPOS.filter((e) => presentes.has(e));
+    // Cualquier valor fuera del vocabulario (un ejercicio propio del usuario)
+    // se muestra al final en vez de desaparecer del filtro.
+    const sueltos = [...presentes]
+      .filter((e) => !(EQUIPOS as readonly string[]).includes(e))
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    return [...canonicos, ...sueltos];
+  }, [exercises]);
 
   const sortedExercises = useMemo(() => {
     if (!exercises?.length) return [];
@@ -360,7 +355,7 @@ const Exercises = () => {
       if (filters.tipos.length && !filters.tipos.includes(String(ex.tipo ?? "").trim())) return false;
       if (filters.grupos.length && !filters.grupos.includes(String(ex.grupo_muscular ?? "").trim())) return false;
       if (filters.equipments.length) {
-        const units = splitEquipmentUnits(ex.equipment);
+        const units = equipmentUnits(ex);
         const hasAnySelectedEquipment = filters.equipments.some((eq) => units.includes(eq));
         if (!hasAnySelectedEquipment) return false;
       }
