@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   SECTION_UNDERLINE_TABS_LIST,
@@ -9,9 +9,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSectionTabUnderlineAnimation } from "@/hooks/useSectionTabUnderlineAnimation";
 import { YOU_TABS, YOU_TAB_LABELS, normalizeYouTab, youTabNeedsRedirect } from "@/lib/youPageTabs";
-import WorkoutHistory from "@/pages/WorkoutHistory";
-import YouHealth from "@/pages/YouHealth";
-import YouActivities from "@/pages/YouActivities";
+import { RouteFallback } from "@/components/layout/RouteFallback";
+
+// Estáticos, Evolution arrastraba las tres subpantallas (con recharts) aunque
+// el usuario solo abriera una.
+const WorkoutHistory = lazy(() => import("@/pages/WorkoutHistory"));
+const YouHealth = lazy(() => import("@/pages/YouHealth"));
+const YouActivities = lazy(() => import("@/pages/YouActivities"));
 
 export default function EvolutionPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -49,15 +53,21 @@ export default function EvolutionPage() {
       </div>
 
       <TabsContent value="progress" className={SECTION_TAB_PANEL}>
-        <WorkoutHistory />
+        <Suspense fallback={<RouteFallback />}>
+          <WorkoutHistory />
+        </Suspense>
       </TabsContent>
 
       <TabsContent value="health" className={SECTION_TAB_PANEL}>
-        <YouHealth />
+        <Suspense fallback={<RouteFallback />}>
+          <YouHealth />
+        </Suspense>
       </TabsContent>
 
       <TabsContent value="activities" className={SECTION_TAB_PANEL}>
-        <YouActivities />
+        <Suspense fallback={<RouteFallback />}>
+          <YouActivities />
+        </Suspense>
       </TabsContent>
     </Tabs>
   );

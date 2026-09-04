@@ -1,7 +1,25 @@
 import { useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 
-function readEnvSafeArea(side: "top" | "bottom"): number {
+type Side = "top" | "bottom";
+
+/**
+ * Capacitor 8 inyecta `--safe-area-inset-*` en `documentElement` con los
+ * WindowInsets reales (systemBars | displayCutout) en cada `onApplyWindowInsets`.
+ * Es la fuente más fiable en Android: cubre notch, barra de gestos, 3 botones,
+ * rotación y plegables. Devuelve `null` si la variable no existe (web, o
+ * `insetsHandling: 'disable'`), y `0` legítimo cuando el teclado está abierto.
+ */
+function readCapacitorInset(side: Side): number | null {
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue(`--safe-area-inset-${side}`)
+    .trim();
+  if (!raw) return null;
+  const value = parseFloat(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+function readEnvSafeArea(side: Side): number {
   const padding = side === "top" ? "padding-top" : "padding-bottom";
   const inset = side === "top" ? "safe-area-inset-top" : "safe-area-inset-bottom";
   const probe = document.createElement("div");
@@ -24,23 +42,29 @@ function systemFontScale(): number {
   return Math.max(textScale, 1);
 }
 
-/** Estima la altura de la barra de estado cuando env(safe-area-inset-top) es 0 (Android WebView). */
-function estimateNativeStatusBarHeight(): number {
-  // ~24sp de altura base en Android; crece con el tamaño de fuente del sistema.
-  return Math.round(24 * systemFontScale());
+/** Último recurso: WebView antigua (<140) sin soporte de `env(safe-area-inset-*)`. */
+function estimateNativeInset(side: Side): number {
+  // ~24sp de status bar y ~48dp de navigationBar de 3 botones en Android.
+  const base = side === "top" ? 24 : 48;
+  return Math.round(base * systemFontScale());
 }
 
-/** Estima la barra de navegación / gesto cuando env(safe-area-inset-bottom) es 0. */
-function estimateNativeNavBarHeight(): number {
-  // ~48dp de navigationBar en Android (3 botones); en gesto sobra color, no hueco.
-  return Math.round(48 * systemFontScale());
-}
+function resolveSafeArea(side: Side): number {
+  const native = Capacitor.isNativePlatform();
 
-function resolveSafeArea(side: "top" | "bottom"): number {
+  // 1. Insets reales de Capacitor. Se respeta incluso el 0 (teclado abierto).
+  if (native) {
+    const injected = readCapacitorInset(side);
+    if (injected !== null) return injected;
+  }
+
+  // 2. `env(safe-area-inset-*)` — web, PWA instalada y WebView >= 140.
   const envInset = readEnvSafeArea(side);
   if (envInset > 0) return envInset;
-  if (!Capacitor.isNativePlatform()) return 0;
-  return side === "top" ? estimateNativeStatusBarHeight() : estimateNativeNavBarHeight();
+
+  // 3. En web un 0 es un 0; solo estimamos en nativo sin ninguna otra fuente.
+  if (!native) return 0;
+  return estimateNativeInset(side);
 }
 
 /**
@@ -49,16 +73,36 @@ function resolveSafeArea(side: "top" | "bottom"): number {
  */
 export function useSafeAreaInsetsSync() {
   useEffect(() => {
+    let lastTop: string | null = null;
+    let lastBottom: string | null = null;
+
     const sync = () => {
+      const top = `${resolveSafeArea("top")}px`;
+      const bottom = `${resolveSafeArea("bottom")}px`;
+      // Cortocircuito: el MutationObserver observa el mismo `style` que escribimos.
+      if (top === lastTop && bottom === lastBottom) return;
+      lastTop = top;
+      lastBottom = bottom;
+
       const root = document.documentElement.style;
-      root.setProperty("--app-safe-area-top", `${resolveSafeArea("top")}px`);
-      root.setProperty("--app-safe-area-bottom", `${resolveSafeArea("bottom")}px`);
+      root.setProperty("--app-safe-area-top", top);
+      root.setProperty("--app-safe-area-bottom", bottom);
     };
 
     sync();
     window.addEventListener("resize", sync);
     window.visualViewport?.addEventListener("resize", sync);
+
+    // Capacitor reinyecta las variables al rotar, al abrir el teclado o al
+    // cambiar el modo de navegación, y no siempre dispara `resize`.
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["style"],
+    });
+
     return () => {
+      observer.disconnect();
       window.removeEventListener("resize", sync);
       window.visualViewport?.removeEventListener("resize", sync);
     };

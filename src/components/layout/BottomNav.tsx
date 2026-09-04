@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
+import { tapLight } from "@/lib/haptics";
+import { preloadRoute } from "@/lib/routePreload";
+import { markNavDirection } from "@/lib/navDirection";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
@@ -110,7 +113,7 @@ export function BottomNav({
       >
         <button
           className="flex w-full items-center gap-3.5 rounded-none px-4 py-3 text-left text-base transition-colors hover:bg-accent/30"
-          onClick={() => { openNew(); setIsMenuOpen(false); }}
+          onClick={() => { tapLight(); openNew(); setIsMenuOpen(false); }}
         >
           <GymWorkoutIcon className="h-6 w-6 text-primary" />
           <div className="min-w-0">
@@ -120,7 +123,7 @@ export function BottomNav({
         </button>
         <button
           className="flex w-full items-center gap-3.5 rounded-none px-4 py-3 text-left text-base transition-colors hover:bg-accent/30"
-          onClick={() => { openLiveSetup(); setIsMenuOpen(false); }}
+          onClick={() => { tapLight(); openLiveSetup(); setIsMenuOpen(false); }}
         >
           <CardioWorkoutIcon className="h-6 w-6 text-blue-500" />
           <div className="min-w-0">
@@ -139,6 +142,7 @@ export function BottomNav({
               <div key="add-button" className="flex flex-1 flex-col items-center justify-center gap-1">
                 <button
                   onClick={() => {
+                    tapLight();
                     if (onNavigate) {
                       onNavigate();
                       return;
@@ -184,7 +188,16 @@ export function BottomNav({
               key={to}
               to={to!}
               end={to === "/"}
+              // Anima la entrada de la nueva sección (ver ::view-transition-* en
+              // index.css). Donde la API no existe, React Router navega normal.
+              viewTransition
+              // Adelanta el chunk ~150 ms al click: elimina el hueco en blanco.
+              onPointerDown={() => preloadRoute(to!)}
               onClick={() => {
+                markNavDirection(location.pathname, to!);
+                // Mismo pulso que el botón central: toda la barra responde igual,
+                // también al tocar el tab en el que ya estás.
+                tapLight();
                 onNavigate?.();
                 if (location.pathname === to) window.scrollTo(0, 0);
               }}

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Atajos del launcher: aparecen al mantener pulsado el icono de la app y se
+  pueden anclar a la pantalla de inicio. Es un gesto que la gente espera de
+  cualquier app de Android y que una webview normalmente no ofrece.
+
+  Se resuelven por el deep link `com.trackgym.app://` que ya declara la
+  MainActivity; el front los lee en `registerNativeAuthListener` / appUrlOpen.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="start-gym"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_gym"
+        android:shortcutShortLabel="@string/shortcut_gym_short"
+        android:shortcutLongLabel="@string/shortcut_gym_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.trackgym.app"
+            android:targetClass="com.trackgym.app.MainActivity"
+            android:data="com.trackgym.app://start/gym" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="start-cardio"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_cardio"
+        android:shortcutShortLabel="@string/shortcut_cardio_short"
+        android:shortcutLongLabel="@string/shortcut_cardio_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.trackgym.app"
+            android:targetClass="com.trackgym.app.MainActivity"
+            android:data="com.trackgym.app://start/cardio" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>

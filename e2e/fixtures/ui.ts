@@ -11,6 +11,9 @@ export async function loginAsE2EUser(page: Page): Promise<SupabaseMockState> {
   const mock = await installSupabaseMock(page);
   await page.goto("/auth");
   await expect(page.getByRole("heading", { name: "Track Gym" })).toBeVisible();
+  // /auth abre en la pantalla de bienvenida (WelcomeStep); el formulario está
+  // detrás de "Ya tengo cuenta".
+  await page.getByRole("button", { name: "Ya tengo cuenta" }).click();
   await page.getByLabel("Email").fill(E2E_USER_EMAIL);
   await page.getByLabel("Contraseña", { exact: true }).fill("password123");
   await page.getByRole("button", { name: /Iniciar sesión/i }).click();

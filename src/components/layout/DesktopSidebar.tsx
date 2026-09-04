@@ -3,6 +3,7 @@ import { Home, User, LogOut, ClipboardList, Plus, Users, MapPin } from "lucide-r
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
+import { preloadRoute } from "@/lib/routePreload";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ProfileDrawerTrigger } from "@/components/layout/ProfileDrawer";
@@ -69,6 +70,8 @@ export function DesktopSidebar() {
             key={to}
             to={to}
             end={to === "/"}
+            onPointerEnter={() => preloadRoute(to)}
+            onPointerDown={() => preloadRoute(to)}
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",

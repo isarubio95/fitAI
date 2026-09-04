@@ -4,6 +4,11 @@
     <string name="title_activity_main">Track Gym</string>
     <string name="package_name">com.trackgym.app</string>
     <string name="custom_url_scheme">com.trackgym.app</string>
+    <!-- Atajos del launcher (res/xml/shortcuts.xml). El corto cabe en el icono anclado. -->
+    <string name="shortcut_gym_short">Fuerza</string>
+    <string name="shortcut_gym_long">Empezar entreno de fuerza</string>
+    <string name="shortcut_cardio_short">Cardio</string>
+    <string name="shortcut_cardio_long">Empezar sesión de cardio</string>
     <!-- Health Connect muestra esta URL al tocar «Política de privacidad» en el diálogo de permisos. -->
     <string name="health_connect_privacy_policy_url">file:///android_asset/public/privacypolicy.html</string>
 </resources>

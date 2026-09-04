@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { usePageLayoutMeta } from "@/hooks/usePageLayoutMeta";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,10 +9,7 @@ import { ProfileDrawerProvider, ProfileDrawerTrigger } from "@/components/layout
 import { SettingsDrawer } from "./SettingsDrawer";
 import { ActiveWorkoutPill } from "@/components/workout/ActiveWorkoutPill";
 import { GlobalWorkoutDrawerProvider } from "@/hooks/useGlobalWorkoutDrawer";
-import { WorkoutLogger } from "@/components/workout/WorkoutLogger";
 import { GlobalCardioDrawerProvider } from "@/hooks/useGlobalCardioDrawer";
-import { CardioLogger } from "@/components/cardio/CardioLogger";
-import { CardioLiveRecorder } from "@/components/cardio/CardioLiveRecorder";
 import { ActiveCardioPill } from "@/components/cardio/ActiveCardioPill";
 import { LiveSessionRehydrator } from "@/components/live/LiveSessionRehydrator";
 import { Loader2 } from "lucide-react";
@@ -32,7 +29,11 @@ import { InAppToastNavigationHost } from "@/components/notifications/InAppToastN
 import { useSafeAreaInsetsSync } from "@/hooks/useSafeAreaInsetsSync";
 import { useLogrosSync } from "@/hooks/useLogrosSync";
 import { useImportGoogleAvatar } from "@/hooks/useImportGoogleAvatar";
+import { useHideSplashWhenReady } from "@/hooks/useHideSplashWhenReady";
 import { HeaderSectionTabs } from "./HeaderSectionTabs";
+import { RouteFallback } from "./RouteFallback";
+import { DeferredGlobalDrawers } from "./DeferredGlobalDrawers";
+import { NativeShortcutHandler } from "./NativeShortcutHandler";
 
 export function AppLayout() {
   useSafeAreaInsetsSync();
@@ -63,6 +64,10 @@ export function AppLayout() {
       return data;
     },
   });
+
+  // El splash nativo aguanta hasta aquí: así el arranque no encadena fondo
+  // vacío + spinner de sesión + spinner de perfil antes de la primera pantalla.
+  useHideSplashWhenReady(!loading && !!user && !profileLoading);
 
   const currentTab = searchParams.get("tab") || "";
 
@@ -310,17 +315,22 @@ export function AppLayout() {
               "md:pt-12",
             )}
           >
-            {/* Navegación por gestos desactivada: usamos solo el contenido de rutas directamente */}
-            <Outlet />
+            {/*
+              El límite de Suspense va aquí y no en App: si envuelve a <Routes>,
+              el fallback también tapa header y bottom nav y la pantalla parpadea
+              entera al cambiar de sección.
+            */}
+            <Suspense fallback={<RouteFallback />}>
+              <Outlet />
+            </Suspense>
           </main>
         </div>
         <LiveSessionRehydrator />
+        <NativeShortcutHandler />
         <ActiveWorkoutPill />
         <ActiveCardioPill />
         <BottomNav />
-        <WorkoutLogger />
-        <CardioLogger />
-        <CardioLiveRecorder />
+        <DeferredGlobalDrawers />
       </div>
       </ProfileDrawerProvider>
       </InAppNotificationsProvider>

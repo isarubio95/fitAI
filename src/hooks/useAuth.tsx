@@ -2,6 +2,8 @@ import { useState, useEffect, createContext, useContext } from "react";
 import type { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { registerNativeAuthListener } from "@/lib/nativeAuth";
+import { queryClient } from "@/lib/queryClient";
+import { clearPersistedQueries, didUserChange } from "@/lib/queryPersistence";
 
 interface AuthContextType {
   user: User | null;
@@ -25,19 +27,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     registerNativeAuthListener();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    /**
+     * La caché de queries se persiste en localStorage para que la app arranque
+     * con contenido en vez de spinners. Si la sesión pasa a ser de otra cuenta
+     * (o se cierra), hay que tirarla: si no, el siguiente arranque pintaría
+     * datos del usuario anterior antes de revalidar.
+     */
+    const applySession = (session: Session | null) => {
+      if (didUserChange(session?.user?.id ?? null)) {
+        clearPersistedQueries();
+        queryClient.clear();
       }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-    });
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => applySession(session)
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => applySession(session));
 
     return () => subscription.unsubscribe();
   }, []);

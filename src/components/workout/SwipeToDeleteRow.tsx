@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { tapLight } from "@/lib/haptics";
 
 const AXIS_LOCK_PX = 10;
 const DELETE_PX = 144;
@@ -80,6 +81,8 @@ export function SwipeToDeleteRow({
   const setArmedBoth = (value: boolean) => {
     if (value === armedRef.current) return;
     armedRef.current = value;
+    // Al cruzar el umbral, el tick confirma que soltar ya borra — sin mirar.
+    if (value) tapLight();
     if (popRafRef.current != null) cancelAnimationFrame(popRafRef.current);
     popRafRef.current = requestAnimationFrame(() => {
       popRafRef.current = null;

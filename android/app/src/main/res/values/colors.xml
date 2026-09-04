@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sin este archivo, colorPrimary/colorPrimaryDark/colorAccent resolvían a los
+  placeholders de @capacitor/android (#3F51B5 / #303F9F / #FF4081), el índigo y
+  rosa de Material 1, visibles en el task switcher y en el chrome nativo.
+
+  Los valores son el equivalente hex de los tokens de src/index.css: el
+  "background" claro es hsl(60 8% 92%) y el acento, el verde del logo.
+-->
+<resources>
+    <color name="colorPrimary">#22C55E</color>
+    <color name="colorPrimaryDark">#16A34A</color>
+    <color name="colorAccent">#22C55E</color>
+
+    <!-- Fondo de ventana: evita el flash blanco entre splash y primer paint. -->
+    <color name="appBackground">#ECECE9</color>
+</resources>

@@ -4,40 +4,71 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { persistOptions } from "@/lib/queryPersistence";
+import { queryClient } from "@/lib/queryClient";
+import { Capacitor } from "@capacitor/core";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useHideSplashWhenReady } from "@/hooks/useHideSplashWhenReady";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { RestTimerProvider } from "@/components/workout/RestTimerProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ScrollToTop } from "@/components/layout/ScrollToTop";
+import { ScrollManager } from "@/components/layout/ScrollManager";
+import { usePressFeedback } from "@/hooks/usePressFeedback";
+import { routeLoaders } from "@/lib/routePreload";
+import type { ComponentType } from "react";
 
-const Auth = lazy(() => import("./pages/Auth"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Library = lazy(() => import("./pages/Library"));
-const Community = lazy(() => import("./pages/Community"));
-const Evolution = lazy(() => import("./pages/Evolution"));
-const CardioRoutines = lazy(() => import("./pages/CardioRoutines"));
+type PageLoader = () => Promise<{ default: ComponentType<unknown> }>;
+
+// Comparten loader con `preloadRoute`, de modo que la precarga del pointerdown
+// y el `lazy` acaben resolviendo el mismo módulo ya cacheado.
+const Auth = lazy(routeLoaders["/auth"] as PageLoader);
+const Dashboard = lazy(routeLoaders["/"] as PageLoader);
+const Library = lazy(routeLoaders["/routines"] as PageLoader);
+const Community = lazy(routeLoaders["/community"] as PageLoader);
+const Evolution = lazy(routeLoaders["/evolution"] as PageLoader);
+const CardioRoutines = lazy(routeLoaders["/cardio-routines"] as PageLoader);
+const Gyms = lazy(routeLoaders["/gimnasios"] as PageLoader);
+
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
-const Gyms = lazy(() => import("./pages/Gyms"));
 
-const queryClient = new QueryClient();
+const isNative = Capacitor.isNativePlatform();
+
+/**
+ * Sin sesión no se pasa por AppLayout, así que el splash se ocultaría solo por
+ * el tope de seguridad. Aquí se cierra en cuanto sabemos que la pantalla
+ * definitiva es la de login. Ocultar el splash es idempotente.
+ */
+const SplashGate = () => {
+  const { user, loading } = useAuth();
+  useHideSplashWhenReady(!loading && !user);
+  return null;
+};
 
 const App = () => {
+  // En la raíz, no en AppLayout: la pantalla de auth también necesita feedback.
+  usePressFeedback();
+
   return (
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
+      {/* Rehidrata la caché en disco antes del primer render: la app abre con
+          el contenido de la última sesión y revalida por detrás. */}
+      <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
         <AuthProvider>
+          <SplashGate />
           <RestTimerProvider>
             <TooltipProvider>
               <Toaster />
               <Sonner />
-              <Analytics />
-              <SpeedInsights />
+              {/* Solo web: en el APK son scripts de Vercel que no sirven a nadie
+                  y peticiones que fallan cuando no hay red. */}
+              {!isNative && <Analytics />}
+              {!isNative && <SpeedInsights />}
               <BrowserRouter>
-                <ScrollToTop />
+                <ScrollManager />
                 <Suspense fallback={null}>
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
@@ -61,7 +92,7 @@ const App = () => {
             </TooltipProvider>
           </RestTimerProvider>
         </AuthProvider>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </ThemeProvider>
   );
 };

@@ -17,6 +17,7 @@ import { WorkoutMuscleMiniMap } from "@/components/dashboard/WorkoutMuscleMiniMa
 import type { RutinaWithDetails } from "@/types/routine";
 import { formatRitmoSegKmLabel } from "@/types/workout";
 import { cn } from "@/lib/utils";
+import { tapMedium } from "@/lib/haptics";
 import {
   aggregateRoutineMuscleSets,
   summarizeRoutineMuscleGroups,
@@ -138,7 +139,9 @@ function RoutineCardBase({
   const openActionsMenu = () => {
     clearLongPress();
     suppressClickRef.current = true;
-    if ("vibrate" in navigator) navigator.vibrate(12);
+    // Efecto predefinido del sistema en vez de un buzz de 12 ms: es el mismo
+    // tick que da Android al confirmar un long-press.
+    tapMedium();
     setMenuOpen(true);
   };
 

@@ -7,8 +7,13 @@ import {
 } from "@/lib/pageStyles";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSectionTabUnderlineAnimation } from "@/hooks/useSectionTabUnderlineAnimation";
-import Routines from "@/pages/Routines";
-import Exercises from "@/pages/Exercises";
+import { Suspense, lazy } from "react";
+import { RouteFallback } from "@/components/layout/RouteFallback";
+
+// Estáticos, Library arrastraba las dos subpantallas (Exercises son 1100 líneas
+// más el catálogo) aunque el usuario solo abriera una.
+const Routines = lazy(() => import("@/pages/Routines"));
+const Exercises = lazy(() => import("@/pages/Exercises"));
 
 export default function Library() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -40,11 +45,15 @@ export default function Library() {
       </div>
 
       <TabsContent value="rutinas" className={SECTION_TAB_PANEL}>
-        <Routines />
+        <Suspense fallback={<RouteFallback />}>
+          <Routines />
+        </Suspense>
       </TabsContent>
 
       <TabsContent value="ejercicios" className={SECTION_TAB_PANEL}>
-        <Exercises />
+        <Suspense fallback={<RouteFallback />}>
+          <Exercises />
+        </Suspense>
       </TabsContent>
     </Tabs>
   );

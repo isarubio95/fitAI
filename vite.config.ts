@@ -20,6 +20,10 @@ export default defineConfig(({ mode }) => ({
     googleAvatarDevProxy(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registramos a mano desde src/main.tsx: dentro del APK la app ya se sirve
+      // del filesystem y un service worker solo añade una capa de caché capaz de
+      // devolver JS viejo tras actualizar la app.
+      injectRegister: null,
       includeAssets: ['favicon.ico', 'robots.txt', 'logo.svg'],
       workbox: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

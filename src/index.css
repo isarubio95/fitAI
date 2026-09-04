@@ -257,23 +257,37 @@
   }
   body {
     @apply bg-background text-foreground;
-    /*
-     * Orbes de acento muy tenues: el sistema de diseño pide un fondo
-     * prácticamente plano, así que solo insinúan el color de acento.
-     */
+  }
+
+  /*
+   * Orbes de acento muy tenues: el sistema de diseño pide un fondo
+   * prácticamente plano, así que solo insinúan el color de acento.
+   *
+   * Van en un pseudo-elemento fijo y no en `background-attachment: fixed` sobre
+   * el body: esa propiedad obliga a repintar el viewport entero en cada frame
+   * de scroll, y con cuatro degradados radiales encima es una fuente de tirones
+   * en gama media. Así el degradado queda en su propia capa del compositor y el
+   * scroll no lo toca. El z-index negativo lo deja sobre el fondo del body y
+   * por debajo de todo el contenido, de modo que el aspecto no cambia.
+   */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background-image:
       radial-gradient(1100px circle at 10% -5%, hsl(var(--primary) / 0.07), transparent 45%),
       radial-gradient(1000px circle at 95% 5%, hsl(var(--primary) / 0.05), transparent 50%),
       radial-gradient(1200px circle at 50% 105%, hsl(60 10% 62% / 0.1), transparent 55%),
       radial-gradient(800px circle at 70% 50%, hsl(var(--primary) / 0.03), transparent 55%);
-    background-attachment: fixed;
   }
   /* Evita salto de ancho en escritorio cuando Radix abre Select/Dialog: no añadir padding extra si ya usamos scrollbar-gutter */
   body[data-scroll-locked] {
     margin-right: 0 !important;
     padding-right: 0 !important;
   }
-  .dark body {
+  .dark body::before {
     background-image:
       radial-gradient(1100px circle at 10% -5%, hsl(var(--primary) / 0.1), transparent 45%),
       radial-gradient(1000px circle at 95% 5%, hsl(var(--primary) / 0.08), transparent 50%),
@@ -491,8 +505,12 @@ html.dark [data-app-bottom-nav] {
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* En dispositivos táctiles desactivamos feedback de hover persistente (excepto UI con estilo propio). */
-  /* Excluye switches: son <button> y necesitan bg/borde propios al activarse. */
+  /*
+   * En dispositivos táctiles desactivamos el hover persistente: la WebView de
+   * Android lo deja pegado tras un tap. Solo `:hover` — `:active` y el feedback
+   * de pulsación se gestionan más abajo con [data-pressed].
+   * Excluye switches: son <button> y necesitan bg/borde propios al activarse.
+   */
   button:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]):not([role="switch"]),
   [role="button"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
   [role="tab"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
@@ -500,15 +518,7 @@ html.dark [data-app-bottom-nav] {
   [role="option"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
   [role="link"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
   a[href]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  summary:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  button:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]):not([role="switch"]),
-  [role="button"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  [role="tab"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  [role="menuitem"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  [role="option"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  [role="link"]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  a[href]:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  summary:active:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]) {
+  summary:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]) {
     background-color: transparent !important;
     background-image: none !important;
     color: inherit !important;
@@ -518,6 +528,24 @@ html.dark [data-app-bottom-nav] {
     transform: none !important;
     filter: none !important;
     text-decoration: none !important;
+  }
+
+  /*
+   * El long-press no debe abrir el menú de selección de texto de la WebView:
+   * es el gesto de arrastrar/reordenar y el tell más evidente de que es una web.
+   */
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"],
+  .select-text {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   button:not([data-draggable-pill]):not([data-dnd-handle]),
@@ -547,6 +575,96 @@ html.dark [data-app-bottom-nav] {
     --tw-ring-color: transparent !important;
     --tw-ring-offset-width: 0px !important;
     --tw-ring-offset-color: transparent !important;
+  }
+}
+
+/*
+ * Feedback de pulsación (state layer estilo Material).
+ *
+ * No usamos `:active`: la WebView de Android lo deja pegado cuando el gesto se
+ * convierte en scroll, y no se puede cancelar por umbral de desplazamiento.
+ * `usePressFeedback` (src/hooks/usePressFeedback.ts) pone [data-pressed] al
+ * apoyar el dedo y lo cambia a "release" al levantarlo, de modo que la entrada
+ * es rápida (80 ms) y la salida suave (180 ms) — la curva de Material.
+ *
+ * Solo `transform` y `opacity`: ambas van en el compositor, así que el feedback
+ * no compite con el hilo principal aunque la pantalla esté renderizando.
+ * Sin `@layer`, para ganar a utilidades como `active:scale-*` sin `!important`.
+ */
+@media (hover: none), (pointer: coarse) {
+  [data-pressed] {
+    transform: scale(0.965);
+    opacity: 0.8;
+    transition:
+      transform 80ms cubic-bezier(0.2, 0, 0, 1),
+      opacity 80ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  [data-pressed="release"] {
+    transform: none;
+    opacity: 1;
+    transition:
+      transform 180ms cubic-bezier(0.2, 0, 0, 1),
+      opacity 180ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-pressed],
+    [data-pressed="release"] {
+      transform: none;
+      transition: opacity 80ms linear;
+    }
+  }
+}
+
+/*
+ * Transición entre secciones de la bottom nav (shared axis de Material).
+ *
+ * El nombre de view-transition va solo en <main>, no en la raíz: si se anima
+ * todo el documento, el header fijo y la bottom nav se desplazan con él y el
+ * resultado parece una web recargando, no una app cambiando de pestaña.
+ *
+ * Solo `transform` y `opacity`, y sobre una instantánea que gestiona el
+ * compositor, así que la animación no depende de lo que tarde en renderizar el
+ * árbol nuevo. La dirección la fija `markNavDirection` (src/lib/navDirection.ts).
+ */
+@media (hover: none), (pointer: coarse) {
+  main {
+    view-transition-name: page-content;
+  }
+}
+
+@keyframes page-enter-forward {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes page-enter-back {
+  from { transform: translateX(-24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes page-exit {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+::view-transition-old(page-content) {
+  animation: page-exit 90ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+::view-transition-new(page-content) {
+  animation: page-enter-forward 210ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+
+html[data-nav-direction="back"]::view-transition-new(page-content) {
+  animation-name: page-enter-back;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(page-content),
+  ::view-transition-new(page-content) {
+    animation: none;
   }
 }
 
