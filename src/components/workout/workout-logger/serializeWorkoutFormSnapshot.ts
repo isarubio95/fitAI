@@ -9,6 +9,7 @@ export function serializeWorkoutFormSnapshot(
   esPublica: boolean,
   gimnasioId: string | null = null,
   rpe: number | null = null,
+  comentarios: string = "",
 ): string {
   return JSON.stringify({
     titulo: titulo.trim(),
@@ -17,6 +18,7 @@ export function serializeWorkoutFormSnapshot(
     esPublica,
     gimnasioId,
     rpe,
+    comentarios: comentarios.trim(),
     exercises: exercises.map((ex) => ({
       id: ex.id ?? null,
       tipo_ejercicio_id: ex.tipo_ejercicio_id ?? null,

@@ -225,6 +225,9 @@ function RoutineCard({
   isCloning: boolean;
 }) {
   const RoutineTitleIcon = resolveRoutineIcon(r.icono);
+  const supersetBlocks = new Set(
+    r.ejercicios.map((ej) => ej.superset_id).filter((id): id is string => !!id),
+  ).size;
 
   return (
     <motion.div
@@ -269,6 +272,13 @@ function RoutineCard({
         {r.ejercicios.length > 0 && (
           <Badge variant="outline" className="text-[10px]">
             {r.ejercicios.length} ejercicios
+          </Badge>
+        )}
+        {supersetBlocks > 0 && (
+          <Badge variant="outline" className="text-[10px]">
+            {supersetBlocks === 1
+              ? "1 superserie"
+              : `${supersetBlocks} superseries`}
           </Badge>
         )}
       </div>

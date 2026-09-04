@@ -233,7 +233,8 @@ export type PlanPresetKey =
   | "piramidal_asc"
   | "piramidal_desc"
   | "con_calentamiento"
-  | "dropset_final";
+  | "dropset_final"
+  | "potencia";
 
 export interface PlanPreset {
   key: PlanPresetKey;
@@ -245,6 +246,19 @@ export interface PlanPreset {
 
 /** Escalón de reps entre series de una pirámide. */
 const PYRAMID_STEP = 2;
+
+/**
+ * Trabajo de potencia y pliometría: series cortas, lejos del fallo y con
+ * descanso largo.
+ *
+ * La pliometría se entrena por calidad de contacto, no por fatiga: en cuanto el
+ * salto pierde altura o el apoyo se alarga, la serie ya no entrena lo que
+ * pretende. De ahí las 3-5 repeticiones, el RIR alto y los 3 minutos.
+ */
+const POWER_REPS_MIN = 3;
+const POWER_REPS_MAX = 5;
+const POWER_RIR = 5;
+const POWER_REST_SEC = 180;
 
 function shiftReps(plan: RoutineSetPlan, delta: number): RoutineSetPlan {
   return {
@@ -326,6 +340,25 @@ export const PLAN_PRESETS: readonly PlanPreset[] = [
             : null,
       };
       return reindexPlan([warmup, ...current]);
+    },
+  },
+  {
+    key: "potencia",
+    label: "Potencia",
+    description: "Series cortas, lejos del fallo y con descanso largo (pliometría)",
+    build: (current, ej) => {
+      const base = workingOf(current)[0] ?? blankSetPlan(ej, 0);
+      return current.map((s, i) => ({
+        ...base,
+        id: s.id,
+        orden: i,
+        tipo_serie: s.tipo_serie,
+        repes_min: POWER_REPS_MIN,
+        repes_max: POWER_REPS_MAX,
+        rir: POWER_RIR,
+        // El dropset vive de encadenar sin descanso: no le impongas el largo.
+        descanso: s.tipo_serie === "dropset" ? s.descanso : POWER_REST_SEC,
+      }));
     },
   },
   {

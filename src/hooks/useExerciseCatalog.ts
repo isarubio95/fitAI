@@ -33,8 +33,12 @@ const EMPTY_USUARIO_RESULT: { data: null; error: null } = { data: null, error: n
 const CATALOG_STALE_MS = 30 * 60 * 1000;
 
 /** Listados/lookup: sin gif, imagen ni instrucciones (payload grande). */
+// `equipment_list` es la columna con el vocabulario canónico de equipo; el
+// string `equipment` se deriva de ella y se mantiene solo para mostrarlo.
+// El filtro tiene que ir contra la lista: partir el string por comas no
+// permite casar átomos ni en cliente ni en servidor.
 const TIPO_LIST_COLUMNS =
-  "id, nombre, registro_series, tipo, grupo_muscular, dificultad, equipment, musculos_involucrados, body_part:musculos_involucrados";
+  "id, nombre, registro_series, tipo, grupo_muscular, dificultad, equipment, equipment_list, musculos_involucrados, body_part:musculos_involucrados";
 const USUARIO_LIST_COLUMNS = `${TIPO_LIST_COLUMNS}, usuario_id, descripcion`;
 
 /** Selector / página de ejercicios: thumbs, sin instructions. */

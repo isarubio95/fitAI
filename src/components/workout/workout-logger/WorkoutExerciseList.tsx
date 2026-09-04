@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -6,6 +7,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -13,6 +15,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Card, CardContent } from "@/components/ui/card";
+import { SortableDragOverlay } from "@/components/ui/sortable-drag-overlay";
+import { restrictToVerticalAxis } from "@/lib/dndModifiers";
+import { ExerciseCard } from "../ExerciseCard";
 import { SortableExerciseCard } from "../SortableExerciseCard";
 import { groupExercisesBySuperset } from "./groupExercisesBySuperset";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
@@ -32,11 +37,19 @@ export type WorkoutExerciseListProps = {
     value: number | null,
   ) => void;
   onSeedSetFromPrevious: (exerciseIndex: number, setIndex: number, patch: Partial<SetFormData>) => void;
-  onApplySuggestionToSet: (exerciseIndex: number, setIndex: number, patch: Partial<SetFormData>) => void;
+  onApplySuggestionToSet: (
+    exerciseIndex: number,
+    setIndex: number,
+    patch: Partial<SetFormData>,
+    options?: { revert?: boolean },
+  ) => void;
   onAutoSaveSet: (exerciseIndex: number, setIndex: number) => void;
   onSetCompleted: (exerciseIndex: number, setIndex: number, completed: boolean) => void;
   onViewExerciseDetails: (exercise: ExerciseFormData) => void;
 };
+
+/** Handlers inertes para la copia de solo lectura que muestra el DragOverlay. */
+const noop = () => {};
 
 export function WorkoutExerciseList({
   exercises,
@@ -58,6 +71,19 @@ export function WorkoutExerciseList({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  /** sortId del ejercicio en arrastre; alimenta la tarjeta del DragOverlay. */
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const draggingIndex = draggingId
+    ? exercises.findIndex((ex, i) => getExerciseSortId(ex, i) === draggingId)
+    : -1;
+  const draggingExercise = draggingIndex >= 0 ? exercises[draggingIndex] : null;
+
+  const handleDragStart = (event: DragStartEvent) => setDraggingId(String(event.active.id));
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDraggingId(null);
+    onDragEnd(event);
+  };
+
   return (
     <>
       {exercises.length === 0 ? null : (
@@ -72,7 +98,14 @@ export function WorkoutExerciseList({
             </div>
           )}
 
-          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <DndContext
+            sensors={dndSensors}
+            collisionDetection={closestCenter}
+            modifiers={[restrictToVerticalAxis]}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setDraggingId(null)}
+          >
             <SortableContext
               items={exercises.map((ex, i) => getExerciseSortId(ex, i))}
               strategy={verticalListSortingStrategy}
@@ -105,7 +138,8 @@ export function WorkoutExerciseList({
                                 }
                                 onApplySuggestionToSet={
                                   isActiveWorkout
-                                    ? (si, patch) => onApplySuggestionToSet(ei, si, patch)
+                                    ? (si, patch, options) =>
+                                        onApplySuggestionToSet(ei, si, patch, options)
                                     : undefined
                                 }
                                 onAutoSaveSet={(si) => onAutoSaveSet(ei, si)}
@@ -139,7 +173,8 @@ export function WorkoutExerciseList({
                         }
                         onApplySuggestionToSet={
                           isActiveWorkout
-                            ? (si, patch) => onApplySuggestionToSet(ei, si, patch)
+                            ? (si, patch, options) =>
+                                onApplySuggestionToSet(ei, si, patch, options)
                             : undefined
                         }
                         onAutoSaveSet={(si) => onAutoSaveSet(ei, si)}
@@ -154,6 +189,21 @@ export function WorkoutExerciseList({
                   })}
                 </div>
             </SortableContext>
+
+            <SortableDragOverlay>
+              {draggingExercise ? (
+                <ExerciseCard
+                  exercise={draggingExercise}
+                  exerciseIndex={draggingIndex}
+                  isInSuperset={!!draggingExercise.superset_id}
+                  onRemoveExercise={noop}
+                  onAddSet={noop}
+                  onRemoveSet={noop}
+                  onUpdateSet={noop}
+                  onAutoSaveSet={noop}
+                />
+              ) : null}
+            </SortableDragOverlay>
           </DndContext>
         </CardContent>
       </Card>

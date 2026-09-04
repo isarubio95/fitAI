@@ -15,9 +15,21 @@ function supabasePublicObjectUrl(objectPath: string): string | null {
 }
 
 /**
+ * Los 749 GIF originales son los únicos que existen en `public/ejercicios/`.
+ * Los medios del catálogo ampliado son WebP y viven SOLO en el bucket: esa
+ * carpeta ya pesa 635 MB y no se quiso engordar más.
+ */
+function soloEnStorage(objectPath: string): boolean {
+  return !/\.gif$/i.test(objectPath);
+}
+
+/**
  * Resuelve rutas locales `/ejercicios/...` a Supabase Storage (bucket público).
- * En nativo siempre usa Storage (los GIFs no van en el AAB).
- * En web mantiene la ruta relativa para servir desde public/ durante desarrollo.
+ *
+ * En nativo siempre usa Storage (los medios no van en el AAB). En web mantiene
+ * la ruta relativa para servir desde `public/` en desarrollo, salvo que el
+ * fichero no exista ahí —los WebP del catálogo ampliado— o que
+ * `VITE_EXERCISE_MEDIA_ORIGIN` fuerce Storage para todo.
  */
 export function resolveExerciseMediaUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -34,6 +46,12 @@ export function resolveExerciseMediaUrl(url: string | null | undefined): string 
   // Android/iOS: sin archivos locales empaquetados → Storage.
   if (Capacitor.isNativePlatform()) {
     return supabasePublicObjectUrl(objectPath);
+  }
+
+  // Web: Storage si el fichero no está en public/, o si se fuerza por entorno.
+  const forzarStorage = !!(import.meta.env.VITE_EXERCISE_MEDIA_ORIGIN as string | undefined);
+  if (forzarStorage || soloEnStorage(objectPath)) {
+    return supabasePublicObjectUrl(objectPath) ?? path;
   }
 
   // Web: public/ejercicios sigue disponible en Vite.

@@ -14,7 +14,11 @@ interface SortableExerciseCardProps {
   onRemoveSet: (setIndex: number) => void;
   onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number | null) => void;
   onSeedSetFromPrevious?: (setIndex: number, patch: Partial<SetFormData>) => void;
-  onApplySuggestionToSet?: (setIndex: number, patch: Partial<SetFormData>) => void;
+  onApplySuggestionToSet?: (
+    setIndex: number,
+    patch: Partial<SetFormData>,
+    options?: { revert?: boolean },
+  ) => void;
   onAutoSaveSet?: (setIndex: number) => void;
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
   onViewExerciseDetails?: (exercise: ExerciseFormData) => void;
@@ -38,13 +42,13 @@ export function SortableExerciseCard({ id, ...props }: SortableExerciseCardProps
 
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    transition: shouldAnimate ? 'transform 150ms ease' : 'none',
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : undefined,
+    transition: shouldAnimate ? 'transform 200ms cubic-bezier(0.2, 0, 0, 1)' : 'none',
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    // La tarjeta visible durante el arrastre la pinta el DragOverlay de la
+    // lista; esta se queda como hueco atenuado en su sitio.
+    <div ref={setNodeRef} style={style} className={isDragging ? 'opacity-30' : undefined}>
       <ExerciseCard
         {...props}
         isInSuperset={props.isInSuperset}

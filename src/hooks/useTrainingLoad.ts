@@ -48,8 +48,9 @@ export interface TrainingLoadData {
   };
 }
 
-export function useTrainingLoad() {
+export function useTrainingLoad(options?: { enabled?: boolean }) {
   const { user } = useAuth();
+  const queriesEnabled = options?.enabled ?? true;
 
   const bounds = useMemo(() => {
     const end = endOfDay(new Date());
@@ -59,7 +60,7 @@ export function useTrainingLoad() {
 
   return useQuery<TrainingLoadData>({
     queryKey: ["trainingLoad", user?.id, bounds.start.toISOString(), bounds.end.toISOString()],
-    enabled: !!user,
+    enabled: !!user && queriesEnabled,
     queryFn: async () => {
       const fromIso = bounds.start.toISOString();
       const toIso = bounds.end.toISOString();

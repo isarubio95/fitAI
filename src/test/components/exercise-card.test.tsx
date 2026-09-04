@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
+import { countRecordedSets } from "@/types/workout";
 import type { OverloadSuggestion } from "@/lib/progressiveOverload";
 
 beforeAll(() => {
@@ -29,7 +30,15 @@ vi.mock("@/hooks/useProgressiveOverload", () => ({
   useProgressiveOverload: () => mockOverloadSuggestion,
 }));
 
+vi.mock("@/hooks/useProgressiveOverloadPreferences", () => ({
+  useProgressiveOverloadPreferences: () => ({
+    enabled: mockOverloadPrefEnabled,
+    setEnabled: vi.fn(),
+  }),
+}));
+
 let mockOverloadSuggestion: OverloadSuggestion | null = null;
+let mockOverloadPrefEnabled = true;
 
 import { ExerciseCard } from "@/components/workout/ExerciseCard";
 
@@ -54,7 +63,9 @@ function ActiveExerciseHarness({
   });
 
   return (
-    <ExerciseCard
+    <div>
+      <span data-testid="recorded-sets">{countRecordedSets([exercise])}</span>
+      <ExerciseCard
       exercise={exercise}
       exerciseIndex={0}
       onRemoveExercise={() => undefined}
@@ -69,22 +80,30 @@ function ActiveExerciseHarness({
           ),
         }));
       }}
-      onApplySuggestionToSet={(si, patch) => {
+      onApplySuggestionToSet={(si, patch, options) => {
         setExercise((ex) => ({
           ...ex,
           sets: ex.sets.map((s, i) =>
-            i === si ? { ...s, ...patch, seededFromPrevious: false } : s,
+            i === si
+              ? {
+                  ...s,
+                  ...patch,
+                  seededFromPrevious: options?.revert ? Boolean(patch.seededFromPrevious) : true,
+                }
+              : s,
           ),
         }));
       }}
       onSetCompleted={() => undefined}
     />
+    </div>
   );
 }
 
 describe("ExerciseCard", () => {
-  beforeAll(() => {
+  beforeEach(() => {
     mockOverloadSuggestion = null;
+    mockOverloadPrefEnabled = true;
   });
 
   it("precarga los inputs con el último registro en un entreno activo", async () => {
@@ -118,7 +137,7 @@ describe("ExerciseCard", () => {
     expect(screen.queryByDisplayValue("60")).not.toBeInTheDocument();
   });
 
-  it("aplica la sugerencia de sobrecarga en series precargadas", async () => {
+  it("aplica la sugerencia de sobrecarga y permite deshacerla", async () => {
     mockOverloadSuggestion = {
       action: "increase_reps",
       suggestedWeight: 57.5,
@@ -147,6 +166,131 @@ describe("ExerciseCard", () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue("8")).toBeInTheDocument();
       expect(screen.getByDisplayValue("57.5")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Deshacer" })).toBeInTheDocument();
+    });
+    expect(screen.getByDisplayValue("8")).toHaveClass("set-value-flash");
+    expect(screen.getByDisplayValue("57.5")).not.toHaveClass("set-value-flash");
+    expect(screen.getByTestId("recorded-sets")).toHaveTextContent("0");
+
+    fireEvent.click(screen.getByRole("button", { name: "Deshacer" }));
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("7")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("57.5")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Aplicar" })).toBeInTheDocument();
+    });
+    expect(screen.getByDisplayValue("7")).toHaveClass("set-value-flash");
+    expect(screen.getByDisplayValue("57.5")).not.toHaveClass("set-value-flash");
+  });
+
+  it("oculta el banner de sobrecarga si la preferencia está desactivada", () => {
+    mockOverloadPrefEnabled = false;
+    mockOverloadSuggestion = {
+      action: "increase_reps",
+      suggestedWeight: 57.5,
+      suggestedReps: 8,
+      confidence: 0.8,
+      reason: "Añade 1 rep",
+    };
+
+    render(
+      <ActiveExerciseHarness
+        initialSets={[
+          {
+            repeticiones: 7,
+            peso_kg: 57.5,
+            duracion_seg: null,
+            ritmo_seg_km: null,
+            completed: false,
+            seededFromPrevious: true,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Aplicar" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Subir reps/)).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("7")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("57.5")).toBeInTheDocument();
+  });
+
+  it("ocultar las sugerencias no deshace un Aplicar ya hecho", async () => {
+    mockOverloadSuggestion = {
+      action: "increase_reps",
+      suggestedWeight: 57.5,
+      suggestedReps: 8,
+      confidence: 0.8,
+      reason: "Añade 1 rep",
+    };
+
+    const { rerender } = render(
+      <ActiveExerciseHarness
+        initialSets={[
+          {
+            repeticiones: 7,
+            peso_kg: 57.5,
+            duracion_seg: null,
+            ritmo_seg_km: null,
+            completed: false,
+            seededFromPrevious: true,
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("8")).toBeInTheDocument();
+    });
+
+    mockOverloadPrefEnabled = false;
+    rerender(
+      <ActiveExerciseHarness
+        initialSets={[
+          {
+            repeticiones: 7,
+            peso_kg: 57.5,
+            duracion_seg: null,
+            ritmo_seg_km: null,
+            completed: false,
+            seededFromPrevious: true,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Aplicar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Deshacer" })).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("8")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("57.5")).toBeInTheDocument();
+  });
+
+  it("al aplicar subir reps suma 1 por serie y no aplana la pirámide", async () => {
+    mockOverloadSuggestion = {
+      action: "increase_reps",
+      suggestedWeight: 10,
+      suggestedReps: 12,
+      confidence: 0.8,
+      reason: "Añade 1 rep (11 -> 12) antes de subir peso",
+    };
+
+    render(
+      <ActiveExerciseHarness
+        initialSets={[
+          { ...emptySet(), peso_kg: 10, repeticiones: 12, seededFromPrevious: true },
+          { ...emptySet(), peso_kg: 10, repeticiones: 10, seededFromPrevious: true },
+          { ...emptySet(), peso_kg: 9, repeticiones: 9, seededFromPrevious: true },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar" }));
+
+    await waitFor(() => {
+      const reps = [...document.querySelectorAll<HTMLInputElement>('[data-set-field="repeticiones"]')];
+      const weights = [...document.querySelectorAll<HTMLInputElement>('[data-set-field="peso_kg"]')];
+      expect(reps.map((el) => el.value)).toEqual(["12", "11", "10"]);
+      expect(weights.map((el) => el.value)).toEqual(["10", "10", "9"]);
     });
   });
 
@@ -229,5 +373,26 @@ describe("ExerciseCard", () => {
       // El calentamiento conserva sus 40 kg.
       expect(screen.getByDisplayValue("40")).toBeInTheDocument();
     });
+  });
+
+  it("el mango de reordenar no arrastra el drawer", () => {
+    render(
+      <ExerciseCard
+        exercise={{
+          nombre: "Press banca",
+          registro_series: "peso_reps",
+          sets: [emptySet()],
+        }}
+        exerciseIndex={0}
+        onRemoveExercise={() => undefined}
+        onAddSet={() => undefined}
+        onRemoveSet={() => undefined}
+        onUpdateSet={() => undefined}
+        dragHandleProps={{}}
+      />,
+    );
+
+    const handle = screen.getByLabelText("Reordenar ejercicio");
+    expect(handle).toHaveAttribute("data-vaul-no-drag");
   });
 });

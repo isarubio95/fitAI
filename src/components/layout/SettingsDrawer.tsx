@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
+import { useProgressiveOverloadPreferences } from "@/hooks/useProgressiveOverloadPreferences";
 import { ColorThemeSelector } from "@/components/ColorThemeSelector";
 import { PhysiologySettings } from "@/components/layout/PhysiologySettings";
 import { Button } from "@/components/ui/button";
@@ -20,9 +21,10 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { Bell, Settings, SunMoon } from "lucide-react";
+import { Bell, Dumbbell, Settings, SunMoon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
+import { PAGE_CARD_STACK_GAP, PAGE_STACK_TOP } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 
 const settingsSectionCardClass = cn(
@@ -47,6 +49,8 @@ export function SettingsDrawer() {
     setLiveSessionEnabled,
     setRestFinishedEnabled,
   } = useNotificationPreferences();
+  const { enabled: overloadSuggestionsEnabled, setEnabled: setOverloadSuggestionsEnabled } =
+    useProgressiveOverloadPreferences();
   const [open, setOpen] = useState(false);
   const showLiveToggle = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 
@@ -72,7 +76,13 @@ export function SettingsDrawer() {
           <DrawerTitle className="text-lg">Ajustes</DrawerTitle>
         </DrawerHeader>
 
-        <div className="mt-3 flex-1 space-y-4 overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+        <div
+          className={cn(
+            "flex flex-1 flex-col overflow-y-auto px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]",
+            PAGE_CARD_STACK_GAP,
+            PAGE_STACK_TOP,
+          )}
+        >
           <div className={settingsSectionCardClass}>
             <p className="flex items-center gap-2 text-sm font-medium">
               <SunMoon className="h-4 w-4 text-muted-foreground" />
@@ -126,6 +136,27 @@ export function SettingsDrawer() {
                 checked={restFinishedEnabled}
                 onCheckedChange={setRestFinishedEnabled}
                 aria-label="Activar notificación de descanso terminado"
+              />
+            </div>
+          </div>
+
+          <div className={settingsSectionCardClass}>
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Dumbbell className="h-4 w-4 text-muted-foreground" />
+              Entrenamiento
+            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 space-y-1">
+                <p className="text-sm font-medium leading-none">Sugerencias de progresión</p>
+                <p className="text-xs leading-snug text-muted-foreground">
+                  Propone peso y reps según tu último entreno. Puedes aplicarlas o
+                  ignorarlas.
+                </p>
+              </div>
+              <Switch
+                checked={overloadSuggestionsEnabled}
+                onCheckedChange={setOverloadSuggestionsEnabled}
+                aria-label="Mostrar sugerencias de progresión"
               />
             </div>
           </div>

@@ -19,5 +19,5 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "playwright.config.ts"]
+  "include": ["vite.config.ts", "playwright.config.ts", "vite/**/*.ts", "src/lib/avatarUrl.ts"]
 }

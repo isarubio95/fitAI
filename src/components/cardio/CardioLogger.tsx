@@ -19,6 +19,9 @@ import { durationPartsFromSeconds, secondsFromDurationParts, toDatetimeLocalValu
 import { firstNested } from "@/lib/firstNested";
 import { cn } from "@/lib/utils";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
+import { PostWorkoutModal } from "@/components/workout/PostWorkoutModal";
+import type { XPBreakdown } from "@/hooks/useGamification";
+import type { LogroRow } from "@/hooks/useLogros";
 import type { CardioBlockInput, CardioDisciplineCode, CardioSportDetailInput, CardioTrackInput, CardioTrackPointInput } from "@/types/cardio";
 
 type NestedOneOrMany<T> = T | T[] | null | undefined;
@@ -99,6 +102,9 @@ export function CardioLogger() {
   const [comentarios, setComentarios] = useState("");
   const [esPublica, setEsPublica] = useState(false);
   const [rpe, setRpe] = useState<number | null>(null);
+  const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
+  const [postWorkoutLogros, setPostWorkoutLogros] = useState<LogroRow[]>([]);
+  const [showPostWorkout, setShowPostWorkout] = useState(false);
   const [runningRitmo, setRunningRitmo] = useState("");
   const [runningCadencia, setRunningCadencia] = useState("");
   const [runningDesnivel, setRunningDesnivel] = useState("");
@@ -501,7 +507,7 @@ export function CardioLogger() {
       }
     }
 
-    await upsert.mutateAsync({
+    const result = await upsert.mutateAsync({
       id: state.sessionId,
       input: {
         titulo: resolvedTitulo,
@@ -516,7 +522,13 @@ export function CardioLogger() {
         bloques: bloquesToSave,
       },
     });
-    toast({ title: state.sessionId ? "Entrenamiento actualizado" : "Entrenamiento guardado" });
+    if (result.xp) {
+      setPostWorkoutLogros(result.logros);
+      setPostWorkoutData(result.xp);
+      setShowPostWorkout(true);
+    } else {
+      toast({ title: state.sessionId ? "Entrenamiento actualizado" : "Entrenamiento guardado" });
+    }
     setOpen(false);
   };
 
@@ -532,6 +544,7 @@ export function CardioLogger() {
   }, [state.open]);
 
   return (
+    <>
     <Drawer open={state.open && !state.liveOpen} onOpenChange={setOpen}>
       <DrawerContent
         side="bottom"
@@ -682,5 +695,17 @@ export function CardioLogger() {
         </div>
       </DrawerContent>
     </Drawer>
+
+    <PostWorkoutModal
+      open={showPostWorkout}
+      onClose={() => {
+        setShowPostWorkout(false);
+        setPostWorkoutData(null);
+        setPostWorkoutLogros([]);
+      }}
+      breakdown={postWorkoutData}
+      nuevosLogros={postWorkoutLogros}
+    />
+    </>
   );
 }

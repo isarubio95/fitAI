@@ -71,7 +71,6 @@
       inset 0 1px 0 hsl(var(--hairline)),
       0 2px 6px hsl(60 10% 20% / 0.07),
       0 18px 44px -22px hsl(60 10% 15% / 0.42);
-    --shadow-accent: 0 8px 24px -12px hsl(var(--primary) / 0.45);
     /* Velo de la card, en token para poder reactivarlo donde se neutraliza. */
     --sheen-card: linear-gradient(to bottom, hsl(var(--sheen-from)) 0, hsl(var(--sheen-to)) 100%);
     /* Serie de datos (gráficos): tono compartido, luminosidad adaptada a fondo claro. */
@@ -186,7 +185,6 @@
       inset 0 1px 0 hsl(var(--hairline)),
       0 2px 8px hsl(0 0% 0% / 0.5),
       0 22px 48px -24px hsl(0 0% 0% / 0.95);
-    --shadow-accent: 0 10px 28px -12px hsl(var(--primary) / 0.55);
     --chart-fitness: 209 70% 53%;
     --chart-fatigue: 36 86% 55%;
     --chart-danger: 0 73% 59%;
@@ -306,10 +304,10 @@
     box-shadow: var(--shadow-card);
   }
 
-  /* Chrome flotante (bottom nav, cabecera): translúcido y desenfocado. */
+  /* Chrome flotante (bottom nav, cabecera): casi opaco, con un velo de cristal. */
   .surface-float {
     border: 1px solid hsl(var(--surface-border));
-    background-color: hsl(var(--surface-elevated) / 0.85);
+    background-color: hsl(var(--surface-elevated) / 0.94);
     background-image: linear-gradient(to bottom, hsl(var(--sheen-from)) 0, hsl(var(--sheen-to)) 64px);
     box-shadow: var(--shadow-float);
     backdrop-filter: blur(22px) saturate(1.5);
@@ -323,9 +321,9 @@
     }
   }
 
-  /* Cristal de las barras fijas (cabecera móvil): translúcido, sin borde propio. */
+  /* Cristal de las barras fijas (cabecera móvil): casi opaco, sin borde propio. */
   .surface-glass {
-    background-color: hsl(var(--background) / 0.78);
+    background-color: hsl(var(--background) / 0.94);
     backdrop-filter: blur(22px) saturate(1.5);
     -webkit-backdrop-filter: blur(22px) saturate(1.5);
   }
@@ -434,6 +432,30 @@
 @media (prefers-reduced-motion: reduce) {
   .calendar-day-skeleton::after,
   .map-route-skeleton::after {
+    animation: none;
+  }
+}
+
+/*
+ * Destello al aplicar/deshacer la sugerencia de sobrecarga:
+ * el fondo del input sube un poco de luminosidad y vuelve.
+ */
+@keyframes set-value-flash {
+  0%,
+  100% {
+    background-color: hsl(var(--background));
+  }
+  32% {
+    background-color: color-mix(in srgb, hsl(var(--background)) 88%, white 12%);
+  }
+}
+
+.set-value-flash {
+  animation: set-value-flash 0.68s cubic-bezier(0.33, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .set-value-flash {
     animation: none;
   }
 }
@@ -547,7 +569,7 @@
   }
 }
 
-/* Pestañas de sección: la barra activa aparece de izquierda a derecha; al desactivar desaparece al instante. */
+/* Pestañas de sección: la barra activa aparece desde el centro hacia los lados; al desactivar desaparece al instante. */
 @keyframes section-tab-underline-in {
   from {
     transform: scaleX(0);
@@ -588,7 +610,7 @@
   height: 2px;
   background-color: hsl(var(--primary));
   transform: scaleX(1);
-  transform-origin: left center;
+  transform-origin: center;
   pointer-events: none;
 }
 

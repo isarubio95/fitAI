@@ -1,3 +1,5 @@
+import type { RegistroSeries } from "@/types/workout";
+
 export type OverloadAction = "increase_weight" | "increase_reps" | "maintain" | "deload";
 
 export interface OverloadSetInput {
@@ -25,6 +27,12 @@ export interface OverloadSuggestion {
 export interface OverloadInput {
   lastSets: OverloadSetInput[];
   target: OverloadTarget;
+  /**
+   * Modo de registro del ejercicio. En `solo_reps` (saltos, lanzamientos) no
+   * hay carga externa que subir: la progresión va siempre por repeticiones.
+   * Ausente = `peso_reps`.
+   */
+  mode?: RegistroSeries;
   /** Fatiga del grupo muscular normalizada 0–1. */
   muscleFatigueNorm?: number;
   /** CTL − ATL (forma). */

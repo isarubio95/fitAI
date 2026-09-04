@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import { VitePWA } from "vite-plugin-pwa";
+import { googleAvatarDevProxy } from "./vite/googleAvatarProxy.ts";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -16,6 +17,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
+    googleAvatarDevProxy(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'logo.svg'],
@@ -24,10 +26,14 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
-            urlPattern: ({ request }) => request.destination === "image",
+            urlPattern: ({ request, url }) =>
+              request.destination === "image" && !url.hostname.endsWith("googleusercontent.com"),
             handler: "CacheFirst",
             options: {
               cacheName: "fitai-images",
+              cacheableResponse: {
+                statuses: [200],
+              },
               expiration: {
                 maxEntries: 120,
                 maxAgeSeconds: 60 * 60 * 24 * 30,

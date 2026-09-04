@@ -46,3 +46,6 @@ scripts/.env
 
 # Komoot bulk downloads (fuente local; la app usa public/predefined-routes/)
 data/komoot-la-rioja/
+# Medios convertidos del catálogo: 31 MB de binarios generados.
+# Se reconstruyen con `npm run catalogo:medios` y viven en Supabase Storage.
+data/media-staging/

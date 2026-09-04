@@ -1,20 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PROFILE_AVATAR_BUCKET, getNormalizedAvatarStoragePath } from "@/hooks/useProfileAvatarUpload";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  cleanAvatarUrl,
+  isDirectAvatarUrl,
+  isGoogleAvatarUrl,
+  normalizeGoogleAvatarUrl,
+  toDisplayableAvatarUrl,
+} from "@/lib/avatarUrl";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 const signedAvatarCache = new Map<string, { url: string; expiresAt: number }>();
-
-function cleanAvatarUrl(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const next = value.trim();
-  return next.length > 0 ? next : undefined;
-}
-
-function isDirectAvatarUrl(value: string) {
-  return /^(https?:|blob:|data:)/i.test(value);
-}
 
 function areSameStringArray(a: string[], b: string[]) {
   if (a.length !== b.length) return false;
@@ -24,8 +21,14 @@ function areSameStringArray(a: string[], b: string[]) {
   return true;
 }
 
+function canonicalizeAvatarCandidate(value: string): string {
+  return isGoogleAvatarUrl(value) ? normalizeGoogleAvatarUrl(value) : value;
+}
+
 async function resolveAvatarCandidate(candidate: string): Promise<string | undefined> {
-  if (isDirectAvatarUrl(candidate)) return candidate;
+  if (isDirectAvatarUrl(candidate)) {
+    return toDisplayableAvatarUrl(candidate, import.meta.env.DEV);
+  }
 
   const storagePath = getNormalizedAvatarStoragePath(candidate);
   if (!storagePath) return undefined;
@@ -67,13 +70,24 @@ export function buildAuthAvatarCandidates(user: User | null | undefined): string
     ...identities.map((i) => cleanAvatarUrl(i.identity_data?.photo_url)),
   ];
 
-  return Array.from(new Set(raw.filter((v): v is string => Boolean(v))));
+  return Array.from(
+    new Set(
+      raw
+        .filter((v): v is string => Boolean(v))
+        .map(canonicalizeAvatarCandidate),
+    ),
+  );
 }
 
 export function useUserAvatar(candidatesInput: Array<string | null | undefined>) {
   const candidatesKey = useMemo(() => {
     const normalized = Array.from(
-      new Set(candidatesInput.map(cleanAvatarUrl).filter((v): v is string => Boolean(v))),
+      new Set(
+        candidatesInput
+          .map(cleanAvatarUrl)
+          .filter((v): v is string => Boolean(v))
+          .map(canonicalizeAvatarCandidate),
+      ),
     ).slice(0, 4);
     return normalized.join("|");
   }, [candidatesInput]);
@@ -123,4 +137,3 @@ export function useUserAvatar(candidatesInput: Array<string | null | undefined>)
 
   return { src, onError, isLoading };
 }
-

@@ -38,40 +38,45 @@ export function formatOverloadSuggestion(suggestion: OverloadSuggestion): string
 interface OverloadSuggestionBannerProps {
   suggestion: OverloadSuggestion;
   onApply?: () => void;
+  onUndo?: () => void;
   canApply?: boolean;
+  applied?: boolean;
 }
 
 export function OverloadSuggestionBanner({
   suggestion,
   onApply,
+  onUndo,
   canApply = false,
+  applied = false,
 }: OverloadSuggestionBannerProps) {
   const style = OVERLOAD_ACTION_STYLES[suggestion.action];
   const { Icon } = style;
+  const action = applied ? onUndo : onApply;
 
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border px-3 py-2 text-xs",
+        "flex items-center gap-3 rounded-lg border px-3 py-2 text-xs",
         style.className,
       )}
     >
-      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
       <div className="min-w-0 flex-1 space-y-0.5">
         <p className="font-medium">
           {style.label}: {formatOverloadSuggestion(suggestion)}
         </p>
         <p className="opacity-80">{suggestion.reason}</p>
       </div>
-      {canApply && onApply && suggestion.action !== "maintain" ? (
+      {canApply && action && suggestion.action !== "maintain" ? (
         <Button
           type="button"
           variant="secondary"
           size="sm"
-          className="h-7 shrink-0 px-2 text-xs"
-          onClick={onApply}
+          className="h-7 shrink-0 self-center px-2 text-xs"
+          onClick={action}
         >
-          Aplicar
+          {applied ? "Deshacer" : "Aplicar"}
         </Button>
       ) : null}
     </div>

@@ -138,8 +138,9 @@ export function buildWorkoutRoutineSnapshot(
 }
 
 export function workoutSnapshotToRoutineFormSnapshot(
-  snapshot: WorkoutRoutineSnapshot,
-): RoutineFormSnapshot {
+  snapshot: WorkoutRoutineSnapshot | null,
+): RoutineFormSnapshot | null {
+  if (!snapshot) return null;
   return {
     nombre: snapshot.titulo,
     descripcion: "",

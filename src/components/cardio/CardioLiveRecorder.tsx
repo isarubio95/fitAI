@@ -25,6 +25,9 @@ import { MAX_TRACK_POINTS_DB, prepareTrackPointsForStorage } from "@/lib/cardioT
 import { computeRouteProgress, resolveRecordedDistanceM } from "@/lib/cardioRouteProgress";
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
+import { PostWorkoutModal } from "@/components/workout/PostWorkoutModal";
+import type { XPBreakdown } from "@/hooks/useGamification";
+import type { LogroRow } from "@/hooks/useLogros";
 import { firstNested } from "@/lib/firstNested";
 import { nearestHeartRate, summarizeHeartRate } from "@/lib/heartRateMetrics";
 import { setNativeCardioPaused } from "@/lib/nativeCardioTracker";
@@ -80,6 +83,9 @@ export function CardioLiveRecorder() {
   const [summaryComentarios, setSummaryComentarios] = useState("");
   const [esPublica, setEsPublica] = useState(false);
   const [summaryRpe, setSummaryRpe] = useState<number | null>(null);
+  const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
+  const [postWorkoutLogros, setPostWorkoutLogros] = useState<LogroRow[]>([]);
+  const [showPostWorkout, setShowPostWorkout] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [pillCirclePhase, setPillCirclePhase] = useState<PillCirclePhase | null>(null);
   const pillCloseTimerRef = useRef<number | null>(null);
@@ -648,7 +654,7 @@ export function CardioLiveRecorder() {
         : null;
 
     try {
-      await upsert.mutateAsync({
+      const result = await upsert.mutateAsync({
         id: sessionId,
         input: {
           titulo,
@@ -678,7 +684,13 @@ export function CardioLiveRecorder() {
       void disconnectHr();
       void stopLiveCardio();
       closeLiveRecording();
-      toast({ title: "Entrenamiento guardado" });
+      if (result.xp) {
+        setPostWorkoutLogros(result.logros);
+        setPostWorkoutData(result.xp);
+        setShowPostWorkout(true);
+      } else {
+        toast({ title: "Entrenamiento guardado" });
+      }
     } catch {
       toast({ title: "No se pudo guardar", variant: "destructive" });
     }
@@ -723,7 +735,21 @@ export function CardioLiveRecorder() {
     }
   }, [open, step, pillOrigin, pillCirclePhase, controlsDrawerHeightPx]);
 
-  if (!liveOpen) return null;
+  if (!liveOpen) {
+    if (!showPostWorkout) return null;
+    return (
+      <PostWorkoutModal
+        open={showPostWorkout}
+        onClose={() => {
+          setShowPostWorkout(false);
+          setPostWorkoutData(null);
+          setPostWorkoutLogros([]);
+        }}
+        breakdown={postWorkoutData}
+        nuevosLogros={postWorkoutLogros}
+      />
+    );
+  }
 
   const loadingSession = open && (sessionLoading || !sessionData);
   const recordingMap = open && cardioDisciplineUsesGpsMap(code);

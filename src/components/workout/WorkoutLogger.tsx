@@ -23,7 +23,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
 import { persistActividadHeartRate } from "@/lib/persistActividadHeartRate";
 import { parseSessionRpe } from "@/lib/trainingLoad/sessionLoad";
+import { summarizeHeartRate } from "@/lib/heartRateMetrics";
+import { RoutineForm } from "@/components/routine/RoutineForm";
+import { buildWorkoutRoutineSnapshot, workoutSnapshotToRoutineFormSnapshot } from "@/lib/workoutToRoutine";
 import { PostWorkoutModal } from "./PostWorkoutModal";
+import { GymLiveSummaryView } from "./GymLiveSummaryView";
 import { useRestTimerContext } from "./RestTimerProvider";
 import { cn } from "@/lib/utils";
 import {
@@ -37,6 +41,7 @@ import { WorkoutEmptyExerciseState } from "./workout-logger/WorkoutEmptyExercise
 import { SWIPE_DISMISS_WINDOW_MS } from "./workout-logger/constants";
 import { ElapsedTime } from "./workout-logger/ElapsedTime";
 import { RestProgressBar } from "./workout-logger/RestProgressBar";
+import { WorkoutSessionOptions } from "./workout-logger/WorkoutSessionOptions";
 import { WorkoutFloatingActionBar } from "./workout-logger/WorkoutFloatingActionBar";
 import { WorkoutDeleteDialog } from "./workout-logger/WorkoutDeleteDialog";
 import { WorkoutMetaForm } from "./workout-logger/WorkoutMetaForm";
@@ -49,7 +54,6 @@ import {
   resolveRoutineIconKey,
   type RoutineIconKey,
 } from "@/lib/routineIcons";
-import { buildWorkoutRoutineSnapshot, type WorkoutRoutineSnapshot } from "@/lib/workoutToRoutine";
 import { persistActividadGimnasio, fetchPrefillGimnasioForUser, GIMNASIOS_QUERY_KEY } from "@/hooks/useGimnasios";
 import { mergeCalendarDatePreservingTime } from "@/lib/mergeCalendarDate";
 import type { SelectedGimnasio } from "@/types/gimnasio";
@@ -103,6 +107,9 @@ export function WorkoutLogger() {
   const [esPublica, setEsPublica] = useState(false);
   const [gimnasio, setGimnasio] = useState<SelectedGimnasio | null>(null);
   const [rpe, setRpe] = useState<number | null>(null);
+  const [comentarios, setComentarios] = useState("");
+  const [liveStep, setLiveStep] = useState<"recording" | "summary">("recording");
+  const [routineFormOpen, setRoutineFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exercisePickerOpen, setExercisePickerOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -127,13 +134,7 @@ export function WorkoutLogger() {
     return started;
   }, []);
   const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
-  const [postWorkoutRoutineSnapshot, setPostWorkoutRoutineSnapshot] = useState<WorkoutRoutineSnapshot | null>(null);
   const [postWorkoutLogros, setPostWorkoutLogros] = useState<LogroRow[]>([]);
-  const [postWorkoutId, setPostWorkoutId] = useState<string | null>(null);
-  const [postWorkoutGimnasio, setPostWorkoutGimnasio] = useState<SelectedGimnasio | null>(null);
-  const [postWorkoutTitulo, setPostWorkoutTitulo] = useState("");
-  const [postWorkoutIcono, setPostWorkoutIcono] = useState<RoutineIconKey>(DEFAULT_ROUTINE_ICON_KEY);
-  const [postWorkoutAllowEditMeta, setPostWorkoutAllowEditMeta] = useState(false);
   const [showPostWorkout, setShowPostWorkout] = useState(false);
   const calculateAndAwardXP = useCalculateAndAwardXP();
   const removeXP = useRemoveWorkoutXP();
@@ -184,8 +185,8 @@ export function WorkoutLogger() {
   const hasRecordedWork = countRecordedSets(exercises) > 0;
   const hasUnsavedChanges = useMemo(() => {
     if (!isEditingCompletedWorkout || editBaseline === null) return false;
-    return serializeWorkoutFormSnapshot(titulo, fecha, exercises, workoutIcon, esPublica, gimnasio?.id ?? null, rpe) !== editBaseline;
-  }, [isEditingCompletedWorkout, editBaseline, titulo, fecha, exercises, workoutIcon, esPublica, gimnasio?.id, rpe]);
+    return serializeWorkoutFormSnapshot(titulo, fecha, exercises, workoutIcon, esPublica, gimnasio?.id ?? null, rpe, comentarios) !== editBaseline;
+  }, [isEditingCompletedWorkout, editBaseline, titulo, fecha, exercises, workoutIcon, esPublica, gimnasio?.id, rpe, comentarios]);
   const canSubmitPrimaryAction = isEditingCompletedWorkout
     ? hasRecordedWork && hasUnsavedChanges
     : hasRecordedWork;
@@ -256,6 +257,7 @@ export function WorkoutLogger() {
       setGimnasio(hydratedGym);
       const hydratedRpe = parseSessionRpe(existingWorkout.rpe);
       setRpe(hydratedRpe);
+      setComentarios(existingWorkout.comentarios ?? "");
       setStartedFromRoutine(
         !existingWorkout.fecha_fin && wasWorkoutStartedFromRoutine(existingWorkout.id),
       );
@@ -272,6 +274,7 @@ export function WorkoutLogger() {
               hydratedEsPublica,
               hydratedGym?.id ?? null,
               hydratedRpe,
+              existingWorkout.comentarios ?? "",
             )
           : null,
       );
@@ -321,6 +324,7 @@ export function WorkoutLogger() {
       setEsPublica(false);
       setGimnasio(initialGimnasio ?? null);
       setRpe(null);
+      setComentarios("");
       setExercisePickerOpen(false);
       armSessionClock();
       return;
@@ -333,6 +337,7 @@ export function WorkoutLogger() {
       setEsPublica(false);
       setGimnasio(initialGimnasio ?? null);
       setRpe(null);
+      setComentarios("");
       setExercisePickerOpen(false);
       setSessionClockStartedAt(null);
     }
@@ -349,6 +354,9 @@ export function WorkoutLogger() {
       setEsPublica(false);
       setGimnasio(null);
       setRpe(null);
+      setComentarios("");
+      setLiveStep("recording");
+      setRoutineFormOpen(false);
       setTitulo("");
       setExercises([]);
       setExercisePickerOpen(false);
@@ -960,7 +968,12 @@ export function WorkoutLogger() {
   );
 
   const applySuggestionToSet = useCallback(
-    (exerciseIndex: number, setIndex: number, patch: Partial<SetFormData>) => {
+    (
+      exerciseIndex: number,
+      setIndex: number,
+      patch: Partial<SetFormData>,
+      options?: { revert?: boolean },
+    ) => {
       setExercises((prev) =>
         prev.map((ex, i) => {
           if (i !== exerciseIndex) return ex;
@@ -968,8 +981,15 @@ export function WorkoutLogger() {
           return {
             ...ex,
             sets: ex.sets.map((s, si) => {
-              if (si !== setIndex || !setCanApplyOverloadPatch(s, mode)) return s;
-              return { ...s, ...patch, seededFromPrevious: false };
+              if (si !== setIndex || s.completed) return s;
+              if (!options?.revert && !setCanApplyOverloadPatch(s, mode)) return s;
+              return {
+                ...s,
+                ...patch,
+                // Aplicar solo rellena el objetivo: no cuenta como serie hecha
+                // hasta editar o marcar el check (igual que la precarga anterior).
+                seededFromPrevious: options?.revert ? Boolean(patch.seededFromPrevious) : true,
+              };
             }),
           };
         }),
@@ -1290,6 +1310,20 @@ export function WorkoutLogger() {
     setConfirmDelete(true);
   };
 
+  const enterSummary = () => {
+    if (countRecordedSets(exercises) === 0) {
+      toast({
+        title: "Sin series registradas",
+        description: "Registra al menos una serie con datos antes de finalizar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    restTimer.stop();
+    setPausedAt((prev) => prev ?? Date.now());
+    setLiveStep("summary");
+  };
+
   const handleSave = async () => {
     if (!user) return;
 
@@ -1357,7 +1391,9 @@ export function WorkoutLogger() {
               fecha: startIso,
               fecha_fin: endIso,
               icono: workoutIcon,
-              es_publica: false,
+              es_publica: esPublica,
+              comentarios: comentarios.trim() || null,
+              rpe,
               gimnasio_id: gimnasio?.id ?? null,
               gimnasio_nombre: gimnasio?.nombre ?? null,
             })
@@ -1393,24 +1429,15 @@ export function WorkoutLogger() {
             const logrosResult = await checkAndAwardLogros(user!.id).catch(() => ({ nuevos: [] as LogroRow[] }));
             queryClient.invalidateQueries({ queryKey: ["logros"] });
             queryClient.invalidateQueries({ queryKey: ["profileStats"] });
-            setPostWorkoutRoutineSnapshot(
-              startedFromRoutine
-                ? null
-                : buildWorkoutRoutineSnapshot(resolvedTitulo, workoutIcon, ejerciciosLimpios),
-            );
             setPostWorkoutLogros(logrosResult.nuevos);
             setPostWorkoutData(breakdown);
-            setPostWorkoutId(effectiveWorkoutId);
-            setPostWorkoutGimnasio(gimnasio);
-            setPostWorkoutTitulo(resolvedTitulo);
-            setPostWorkoutIcono(workoutIcon);
-            setPostWorkoutAllowEditMeta(!startedFromRoutine);
             setShowPostWorkout(true);
           } catch {
             // XP failed silently, still close
           }
           if (effectiveWorkoutId) clearWorkoutStartedFromRoutine(effectiveWorkoutId);
           setStartedFromRoutine(false);
+          setLiveStep("recording");
           invalidateWorkoutQueries({ workoutId: effectiveWorkoutId, fecha });
           close();
         } else {
@@ -1423,6 +1450,7 @@ export function WorkoutLogger() {
                 : new Date(fecha).toISOString(),
               icono: workoutIcon,
               es_publica: esPublica,
+              comentarios: comentarios.trim() || null,
               gimnasio_id: gimnasio?.id ?? null,
               gimnasio_nombre: gimnasio?.nombre ?? null,
               rpe,
@@ -1446,13 +1474,8 @@ export function WorkoutLogger() {
           const logrosResult = await checkAndAwardLogros(user!.id).catch(() => ({ nuevos: [] as LogroRow[] }));
           queryClient.invalidateQueries({ queryKey: ["logros"] });
           queryClient.invalidateQueries({ queryKey: ["profileStats"] });
-          setPostWorkoutRoutineSnapshot(
-            buildWorkoutRoutineSnapshot(resolvedTitulo, workoutIcon, ejerciciosLimpios),
-          );
           setPostWorkoutLogros(logrosResult.nuevos);
           setPostWorkoutData(breakdown);
-          setPostWorkoutId(createdId);
-          setPostWorkoutGimnasio(gimnasio);
           setShowPostWorkout(true);
         } catch {
           // silent
@@ -1481,7 +1504,9 @@ export function WorkoutLogger() {
         fecha: startIso,
         fecha_fin: endIso,
         usuario_id: user!.id,
-        es_publica: false,
+        es_publica: esPublica,
+        comentarios: comentarios.trim() || null,
+        rpe,
         icono: workoutIcon,
         gimnasio_id: gimnasio?.id ?? null,
         gimnasio_nombre: gimnasio?.nombre ?? null,
@@ -1665,6 +1690,35 @@ export function WorkoutLogger() {
   const activeWorkoutHeading = sessionHasStarted
     ? "Entrenamiento activo"
     : "Comenzar entrenamiento";
+  const showSummary = isActiveWorkout && liveStep === "summary";
+  const summaryElapsedSec = sessionClockStartedAt
+    ? Math.max(
+        0,
+        Math.floor(
+          ((pausedAt ?? Date.now()) - new Date(sessionClockStartedAt).getTime() - pausedAccumMs) / 1000,
+        ),
+      )
+    : 0;
+  const summaryCompletedSets = exercises.reduce(
+    (acc, ex) =>
+      acc + ex.sets.filter((s) => isWorkingSet(s.tipo_serie) && serieCountsAsRecorded(s)).length,
+    0,
+  );
+  const summaryVolumeKg = exercises.reduce((acc, ex) => {
+    return (
+      acc +
+      ex.sets.reduce((sum, s) => {
+        if (!isWorkingSet(s.tipo_serie) || !serieCountsAsRecorded(s)) return sum;
+        return sum + Number(s.peso_kg || 0) * Number(s.repeticiones || 0);
+      }, 0)
+    );
+  }, 0);
+  const summaryHr = summarizeHeartRate(hrMonitor.samples);
+  const summaryRoutinePrefill = !startedFromRoutine
+    ? workoutSnapshotToRoutineFormSnapshot(
+        buildWorkoutRoutineSnapshot(titulo.trim() || getDefaultWorkoutTitle(), workoutIcon, exercises),
+      )
+    : null;
 
   return (
     <>
@@ -1673,20 +1727,56 @@ export function WorkoutLogger() {
         onOpenChange={handleDrawerOpenChange}
         onDrag={handleDrawerDrag}
         shouldScaleBackground={false}
+        // Solo el asidero mueve el sheet: reordenar, scroll y swipe-to-delete
+        // son gestos verticales/horizontales que Vaul interpretaría como cierre.
+        handleOnly
       >
         <DrawerContent
           className="inset-0 mt-0 h-dvh max-h-dvh min-h-0 overflow-hidden rounded-none p-0"
           {...pillCircleProps}
         >
           <div data-workout-drawer-surface className="relative isolate flex h-full min-h-0 flex-col overflow-hidden">
+            {showSummary ? (
+              <>
+                <DrawerTitle className="sr-only">Resumen del entrenamiento</DrawerTitle>
+                <GymLiveSummaryView
+                  elapsedSec={summaryElapsedSec}
+                  completedSets={summaryCompletedSets}
+                  volumeKg={summaryVolumeKg}
+                  fcMedia={summaryHr.fcMedia}
+                  fcMax={summaryHr.fcMax}
+                  titulo={titulo}
+                  icono={workoutIcon}
+                  allowEditTitleAndIcon={!startedFromRoutine}
+                  comentarios={comentarios}
+                  esPublica={esPublica}
+                  rpe={rpe}
+                  gimnasio={gimnasio}
+                  saving={saving}
+                  discarding={deleting}
+                  canSaveAsRoutine={!!summaryRoutinePrefill?.ejercicios.length}
+                  onTituloChange={setTitulo}
+                  onIconoChange={(icon) => void handleWorkoutIconChange(icon)}
+                  onComentariosChange={setComentarios}
+                  onEsPublicaChange={setEsPublica}
+                  onRpeChange={setRpe}
+                  onGimnasioChange={(gym) => void handleGimnasioChange(gym)}
+                  onSaveAsRoutine={() => setRoutineFormOpen(true)}
+                  onSave={() => void handleSave()}
+                  onDiscard={requestDeleteWorkout}
+                  onBack={() => setLiveStep("recording")}
+                />
+              </>
+            ) : (
+            <>
             <DrawerHeader
               data-active-workout-sheet-header
-              className="relative z-10 shrink-0 border-b border-border bg-card px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left"
+              className="relative z-10 shrink-0 overflow-visible border-b border-border bg-card px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left"
             >
               {isActiveWorkout ? (
                 <div className="flex flex-col">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
+                  <div className="relative flex items-center justify-between gap-3">
+                    <div className="flex h-8 min-w-0 flex-1 items-center">
                       {startedFromRoutine ? (
                         <>
                           <DrawerTitle className="sr-only">
@@ -1701,13 +1791,12 @@ export function WorkoutLogger() {
                             onChange={(e) => setTitulo(e.target.value)}
                             placeholder="Ej: Día de Pierna"
                             disabled={creatingActive || preparingLiveSession}
-                            className="w-full min-w-0 truncate bg-transparent text-lg font-semibold leading-none tracking-tight outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            className="h-8 w-full min-w-0 truncate bg-transparent text-lg font-semibold leading-8 tracking-tight outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           />
-                          <DrawerDescription>{activeWorkoutHeading}</DrawerDescription>
                         </>
                       ) : (
                         <>
-                          <DrawerTitle className="truncate text-lg font-semibold leading-none tracking-tight">
+                          <DrawerTitle className="h-8 min-w-0 truncate text-lg font-semibold leading-8 tracking-tight">
                             {activeWorkoutHeading}
                           </DrawerTitle>
                           <DrawerDescription className="sr-only">
@@ -1716,7 +1805,8 @@ export function WorkoutLogger() {
                         </>
                       )}
                     </div>
-                    <div className="shrink-0">
+                    <div className="flex h-8 shrink-0 items-center gap-1.5">
+                      <WorkoutSessionOptions />
                       <ElapsedTime
                         since={sessionClockStartedAt}
                         running={!!sessionClockStartedAt}
@@ -1726,6 +1816,9 @@ export function WorkoutLogger() {
                       />
                     </div>
                   </div>
+                  {startedFromRoutine ? (
+                    <DrawerDescription>{activeWorkoutHeading}</DrawerDescription>
+                  ) : null}
                   <RestProgressBar
                     open={!!restTimer.activeKey}
                     remaining={restTimer.remaining}
@@ -1763,6 +1856,8 @@ export function WorkoutLogger() {
                   gymDisabled={creatingActive || preparingLiveSession}
                   rpe={rpe}
                   onRpeChange={setRpe}
+                  comentarios={comentarios}
+                  onComentariosChange={setComentarios}
                 >
                   {isActiveWorkout && hrMonitor.available ? (
                     <HeartRatePanel
@@ -1845,12 +1940,14 @@ export function WorkoutLogger() {
                 onAddExercise={addExercise}
                 exerciseCount={exercises.length}
                 showFinishButton={showFinishButton}
-                onFinish={handleSave}
+                onFinish={isActiveWorkout ? enterSummary : handleSave}
                 saving={saving}
                 canSubmitPrimaryAction={canSubmitPrimaryAction}
                 saveButtonLabel={saveButtonLabel}
                 primaryActionIcon={primaryActionIcon}
               />
+            )}
+            </>
             )}
           </div>
         </DrawerContent>
@@ -1868,22 +1965,16 @@ export function WorkoutLogger() {
         onClose={() => {
           setShowPostWorkout(false);
           setPostWorkoutData(null);
-          setPostWorkoutRoutineSnapshot(null);
           setPostWorkoutLogros([]);
-          setPostWorkoutId(null);
-          setPostWorkoutGimnasio(null);
-          setPostWorkoutTitulo("");
-          setPostWorkoutIcono(DEFAULT_ROUTINE_ICON_KEY);
-          setPostWorkoutAllowEditMeta(false);
         }}
         breakdown={postWorkoutData}
-        routineSnapshot={postWorkoutRoutineSnapshot}
         nuevosLogros={postWorkoutLogros}
-        workoutId={postWorkoutId}
-        initialGimnasio={postWorkoutGimnasio}
-        initialTitulo={postWorkoutTitulo}
-        initialIcono={postWorkoutIcono}
-        allowEditTitleAndIcon={postWorkoutAllowEditMeta}
+      />
+
+      <RoutineForm
+        open={routineFormOpen}
+        onOpenChange={setRoutineFormOpen}
+        prefillSnapshot={summaryRoutinePrefill}
       />
 
       <ExerciseDetailSheet

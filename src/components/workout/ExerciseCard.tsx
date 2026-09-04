@@ -2,6 +2,7 @@ import { useContext, useEffect, useLayoutEffect, useRef, useState, type CSSPrope
 import { DrawerInContentContext } from "@/components/ui/drawer";
 import { useLastPerformance, type LastSetData } from "@/hooks/useLastPerformance";
 import { useProgressiveOverload } from "@/hooks/useProgressiveOverload";
+import { useProgressiveOverloadPreferences } from "@/hooks/useProgressiveOverloadPreferences";
 import { OverloadSuggestionBanner } from "./OverloadSuggestion";
 import { formatMSS } from "@/hooks/useRestTimer";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
   type ExerciseFormData,
   type SetFormData,
   normalizeRegistroSeries,
+  registroUsesReps,
   formatRitmoSegKmLabel,
   setIsUnlogged,
   setCanApplyOverloadPatch,
@@ -30,10 +32,12 @@ import {
   setHasWork,
 } from "@/types/workout";
 import { formatRepTarget } from "@/lib/seriesPlan";
+import { applyOverloadToSet, overloadPatchChangesSet } from "@/lib/progressiveOverload";
 import { isWorkingSet, tipoSerieLabel, tipoSerieShort } from "@/lib/setTypes";
 import { ActiveWorkoutCheckbox } from "./ActiveWorkoutCheckbox";
 import { SwipeToDeleteRow } from "./SwipeToDeleteRow";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
+import { vaulSafeDragHandleProps } from "@/lib/vaulSafeDragHandle";
 
 function formatPreviousSet(
   mode: ReturnType<typeof normalizeRegistroSeries>,
@@ -46,6 +50,7 @@ function formatPreviousSet(
     return `${set.duracion_seg ?? 0}s · ${formatRitmoSegKmLabel(pace ?? null)}`;
   }
   if (mode === "duracion" || seg) return `${set.duracion_seg ?? 0}s`;
+  if (mode === "solo_reps") return `${set.repeticiones} reps`;
   return `${set.peso_kg}x${set.repeticiones}`;
 }
 
@@ -63,7 +68,11 @@ interface ExerciseCardProps {
   onRemoveSet: (setIndex: number) => void;
   onUpdateSet: (setIndex: number, field: keyof SetFormData, value: number | null) => void;
   onSeedSetFromPrevious?: (setIndex: number, patch: Partial<SetFormData>) => void;
-  onApplySuggestionToSet?: (setIndex: number, patch: Partial<SetFormData>) => void;
+  onApplySuggestionToSet?: (
+    setIndex: number,
+    patch: Partial<SetFormData>,
+    options?: { revert?: boolean },
+  ) => void;
   onAutoSaveSet?: (setIndex: number) => void;
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
   dragHandleProps?: DraggableSyntheticListeners & Partial<DraggableAttributes>;
@@ -89,9 +98,23 @@ export function ExerciseCard({
     tipo_ejercicio_id: exercise.tipo_ejercicio_id,
     usuario_ejercicio_id: exercise.usuario_ejercicio_id,
   });
-  const overloadSuggestion = useProgressiveOverload(exercise);
+  const { enabled: overloadSuggestionsEnabled } = useProgressiveOverloadPreferences();
+  const overloadSuggestion = useProgressiveOverload(exercise, {
+    enabled: overloadSuggestionsEnabled,
+  });
   const mode = normalizeRegistroSeries(exercise.registro_series);
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
+  const [overloadApplied, setOverloadApplied] = useState(false);
+  const [overloadFlash, setOverloadFlash] = useState<Record<string, number>>({});
+  const overloadSnapshotRef = useRef<
+    Array<{
+      setIndex: number;
+      peso_kg: number;
+      repeticiones: number;
+      seededFromPrevious?: boolean;
+    }>
+  >([]);
+  const overloadFlashSeq = useRef(0);
   const setsTableRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -133,19 +156,86 @@ export function ExerciseCard({
     });
   }, [exercise.sets, lastPerf, mode, onSeedSetFromPrevious]);
 
+  const flashOverloadFields = (
+    entries: Array<{ setIndex: number; field: "repeticiones" | "peso_kg"; from: number; to: number }>,
+  ) => {
+    const patch: Record<string, number> = {};
+    for (const { setIndex, field, from, to } of entries) {
+      if (Number(from) === Number(to)) continue;
+      overloadFlashSeq.current += 1;
+      patch[`${setIndex}:${field}`] = overloadFlashSeq.current;
+    }
+    if (Object.keys(patch).length === 0) return;
+    setOverloadFlash((prev) => ({ ...prev, ...patch }));
+  };
+
   const handleApplyOverload = () => {
     if (!overloadSuggestion || !onApplySuggestionToSet) return;
+    const snapshot: typeof overloadSnapshotRef.current = [];
+    const flashes: Array<{
+      setIndex: number;
+      field: "repeticiones" | "peso_kg";
+      from: number;
+      to: number;
+    }> = [];
+    const topWeight = Math.max(
+      0,
+      ...exercise.sets
+        .filter((s) => isWorkingSet(s.tipo_serie))
+        .map((s) => Number(s.peso_kg) || 0),
+    );
     exercise.sets.forEach((s, si) => {
       // La sugerencia es para las series efectivas; un calentamiento no sube.
       if (!isWorkingSet(s.tipo_serie)) return;
       if (!setCanApplyOverloadPatch(s, mode)) return;
-      const keepWeightOnRepProgress =
-        overloadSuggestion.action === "increase_reps" && Number(s.peso_kg) > 0;
-      onApplySuggestionToSet(si, {
-        peso_kg: keepWeightOnRepProgress ? s.peso_kg : overloadSuggestion.suggestedWeight,
-        repeticiones: overloadSuggestion.suggestedReps,
+      const patch = applyOverloadToSet(s, overloadSuggestion, topWeight);
+      if (!overloadPatchChangesSet(s, patch)) return;
+      snapshot.push({
+        setIndex: si,
+        peso_kg: s.peso_kg,
+        repeticiones: s.repeticiones,
+        seededFromPrevious: s.seededFromPrevious,
       });
+      flashes.push(
+        { setIndex: si, field: "peso_kg", from: s.peso_kg, to: patch.peso_kg },
+        { setIndex: si, field: "repeticiones", from: s.repeticiones, to: patch.repeticiones },
+      );
+      onApplySuggestionToSet(si, patch);
     });
+    if (snapshot.length === 0) return;
+    overloadSnapshotRef.current = snapshot;
+    setOverloadApplied(true);
+    flashOverloadFields(flashes);
+  };
+
+  const handleUndoOverload = () => {
+    if (!onApplySuggestionToSet || overloadSnapshotRef.current.length === 0) return;
+    const flashes: Array<{
+      setIndex: number;
+      field: "repeticiones" | "peso_kg";
+      from: number;
+      to: number;
+    }> = [];
+    overloadSnapshotRef.current.forEach((prev) => {
+      if (prev.setIndex >= exercise.sets.length) return;
+      const current = exercise.sets[prev.setIndex];
+      flashes.push(
+        { setIndex: prev.setIndex, field: "peso_kg", from: current.peso_kg, to: prev.peso_kg },
+        { setIndex: prev.setIndex, field: "repeticiones", from: current.repeticiones, to: prev.repeticiones },
+      );
+      onApplySuggestionToSet(
+        prev.setIndex,
+        {
+          peso_kg: prev.peso_kg,
+          repeticiones: prev.repeticiones,
+          seededFromPrevious: prev.seededFromPrevious,
+        },
+        { revert: true },
+      );
+    });
+    overloadSnapshotRef.current = [];
+    setOverloadApplied(false);
+    flashOverloadFields(flashes);
   };
 
   const restSeconds = exercise.descanso ?? 120;
@@ -235,7 +325,14 @@ export function ExerciseCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex min-w-0 items-center gap-2">
-            <div {...dragHandleProps} className="cursor-grab touch-none active:cursor-grabbing shrink-0">
+            <div
+              {...vaulSafeDragHandleProps(dragHandleProps)}
+              aria-label={dragHandleProps ? "Reordenar ejercicio" : undefined}
+              className={cn(
+                "-ml-2 flex h-11 w-11 shrink-0 items-center justify-center",
+                dragHandleProps && "cursor-grab touch-none active:cursor-grabbing",
+              )}
+            >
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
             <h3 className="truncate text-sm font-semibold">{exercise.nombre}</h3>
@@ -282,11 +379,13 @@ export function ExerciseCard({
         </div>
       </div>
 
-      {mode === "peso_reps" && overloadSuggestion ? (
+      {registroUsesReps(mode) && overloadSuggestionsEnabled && overloadSuggestion ? (
         <OverloadSuggestionBanner
           suggestion={overloadSuggestion}
           canApply={!!onApplySuggestionToSet}
+          applied={overloadApplied}
           onApply={handleApplyOverload}
+          onUndo={handleUndoOverload}
         />
       ) : null}
 
@@ -321,6 +420,7 @@ export function ExerciseCard({
                   onCommit={() => onAutoSaveSet?.(si)}
                   className="h-11 text-center"
                   placeholder={repsPlaceholder(s)}
+                  flashToken={overloadFlash[`${si}:repeticiones`]}
                 />
                 <SetValueInput
                   field="peso_kg"
@@ -330,6 +430,39 @@ export function ExerciseCard({
                   onCommit={() => onAutoSaveSet?.(si)}
                   className="h-11 text-center"
                   placeholder={s.objetivo_peso_kg != null ? String(s.objetivo_peso_kg) : "0"}
+                  flashToken={overloadFlash[`${si}:peso_kg`]}
+                />
+                {setDoneControl(s, si)}
+              </div>
+            </SwipeToDeleteRow>
+          ))}
+        </>
+      ) : mode === "solo_reps" ? (
+        <>
+          <div className={cn(SETS_GRID_ONE_INPUT, "text-xs text-muted-foreground")}>
+            <span aria-hidden className="mx-0.5" />
+            <span data-anterior-cell className="w-max justify-self-center">Anterior</span>
+            <span>Reps</span>
+            <span className="sr-only">Hecho</span>
+          </div>
+          {exercise.sets.map((s, si) => (
+            <SwipeToDeleteRow
+              key={s.id ?? si}
+              label={`serie ${si + 1}`}
+              onDelete={() => onRemoveSet(si)}
+              className={surfaceBg}
+            >
+              <div className={cn(SETS_GRID_ONE_INPUT, setRowClass(s))}>
+                {setNumberCell(s, si, "mx-0.5")}
+                {previousCell(si)}
+                <SetValueInput
+                  field="repeticiones"
+                  value={s.repeticiones}
+                  onValueChange={(v) => onUpdateSet(si, "repeticiones", v ?? 0)}
+                  onCommit={() => onAutoSaveSet?.(si)}
+                  className="h-11 text-center"
+                  placeholder={repsPlaceholder(s)}
+                  flashToken={overloadFlash[`${si}:repeticiones`]}
                 />
                 {setDoneControl(s, si)}
               </div>

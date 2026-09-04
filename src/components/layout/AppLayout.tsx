@@ -31,11 +31,13 @@ import { InAppSocialToastSync } from "@/components/notifications/InAppSocialToas
 import { InAppToastNavigationHost } from "@/components/notifications/InAppToastNavigationHost";
 import { useSafeAreaInsetsSync } from "@/hooks/useSafeAreaInsetsSync";
 import { useLogrosSync } from "@/hooks/useLogrosSync";
+import { useImportGoogleAvatar } from "@/hooks/useImportGoogleAvatar";
 import { HeaderSectionTabs } from "./HeaderSectionTabs";
 
 export function AppLayout() {
   useSafeAreaInsetsSync();
   useLogrosSync();
+  useImportGoogleAvatar();
   const { user, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { location, pageTitle, showSectionPills, activeSubsectionLabel } =

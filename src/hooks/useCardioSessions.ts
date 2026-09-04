@@ -1,8 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { checkAndAwardLogros } from "@/hooks/useLogros";
+import { checkAndAwardLogros, type LogroRow } from "@/hooks/useLogros";
 import { notifyLogrosDesbloqueados } from "@/components/logros/logroToast";
+import { awardSessionXp, useRemoveCardioXP, type XPBreakdown } from "@/hooks/useGamification";
+import { calculateCardioSessionXp, resolveCardioDurationSec } from "@/lib/sessionXp";
+import { fetchCompletedTrainingDayKeys } from "@/lib/trainingDays";
+import { computeStreakStats } from "@/lib/streakWeeks";
 import type { CardioBlockInput, CardioSportDetailInput, CardioTrackInput } from "@/types/cardio";
 import type { CardioSesionWithDetails } from "@/lib/cardioSessionDisplay";
 import {
@@ -194,6 +198,12 @@ export function useMonthCardioSessionDates(month: Date) {
   });
 }
 
+export type UpsertCardioSessionResult = {
+  sessionId: string;
+  xp: XPBreakdown | null;
+  logros: LogroRow[];
+};
+
 export function useUpsertCardioSession() {
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -204,7 +214,7 @@ export function useUpsertCardioSession() {
     }: {
       id?: string | null;
       input: CardioSessionInput;
-    }) => {
+    }): Promise<UpsertCardioSessionResult> => {
       const payload = {
         titulo: input.titulo,
         fecha_inicio: input.fecha_inicio,
@@ -217,7 +227,15 @@ export function useUpsertCardioSession() {
       };
 
       let sessionId = id ?? null;
+      let previousFechaFin: string | null = null;
       if (sessionId) {
+        const { data: existing, error: existingErr } = await supabase
+          .from("cardio_sesion")
+          .select("fecha_fin")
+          .eq("id", sessionId)
+          .maybeSingle();
+        if (existingErr) throw existingErr;
+        previousFechaFin = existing?.fecha_fin ?? null;
         const { error } = await supabase.from("cardio_sesion").update(payload).eq("id", sessionId);
         if (error) throw error;
         const { error: deleteError } = await supabase.from("cardio_bloque").delete().eq("cardio_sesion_id", sessionId);
@@ -323,9 +341,40 @@ export function useUpsertCardioSession() {
         }
       }
 
-      return sessionId;
+      if (!sessionId) throw new Error("No se pudo guardar la sesión.");
+
+      const firstComplete = Boolean(input.fecha_fin) && !previousFechaFin;
+      let xp: XPBreakdown | null = null;
+      if (firstComplete && user?.id) {
+        const durationSec = resolveCardioDurationSec({
+          blockDurationsSec: input.bloques.map((b) => b.duracion_seg),
+          fechaInicio: input.fecha_inicio,
+          fechaFin: input.fecha_fin,
+          trackDurationSec: input.track?.duracion_total_seg,
+        });
+        const days = await fetchCompletedTrainingDayKeys(user.id);
+        const { actual: newStreak } = computeStreakStats(days);
+        const parts = calculateCardioSessionXp(durationSec, newStreak);
+        xp = await awardSessionXp({
+          userId: user.id,
+          parts,
+          fechaEntrenamiento: input.fecha_inicio.slice(0, 10),
+        });
+      }
+
+      let logros: LogroRow[] = [];
+      if (input.fecha_fin && user?.id) {
+        try {
+          const awarded = await checkAndAwardLogros(user.id);
+          logros = awarded.nuevos;
+        } catch {
+          logros = [];
+        }
+      }
+
+      return { sessionId, xp, logros };
     },
-    onSuccess: (_sessionId, { input }) => {
+    onSuccess: (result, { input }) => {
       qc.invalidateQueries({ queryKey: ["cardioSessions"] });
       qc.invalidateQueries({ queryKey: ["cardioSession"] });
       qc.invalidateQueries({ queryKey: ["cardioHistory"] });
@@ -335,20 +384,15 @@ export function useUpsertCardioSession() {
       qc.invalidateQueries({ queryKey: ["activeCardioSession"] });
       qc.invalidateQueries({ queryKey: ["trainingLoad"] });
       qc.invalidateQueries({ queryKey: ["communityFeed"] });
+      qc.invalidateQueries({ queryKey: ["profileStats"] });
       if (input.fecha_fin) {
         qc.invalidateQueries({ queryKey: ["lastCardioDisciplineId"] });
+        qc.invalidateQueries({ queryKey: ["logros"] });
       }
 
-      // Sesión completada: evaluar logros y celebrar los nuevos con un toast.
-      if (input.fecha_fin && user?.id) {
-        checkAndAwardLogros(user.id)
-          .then(({ nuevos }) => {
-            if (nuevos.length === 0) return;
-            notifyLogrosDesbloqueados(nuevos);
-            qc.invalidateQueries({ queryKey: ["logros"] });
-            qc.invalidateQueries({ queryKey: ["profileStats"] });
-          })
-          .catch(() => {});
+      // Edición de una sesión ya cerrada: no hay modal de XP, celebrar logros aquí.
+      if (!result.xp && result.logros.length > 0) {
+        notifyLogrosDesbloqueados(result.logros);
       }
     },
   });
@@ -397,8 +441,39 @@ export function useStartCardioLiveSession() {
 
 export function useDeleteCardioSession() {
   const qc = useQueryClient();
+  const removeXP = useRemoveCardioXP();
   return useMutation({
     mutationFn: async (id: string) => {
+      const { data: session, error: sessionErr } = await supabase
+        .from("cardio_sesion")
+        .select("fecha_inicio, fecha_fin")
+        .eq("id", id)
+        .maybeSingle();
+      if (sessionErr) throw sessionErr;
+
+      const { data: bloques, error: bloquesErr } = await supabase
+        .from("cardio_bloque")
+        .select("duracion_seg")
+        .eq("cardio_sesion_id", id);
+      if (bloquesErr) throw bloquesErr;
+
+      const { data: track, error: trackErr } = await supabase
+        .from("cardio_track")
+        .select("duracion_total_seg")
+        .eq("cardio_sesion_id", id)
+        .maybeSingle();
+      if (trackErr) throw trackErr;
+
+      if (session?.fecha_fin) {
+        const durationSec = resolveCardioDurationSec({
+          blockDurationsSec: (bloques ?? []).map((b) => b.duracion_seg),
+          fechaInicio: session.fecha_inicio,
+          fechaFin: session.fecha_fin,
+          trackDurationSec: track?.duracion_total_seg,
+        });
+        await removeXP(id, durationSec);
+      }
+
       // La BD base referencia cardio_sesion sin ON DELETE CASCADE en varias tablas → DELETE directo da 409.
       const { data: tracks, error: trackListErr } = await supabase.from("cardio_track").select("id").eq("cardio_sesion_id", id);
       if (trackListErr) throw trackListErr;
@@ -435,6 +510,7 @@ export function useDeleteCardioSession() {
       qc.invalidateQueries({ queryKey: ["cardioHistory"] });
       qc.invalidateQueries({ queryKey: ["communityFeed"] });
       qc.invalidateQueries({ queryKey: ["trainingLoad"] });
+      qc.invalidateQueries({ queryKey: ["profileStats"] });
     },
   });
 }

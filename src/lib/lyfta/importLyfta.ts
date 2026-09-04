@@ -22,6 +22,7 @@ import {
 } from "@/lib/lyfta/proxy";
 import { matchLyftaToCatalog, pretokenizeCatalog, type LyftaCatalogEntry } from "@/lib/lyfta/matchLyftaCatalog";
 import { normalizeRegistroSeries, serieFieldsForRegistro, type RegistroSeries } from "@/types/workout";
+import { DEFAULT_TIPO_SERIE, isWorkingSet } from "@/lib/setTypes";
 import type { TablesInsert } from "@/integrations/supabase/types";
 
 export type LyftaImportProgress = {
@@ -384,6 +385,7 @@ async function persistWorkout(
           duracion_seg: dr.duracion_seg,
           ritmo_seg_km: dr.ritmo_seg_km,
           rir: s.rir,
+          tipo_serie: s.tipo_serie ?? DEFAULT_TIPO_SERIE,
           completed: true,
         };
       });
@@ -437,13 +439,15 @@ async function persistRoutine(
     const inserts: TablesInsert<"rutina_ejercicio">[] = exercises.map((ex, i) => {
       const id = lyftaExerciseKey(ex);
       const ref = mappedExerciseRef(id, idToTipo, idToCustom);
-      const reps = ex.sets.map((s) => s.repeticiones).filter((r) => r > 0);
-      const rirs = ex.sets.map((s) => s.rir).filter((r): r is number => r != null);
+      const planned = ex.sets.filter((s) => isWorkingSet(s.tipo_serie));
+      const forPlan = planned.length ? planned : ex.sets;
+      const reps = forPlan.map((s) => s.repeticiones).filter((r) => r > 0);
+      const rirs = forPlan.map((s) => s.rir).filter((r): r is number => r != null);
       return {
         rutina_id: rutina.id,
         tipo_ejercicio_id: ref.tipo_ejercicio_id,
         usuario_ejercicio_id: ref.usuario_ejercicio_id,
-        series_objetivo: Math.max(1, ex.sets.length),
+        series_objetivo: Math.max(1, forPlan.length),
         repes_min: reps.length ? Math.min(...reps) : 8,
         repes_max: reps.length ? Math.max(...reps) : 12,
         rir: rirs.length ? Math.round(rirs.reduce((a, b) => a + b, 0) / rirs.length) : null,

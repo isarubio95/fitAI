@@ -30,4 +30,21 @@ describe("SetValueInput", () => {
     expect(input).toHaveValue("12.5");
     expect(onCommit).toHaveBeenCalled();
   });
+
+  it("destella el fondo cuando llega un flashToken nuevo", () => {
+    const { rerender } = render(
+      <SetValueInput field="peso_kg" value={10} onValueChange={() => undefined} />,
+    );
+    expect(screen.getByRole("textbox")).not.toHaveClass("set-value-flash");
+
+    rerender(
+      <SetValueInput
+        field="peso_kg"
+        value={12.5}
+        onValueChange={() => undefined}
+        flashToken={1}
+      />,
+    );
+    expect(screen.getByRole("textbox")).toHaveClass("set-value-flash");
+  });
 });

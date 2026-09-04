@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -27,8 +27,6 @@ export type Database = {
           gimnasio_nombre: string | null
           icono: string | null
           id: string
-          origen: string | null
-          origen_externo_id: string | null
           rpe: number | null
           titulo: string
           usuario_id: string
@@ -45,8 +43,6 @@ export type Database = {
           gimnasio_nombre?: string | null
           icono?: string | null
           id?: string
-          origen?: string | null
-          origen_externo_id?: string | null
           rpe?: number | null
           titulo: string
           usuario_id?: string
@@ -63,8 +59,6 @@ export type Database = {
           gimnasio_nombre?: string | null
           icono?: string | null
           id?: string
-          origen?: string | null
-          origen_externo_id?: string | null
           rpe?: number | null
           titulo?: string
           usuario_id?: string
@@ -75,6 +69,45 @@ export type Database = {
             columns: ["gimnasio_id"]
             isOneToOne: false
             referencedRelation: "gimnasio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      actividad_comentario: {
+        Row: {
+          actividad_id: string
+          created_at: string
+          id: string
+          texto: string
+          usuario_id: string
+        }
+        Insert: {
+          actividad_id: string
+          created_at?: string
+          id?: string
+          texto: string
+          usuario_id: string
+        }
+        Update: {
+          actividad_id?: string
+          created_at?: string
+          id?: string
+          texto?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actividad_comentario_actividad_id_fkey"
+            columns: ["actividad_id"]
+            isOneToOne: false
+            referencedRelation: "actividad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actividad_comentario_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
             referencedColumns: ["id"]
           },
         ]
@@ -111,45 +144,6 @@ export type Database = {
           },
         ]
       }
-      actividad_comentario: {
-        Row: {
-          actividad_id: string
-          created_at: string
-          id: string
-          texto: string
-          usuario_id: string
-        }
-        Insert: {
-          actividad_id: string
-          created_at?: string
-          id?: string
-          texto: string
-          usuario_id?: string
-        }
-        Update: {
-          actividad_id?: string
-          created_at?: string
-          id?: string
-          texto?: string
-          usuario_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "actividad_comentario_actividad_id_fkey"
-            columns: ["actividad_id"]
-            isOneToOne: false
-            referencedRelation: "actividad"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "actividad_comentario_usuario_id_fkey"
-            columns: ["usuario_id"]
-            isOneToOne: false
-            referencedRelation: "perfil"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       actividad_like: {
         Row: {
           actividad_id: string
@@ -161,7 +155,7 @@ export type Database = {
           actividad_id: string
           created_at?: string
           id?: string
-          usuario_id?: string
+          usuario_id: string
         }
         Update: {
           actividad_id?: string
@@ -179,81 +173,6 @@ export type Database = {
           },
           {
             foreignKeyName: "actividad_like_usuario_id_fkey"
-            columns: ["usuario_id"]
-            isOneToOne: false
-            referencedRelation: "perfil"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cardio_sesion_comentario: {
-        Row: {
-          cardio_sesion_id: string
-          created_at: string
-          id: string
-          texto: string
-          usuario_id: string
-        }
-        Insert: {
-          cardio_sesion_id: string
-          created_at?: string
-          id?: string
-          texto: string
-          usuario_id?: string
-        }
-        Update: {
-          cardio_sesion_id?: string
-          created_at?: string
-          id?: string
-          texto?: string
-          usuario_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cardio_sesion_comentario_cardio_sesion_id_fkey"
-            columns: ["cardio_sesion_id"]
-            isOneToOne: false
-            referencedRelation: "cardio_sesion"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cardio_sesion_comentario_usuario_id_fkey"
-            columns: ["usuario_id"]
-            isOneToOne: false
-            referencedRelation: "perfil"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cardio_sesion_like: {
-        Row: {
-          cardio_sesion_id: string
-          created_at: string
-          id: string
-          usuario_id: string
-        }
-        Insert: {
-          cardio_sesion_id: string
-          created_at?: string
-          id?: string
-          usuario_id?: string
-        }
-        Update: {
-          cardio_sesion_id?: string
-          created_at?: string
-          id?: string
-          usuario_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cardio_sesion_like_cardio_sesion_id_fkey"
-            columns: ["cardio_sesion_id"]
-            isOneToOne: false
-            referencedRelation: "cardio_sesion"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cardio_sesion_like_usuario_id_fkey"
             columns: ["usuario_id"]
             isOneToOne: false
             referencedRelation: "perfil"
@@ -362,7 +281,7 @@ export type Database = {
           id?: string
           nombre: string
           origen_cardio_sesion_id?: string | null
-          usuario_id?: string
+          usuario_id: string
         }
         Update: {
           cardio_disciplina_id?: string | null
@@ -388,6 +307,13 @@ export type Database = {
             columns: ["origen_cardio_sesion_id"]
             isOneToOne: false
             referencedRelation: "cardio_sesion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cardio_ruta_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
             referencedColumns: ["id"]
           },
         ]
@@ -595,6 +521,45 @@ export type Database = {
           },
         ]
       }
+      cardio_sesion_comentario: {
+        Row: {
+          cardio_sesion_id: string
+          created_at: string
+          id: string
+          texto: string
+          usuario_id: string
+        }
+        Insert: {
+          cardio_sesion_id: string
+          created_at?: string
+          id?: string
+          texto: string
+          usuario_id: string
+        }
+        Update: {
+          cardio_sesion_id?: string
+          created_at?: string
+          id?: string
+          texto?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cardio_sesion_comentario_cardio_sesion_id_fkey"
+            columns: ["cardio_sesion_id"]
+            isOneToOne: false
+            referencedRelation: "cardio_sesion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cardio_sesion_comentario_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cardio_sesion_cycling: {
         Row: {
           cadencia_media_rpm: number | null
@@ -629,6 +594,42 @@ export type Database = {
             columns: ["cardio_sesion_id"]
             isOneToOne: true
             referencedRelation: "cardio_sesion"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cardio_sesion_like: {
+        Row: {
+          cardio_sesion_id: string
+          created_at: string
+          id: string
+          usuario_id: string
+        }
+        Insert: {
+          cardio_sesion_id: string
+          created_at?: string
+          id?: string
+          usuario_id: string
+        }
+        Update: {
+          cardio_sesion_id?: string
+          created_at?: string
+          id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cardio_sesion_like_cardio_sesion_id_fkey"
+            columns: ["cardio_sesion_id"]
+            isOneToOne: false
+            referencedRelation: "cardio_sesion"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cardio_sesion_like_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfil"
             referencedColumns: ["id"]
           },
         ]
@@ -836,7 +837,7 @@ export type Database = {
           id?: string
           tipo_ejercicio_id?: string | null
           usuario_ejercicio_id?: string | null
-          usuario_id?: string
+          usuario_id: string
         }
         Update: {
           created_at?: string
@@ -1133,8 +1134,6 @@ export type Database = {
           nivel: string | null
           nombre: string
           orden: number | null
-          origen: string | null
-          origen_externo_id: string | null
           usuario_id: string | null
         }
         Insert: {
@@ -1148,8 +1147,6 @@ export type Database = {
           nivel?: string | null
           nombre: string
           orden?: number | null
-          origen?: string | null
-          origen_externo_id?: string | null
           usuario_id?: string | null
         }
         Update: {
@@ -1163,8 +1160,6 @@ export type Database = {
           nivel?: string | null
           nombre?: string
           orden?: number | null
-          origen?: string | null
-          origen_externo_id?: string | null
           usuario_id?: string | null
         }
         Relationships: []
@@ -1342,8 +1337,8 @@ export type Database = {
       }
       salud_diaria: {
         Row: {
-          calorias: number | null
           calidad_sueno: number | null
+          calorias: number | null
           created_at: string
           fc_reposo: number | null
           fecha: string
@@ -1354,20 +1349,20 @@ export type Database = {
           usuario_id: string
         }
         Insert: {
-          calorias?: number | null
           calidad_sueno?: number | null
+          calorias?: number | null
           created_at?: string
           fc_reposo?: number | null
-          fecha?: string
+          fecha: string
           id?: string
           notas?: string | null
           sueno_min?: number | null
           updated_at?: string
-          usuario_id?: string
+          usuario_id: string
         }
         Update: {
-          calorias?: number | null
           calidad_sueno?: number | null
+          calorias?: number | null
           created_at?: string
           fc_reposo?: number | null
           fecha?: string
@@ -1494,8 +1489,11 @@ export type Database = {
       tipo_ejercicio: {
         Row: {
           created_at: string
+          cualidad: string[]
+          deportes: string[]
           dificultad: string | null
           equipment: string | null
+          equipment_list: string[]
           gif_url: string | null
           grupo_muscular: string | null
           id: string
@@ -1503,13 +1501,22 @@ export type Database = {
           instructions: string[] | null
           musculos_involucrados: string[] | null
           nombre: string
+          origen: string | null
+          origen_externo_id: string | null
+          patron_movimiento: string[]
+          plano: string | null
           registro_series: string
           tipo: string | null
+          unilateral: boolean | null
+          video_url: string | null
         }
         Insert: {
           created_at?: string
+          cualidad?: string[]
+          deportes?: string[]
           dificultad?: string | null
           equipment?: string | null
+          equipment_list?: string[]
           gif_url?: string | null
           grupo_muscular?: string | null
           id?: string
@@ -1517,13 +1524,22 @@ export type Database = {
           instructions?: string[] | null
           musculos_involucrados?: string[] | null
           nombre: string
+          origen?: string | null
+          origen_externo_id?: string | null
+          patron_movimiento?: string[]
+          plano?: string | null
           registro_series?: string
           tipo?: string | null
+          unilateral?: boolean | null
+          video_url?: string | null
         }
         Update: {
           created_at?: string
+          cualidad?: string[]
+          deportes?: string[]
           dificultad?: string | null
           equipment?: string | null
+          equipment_list?: string[]
           gif_url?: string | null
           grupo_muscular?: string | null
           id?: string
@@ -1531,17 +1547,26 @@ export type Database = {
           instructions?: string[] | null
           musculos_involucrados?: string[] | null
           nombre?: string
+          origen?: string | null
+          origen_externo_id?: string | null
+          patron_movimiento?: string[]
+          plano?: string | null
           registro_series?: string
           tipo?: string | null
+          unilateral?: boolean | null
+          video_url?: string | null
         }
         Relationships: []
       }
       usuario_ejercicio: {
         Row: {
           created_at: string
+          cualidad: string[]
+          deportes: string[]
           descripcion: string | null
           dificultad: string | null
           equipment: string | null
+          equipment_list: string[]
           gif_url: string | null
           grupo_muscular: string | null
           id: string
@@ -1549,15 +1574,22 @@ export type Database = {
           instructions: string[] | null
           musculos_involucrados: string[] | null
           nombre: string
+          patron_movimiento: string[]
+          plano: string | null
           registro_series: string
           tipo: string | null
+          unilateral: boolean | null
           usuario_id: string
+          video_url: string | null
         }
         Insert: {
           created_at?: string
+          cualidad?: string[]
+          deportes?: string[]
           descripcion?: string | null
           dificultad?: string | null
           equipment?: string | null
+          equipment_list?: string[]
           gif_url?: string | null
           grupo_muscular?: string | null
           id?: string
@@ -1565,15 +1597,22 @@ export type Database = {
           instructions?: string[] | null
           musculos_involucrados?: string[] | null
           nombre: string
+          patron_movimiento?: string[]
+          plano?: string | null
           registro_series?: string
           tipo?: string | null
+          unilateral?: boolean | null
           usuario_id?: string
+          video_url?: string | null
         }
         Update: {
           created_at?: string
+          cualidad?: string[]
+          deportes?: string[]
           descripcion?: string | null
           dificultad?: string | null
           equipment?: string | null
+          equipment_list?: string[]
           gif_url?: string | null
           grupo_muscular?: string | null
           id?: string
@@ -1581,9 +1620,13 @@ export type Database = {
           instructions?: string[] | null
           musculos_involucrados?: string[] | null
           nombre?: string
+          patron_movimiento?: string[]
+          plano?: string | null
           registro_series?: string
           tipo?: string | null
+          unilateral?: boolean | null
           usuario_id?: string
+          video_url?: string | null
         }
         Relationships: []
       }
@@ -1630,43 +1673,45 @@ export type Database = {
     Functions: {
       delete_user_data: { Args: { p_user_id: string }; Returns: undefined }
       get_cardio_ruta_preview_points: {
-        Args: { p_ruta_ids: string[]; p_max_points?: number }
+        Args: { p_max_points?: number; p_ruta_ids: string[] }
         Returns: {
           cardio_ruta_id: string
-          elevacion_m: number | null
+          elevacion_m: number
           lat: number
           lng: number
           orden: number
         }[]
       }
       get_cardio_track_preview_points: {
-        Args: { p_track_ids: string[]; p_max_points?: number }
+        Args: { p_max_points?: number; p_track_ids: string[] }
         Returns: {
           cardio_track_id: string
-          elevacion_m: number | null
+          elevacion_m: number
           lat: number
           lng: number
           orden: number
         }[]
       }
       get_exercise_daily_best: {
-        Args: { p_tipo_ejercicio_id: string; p_months?: number }
+        Args: { p_months?: number; p_tipo_ejercicio_id: string }
         Returns: {
           day: string
-          weight: number
-          reps: number
           one_rep_max: number
+          reps: number
+          weight: number
         }[]
       }
       gym_normalize_tipo_nombre: { Args: { p_nombre: string }; Returns: string }
       list_exercises_with_history: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           id: string
-          name: string
           last_performed: string
+          name: string
         }[]
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
@@ -1685,12 +1730,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1714,11 +1759,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1739,11 +1784,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1764,11 +1809,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1781,11 +1826,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

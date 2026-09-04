@@ -8,6 +8,12 @@ import {
   weekStartKeyFromDayStr,
   workoutDaysToWeeks,
 } from "@/lib/streakWeeks";
+import { calculateCardioSessionXp, calculateStrengthSessionXp, type SessionXpParts } from "@/lib/sessionXp";
+import {
+  dayKeyToUltimaFechaIso,
+  fetchCompletedTrainingDayKeys,
+  latestDayKey,
+} from "@/lib/trainingDays";
 
 export interface ProfileStats {
   nivel: number;
@@ -26,29 +32,134 @@ export interface XPBreakdown {
   newLevel: number;
   previousLevel: number;
   newStreak: number;
+  volumeLabel?: "Volumen" | "Duración";
 }
 
-// Fórmula de niveles
 export function calculateLevel(xp: number) {
   return Math.floor(xp / 1000) + 1;
 }
 
-// Barra de progreso visual
 export function xpProgress(xp: number) {
   const level = calculateLevel(xp);
   const currentLevelFloor = (level - 1) * 1000;
   const nextLevelXp = level * 1000;
   const progress = xp - currentLevelFloor;
   const needed = nextLevelXp - currentLevelFloor;
-  return { 
-    level, 
-    progress, 
-    needed, 
-    percent: Math.min(100, Math.max(0, Math.round((progress / needed) * 100))) 
+  return {
+    level,
+    progress,
+    needed,
+    percent: Math.min(100, Math.max(0, Math.round((progress / needed) * 100))),
   };
 }
 
-// Obtener datos del perfil en tiempo real (opcionalmente de otro usuario)
+function toBreakdown(
+  parts: SessionXpParts,
+  previousXP: number,
+  newStreak: number,
+): XPBreakdown {
+  const newXP = previousXP + parts.total;
+  const previousLevel = calculateLevel(previousXP);
+  const newLevel = calculateLevel(newXP);
+  return {
+    base: parts.base,
+    series: parts.series,
+    streakBonus: parts.streakBonus,
+    total: parts.total,
+    leveledUp: newLevel > previousLevel,
+    newLevel,
+    previousLevel,
+    newStreak,
+    volumeLabel: parts.volumeLabel,
+  };
+}
+
+async function persistProfileXp(opts: {
+  userId: string;
+  newXP: number;
+  newLevel: number;
+  newStreak: number;
+  newMaxStreak: number;
+  ultimaFechaISO: string | null;
+}) {
+  const { error } = await supabase
+    .from("perfil")
+    .update({
+      xp_total: opts.newXP,
+      nivel: opts.newLevel,
+      racha_actual: opts.newStreak,
+      racha_maxima: opts.newMaxStreak,
+      ultima_actividad_fecha: opts.ultimaFechaISO,
+    })
+    .eq("id", opts.userId);
+  if (error) throw error;
+}
+
+export async function awardSessionXp(opts: {
+  userId: string;
+  parts: SessionXpParts;
+  fechaEntrenamiento?: string;
+}): Promise<XPBreakdown> {
+  const { data: profile, error: pErr } = await supabase
+    .from("perfil")
+    .select("xp_total")
+    .eq("id", opts.userId)
+    .maybeSingle();
+  if (pErr) throw pErr;
+
+  const previousXP = profile?.xp_total ?? 0;
+  const days = await fetchCompletedTrainingDayKeys(opts.userId);
+  const { actual: newStreak, maxima: newMaxStreak } = computeStreakStats(days);
+  const breakdown = toBreakdown(opts.parts, previousXP, newStreak);
+  const ultimaFechaISO = opts.fechaEntrenamiento
+    ? new Date(`${opts.fechaEntrenamiento}T23:59:59.999Z`).toISOString()
+    : new Date().toISOString();
+
+  await persistProfileXp({
+    userId: opts.userId,
+    newXP: previousXP + opts.parts.total,
+    newLevel: breakdown.newLevel,
+    newStreak,
+    newMaxStreak,
+    ultimaFechaISO,
+  });
+
+  return breakdown;
+}
+
+export async function removeSessionXp(opts: {
+  userId: string;
+  totalToRemove: number;
+  excludeActividadId?: string;
+  excludeCardioId?: string;
+}) {
+  const { data: profile, error: pErr } = await supabase
+    .from("perfil")
+    .select("xp_total")
+    .eq("id", opts.userId)
+    .maybeSingle();
+  if (pErr) throw pErr;
+  if (!profile) return;
+
+  const remainingDays = await fetchCompletedTrainingDayKeys(opts.userId, {
+    excludeActividadId: opts.excludeActividadId,
+    excludeCardioId: opts.excludeCardioId,
+  });
+  const { actual: nuevaRachaActual, maxima: nuevaRachaMaxima } = computeStreakStats(remainingDays);
+  const previousXP = profile.xp_total ?? 0;
+  const newXP = Math.max(0, previousXP - opts.totalToRemove);
+  const newLevel = calculateLevel(newXP);
+
+  await persistProfileXp({
+    userId: opts.userId,
+    newXP,
+    newLevel,
+    newStreak: nuevaRachaActual,
+    newMaxStreak: nuevaRachaMaxima,
+    ultimaFechaISO: dayKeyToUltimaFechaIso(latestDayKey(remainingDays)),
+  });
+}
+
 export function useProfileStats(profileUserId?: string) {
   const { user } = useAuth();
   const id = profileUserId ?? user?.id;
@@ -57,27 +168,19 @@ export function useProfileStats(profileUserId?: string) {
     queryKey: ["profileStats", id],
     enabled: !!id,
     queryFn: async (): Promise<ProfileStats> => {
-      const [perfilRes, actividadesRes] = await Promise.all([
+      const [perfilRes, days] = await Promise.all([
         supabase
           .from("perfil")
           .select("nivel, xp_total, racha_actual, racha_maxima, ultima_actividad_fecha")
           .eq("id", id!)
           .maybeSingle(),
-        supabase
-          .from("actividad")
-          .select("fecha, fecha_fin")
-          .eq("usuario_id", id!)
-          .not("fecha_fin", "is", null),
+        fetchCompletedTrainingDayKeys(id!),
       ]);
 
       if (perfilRes.error) throw perfilRes.error;
-      if (actividadesRes.error) throw actividadesRes.error;
 
       const data = perfilRes.data;
-      const workoutDays = (actividadesRes.data ?? []).map((a) =>
-        (a.fecha || a.fecha_fin || "").slice(0, 10)
-      );
-      const { actual, maxima } = computeStreakStats(workoutDays);
+      const { actual, maxima } = computeStreakStats(days);
 
       if (!data) {
         return {
@@ -100,94 +203,32 @@ export function useProfileStats(profileUserId?: string) {
   });
 }
 
-// Función que calcula la XP y ACTUALIZA la base de datos desde el frontend
 export function useCalculateAndAwardXP() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const calculateAndAwardXP = useCallback(
-    async (actividadId: string, seriesCompletadas: number, fechaEntrenamiento?: string): Promise<XPBreakdown> => {
+    async (_actividadId: string, seriesCompletadas: number, fechaEntrenamiento?: string): Promise<XPBreakdown> => {
       if (!user) throw new Error("No user");
 
-      // 1. Obtener perfil actual
-      const { data: profile, error: pErr } = await supabase
-        .from("perfil")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
-        
-      if (pErr) throw pErr;
+      const days = await fetchCompletedTrainingDayKeys(user.id);
+      const { actual: newStreak } = computeStreakStats(days);
+      const parts = calculateStrengthSessionXp(seriesCompletadas, newStreak);
+      const breakdown = await awardSessionXp({
+        userId: user.id,
+        parts,
+        fechaEntrenamiento,
+      });
 
-      const previousXP = profile?.xp_total ?? 0;
-      
-      // 2. Calcular nuevas métricas (XP y Nivel)
-      const baseXP = 100;
-      const volumeXP = seriesCompletadas * 5;
-
-      // 3. Rachas por semana (lunes–domingo): al menos un entreno por semana
-      const { data: actividades, error: actErr } = await supabase
-        .from("actividad")
-        .select("fecha, fecha_fin")
-        .eq("usuario_id", user.id)
-        .not("fecha_fin", "is", null);
-      if (actErr) throw actErr;
-
-      const workoutDays = (actividades ?? []).map((a) =>
-        (a.fecha || a.fecha_fin || "").slice(0, 10)
-      );
-      const { actual: newStreak, maxima: newMaxStreakFromHistory } = computeStreakStats(workoutDays);
-
-      // Bonus por racha: 20 XP por cada semana de racha a partir de la 2ª (2 sem → 20, 3 → 40…)
-      const streakBonusXP = Math.max(0, (newStreak - 1) * 20);
-      const totalXP = baseXP + volumeXP + streakBonusXP;
-
-      const newXP = previousXP + totalXP;
-      const previousLevel = calculateLevel(previousXP);
-      const newLevel = calculateLevel(newXP);
-      const leveledUp = newLevel > previousLevel;
-
-      const newMaxStreak = newMaxStreakFromHistory;
-
-      // ultima_actividad_fecha = fecha del entrenamiento (no "ahora") para que la racha use el día registrado
-      const ultimaFechaISO = fechaEntrenamiento
-        ? new Date(fechaEntrenamiento + "T23:59:59.999Z").toISOString()
-        : new Date().toISOString();
-
-      // 4. Actualizar la base de datos
-      const { error: uErr } = await supabase
-        .from("perfil")
-        .update({
-          xp_total: newXP,
-          nivel: newLevel,
-          racha_actual: newStreak,
-          racha_maxima: newMaxStreak,
-          ultima_actividad_fecha: ultimaFechaISO,
-        })
-        .eq("id", user.id);
-        
-      if (uErr) throw uErr;
-
-      // 5. Refrescar la UI
       queryClient.invalidateQueries({ queryKey: ["profileStats"] });
-
-      return {
-        base: baseXP,
-        series: volumeXP,
-        streakBonus: streakBonusXP,
-        total: totalXP,
-        leveledUp,
-        newLevel,
-        previousLevel,
-        newStreak,
-      };
+      return breakdown;
     },
-    [user, queryClient]
+    [user, queryClient],
   );
 
   return calculateAndAwardXP;
 }
 
-// Función para restar XP cuando se borra un entrenamiento (incluye bonus por racha)
 export function useRemoveWorkoutXP() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -196,94 +237,70 @@ export function useRemoveWorkoutXP() {
     async (actividadId: string, seriesCompletadas: number) => {
       if (!user) throw new Error("No user");
 
-      // 1. Obtener la actividad que se borra: usamos "fecha" (día del entreno), igual que al otorgar XP
       const { data: deletedAct, error: actErr } = await supabase
         .from("actividad")
         .select("fecha, fecha_fin")
         .eq("id", actividadId)
         .maybeSingle();
       if (actErr) throw actErr;
-
-      // Solo se otorga XP al finalizar (fecha_fin). Si el entreno no estaba completado, no hay nada que restar.
       if (!deletedAct?.fecha_fin) return;
 
-      const completedDay = deletedAct?.fecha
+      const completedDay = deletedAct.fecha
         ? deletedAct.fecha.slice(0, 10)
-        : deletedAct?.fecha_fin
-          ? deletedAct.fecha_fin.slice(0, 10)
-          : null;
+        : deletedAct.fecha_fin.slice(0, 10);
 
-      // 2. Todas las actividades completadas; usamos "fecha" (día del entreno) para coincidir con el cálculo al otorgar
-      const { data: actividades, error: listErr } = await supabase
-        .from("actividad")
-        .select("id, fecha, fecha_fin")
-        .eq("usuario_id", user.id)
-        .not("fecha_fin", "is", null);
-      if (listErr) throw listErr;
-
-      const allActs = actividades ?? [];
-      const workoutDays = allActs.map((a) => (a.fecha || a.fecha_fin || "").slice(0, 10));
-      const workoutWeeks = workoutDaysToWeeks(workoutDays);
+      const daysIncluding = await fetchCompletedTrainingDayKeys(user.id);
       const streak = completedDay
-        ? streakOnWeek(weekStartKeyFromDayStr(completedDay), workoutWeeks)
+        ? streakOnWeek(weekStartKeyFromDayStr(completedDay), workoutDaysToWeeks(daysIncluding))
         : 0;
-      const streakBonusToRemove = Math.max(0, (streak - 1) * 20);
+      const { total: totalToRemove } = calculateStrengthSessionXp(seriesCompletadas, streak);
 
-      // 3. Recalcular racha semanal tras borrar
-      const allRemaining = allActs.filter((a) => a.id !== actividadId);
-      const remainingDays = allRemaining.map((a) =>
-        (a.fecha || a.fecha_fin || "").slice(0, 10)
-      );
-      const { actual: nuevaRachaActual, maxima: nuevaRachaMaxima } = computeStreakStats(remainingDays);
-
-      // 4. Obtener perfil actual
-      const { data: profile, error: pErr } = await supabase
-        .from("perfil")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (pErr) throw pErr;
-      if (!profile) return;
-
-      const baseXP = 100;
-      const volumeXP = seriesCompletadas * 5;
-      const totalToRemove = baseXP + volumeXP + streakBonusToRemove;
-
-      const previousXP = profile.xp_total ?? 0;
-      const newXP = Math.max(0, previousXP - totalToRemove);
-      const newLevel = calculateLevel(newXP);
-
-      // 5. Última actividad restante por fecha de entreno para ultima_actividad_fecha
-      const { data: lastAct } = await supabase
-        .from("actividad")
-        .select("fecha")
-        .eq("usuario_id", user.id)
-        .neq("id", actividadId)
-        .not("fecha_fin", "is", null)
-        .order("fecha", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const nuevaUltimaFecha = lastAct?.fecha
-        ? new Date(lastAct.fecha.slice(0, 10) + "T23:59:59.999Z").toISOString()
-        : null;
-
-      // 6. Actualizar la base de datos (incl. racha_actual y racha_maxima recalculadas)
-      const { error: uErr } = await supabase
-        .from("perfil")
-        .update({
-          xp_total: newXP,
-          nivel: newLevel,
-          racha_actual: nuevaRachaActual,
-          racha_maxima: nuevaRachaMaxima,
-          ultima_actividad_fecha: nuevaUltimaFecha,
-        })
-        .eq("id", user.id);
-      if (uErr) throw uErr;
+      await removeSessionXp({
+        userId: user.id,
+        totalToRemove,
+        excludeActividadId: actividadId,
+      });
 
       queryClient.invalidateQueries({ queryKey: ["profileStats"] });
     },
-    [user, queryClient]
+    [user, queryClient],
+  );
+
+  return removeXP;
+}
+
+export function useRemoveCardioXP() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const removeXP = useCallback(
+    async (cardioSesionId: string, durationSec: number) => {
+      if (!user) throw new Error("No user");
+
+      const { data: deleted, error } = await supabase
+        .from("cardio_sesion")
+        .select("fecha_inicio, fecha_fin")
+        .eq("id", cardioSesionId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!deleted?.fecha_fin) return;
+
+      const completedDay = (deleted.fecha_inicio || deleted.fecha_fin).slice(0, 10);
+      const daysIncluding = await fetchCompletedTrainingDayKeys(user.id);
+      const streak = completedDay
+        ? streakOnWeek(weekStartKeyFromDayStr(completedDay), workoutDaysToWeeks(daysIncluding))
+        : 0;
+      const { total: totalToRemove } = calculateCardioSessionXp(durationSec, streak);
+
+      await removeSessionXp({
+        userId: user.id,
+        totalToRemove,
+        excludeCardioId: cardioSesionId,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["profileStats"] });
+    },
+    [user, queryClient],
   );
 
   return removeXP;

@@ -193,6 +193,111 @@ describe("prepareLyftaImport / completeLyftaImport", () => {
     expect(inserts.some((i) => i.table === "actividad")).toBe(true);
   });
 
+  it("persiste set_type_id de Lyfta en serie.tipo_serie", async () => {
+    mockFetchLyfta.mockImplementation(async ({ resource }: { resource: string }) => {
+      if (resource === "exercises_library") {
+        return {
+          results: [{ id: "lyfta-bench", name: "Barbell Bench Press" }],
+          pagination: { hasMore: false },
+        };
+      }
+      if (resource === "workouts_summary") throw new LyftaProxyError("not found", 404);
+      if (resource === "workouts") {
+        return {
+          total_pages: 1,
+          workouts: [
+            {
+              id: 1,
+              title: "Push",
+              workout_perform_date: "2025-01-01T10:00:00Z",
+              exercises: [
+                {
+                  exercise_id: "lyfta-bench",
+                  exercise_name: "Barbell Bench Press",
+                  exercise_type: "weight_reps",
+                  sets: [
+                    { reps: "12", weight: "40", set_type_id: 1, is_completed: true },
+                    { reps: "8", weight: "60", set_type_id: 0, is_completed: true },
+                    { reps: "8", weight: "50", set_type_id: 2, is_completed: true },
+                  ],
+                },
+              ],
+            },
+          ],
+        };
+      }
+      throw new LyftaProxyError("not found", 404);
+    });
+
+    const { prepareLyftaImport } = await import("@/lib/lyfta/importLyfta");
+    const result = await prepareLyftaImport({
+      userId: "u1",
+      apiKey: "key",
+      scope: "history",
+      catalog,
+    });
+    expect(result.status).toBe("done");
+    const serieInsert = inserts.find((i) => i.table === "serie");
+    const rows = Array.isArray(serieInsert?.payload) ? serieInsert.payload : [serieInsert?.payload];
+    expect(rows).toMatchObject([
+      { tipo_serie: "calentamiento", peso_kg: 40, repeticiones: 12 },
+      { tipo_serie: "efectiva", peso_kg: 60, repeticiones: 8 },
+      { tipo_serie: "dropset", peso_kg: 50, repeticiones: 8 },
+    ]);
+  });
+
+  it("en rutinas no cuenta el calentamiento en series_objetivo ni en el rango", async () => {
+    mockFetchLyfta.mockImplementation(async ({ resource }: { resource: string }) => {
+      if (resource === "exercises_library") {
+        return {
+          results: [{ id: "lyfta-bench", name: "Barbell Bench Press" }],
+          pagination: { hasMore: false },
+        };
+      }
+      if (resource === "workouts") {
+        return {
+          total_pages: 1,
+          workouts: [
+            {
+              id: 1,
+              title: "Push",
+              workout_perform_date: "2025-01-01T10:00:00Z",
+              exercises: [
+                {
+                  exercise_id: "lyfta-bench",
+                  exercise_name: "Barbell Bench Press",
+                  exercise_type: "weight_reps",
+                  sets: [
+                    { reps: "15", weight: "20", set_type_id: 1, is_completed: true },
+                    { reps: "8", weight: "60", set_type_id: 0, is_completed: true },
+                    { reps: "6", weight: "70", set_type_id: 0, is_completed: true },
+                  ],
+                },
+              ],
+            },
+          ],
+        };
+      }
+      throw new LyftaProxyError("not found", 404);
+    });
+
+    const { prepareLyftaImport } = await import("@/lib/lyfta/importLyfta");
+    const result = await prepareLyftaImport({
+      userId: "u1",
+      apiKey: "key",
+      scope: "routines",
+      catalog,
+    });
+    expect(result.status).toBe("done");
+    const rutinaEj = inserts.find((i) => i.table === "rutina_ejercicio");
+    const rows = Array.isArray(rutinaEj?.payload) ? rutinaEj.payload : [rutinaEj?.payload];
+    expect(rows[0]).toMatchObject({
+      series_objetivo: 2,
+      repes_min: 6,
+      repes_max: 8,
+    });
+  });
+
   it("no persiste historial si hay ejercicios sin par", async () => {
     mockUnmatchedGizmo();
 
@@ -287,7 +392,7 @@ describe("filterMappedExercisesForImport", () => {
         registro_series: "peso_reps",
         descanso: 90,
         supersetKey: null,
-        sets: [{ repeticiones: 8, peso_kg: 50, duracion_seg: null, rir: null }],
+        sets: [{ repeticiones: 8, peso_kg: 50, duracion_seg: null, rir: null, tipo_serie: "efectiva" }],
       },
       {
         lyftaExerciseId: "skip",
@@ -295,7 +400,7 @@ describe("filterMappedExercisesForImport", () => {
         registro_series: "peso_reps",
         descanso: 90,
         supersetKey: null,
-        sets: [{ repeticiones: 8, peso_kg: 50, duracion_seg: null, rir: null }],
+        sets: [{ repeticiones: 8, peso_kg: 50, duracion_seg: null, rir: null, tipo_serie: "efectiva" }],
       },
     ];
     const kept = filterMappedExercisesForImport(
@@ -316,7 +421,7 @@ describe("filterMappedExercisesForImport", () => {
         registro_series: "peso_reps",
         descanso: 90,
         supersetKey: null,
-        sets: [{ repeticiones: 8, peso_kg: 50, duracion_seg: null, rir: null }],
+        sets: [{ repeticiones: 8, peso_kg: 50, duracion_seg: null, rir: null, tipo_serie: "efectiva" }],
       },
     ];
     const kept = filterMappedExercisesForImport(

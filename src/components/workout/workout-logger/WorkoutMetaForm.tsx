@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { WorkoutLeadingRoutineIcon } from "@/components/dashboard/WorkoutDetailsSheet";
 import { RoutineIconPicker } from "@/components/routine/RoutineIconPicker";
@@ -34,6 +35,8 @@ type WorkoutMetaFormProps = {
   gymDisabled?: boolean;
   rpe: number | null;
   onRpeChange: (value: number) => void;
+  comentarios: string;
+  onComentariosChange: (value: string) => void;
   children?: ReactNode;
 };
 
@@ -54,6 +57,8 @@ export function WorkoutMetaForm({
   gymDisabled = false,
   rpe,
   onRpeChange,
+  comentarios,
+  onComentariosChange,
   children,
 }: WorkoutMetaFormProps) {
   const [gymPickerOpen, setGymPickerOpen] = useState(false);
@@ -123,29 +128,37 @@ export function WorkoutMetaForm({
             </span>
           </button>
         </div>
-        {isEditingCompletedWorkout && (
-          <>
-            <RoutineIconPicker
-              value={workoutIcon}
-              onChange={onWorkoutIconChange}
-              label="Icono del entrenamiento"
-            />
-            <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5">
-              <div className="min-w-0 space-y-0.5">
-                <p className="text-sm font-medium">Publicar en comunidad</p>
-                <p className="text-[12px] text-muted-foreground">
-                  {esPublica ? COMMUNITY_PUBLISH_HINT_ON : COMMUNITY_PUBLISH_HINT_OFF}
-                </p>
-              </div>
-              <Switch
-                checked={esPublica}
-                onCheckedChange={onEsPublicaChange}
-                aria-label="Publicar en comunidad"
-              />
-            </div>
-            <SessionRpePicker id="workout-logger-rpe" value={rpe} onChange={onRpeChange} />
-          </>
-        )}
+        {isEditingCompletedWorkout ? (
+          <RoutineIconPicker
+            value={workoutIcon}
+            onChange={onWorkoutIconChange}
+            label="Icono del entrenamiento"
+          />
+        ) : null}
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5">
+          <div className="min-w-0 space-y-0.5">
+            <p className="text-sm font-medium">Publicar en comunidad</p>
+            <p className="text-[12px] text-muted-foreground">
+              {esPublica ? COMMUNITY_PUBLISH_HINT_ON : COMMUNITY_PUBLISH_HINT_OFF}
+            </p>
+          </div>
+          <Switch
+            checked={esPublica}
+            onCheckedChange={onEsPublicaChange}
+            aria-label="Publicar en comunidad"
+          />
+        </div>
+        <SessionRpePicker id="workout-logger-rpe" value={rpe} onChange={onRpeChange} />
+        <div className="space-y-1.5">
+          <Label htmlFor="workout-comentarios">Comentarios</Label>
+          <Textarea
+            id="workout-comentarios"
+            value={comentarios}
+            onChange={(e) => onComentariosChange(e.target.value)}
+            className="min-h-22 resize-none"
+            placeholder="Sensaciones, cargas, notas…"
+          />
+        </div>
       </CardContent>
       <GymPickerSheet
         open={gymPickerOpen}

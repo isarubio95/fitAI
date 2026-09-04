@@ -50,8 +50,8 @@ describe("mapLyftaWorkout", () => {
       registro_series: "peso_reps",
       descanso: 90,
       sets: [
-        { repeticiones: 10, peso_kg: 60, rir: 2 },
-        { repeticiones: 8, peso_kg: 65, rir: 1 },
+        { repeticiones: 10, peso_kg: 60, rir: 2, tipo_serie: "efectiva" },
+        { repeticiones: 8, peso_kg: 65, rir: 1, tipo_serie: "efectiva" },
       ],
     });
   });
@@ -81,6 +81,35 @@ describe("mapLyftaWorkout", () => {
     });
     expect(mapped!.exercises[0].registro_series).toBe("duracion");
     expect(mapped!.exercises[0].sets[0].duracion_seg).toBe(45);
+    expect(mapped!.exercises[0].sets[0].tipo_serie).toBe("efectiva");
+  });
+
+  it("mapea set_type_id a tipo_serie y deja ids desconocidos como efectiva", () => {
+    const mapped = mapLyftaWorkout({
+      id: 3,
+      title: "Bench",
+      workout_perform_date: "2025-01-01T10:00:00",
+      exercises: [
+        {
+          exercise_name: "Bench Press",
+          exercise_type: "weight_reps",
+          sets: [
+            { reps: "12", weight: "40", set_type_id: 1, is_completed: true },
+            { reps: "8", weight: "60", set_type_id: 0, is_completed: true },
+            { reps: "8", weight: "50", set_type_id: "2", is_completed: true },
+            { reps: "6", weight: "60", set_type_id: 3, is_completed: true },
+            { reps: "8", weight: "55", set_type_id: 9, is_completed: true },
+          ],
+        },
+      ],
+    });
+    expect(mapped!.exercises[0].sets.map((s) => s.tipo_serie)).toEqual([
+      "calentamiento",
+      "efectiva",
+      "dropset",
+      "amrap",
+      "efectiva",
+    ]);
   });
 });
 
@@ -99,7 +128,7 @@ describe("reconstructRoutinesFromWorkouts", () => {
             registro_series: "peso_reps",
             descanso: 90,
             supersetKey: null,
-            sets: [{ repeticiones: 8, peso_kg: 50, duracion_seg: null, rir: null }],
+            sets: [{ repeticiones: 8, peso_kg: 50, duracion_seg: null, rir: null, tipo_serie: "efectiva" }],
           },
         ],
       },
@@ -115,7 +144,7 @@ describe("reconstructRoutinesFromWorkouts", () => {
             registro_series: "peso_reps",
             descanso: 120,
             supersetKey: null,
-            sets: [{ repeticiones: 6, peso_kg: 70, duracion_seg: null, rir: null }],
+            sets: [{ repeticiones: 6, peso_kg: 70, duracion_seg: null, rir: null, tipo_serie: "efectiva" }],
           },
         ],
       },
@@ -131,7 +160,7 @@ describe("reconstructRoutinesFromWorkouts", () => {
             registro_series: "peso_reps",
             descanso: 90,
             supersetKey: null,
-            sets: [{ repeticiones: 10, peso_kg: 40, duracion_seg: null, rir: null }],
+            sets: [{ repeticiones: 10, peso_kg: 40, duracion_seg: null, rir: null, tipo_serie: "efectiva" }],
           },
         ],
       },

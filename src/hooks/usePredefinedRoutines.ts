@@ -22,6 +22,7 @@ export interface PredefinedRoutine {
     rir: number | null;
     orden: number;
     descanso: number | null;
+    superset_id: string | null;
     tipo_ejercicio: {
       id: string;
       nombre: string;
@@ -116,6 +117,7 @@ export function usePredefinedRoutines(filters?: PredefinedRoutinesFilters) {
             rir: ej.rir,
             orden: ej.orden,
             descanso: ej.descanso,
+            superset_id: ej.superset_id,
             tipo_ejercicio: ej.tipo_ejercicio!,
           })),
       }));

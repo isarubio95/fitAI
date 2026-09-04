@@ -48,8 +48,12 @@ function normalizeExerciseType(value: unknown): {
   };
 }
 
-export function useMuscleFatigue(period: MuscleFatiguePeriod = "week") {
+export function useMuscleFatigue(
+  period: MuscleFatiguePeriod = "week",
+  options?: { enabled?: boolean },
+) {
   const { user } = useAuth();
+  const queriesEnabled = options?.enabled ?? true;
 
   const bounds = useMemo(() => {
     const end = endOfDay(new Date());
@@ -59,7 +63,7 @@ export function useMuscleFatigue(period: MuscleFatiguePeriod = "week") {
 
   return useQuery<MuscleFatigueData>({
     queryKey: ["muscleFatigue", user?.id, period, bounds.start.toISOString()],
-    enabled: !!user,
+    enabled: !!user && queriesEnabled,
     queryFn: async () => {
       const fromIso = bounds.start.toISOString();
       const toIso = bounds.end.toISOString();
