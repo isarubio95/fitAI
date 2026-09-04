@@ -24,7 +24,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 import { useRoutineById } from "@/hooks/useRoutines";
-import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
 import { vaulSafeDragHandleProps } from "@/lib/vaulSafeDragHandle";
@@ -182,7 +181,6 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
   const queryClient = useQueryClient();
   
   const { data: existingRoutine } = useRoutineById(routineId);
-  const { data: exerciseCatalog } = useExerciseCatalog();
 
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -497,16 +495,18 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
   const groups = groupExercises(ejercicios);
   const draggingExercise = draggingIndex == null ? null : ejercicios[draggingIndex] ?? null;
 
-  const handleViewExerciseInfo = useCallback(
-    (ej: RoutineExerciseFormData) => {
-      const catalogId = ej.tipo_ejercicio_id ?? ej.usuario_ejercicio_id;
-      if (!catalogId || !exerciseCatalog?.length) return;
-      const found = exerciseCatalog.find((t) => t.id === catalogId);
-      if (!found) return;
-      setSelectedExerciseDetail(found as ComponentProps<typeof ExerciseDetailSheet>["exercise"]);
-    },
-    [exerciseCatalog]
-  );
+  // Con id + origen basta: `ExerciseDetailSheet` pide el detalle completo por
+  // id. Filtrar antes por el catálogo en memoria dejaba el botón muerto para
+  // los ejercicios que quedaban fuera de las primeras filas descargadas.
+  const handleViewExerciseInfo = useCallback((ej: RoutineExerciseFormData) => {
+    const catalogId = ej.tipo_ejercicio_id ?? ej.usuario_ejercicio_id;
+    if (!catalogId) return;
+    setSelectedExerciseDetail({
+      id: catalogId,
+      nombre: ej.nombre,
+      __source: ej.tipo_ejercicio_id ? "catalogo" : "usuario",
+    });
+  }, []);
 
   return (
     <>

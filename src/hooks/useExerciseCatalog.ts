@@ -288,38 +288,37 @@ export function useExerciseCatalog(search?: string) {
     queryKey: ["exerciseCatalog", search, user?.id],
     staleTime: CATALOG_STALE_MS,
     queryFn: async (): Promise<ExerciseCatalogItem[]> => {
-      // Catálogo (FitCron/sistema)
-      let queryCatalogo = supabase
-        .from("tipo_ejercicio")
-        .select(TIPO_LIST_COLUMNS)
-        .order("nombre");
-
-      // Ejercicios del usuario (privados)
-      let queryUsuario = supabase
-        .from("usuario_ejercicio")
-        .select(USUARIO_LIST_COLUMNS)
-        .order("nombre");
-
-      if (search) {
-        queryCatalogo = queryCatalogo.ilike("nombre", `%${search}%`);
-        queryUsuario = queryUsuario.ilike("nombre", `%${search}%`);
-      }
-
-      // Importante: usuario_ejercicio tiene RLS, así que sin user devolverá vacío
-      const [{ data: catalogo, error: catErr }, { data: usuario, error: usrErr }] =
-        await Promise.all([queryCatalogo, user ? queryUsuario.eq("usuario_id", user.id) : queryUsuario]);
-
-      if (catErr) throw catErr;
-      if (usrErr) throw usrErr;
+      // Hay que encadenar rangos: el catálogo pasa de 2.000 filas y PostgREST
+      // corta en `max-rows` (1000). Sin esto la lista llegaba truncada por
+      // orden alfabético y cualquier búsqueda por id o por nombre fallaba en
+      // silencio para todo lo que cayera fuera del primer millar.
+      const [catalogo, usuario] = await Promise.all([
+        fetchAllRows<TipoEjercicioRow>((from, to) => {
+          // Catálogo (FitCron/sistema)
+          const q = supabase
+            .from("tipo_ejercicio")
+            .select(TIPO_LIST_COLUMNS)
+            .order("nombre")
+            .range(from, to);
+          return search ? q.ilike("nombre", `%${search}%`) : q;
+        }),
+        // Importante: usuario_ejercicio tiene RLS, así que sin user devolverá vacío
+        fetchAllRows<UsuarioEjercicioRow>((from, to) => {
+          // Ejercicios del usuario (privados)
+          let q = supabase
+            .from("usuario_ejercicio")
+            .select(USUARIO_LIST_COLUMNS)
+            .order("nombre")
+            .range(from, to);
+          if (search) q = q.ilike("nombre", `%${search}%`);
+          return user ? q.eq("usuario_id", user.id) : q;
+        }),
+      ]);
 
       const userId = user?.id;
       const merged: ExerciseCatalogItem[] = [
-        ...((usuario ?? []) as UsuarioEjercicioRow[]).map(
-          (x): UserItem => ({ ...x, __source: "usuario" as const }),
-        ),
-        ...((catalogo ?? []) as TipoEjercicioRow[]).map(
-          (x): CatalogItem => ({ ...x, __source: "catalogo" as const }),
-        ),
+        ...usuario.map((x): UserItem => ({ ...x, __source: "usuario" as const })),
+        ...catalogo.map((x): CatalogItem => ({ ...x, __source: "catalogo" as const })),
       ];
 
       // Sort: user exercises first, then system, then alphabetical within each group

@@ -47,7 +47,6 @@ import { WorkoutDeleteDialog } from "./workout-logger/WorkoutDeleteDialog";
 import { WorkoutMetaForm } from "./workout-logger/WorkoutMetaForm";
 import { useCalculateAndAwardXP, useRemoveWorkoutXP, type XPBreakdown } from "@/hooks/useGamification";
 import { checkAndAwardLogros, type LogroRow } from "@/hooks/useLogros";
-import { useExerciseCatalog } from "@/hooks/useExerciseCatalog";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import {
   DEFAULT_ROUTINE_ICON_KEY,
@@ -139,7 +138,6 @@ export function WorkoutLogger() {
   const calculateAndAwardXP = useCalculateAndAwardXP();
   const removeXP = useRemoveWorkoutXP();
   const restTimer = useRestTimerContext();
-  const { data: exerciseCatalog } = useExerciseCatalog();
   const [selectedExerciseDetail, setSelectedExerciseDetail] = useState<
     ComponentProps<typeof ExerciseDetailSheet>["exercise"]
   >(null);
@@ -1183,16 +1181,20 @@ export function WorkoutLogger() {
     [effectiveWorkoutId, queryClient],
   );
 
-  const handleViewExerciseDetails = useCallback(
-    (exercise: ExerciseFormData) => {
-      const catalogId = exercise.tipo_ejercicio_id ?? exercise.usuario_ejercicio_id;
-      if (!catalogId || !exerciseCatalog) return;
-      const found = exerciseCatalog.find((t) => t.id === catalogId);
-      if (!found) return;
-      setSelectedExerciseDetail(found as ComponentProps<typeof ExerciseDetailSheet>["exercise"]);
-    },
-    [exerciseCatalog]
-  );
+  // La ficha se abre solo con id + origen: `ExerciseDetailSheet` ya pide el
+  // detalle completo por id. Buscar antes en el catálogo en memoria dejaba el
+  // botón muerto para todo lo que cayera fuera del corte de 1000 filas de
+  // PostgREST (el catálogo pasa de 2.000 ejercicios).
+  const handleViewExerciseDetails = useCallback((exercise: ExerciseFormData) => {
+    const source = exercise.tipo_ejercicio_id ? "catalogo" : "usuario";
+    const catalogId = exercise.tipo_ejercicio_id ?? exercise.usuario_ejercicio_id;
+    if (!catalogId) return;
+    setSelectedExerciseDetail({
+      id: catalogId,
+      nombre: exercise.nombre,
+      __source: source,
+    });
+  }, []);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
