@@ -1,4 +1,21 @@
 import { useState } from "react";
+import { Navigate, Link } from "react-router-dom";
+import { ArrowRight, ChevronLeft, KeyRound, Loader2, Mail } from "lucide-react";
+
+import { supabase } from "@/integrations/supabase/client";
+import { getAuthRedirectUrl, signInWithOAuthNative } from "@/lib/nativeAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { AuthField } from "@/components/auth/AuthField";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { WelcomeStep } from "@/components/auth/WelcomeStep";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AUTH_CTA_CLASS,
+  AUTH_LINK_CLASS,
+  AUTH_SOFT_BUTTON_CLASS,
+} from "@/lib/authStyles";
 
 function translateAuthError(msg: string, isLogin: boolean): { title: string; description: string } {
   const lower = msg.toLowerCase();
@@ -16,35 +33,38 @@ function translateAuthError(msg: string, isLogin: boolean): { title: string; des
     return { title: "Registro deshabilitado", description: "El registro de nuevos usuarios está deshabilitado temporalmente." };
   return { title: "Error", description: msg };
 }
-import { Navigate, Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { getAuthRedirectUrl, signInWithOAuthNative } from "@/lib/nativeAuth";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+
+type AuthStep = "welcome" | "login" | "signup";
+
+/** Una vez vista la bienvenida, las siguientes visitas entran directas al login. */
+const WELCOME_SEEN_KEY = "trackgym-auth-welcome-seen";
 
 const Auth = () => {
   const { user, loading } = useAuth();
   const { toast } = useToast();
-  const [isLogin, setIsLogin] = useState(true);
+  const [step, setStep] = useState<AuthStep>(() =>
+    localStorage.getItem(WELCOME_SEEN_KEY) ? "login" : "welcome",
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const isLogin = step === "login";
+
+  const goToStep = (next: AuthStep) => {
+    if (next !== "welcome") localStorage.setItem(WELCOME_SEEN_KEY, "1");
+    setConfirmPassword("");
+    setAcceptedPrivacy(false);
+    setStep(next);
+  };
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <AuthShell className="items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      </AuthShell>
     );
   }
 
@@ -95,82 +115,81 @@ const Auth = () => {
     }
   };
 
+  if (step === "welcome") {
+    return (
+      <AuthShell>
+        <WelcomeStep onStart={() => goToStep("signup")} onLogin={() => goToStep("login")} />
+      </AuthShell>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <img src="/logo.svg" alt="Track Gym" className="mx-auto mb-2 h-14 w-14 rounded-xl" />
-          <CardTitle asChild className="text-2xl font-bold">
-            <h1>Track Gym</h1>
-          </CardTitle>
-          <CardDescription>
-            {isLogin ? "Inicia sesión para continuar" : "Crea tu cuenta"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="tu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-12"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  className="h-12 pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
+    <AuthShell>
+      <div className="flex flex-1 flex-col">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => setStep("welcome")}
+          className="-ml-2 shrink-0 rounded-full text-muted-foreground"
+          aria-label="Volver"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+
+        <div className="flex flex-1 flex-col justify-center py-6">
+          <header className="mb-8 text-center">
+            <img src="/logo.svg" alt="" aria-hidden="true" className="mx-auto mb-4 h-14 w-14" />
+            <h1 className="text-3xl font-bold tracking-tight">
+              {isLogin ? "Iniciar sesión" : "Crear cuenta"}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {isLogin ? "Bienvenido de nuevo a Track Gym" : "Empieza a registrar tus entrenos"}
+            </p>
+          </header>
+
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <AuthField
+              id="email"
+              label="Email"
+              icon={Mail}
+              type="email"
+              placeholder="Email"
+              autoComplete="email"
+              value={email}
+              onChange={setEmail}
+              required
+            />
+            <AuthField
+              id="password"
+              label="Contraseña"
+              icon={KeyRound}
+              type="password"
+              placeholder="Contraseña"
+              autoComplete={isLogin ? "current-password" : "new-password"}
+              value={password}
+              onChange={setPassword}
+              required
+              minLength={6}
+              withToggle
+            />
             {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Repetir contraseña</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    className="h-12 pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-                    aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
+              <AuthField
+                id="confirmPassword"
+                label="Repetir contraseña"
+                icon={KeyRound}
+                type="password"
+                placeholder="Repetir contraseña"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                required
+                minLength={6}
+                withToggle
+              />
             )}
             {!isLogin && (
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 px-1 pt-1">
                 <Checkbox
                   id="privacy"
                   checked={acceptedPrivacy}
@@ -179,12 +198,7 @@ const Auth = () => {
                 />
                 <label htmlFor="privacy" className="text-sm leading-snug text-muted-foreground">
                   He leído y acepto la{" "}
-                  <Link
-                    to="/privacidad"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-primary underline underline-offset-2 hover:text-primary/90"
-                  >
+                  <Link to="/privacidad" target="_blank" rel="noopener noreferrer" className={AUTH_LINK_CLASS}>
                     Política de Privacidad
                   </Link>
                 </label>
@@ -192,27 +206,28 @@ const Auth = () => {
             )}
             <Button
               type="submit"
-              className="h-12 w-full text-base"
+              className={`${AUTH_CTA_CLASS} mt-2`}
               disabled={submitting || (!isLogin && !acceptedPrivacy)}
             >
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLogin ? "Iniciar Sesión" : "Crear Cuenta"}
+              {submitting ? <Loader2 className="animate-spin" /> : null}
+              {isLogin ? "Iniciar sesión" : "Crear cuenta"}
+              {!submitting && <ArrowRight />}
             </Button>
           </form>
 
-          <div className="relative my-4">
+          <div className="relative my-5">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
+              <span className="w-full border-t border-border/60" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">o continúa con</span>
+            <div className="relative flex justify-center">
+              <span className="bg-background px-3 text-xs text-muted-foreground">o</span>
             </div>
           </div>
 
           <Button
             type="button"
-            variant="outline"
-            className="h-12 w-full text-base gap-3"
+            variant="ghost"
+            className={AUTH_SOFT_BUTTON_CLASS}
             disabled={!isLogin && !acceptedPrivacy}
             onClick={async () => {
               if (!isLogin && !acceptedPrivacy) {
@@ -238,22 +253,19 @@ const Auth = () => {
             Continuar con Google
           </Button>
 
-          <button
-            type="button"
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setConfirmPassword("");
-              setAcceptedPrivacy(false);
-              setShowPassword(false);
-              setShowConfirmPassword(false);
-            }}
-            className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {isLogin ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia sesión"}
-          </button>
-        </CardContent>
-      </Card>
-    </div>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            {isLogin ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
+            <button
+              type="button"
+              onClick={() => goToStep(isLogin ? "signup" : "login")}
+              className={AUTH_LINK_CLASS}
+            >
+              {isLogin ? "Regístrate" : "Inicia sesión"}
+            </button>
+          </p>
+        </div>
+      </div>
+    </AuthShell>
   );
 };
 

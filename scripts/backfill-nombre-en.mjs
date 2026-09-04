@@ -96,7 +96,18 @@ async function main() {
     porClaveExterna.set(`${fila.origen}:${fila.origen_externo_id}`, fila.nombre_en);
   }
 
-  const filas = await leerTodo(supabase, "id, nombre, nombre_en, gif_url, origen, origen_externo_id");
+  let filas;
+  try {
+    filas = await leerTodo(supabase, "id, nombre, nombre_en, gif_url, origen, origen_externo_id");
+  } catch (e) {
+    if (/nombre_en/.test(String(e.message))) {
+      console.error("Falta la columna `nombre_en`. Aplica antes la migración:");
+      console.error("  supabase/migrations/20260904090000_exercise_nombre_en.sql");
+      process.exitCode = 1;
+      return;
+    }
+    throw e;
+  }
 
   // ── Resolver el inglés de cada fila ───────────────────────────────────────
   const cambios = [];

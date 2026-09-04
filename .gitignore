@@ -49,3 +49,5 @@ data/komoot-la-rioja/
 # Medios convertidos del catálogo: 31 MB de binarios generados.
 # Se reconstruyen con `npm run catalogo:medios` y viven en Supabase Storage.
 data/media-staging/
+# Ídem para los WebP de las demos nativas (`npm run catalogo:medios-nativos`).
+data/native-media-staging/

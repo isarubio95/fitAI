@@ -7,7 +7,9 @@ test.describe("E2E: auth login", () => {
     await installSupabaseMock(page);
 
     await page.goto("/auth");
-    await expect(page.getByRole("heading", { name: "Track Gym" })).toBeVisible();
+    // Pantalla de bienvenida: es la entrada del onboarding en la primera visita.
+    await expect(page.getByRole("heading", { name: /Track Gym/ })).toBeVisible();
+    await page.getByRole("button", { name: "Ya tengo cuenta" }).click();
 
     await page.getByLabel("Email").fill(E2E_USER_EMAIL);
     await page.getByLabel("Contraseña", { exact: true }).fill("password123");

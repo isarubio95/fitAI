@@ -30,6 +30,11 @@
     "catalogo:medios": "node scripts/fetch-exercise-media.mjs",
     "catalogo:import": "node scripts/import-exercise-catalog.mjs",
     "catalogo:taxonomia": "node scripts/gen-taxonomy-migration.mjs > supabase/migrations/20260902081500_exercise_taxonomy.sql",
+    "catalogo:nombre-en": "node scripts/backfill-nombre-en.mjs",
+    "catalogo:medios-nativos": "node scripts/convert-native-media.mjs",
+    "catalogo:medios-rutas": "node scripts/switch-native-media-to-webp.mjs",
+    "catalogo:auditoria": "node scripts/audit-catalog.mjs",
+    "catalogo:duplicados": "node scripts/report-duplicates.mjs",
     "komoot:la-rioja": "node scripts/download-komoot-la-rioja.mjs",
     "komoot:sync-public": "node -e \"const fs=require('fs');const p=require('path');const src='data/komoot-la-rioja';const dst='public/predefined-routes/la-rioja';if(!fs.existsSync(src)){console.error('Falta',src);process.exit(1);}fs.cpSync(src,dst,{recursive:true});console.log('OK',dst);\"",
     "supabase:types": "node scripts/gen-supabase-types.mjs"
