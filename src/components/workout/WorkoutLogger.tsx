@@ -1675,7 +1675,7 @@ export function WorkoutLogger() {
         shouldScaleBackground={false}
       >
         <DrawerContent
-          className="mt-0 h-lvh max-h-lvh min-h-0 overflow-hidden rounded-none p-0"
+          className="inset-0 mt-0 h-dvh max-h-dvh min-h-0 overflow-hidden rounded-none p-0"
           {...pillCircleProps}
         >
           <div data-workout-drawer-surface className="relative isolate flex h-full min-h-0 flex-col overflow-hidden">
