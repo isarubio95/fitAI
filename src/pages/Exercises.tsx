@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { useExerciseCatalogInfinite, useCreateExercise, useDeleteExercise, useFavoriteExercisesCatalog } from "@/hooks/useExerciseCatalog";
+import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
+import { useExerciseCatalogAll, useCreateExercise, useDeleteExercise } from "@/hooks/useExerciseCatalog";
+import { usePagedWindow } from "@/hooks/usePagedWindow";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
 import { EQUIPOS, parseEquipoList } from "@/constants/exerciseEquipment";
 import { difficultyToLevel } from "@/lib/exerciseDifficulty";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMediaUrl";
+import { compareExerciseNames, searchExercises } from "@/lib/exerciseSearch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
@@ -48,7 +50,6 @@ import { useToast } from "@/hooks/use-toast";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
 import { type MainMuscleGroup } from "@/constants/muscleGroups";
-import { EXERCISE_SYNONYMS } from "@/constants/exerciseSynonyms";
 import type { RegistroSeries, TipoEjercicio } from "@/types/workout";
 import { resolveMainMuscleGroup } from "@/lib/muscleMapping";
 import {
@@ -57,6 +58,18 @@ import {
 } from "@/hooks/useExerciseFavorites";
 
 type DifficultyLevel = 1 | 2 | 3;
+
+/** Orden de la lista. Con texto en el buscador, "relevancia" es lo que manda. */
+type SortMode = "relevancia" | "asc" | "desc";
+
+const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+  { value: "relevancia", label: "Relevancia" },
+  { value: "asc", label: "A → Z" },
+  { value: "desc", label: "Z → A" },
+];
+
+/** El catálogo entero vive en memoria; solo se pintan tandas de este tamaño. */
+const RENDER_PAGE_SIZE = 30;
 
 const DIFFICULTY_OPTIONS: { level: DifficultyLevel; label: string }[] = [
   { level: 1, label: "Baja" },
@@ -160,36 +173,6 @@ function equipmentUnits(ex: { equipment_list?: unknown; equipment?: unknown }): 
   return parseEquipoList(ex.equipment == null ? null : String(ex.equipment));
 }
 
-function normalizeText(s: unknown) {
-  return String(s ?? "")
-    .toLowerCase()
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ");
-}
-
-function normalizeSearchKey(s: unknown) {
-  return normalizeText(s).replace(/[^a-z0-9]/g, "");
-}
-
-/** Si la consulta contiene una clave de sinónimos, comprueba frases alternativas completas (no tokens sueltos). */
-function synonymPhraseMatches(hayBase: string, hayCompact: string, qRaw: string): boolean {
-  const nq = normalizeText(qRaw);
-  if (!nq) return false;
-  for (const [kRaw, syns] of Object.entries(EXERCISE_SYNONYMS)) {
-    const k = normalizeText(kRaw);
-    if (!k || !nq.includes(k)) continue;
-    for (const s of syns) {
-      const sn = normalizeText(s);
-      if (!sn) continue;
-      const sk = normalizeSearchKey(sn);
-      if (hayBase.includes(sn) || (sk.length > 0 && hayCompact.includes(sk))) return true;
-    }
-  }
-  return false;
-}
-
 /** Devuelve el grupo principal del primer músculo en body_part, o null */
 function getMainGroupFromBodyPart(bodyPart: string[] | null | undefined): MainMuscleGroup | null {
   if (!bodyPart?.length) return null;
@@ -251,33 +234,14 @@ const Exercises = () => {
   const filters = useMemo(() => parseFiltersFromSearchParams(searchParams), [searchParams]);
   const [searchInput, setSearchInput] = useState(filters.q);
 
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    refetch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useExerciseCatalogInfinite(
-    {
-      // Importante: la búsqueda por texto se hace solo client-side (normalizeText),
-      // para que no distinga acentos: "bíceps" = "biceps".
-      q: "",
-      tipos: filters.tipos,
-      grupos: filters.grupos,
-      // El filtro por equipamiento se hace client-side para soportar unidades atómicas
-      // cuando en BD viene una cadena combinada (p. ej. "Banco Inclinable, Polea").
-      equipments: [],
-    },
-    15,
-  );
+  // El catálogo entero, cacheado. Búsqueda y filtros son client-side: si aquí se
+  // paginase contra el servidor, solo se buscaría dentro de lo ya descargado.
+  const { data, isLoading, isError, error, refetch } = useExerciseCatalogAll();
+
   const createExercise = useCreateExercise();
   const deleteExercise = useDeleteExercise();
   const { toast } = useToast();
-  const { isFavorite, toggleFavorite, favoriteKeys } = useExerciseFavorites();
-  const favoritesCatalogQuery = useFavoriteExercisesCatalog(favoriteKeys, filters.favoritesOnly);
+  const { isFavorite, toggleFavorite } = useExerciseFavorites();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -286,25 +250,19 @@ const Exercises = () => {
   const [newRegistroSeries, setNewRegistroSeries] = useState<RegistroSeries>("peso_reps");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<CatalogExercise | null>(null);
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortMode, setSortMode] = useState<SortMode>("relevancia");
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [difficultyLoading, setDifficultyLoading] = useState(false);
   const difficultyLoadingTimerRef = useRef<number | null>(null);
 
-  // Flatten: ejercicios de usuario (solo primera página) + páginas del catálogo
-  const exercises = useMemo((): CatalogExercise[] => {
-    if (filters.favoritesOnly) {
-      return (favoritesCatalogQuery.data ?? []) as CatalogExercise[];
-    }
-    const pages = data?.pages ?? [];
-    const usuario = (pages[0]?.usuario ?? []) as CatalogExercise[];
-    const catalogo = pages.flatMap((p) => (p.catalogo ?? []) as CatalogExercise[]);
-    return [...usuario, ...catalogo];
-  }, [data, favoritesCatalogQuery.data, filters.favoritesOnly]);
+  // Se busca sobre lo que hay escrito, no sobre la URL: la URL va con debounce y
+  // eso metía un retardo visible en cada tecla. `useDeferredValue` deja que React
+  // priorice el teclado sobre el recálculo de la lista.
+  const deferredQuery = useDeferredValue(searchInput);
 
-  const catalogLoading = filters.favoritesOnly
-    ? favoriteKeys.size > 0 && favoritesCatalogQuery.isLoading
-    : isLoading;
+  const exercises = useMemo((): CatalogExercise[] => (data ?? []) as CatalogExercise[], [data]);
+
+  const catalogLoading = isLoading;
 
   const tipoOptions = useMemo(
     () => uniqNonEmpty(exercises.map((x) => x.tipo)).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })),
@@ -330,34 +288,17 @@ const Exercises = () => {
     return [...canonicos, ...sueltos];
   }, [exercises]);
 
-  const sortedExercises = useMemo(() => {
-    if (!exercises?.length) return [];
-    const list = [...exercises];
-    list.sort((a, b) => {
-      const cmp = a.nombre.localeCompare(b.nombre, undefined, { sensitivity: "base" });
-      return sortOrder === "asc" ? cmp : -cmp;
-    });
-    return list;
-  }, [exercises, sortOrder]);
+  /** Facetas (favoritos, tipo, grupo, equipo, dificultad). El texto se aplica después. */
+  const facetedExercises = useMemo(() => {
+    return exercises.filter((ex) => {
+      if (filters.favoritesOnly && !isFavorite(exerciseFavoriteSource(ex), ex.id)) return false;
 
-  const filteredExercises = useMemo(() => {
-    const q = normalizeText(filters.q);
-    const qCompact = normalizeSearchKey(filters.q);
-    const qTokens = q.split(" ").filter(Boolean);
-
-    return sortedExercises.filter((ex) => {
-      if (filters.favoritesOnly) {
-        const source = exerciseFavoriteSource(ex);
-        if (!isFavorite(source, ex.id)) return false;
-      }
-
-      // Multi-select exact match filters
       if (filters.tipos.length && !filters.tipos.includes(String(ex.tipo ?? "").trim())) return false;
       if (filters.grupos.length && !filters.grupos.includes(String(ex.grupo_muscular ?? "").trim())) return false;
+
       if (filters.equipments.length) {
         const units = equipmentUnits(ex);
-        const hasAnySelectedEquipment = filters.equipments.some((eq) => units.includes(eq));
-        if (!hasAnySelectedEquipment) return false;
+        if (!filters.equipments.some((eq) => units.includes(eq))) return false;
       }
 
       if (filters.difs.length) {
@@ -365,43 +306,44 @@ const Exercises = () => {
         if (!lvl || !filters.difs.includes(lvl)) return false;
       }
 
-      if (qTokens.length) {
-        const hayBase = [
-          normalizeText(ex.nombre),
-          normalizeText(ex.equipment),
-          normalizeText(ex.tipo),
-          normalizeText(ex.grupo_muscular),
-          normalizeText((ex as { body_part?: string[] | null }).body_part?.join(" ")),
-          normalizeText((ex as { musculos_involucrados?: string[] | null }).musculos_involucrados?.join(" ")),
-        ].join(" | ");
-
-        const hayCompact = normalizeSearchKey(hayBase);
-        const phraseMatch = hayBase.includes(q) || (qCompact.length > 0 && hayCompact.includes(qCompact));
-        const tokensMatch = qTokens.every((t) => {
-          const tk = normalizeSearchKey(t);
-          return hayBase.includes(t) || (tk.length > 0 && hayCompact.includes(tk));
-        });
-        const synonymOk = synonymPhraseMatches(hayBase, hayCompact, filters.q);
-        const ok = phraseMatch || tokensMatch || synonymOk;
-        if (!ok) return false;
-      }
-
       return true;
     });
-  }, [sortedExercises, filters, isFavorite]);
+  }, [exercises, filters, isFavorite]);
+
+  const trimmedQuery = deferredQuery.trim();
+
+  const filteredExercises = useMemo(() => {
+    const byName = (a: CatalogExercise, b: CatalogExercise) =>
+      sortMode === "desc" ? -compareExerciseNames(a, b) : compareExerciseNames(a, b);
+
+    if (!trimmedQuery) return [...facetedExercises].sort(byName);
+
+    // Con texto, "relevancia" manda; A→Z / Z→A siguen disponibles si se piden.
+    const ranked = searchExercises(facetedExercises, trimmedQuery);
+    return sortMode === "relevancia" ? ranked : ranked.sort(byName);
+  }, [facetedExercises, trimmedQuery, sortMode]);
+
+  const listResetKey = `${trimmedQuery}|${sortMode}|${filters.tipos.join(",")}|${filters.grupos.join(",")}|${filters.equipments.join(",")}|${filters.difs.join(",")}|${Number(filters.favoritesOnly)}`;
+  const {
+    visible: visibleExercises,
+    hasMore: hasMoreToRender,
+    loadMore,
+  } = usePagedWindow(filteredExercises, {
+    pageSize: RENDER_PAGE_SIZE,
+    resetKey: listResetKey,
+  });
 
   const anyFilterActive =
-    !!filters.q.trim() ||
+    !!searchInput.trim() ||
     filters.tipos.length > 0 ||
     filters.grupos.length > 0 ||
     filters.equipments.length > 0 ||
     filters.difs.length > 0 ||
     filters.favoritesOnly;
 
-  // UX: al cambiar la búsqueda/orden, volvemos arriba
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [filters.q, sortOrder]);
+  }, [trimmedQuery, sortMode]);
 
   // Sincroniza el input solo cuando `q` en la URL cambia (atrás/adelante, enlaces, etc.).
   // No incluir `searchInput` en las dependencias: mientras tecleas, la URL va con debounce
@@ -463,23 +405,23 @@ const Exercises = () => {
     }, 220);
   };
 
+  // El scroll infinito solo amplía cuántos resultados se pintan: ya están todos en memoria.
+  // `visibleExercises.length` va en las deps para reobservar tras cada tanda: si el
+  // sentinel sigue a la vista, IntersectionObserver no vuelve a disparar solo.
   useEffect(() => {
     const target = loadMoreRef.current;
-    if (!target || !hasNextPage || filters.favoritesOnly) return;
+    if (!target || !hasMoreToRender) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const first = entries[0];
-        if (first?.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          void fetchNextPage();
-        }
+        if (entries[0]?.isIntersecting) loadMore();
       },
-      { root: null, rootMargin: "300px 0px", threshold: 0 }
+      { root: null, rootMargin: "300px 0px", threshold: 0 },
     );
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, filteredExercises.length, filters.favoritesOnly]);
+  }, [hasMoreToRender, loadMore, visibleExercises.length]);
 
   const handleCreate = async () => {
     if (!user || !newName.trim()) return;
@@ -555,11 +497,35 @@ const Exercises = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                type="text"
+                inputMode="search"
+                enterKeyHint="search"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                aria-label="Buscar ejercicio"
                 placeholder="Buscar ejercicio..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-10 h-12"
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" && searchInput) {
+                    e.preventDefault();
+                    setSearchInput("");
+                  }
+                }}
+                className={cn("h-12 pl-10", searchInput && "pr-10")}
               />
+              {searchInput && (
+                <button
+                  type="button"
+                  aria-label="Borrar búsqueda"
+                  onClick={() => setSearchInput("")}
+                  className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
 
           {/* Filtros: una sola fila con scroll horizontal (sin padding derecho para
@@ -789,10 +755,10 @@ const Exercises = () => {
                       size="sm"
                       className={cn(
                         "shrink-0 justify-center gap-2",
-                        sortOrder === "desc" && filterButtonActive,
+                        sortMode !== "relevancia" && filterButtonActive,
                       )}
-                      title={sortOrder === "asc" ? "Orden: A → Z" : "Orden: Z → A"}
-                      aria-label={`Ordenar ejercicios por nombre, ${sortOrder === "asc" ? "A a Z" : "Z a A"}`}
+                      title={`Orden: ${SORT_OPTIONS.find((o) => o.value === sortMode)?.label ?? ""}`}
+                      aria-label={`Ordenar ejercicios: ${SORT_OPTIONS.find((o) => o.value === sortMode)?.label ?? ""}`}
                     >
                       <ArrowDownAZ className="h-4 w-4" />
                       Orden
@@ -801,14 +767,14 @@ const Exercises = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-44 bg-popover">
                     <DropdownMenuLabel className="flex items-center gap-2 text-xs">
-                      <ArrowDownAZ className="h-3.5 w-3.5" /> Ordenar por nombre
+                      <ArrowDownAZ className="h-3.5 w-3.5" /> Ordenar resultados
                     </DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => setSortOrder("asc")}>
-                      A → Z {sortOrder === "asc" && <Check className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortOrder("desc")}>
-                      Z → A {sortOrder === "desc" && <Check className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
+                    {SORT_OPTIONS.map((option) => (
+                      <DropdownMenuItem key={option.value} onClick={() => setSortMode(option.value)}>
+                        {option.label}
+                        {sortMode === option.value && <Check className="ml-auto h-4 w-4" />}
+                      </DropdownMenuItem>
+                    ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -894,6 +860,7 @@ const Exercises = () => {
                       difs: [],
                       favoritesOnly: false,
                     };
+                    setSearchInput("");
                     setSearchParams(serializeFiltersToSearchParams(searchParams, cleared), { replace: true });
                   }}
                 >
@@ -936,7 +903,7 @@ const Exercises = () => {
                 </div>
               </div>
             ))
-          : filteredExercises.map((ex) => {
+          : visibleExercises.map((ex) => {
               const isOwn = ex.usuario_id === user?.id;
               const IconComponent = getExerciseIcon(ex as { musculos_involucrados?: string[] | null });
               const mediaUrl = resolveExerciseMediaUrl(ex.gif_url || ex.imagen);
@@ -1048,18 +1015,16 @@ const Exercises = () => {
           !isError &&
           filteredExercises.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No hay ejercicios que coincidan. Prueba otra búsqueda o cambia los filtros.
+            {trimmedQuery
+              ? `Ningún ejercicio coincide con “${trimmedQuery}”. Prueba con otras palabras o quita filtros.`
+              : "No hay ejercicios que coincidan. Cambia los filtros."}
           </p>
         )}
       </div>
 
-      {!catalogLoading && !difficultyLoading && !filters.favoritesOnly && hasNextPage && (
-        <div ref={loadMoreRef} className="flex items-center justify-center py-2">
-          {isFetchingNextPage && (
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          )}
-        </div>
-      )}
+      {!catalogLoading && !difficultyLoading && hasMoreToRender ? (
+        <div ref={loadMoreRef} className="h-px w-full" aria-hidden />
+      ) : null}
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

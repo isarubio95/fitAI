@@ -1,16 +1,10 @@
 /**
- * Superficie de "chrome" flotante (bottom nav, cápsula del logger).
- *
- * Cristal casi opaco con filo y sombra (`surface-float` en `index.css`): todo
- * lo que flota sobre el contenido se lee igual.
+ * Superficie elevada opaca (cápsula del logger, menús flotantes).
  */
-export const floatingGlassSurface = "surface-float";
+export const floatingGlassSurface = "surface-float bg-card";
 
 /**
- * Chrome fijo del layout móvil (cabecera, barras de drawer).
- *
- * Cristal casi opaco tintado con el color de la página: el contenido apenas
- * se intuye al pasar por debajo, y la barra no introduce un tono intermedio
- * entre página y card. Sin soporte de `backdrop-filter` cae a opaco (ver `index.css`).
+ * Chrome fijo del layout móvil (cabecera). El color opaco lo fuerza
+ * `[data-app-top-bar]` en `index.css`.
  */
-export const topBarSurface = "surface-glass";
+export const topBarSurface = "bg-background";

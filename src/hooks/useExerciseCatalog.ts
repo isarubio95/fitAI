@@ -48,6 +48,63 @@ const USUARIO_THUMB_COLUMNS = `${USUARIO_LIST_COLUMNS}, gif_url, imagen`;
 function invalidateExerciseCatalog(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["exerciseCatalog"] });
   queryClient.invalidateQueries({ queryKey: ["exerciseCatalogInfinite"] });
+  queryClient.invalidateQueries({ queryKey: ["exerciseCatalogAll"] });
+}
+
+/** PostgREST corta en `max-rows` (1000 por defecto en Supabase): hay que encadenar rangos. */
+const CATALOG_FETCH_CHUNK = 1000;
+
+async function fetchAllRows<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message: string } | null }>,
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += CATALOG_FETCH_CHUNK) {
+    const { data, error } = await page(from, from + CATALOG_FETCH_CHUNK - 1);
+    if (error) throw error;
+    const chunk = (data ?? []) as T[];
+    rows.push(...chunk);
+    if (chunk.length < CATALOG_FETCH_CHUNK) return rows;
+  }
+}
+
+/**
+ * Catálogo completo (sistema + ejercicios del usuario) en una sola query cacheada.
+ *
+ * La página de Biblioteca busca y filtra en cliente, así que necesita el conjunto
+ * entero: mientras se paginaba en servidor, el buscador y los filtros de equipo y
+ * dificultad solo miraban las filas ya descargadas, y las listas de opciones de los
+ * filtros salían incompletas.
+ */
+export function useExerciseCatalogAll() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["exerciseCatalogAll", user?.id],
+    staleTime: CATALOG_STALE_MS,
+    gcTime: CATALOG_STALE_MS * 2,
+    queryFn: async (): Promise<ExerciseCatalogItem[]> => {
+      const [catalogo, usuario] = await Promise.all([
+        fetchAllRows<TipoEjercicioRow>((from, to) =>
+          supabase.from("tipo_ejercicio").select(TIPO_THUMB_COLUMNS).order("nombre").range(from, to),
+        ),
+        user
+          ? fetchAllRows<UsuarioEjercicioRow>((from, to) =>
+              supabase
+                .from("usuario_ejercicio")
+                .select(USUARIO_THUMB_COLUMNS)
+                .eq("usuario_id", user.id)
+                .order("nombre")
+                .range(from, to),
+            )
+          : Promise.resolve([] as UsuarioEjercicioRow[]),
+      ]);
+
+      return [
+        ...usuario.map((x): UserItem => ({ ...x, __source: "usuario" as const })),
+        ...catalogo.map((x): CatalogItem => ({ ...x, __source: "catalogo" as const })),
+      ];
+    },
+  });
 }
 
 export async function fetchExerciseCatalogDetail(

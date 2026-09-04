@@ -51,8 +51,9 @@ export function GymDirectoryDrawer({
         {open ? (
           <div className="relative flex h-lvh min-h-0 flex-col bg-background">
             <header
+              data-app-top-bar
               className={cn(
-                "fixed inset-x-0 top-0 z-40 flex w-full flex-col border-b border-border/50 px-4 pb-2 pt-[calc(0.5rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] md:hidden",
+                "fixed inset-x-0 top-0 z-40 flex w-full flex-col border-b border-border bg-background px-4 pb-2 pt-[calc(0.5rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] md:hidden",
                 topBarSurface,
               )}
             >
