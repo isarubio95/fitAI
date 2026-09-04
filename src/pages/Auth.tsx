@@ -16,6 +16,7 @@ import {
   AUTH_LINK_CLASS,
   AUTH_SOFT_BUTTON_CLASS,
 } from "@/lib/authStyles";
+import { cn } from "@/lib/utils";
 
 function translateAuthError(msg: string, isLogin: boolean): { title: string; description: string } {
   const lower = msg.toLowerCase();
@@ -52,6 +53,11 @@ const Auth = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const isLogin = step === "login";
+  const fieldsComplete =
+    email.trim() !== "" &&
+    password !== "" &&
+    (isLogin || confirmPassword !== "");
+  const canSubmit = fieldsComplete && (isLogin || acceptedPrivacy);
 
   const goToStep = (next: AuthStep) => {
     if (next !== "welcome") localStorage.setItem(WELCOME_SEEN_KEY, "1");
@@ -206,8 +212,13 @@ const Auth = () => {
             )}
             <Button
               type="submit"
-              className={`${AUTH_CTA_CLASS} mt-2`}
-              disabled={submitting || (!isLogin && !acceptedPrivacy)}
+              className={cn(
+                AUTH_CTA_CLASS,
+                "mt-2",
+                !canSubmit &&
+                  "bg-secondary/60 text-muted-foreground [@media(hover:hover)]:hover:bg-secondary/60",
+              )}
+              disabled={submitting || !canSubmit}
             >
               {submitting ? <Loader2 className="animate-spin" /> : null}
               {isLogin ? "Iniciar sesión" : "Crear cuenta"}
@@ -228,7 +239,6 @@ const Auth = () => {
             type="button"
             variant="ghost"
             className={AUTH_SOFT_BUTTON_CLASS}
-            disabled={!isLogin && !acceptedPrivacy}
             onClick={async () => {
               if (!isLogin && !acceptedPrivacy) {
                 toast({
