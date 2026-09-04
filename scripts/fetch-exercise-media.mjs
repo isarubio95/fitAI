@@ -26,6 +26,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { cargarEnv, esAnimado, pool } from "./lib/mediaUtils.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -51,20 +52,6 @@ const valorDe = (n, def) => {
 const LIMITE = valorDe("--limit", Infinity);
 const SUBIR = flag("--upload");
 const FORZAR = flag("--force");
-
-function cargarEnv() {
-  const p = path.resolve(".env");
-  if (!fs.existsSync(p)) return;
-  for (const linea of fs.readFileSync(p, "utf8").split(/\r?\n/)) {
-    const m = linea.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
-    if (!m) continue;
-    let v = m[2] ?? "";
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
-      v = v.slice(1, -1);
-    }
-    if (!(m[1] in process.env)) process.env[m[1]] = v;
-  }
-}
 
 /** Nombre de fichero estable y seguro, derivado del origen. */
 function nombreFichero(fila) {
@@ -128,28 +115,6 @@ async function convertirEstatico(url, salida) {
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
-}
-
-/** ¿El WebP resultante lleva de verdad los chunks de animación? */
-function esAnimado(ruta) {
-  const b = fs.readFileSync(ruta);
-  return b.includes(Buffer.from("ANIM"));
-}
-
-async function pool(items, limite, worker) {
-  let i = 0;
-  let hechos = 0;
-  const runners = Array.from({ length: Math.min(limite, items.length) }, async () => {
-    while (i < items.length) {
-      const idx = i++;
-      await worker(items[idx], idx);
-      hechos += 1;
-      if (hechos % 50 === 0 || hechos === items.length) {
-        console.log(`  progreso ${hechos}/${items.length}`);
-      }
-    }
-  });
-  await Promise.all(runners);
 }
 
 async function main() {

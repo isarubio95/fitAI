@@ -10,7 +10,12 @@ import { EXERCISE_SYNONYMS } from "@/constants/exerciseSynonyms";
  * - Tolerante a erratas: una letra de más/menos/cambiada, o dos letras contiguas del revés.
  * - Busca también en material, tipo, grupo muscular y músculos, pero puntúa muy por
  *   encima el nombre para que el resultado obvio salga primero.
- * - Entiende los sinónimos ES/EN curados en `EXERCISE_SYNONYMS` ("dominada" ↔ "pull up").
+ * - Busca en el nombre original en inglés (`nombre_en`), en su propia banda de
+ *   puntuación: por debajo del nombre español y por encima del resto de campos.
+ *   Así "bench press" encuentra "Press de Banca" sin que el inglés desplace nunca
+ *   a una coincidencia en español.
+ * - Entiende los sinónimos ES/EN curados en `EXERCISE_SYNONYMS` ("dominada" ↔ "pull up"),
+ *   reservados para equivalencias que no son traducción literal.
  */
 
 /* -------------------------------------------------------------------------- */
@@ -116,6 +121,8 @@ export function expandQueryVariants(normalizedQuery: string): string[] {
 
 export type SearchableExercise = {
   nombre?: string | null;
+  /** Nombre original en inglés. Null en las filas sin equivalente conocido. */
+  nombre_en?: string | null;
   tipo?: string | null;
   grupo_muscular?: string | null;
   equipment?: string | null;
@@ -151,6 +158,9 @@ export type ExerciseSearchIndex = {
   nameCompact: string;
   /** Igual pero sin nexos, para quien los omite al escribir de corrido ("pressbanca"). */
   nameCompactCore: string;
+  /** Nombre original en inglés normalizado ("barbell bench press"). Vacío si no hay. */
+  enName: string;
+  enTokens: string[];
   /** Resto de campos normalizados y concatenados. */
   extra: string;
   extraTokens: string[];
@@ -166,6 +176,7 @@ function joinValues(value: unknown): string {
 export function buildExerciseSearchIndex(exercise: SearchableExercise): ExerciseSearchIndex {
   const name = normalizeSearchText(exercise.nombre);
   const nameTokens = name ? name.split(" ") : [];
+  const enName = normalizeSearchText(exercise.nombre_en);
 
   const extra = normalizeSearchText(
     [
@@ -186,6 +197,8 @@ export function buildExerciseSearchIndex(exercise: SearchableExercise): Exercise
     nameTokens,
     nameCompact: compactTokens(nameTokens, false),
     nameCompactCore: compactTokens(nameTokens, true),
+    enName,
+    enTokens: enName ? enName.split(" ") : [],
     extra,
     extraTokens: extra ? extra.split(" ") : [],
   };
@@ -259,16 +272,37 @@ function withinEditDistance(a: string, b: string, max: number): boolean {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Peso de cada tipo de coincidencia de un término.
- * Cualquier valor `>= SCORE_NAME_TYPO` significa "encontrado en el nombre".
+ * Peso de cada tipo de coincidencia de un término, en tres bandas separadas:
+ *
+ *   nombre español   [0.45 … 1]
+ *   nombre inglés    [0.30 … 0.44]
+ *   resto de campos  [0.22 … 0.34]
+ *
+ * El inglés queda deliberadamente por DEBAJO de `SCORE_NAME_TYPO`, que es el
+ * umbral con el que `scoreVariant` decide `allInName`: ese flag concede un bonus
+ * y compara el orden de los términos contra `nameTokens`, que está en español.
+ * Si el inglés entrara en la banda del nombre, mezclaría los dos idiomas ahí.
  */
 const SCORE_NAME_EXACT = 1;
 const SCORE_NAME_PREFIX = 0.92;
 const SCORE_NAME_INFIX = 0.7;
 const SCORE_NAME_COMPACT = 0.55;
 const SCORE_NAME_TYPO = 0.45;
+const SCORE_EN_EXACT = 0.44;
+const SCORE_EN_PREFIX = 0.4;
+const SCORE_EN_INFIX = 0.36;
 const SCORE_EXTRA_PREFIX = 0.34;
+const SCORE_EN_TYPO = 0.3;
 const SCORE_EXTRA_INFIX = 0.22;
+
+/** Bonus por coincidir con el nombre entero o con una frase suya. */
+const BONUS_NAME_EXACT = 3;
+const BONUS_NAME_PREFIX = 1.6;
+const BONUS_NAME_PHRASE = 1;
+const BONUS_NAME_COMPACT = 0.6;
+const BONUS_EN_EXACT = 2.4;
+const BONUS_EN_PREFIX = 1.3;
+const BONUS_EN_PHRASE = 0.8;
 
 /** Longitud mínima de un término para aceptar coincidencia por infijo (evita ruido). */
 const MIN_INFIX_LENGTH = 3;
@@ -292,19 +326,40 @@ function matchesCompactName(index: ExerciseSearchIndex, text: string): boolean {
   return index.nameCompact.includes(text) || index.nameCompactCore.includes(text);
 }
 
-/** Puntúa un término contra un ejercicio. `0` = no aparece en ningún campo. */
-function scoreToken(index: ExerciseSearchIndex, token: string): number {
+/** Mejor coincidencia de `token` en una lista de términos, con los pesos dados. */
+function scoreAgainstTokens(
+  tokens: string[],
+  token: string,
+  exact: number,
+  prefix: number,
+  infix: number,
+): number {
   let best = 0;
-
-  for (const nameToken of index.nameTokens) {
-    if (nameToken === token) return SCORE_NAME_EXACT;
-    if (nameToken.startsWith(token)) {
-      if (SCORE_NAME_PREFIX > best) best = SCORE_NAME_PREFIX;
-    } else if (token.length >= MIN_INFIX_LENGTH && nameToken.includes(token)) {
-      if (SCORE_NAME_INFIX > best) best = SCORE_NAME_INFIX;
+  for (const candidate of tokens) {
+    if (candidate === token) return exact;
+    if (candidate.startsWith(token)) {
+      if (prefix > best) best = prefix;
+    } else if (token.length >= MIN_INFIX_LENGTH && candidate.includes(token)) {
+      if (infix > best) best = infix;
     }
   }
-  if (best > 0) return best;
+  return best;
+}
+
+/**
+ * Puntúa un término contra un ejercicio. `0` = no aparece en ningún campo.
+ * La cascada va en orden decreciente de peso, así que la primera que acierta
+ * es ya la mejor posible.
+ */
+function scoreToken(index: ExerciseSearchIndex, token: string): number {
+  const nameScore = scoreAgainstTokens(
+    index.nameTokens,
+    token,
+    SCORE_NAME_EXACT,
+    SCORE_NAME_PREFIX,
+    SCORE_NAME_INFIX,
+  );
+  if (nameScore > 0) return nameScore;
 
   if (token.length >= MIN_COMPACT_LENGTH && matchesCompactName(index, token)) return SCORE_NAME_COMPACT;
 
@@ -315,9 +370,25 @@ function scoreToken(index: ExerciseSearchIndex, token: string): number {
     }
   }
 
+  const enScore = scoreAgainstTokens(
+    index.enTokens,
+    token,
+    SCORE_EN_EXACT,
+    SCORE_EN_PREFIX,
+    SCORE_EN_INFIX,
+  );
+  if (enScore > 0) return enScore;
+
   for (const extraToken of index.extraTokens) {
     if (extraToken.startsWith(token)) return SCORE_EXTRA_PREFIX;
   }
+
+  if (budget > 0) {
+    for (const enToken of index.enTokens) {
+      if (withinEditDistance(enToken, token, budget)) return SCORE_EN_TYPO;
+    }
+  }
+
   if (token.length >= MIN_INFIX_LENGTH && index.extra.includes(token)) return SCORE_EXTRA_INFIX;
 
   return 0;
@@ -355,10 +426,24 @@ function scoreVariant(index: ExerciseSearchIndex, variant: string, tokens: strin
 
   let score = total / tokens.length;
 
-  if (index.name === variant) score += 3;
-  else if (index.name.startsWith(`${variant} `)) score += 1.6;
-  else if (containsPhrase(index.name, variant)) score += 1;
-  else if (variant.length >= MIN_COMPACT_LENGTH && matchesCompactName(index, variant.replace(/ /g, ""))) score += 0.6;
+  let phraseBonus = 0;
+  if (index.name === variant) phraseBonus = BONUS_NAME_EXACT;
+  else if (index.name.startsWith(`${variant} `)) phraseBonus = BONUS_NAME_PREFIX;
+  else if (containsPhrase(index.name, variant)) phraseBonus = BONUS_NAME_PHRASE;
+  else if (variant.length >= MIN_COMPACT_LENGTH && matchesCompactName(index, variant.replace(/ /g, ""))) {
+    phraseBonus = BONUS_NAME_COMPACT;
+  }
+
+  // El inglés solo se considera si el nombre español no ha dado ningún bonus:
+  // una coincidencia en español gana siempre a la misma en inglés. Sin este
+  // bonus "bench press" competiría contra todas las filas que llevan "press"
+  // y la correcta no saldría primera.
+  if (phraseBonus === 0 && index.enName) {
+    if (index.enName === variant) phraseBonus = BONUS_EN_EXACT;
+    else if (index.enName.startsWith(`${variant} `)) phraseBonus = BONUS_EN_PREFIX;
+    else if (containsPhrase(index.enName, variant)) phraseBonus = BONUS_EN_PHRASE;
+  }
+  score += phraseBonus;
 
   if (allInName) {
     score += 0.5;

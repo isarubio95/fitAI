@@ -37,9 +37,13 @@ const CATALOG_STALE_MS = 30 * 60 * 1000;
 // string `equipment` se deriva de ella y se mantiene solo para mostrarlo.
 // El filtro tiene que ir contra la lista: partir el string por comas no
 // permite casar átomos ni en cliente ni en servidor.
-const TIPO_LIST_COLUMNS =
+const SHARED_LIST_COLUMNS =
   "id, nombre, registro_series, tipo, grupo_muscular, dificultad, equipment, equipment_list, musculos_involucrados, body_part:musculos_involucrados";
-const USUARIO_LIST_COLUMNS = `${TIPO_LIST_COLUMNS}, usuario_id, descripcion`;
+// `nombre_en` (el nombre original en inglés, para que el buscador encuentre
+// "bench press" → "Press de Banca") existe solo en el catálogo del sistema:
+// los ejercicios de `usuario_ejercicio` los teclea el propio usuario.
+const TIPO_LIST_COLUMNS = `${SHARED_LIST_COLUMNS}, nombre_en`;
+const USUARIO_LIST_COLUMNS = `${SHARED_LIST_COLUMNS}, usuario_id, descripcion`;
 
 /** Selector / página de ejercicios: thumbs, sin instructions. */
 const TIPO_THUMB_COLUMNS = `${TIPO_LIST_COLUMNS}, gif_url, imagen`;

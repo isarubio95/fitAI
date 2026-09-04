@@ -5,12 +5,14 @@ import {
   expandQueryVariants,
   normalizeSearchText,
   rankExercises,
+  scoreExerciseMatch,
   searchExercises,
   tokenizeSearchText,
 } from "@/lib/exerciseSearch";
 
 type Ex = {
   nombre: string;
+  nombre_en?: string | null;
   tipo?: string | null;
   grupo_muscular?: string | null;
   equipment?: string | null;
@@ -22,6 +24,7 @@ type Ex = {
 const CATALOG: Ex[] = [
   {
     nombre: "Press de Banca",
+    nombre_en: "Barbell Bench Press - Medium Grip",
     tipo: "Fuerza",
     grupo_muscular: "Pecho",
     equipment: "Barra",
@@ -30,6 +33,7 @@ const CATALOG: Ex[] = [
   },
   {
     nombre: "Press de Banca Inclinado con Mancuernas",
+    nombre_en: "Incline Dumbbell Press",
     tipo: "Fuerza",
     grupo_muscular: "Pecho",
     equipment: "Mancuernas",
@@ -38,6 +42,7 @@ const CATALOG: Ex[] = [
   },
   {
     nombre: "Curl de Bíceps con Barra",
+    nombre_en: "Barbell Curl",
     tipo: "Fuerza",
     grupo_muscular: "Bíceps",
     equipment: "Barra",
@@ -45,6 +50,7 @@ const CATALOG: Ex[] = [
   },
   {
     nombre: "Dominada",
+    nombre_en: "Pullups",
     tipo: "Fuerza",
     grupo_muscular: "Espalda",
     equipment: "Barra de Dominadas",
@@ -52,6 +58,7 @@ const CATALOG: Ex[] = [
   },
   {
     nombre: "Sentadilla Búlgara",
+    nombre_en: "Bulgarian Split Squat",
     tipo: "Fuerza",
     grupo_muscular: "Cuádriceps",
     equipment: "Mancuernas",
@@ -59,6 +66,7 @@ const CATALOG: Ex[] = [
   },
   {
     nombre: "Elevación Lateral con Mancuernas",
+    nombre_en: "Side Lateral Raise",
     tipo: "Fuerza",
     grupo_muscular: "Hombro",
     equipment: "Mancuernas",
@@ -66,10 +74,19 @@ const CATALOG: Ex[] = [
   },
   {
     nombre: "Peso Muerto Rumano",
+    nombre_en: "Romanian Deadlift",
     tipo: "Fuerza",
     grupo_muscular: "Femoral",
     equipment: "Barra",
     musculos_involucrados: ["Isquiotibiales"],
+  },
+  {
+    // Sin `nombre_en`: hay 9 filas nativas sin inglés conocido.
+    nombre: "Prensa de Piernas",
+    tipo: "Fuerza",
+    grupo_muscular: "Cuádriceps",
+    equipment: "Máquina",
+    musculos_involucrados: ["Cuádriceps"],
   },
 ];
 
@@ -231,5 +248,51 @@ describe("helpers", () => {
     const parciales = [{ nombre: "Solo Nombre" }, { nombre: "" }, {}] as Ex[];
     expect(() => searchExercises(parciales, "nombre")).not.toThrow();
     expect(names(searchExercises(parciales, "nombre"))).toEqual(["Solo Nombre"]);
+  });
+});
+
+describe("búsqueda en inglés (nombre_en)", () => {
+  it("encuentra por el nombre original en inglés", () => {
+    expect(find("bench press")[0]).toBe("Press de Banca");
+    expect(find("side lateral raise")[0]).toBe("Elevación Lateral con Mancuernas");
+    expect(find("squat")).toEqual(["Sentadilla Búlgara"]);
+  });
+
+  it("un solo término en inglés basta", () => {
+    expect(find("deadlift")).toEqual(["Peso Muerto Rumano"]);
+    expect(find("pullups")).toEqual(["Dominada"]);
+  });
+
+  it("tolera erratas también en inglés", () => {
+    // Transposición adyacente: deadlift → deadlfit.
+    expect(find("deadlfit")).toEqual(["Peso Muerto Rumano"]);
+  });
+
+  it("el español gana al inglés a igualdad de término", () => {
+    const enNombre = { nombre: "Fondos en Banco", nombre_en: "Bench Dips" };
+    const enIngles = { nombre: "Press de Banca", nombre_en: "Barbell Bench Press" };
+    // "banco" solo está en el nombre español de la primera.
+    expect(scoreExerciseMatch(enNombre, "banco")).toBeGreaterThan(
+      scoreExerciseMatch(enIngles, "bench"),
+    );
+  });
+
+  it("el inglés gana al resto de campos", () => {
+    const enIngles = { nombre: "Press de Banca", nombre_en: "Barbell Bench Press" };
+    const enMaterial = { nombre: "Fondos", equipment: "Bench" };
+    expect(scoreExerciseMatch(enIngles, "bench")).toBeGreaterThan(
+      scoreExerciseMatch(enMaterial, "bench"),
+    );
+  });
+
+  it("las filas sin nombre_en siguen funcionando igual", () => {
+    expect(find("prensa")).toEqual(["Prensa de Piernas"]);
+    expect(scoreExerciseMatch({ nombre: "Prensa de Piernas" }, "leg press")).toBe(0);
+    expect(scoreExerciseMatch({ nombre: "Prensa", nombre_en: null }, "prensa")).toBeGreaterThan(0);
+  });
+
+  it("no mezcla los dos idiomas en una misma consulta por accidente", () => {
+    // "banca" (ES) + "dumbbell" (EN) no describen la misma fila.
+    expect(find("banca dumbbell")).toEqual(["Press de Banca Inclinado con Mancuernas"]);
   });
 });
