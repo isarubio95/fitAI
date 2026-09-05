@@ -5,7 +5,7 @@ import { type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useWorkoutById } from "@/hooks/useWorkouts";
+import { useWorkoutById, type EjercicioJoinRow } from "@/hooks/useWorkouts";
 import { useActiveWorkout, type ActiveWorkoutSummary } from "@/hooks/useActiveWorkout";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { fetchUnfinishedWorkoutId } from "@/lib/activeWorkoutGuard";
@@ -70,6 +70,7 @@ import {
   type SetFormData,
   type RegistroSeries,
   type ActividadWithDetails,
+  type Serie,
   normalizeRegistroSeries,
   defaultSetForMode,
   initialSetCountForRegistro,
@@ -648,6 +649,114 @@ export function WorkoutLogger() {
     }
   };
 
+  /**
+   * Mutador de la caché de React Query (["workout", id]). La caché tiene
+   * staleTime de 60 s, así que al minimizar y reabrir el drawer la hidratación
+   * lee esta foto en vez de la BD: toda alta/baja de ejercicio o serie tiene
+   * que pasar por aquí o reaparecen los que acabamos de borrar.
+   */
+  const updateWorkoutCache = useCallback(
+    (updater: (old: ActividadWithDetails) => ActividadWithDetails) => {
+      if (!effectiveWorkoutId) return;
+      queryClient.setQueryData<ActividadWithDetails | null>(
+        ["workout", effectiveWorkoutId],
+        (old) => (old ? updater(old) : old),
+      );
+    },
+    [effectiveWorkoutId, queryClient],
+  );
+
+  const addExerciseToWorkoutCache = useCallback(
+    (ejercicio: EjercicioJoinRow, series: Serie[]) => {
+      const tipo = ejercicio.tipo_ejercicio ?? ejercicio.usuario_ejercicio;
+      if (!tipo) return;
+      updateWorkoutCache((old) => ({
+        ...old,
+        ejercicios: [
+          ...(old.ejercicios ?? []).filter((ej) => ej.id !== ejercicio.id),
+          { ...ejercicio, tipo_ejercicio: tipo, series },
+        ],
+      }));
+    },
+    [updateWorkoutCache],
+  );
+
+  const addSetToWorkoutCache = useCallback(
+    (ejercicioId: string, serie: Serie) => {
+      updateWorkoutCache((old) => ({
+        ...old,
+        ejercicios: (old.ejercicios ?? []).map((ej) =>
+          ej.id === ejercicioId
+            ? { ...ej, series: [...(ej.series ?? []).filter((s) => s.id !== serie.id), serie] }
+            : ej,
+        ),
+      }));
+    },
+    [updateWorkoutCache],
+  );
+
+  const removeExerciseFromWorkoutCache = useCallback(
+    (ejercicioId: string) => {
+      updateWorkoutCache((old) => ({
+        ...old,
+        ejercicios: (old.ejercicios ?? []).filter((ej) => ej.id !== ejercicioId),
+      }));
+    },
+    [updateWorkoutCache],
+  );
+
+  const removeSetFromWorkoutCache = useCallback(
+    (setId: string) => {
+      updateWorkoutCache((old) => ({
+        ...old,
+        ejercicios: (old.ejercicios ?? []).map((ej) => ({
+          ...ej,
+          series: (ej.series ?? []).filter((s) => s.id !== setId),
+        })),
+      }));
+    },
+    [updateWorkoutCache],
+  );
+
+  /**
+   * Mantiene la caché de React Query (["workout", id]) sincronizada con los
+   * autosaves. Sin esto, al reabrir el entrenamiento activo la hidratación
+   * lee una foto obsoleta y "desaparecen" las últimas series registradas.
+   */
+  const patchSetInWorkoutCache = useCallback(
+    (setId: string, patch: Record<string, unknown>) => {
+      updateWorkoutCache((old) => ({
+        ...old,
+        ejercicios: (old.ejercicios ?? []).map((ej) => ({
+          ...ej,
+          series: (ej.series ?? []).map((s) => (s.id === setId ? { ...s, ...patch } : s)),
+        })),
+      }));
+    },
+    [updateWorkoutCache],
+  );
+
+  /**
+   * Renumera las series de un ejercicio a 1..n. `addSet` usa `sets.length + 1`
+   * como `numero_serie`, así que dejar huecos al borrar hace que la siguiente
+   * serie choque con una existente y el orden al rehidratar quede indefinido.
+   */
+  const renumberSeries = useCallback(
+    async (sets: SetFormData[]) => {
+      const updates = sets
+        .map((s, i) => ({ id: s.id, numero_serie: i + 1 }))
+        .filter((u): u is { id: string; numero_serie: number } => !!u.id);
+      if (!updates.length) return;
+      await Promise.all(
+        updates.map((u) =>
+          supabase.from("serie").update({ numero_serie: u.numero_serie }).eq("id", u.id),
+        ),
+      );
+      updates.forEach((u) => patchSetInWorkoutCache(u.id, { numero_serie: u.numero_serie }));
+    },
+    [patchSetInWorkoutCache],
+  );
+
   const persistExerciseToWorkout = async (
     workoutId: string,
     ex: ExerciseFormData,
@@ -671,8 +780,8 @@ export function WorkoutLogger() {
         rep_range: ex.repRange ?? null,
         rir_objetivo: ex.targetRir ?? null,
       })
-      .select("id")
-      .single();
+      .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
+      .single<EjercicioJoinRow>();
     if (error) throw error;
     const { data: series, error: seriesError } = await supabase
       .from("serie")
@@ -692,9 +801,10 @@ export function WorkoutLogger() {
           };
         }),
       )
-      .select("id, numero_serie");
+      .select("*");
     if (seriesError) throw seriesError;
-    const orderedSeries = [...(series ?? [])].sort((a, b) => a.numero_serie - b.numero_serie);
+    const orderedSeries = [...((series ?? []) as Serie[])].sort((a, b) => a.numero_serie - b.numero_serie);
+    addExerciseToWorkoutCache(ej, orderedSeries);
     return {
       ...ex,
       id: ej.id,
@@ -815,6 +925,7 @@ export function WorkoutLogger() {
         const setIds = ex.sets.filter((s) => s.id).map((s) => s.id!);
         if (setIds.length) await supabase.from("serie").delete().in("id", setIds);
         await supabase.from("ejercicio").delete().eq("id", ex.id);
+        removeExerciseFromWorkoutCache(ex.id);
       } catch (e: unknown) {
         toast({
           title: "Error",
@@ -857,9 +968,10 @@ export function WorkoutLogger() {
             completed: false,
             ...serieTargetFields(blank),
           })
-          .select("id")
-          .single();
+          .select("*")
+          .single<Serie>();
         if (error) throw error;
+        addSetToWorkoutCache(ex.id, data);
         setExercises((prev) =>
           prev.map((e, i) =>
             i === exerciseIndex
@@ -890,6 +1002,10 @@ export function WorkoutLogger() {
     if (set?.id) {
       try {
         await supabase.from("serie").delete().eq("id", set.id);
+        removeSetFromWorkoutCache(set.id);
+        await renumberSeries(
+          (exercises[exerciseIndex]?.sets ?? []).filter((_, si) => si !== setIndex),
+        );
       } catch (e: unknown) {
         toast({
           title: "Error",
@@ -994,30 +1110,6 @@ export function WorkoutLogger() {
       );
     },
     [],
-  );
-
-  /**
-   * Mantiene la caché de React Query (["workout", id]) sincronizada con los
-   * autosaves. Sin esto, al reabrir el entrenamiento activo la hidratación
-   * lee una foto obsoleta y "desaparecen" las últimas series registradas.
-   */
-  const patchSetInWorkoutCache = useCallback(
-    (setId: string, patch: Record<string, unknown>) => {
-      if (!effectiveWorkoutId) return;
-      queryClient.setQueryData<ActividadWithDetails | null>(["workout", effectiveWorkoutId], (old) => {
-        if (!old?.ejercicios) return old;
-        return {
-          ...old,
-          ejercicios: old.ejercicios.map((ej) => ({
-            ...ej,
-            series: (ej.series ?? []).map((s) =>
-              s.id === setId ? { ...s, ...patch } : s,
-            ),
-          })),
-        };
-      });
-    },
-    [effectiveWorkoutId, queryClient],
   );
 
   const persistSetToDb = useCallback(async (exerciseIndex: number, setIndex: number) => {

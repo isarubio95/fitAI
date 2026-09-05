@@ -16,7 +16,7 @@ import { isWorkingSet } from "@/lib/setTypes";
 import { useRemoveWorkoutXP } from "@/hooks/useGamification";
 import { useToast } from "@/hooks/use-toast";
 
-type EjercicioJoinRow = Ejercicio & {
+export type EjercicioJoinRow = Ejercicio & {
   tipo_ejercicio: TipoEjercicio | null;
   usuario_ejercicio: UsuarioEjercicio | null;
 };
