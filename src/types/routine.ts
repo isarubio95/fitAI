@@ -37,6 +37,12 @@ export interface RoutineSetPlan {
 }
 
 export interface RoutineExerciseFormData {
+  /**
+   * Identidad estable de la fila en el formulario, solo en cliente. La necesita
+   * el reordenado: estas filas no tienen `id` de base de datos y usar el índice
+   * separa la fila de sus datos al mover. Ver `sortableUid`.
+   */
+  uid?: string;
   tipo_ejercicio_id?: string;
   usuario_ejercicio_id?: string;
   nombre: string;

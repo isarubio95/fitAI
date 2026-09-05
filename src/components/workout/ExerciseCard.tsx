@@ -36,8 +36,7 @@ import { applyOverloadToSet, overloadPatchChangesSet } from "@/lib/progressiveOv
 import { isWorkingSet, tipoSerieLabel, tipoSerieShort } from "@/lib/setTypes";
 import { ActiveWorkoutCheckbox } from "./ActiveWorkoutCheckbox";
 import { SwipeToDeleteRow } from "./SwipeToDeleteRow";
-import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
-import { vaulSafeDragHandleProps } from "@/lib/vaulSafeDragHandle";
+import type { SortableHandleProps } from "@/components/ui/sortable-list";
 
 function formatPreviousSet(
   mode: ReturnType<typeof normalizeRegistroSeries>,
@@ -75,7 +74,7 @@ interface ExerciseCardProps {
   ) => void;
   onAutoSaveSet?: (setIndex: number) => void;
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
-  dragHandleProps?: DraggableSyntheticListeners & Partial<DraggableAttributes>;
+  dragHandleProps?: SortableHandleProps;
   onViewExerciseDetails?: (exercise: ExerciseFormData) => void;
 }
 
@@ -326,14 +325,18 @@ export function ExerciseCard({
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex min-w-0 items-center gap-2">
             <div
-              {...vaulSafeDragHandleProps(dragHandleProps)}
-              aria-label={dragHandleProps ? "Reordenar ejercicio" : undefined}
+              {...(dragHandleProps ?? {})}
               className={cn(
-                "-ml-2 flex h-11 w-11 shrink-0 items-center justify-center",
-                dragHandleProps && "cursor-grab touch-none active:cursor-grabbing",
+                "-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg",
+                "text-muted-foreground transition-colors duration-150",
+                dragHandleProps &&
+                  "cursor-grab outline-none active:cursor-grabbing" +
+                    " hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring" +
+                    " active:bg-muted/60 active:text-foreground" +
+                    " aria-pressed:bg-primary/10 aria-pressed:text-primary",
               )}
             >
-              <GripVertical className="h-4 w-4 text-muted-foreground" />
+              <GripVertical className="h-4 w-4" />
             </div>
             <h3 className="truncate text-sm font-semibold">{exercise.nombre}</h3>
             {onViewExerciseDetails && (

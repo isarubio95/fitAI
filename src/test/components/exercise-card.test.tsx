@@ -388,11 +388,24 @@ describe("ExerciseCard", () => {
         onAddSet={() => undefined}
         onRemoveSet={() => undefined}
         onUpdateSet={() => undefined}
-        dragHandleProps={{}}
+        dragHandleProps={{
+          ref: () => undefined,
+          onPointerDown: () => undefined,
+          onKeyDown: () => undefined,
+          onContextMenu: () => undefined,
+          role: "button",
+          tabIndex: 0,
+          "aria-label": "Reordenar Press banca",
+          "aria-roledescription": "Elemento reordenable",
+          "aria-pressed": false,
+          "data-vaul-no-drag": true,
+          style: { touchAction: "none" },
+        }}
       />,
     );
 
-    const handle = screen.getByLabelText("Reordenar ejercicio");
+    const handle = screen.getByLabelText("Reordenar Press banca");
     expect(handle).toHaveAttribute("data-vaul-no-drag");
+    expect(handle).toHaveStyle({ touchAction: "none" });
   });
 });

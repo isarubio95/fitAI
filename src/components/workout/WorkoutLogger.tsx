@@ -1,8 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, type ComponentProps } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { type DragEndEvent } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
+import { arrayMove, ensureSortUids } from "@/lib/sortableUid";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkoutById, type EjercicioJoinRow } from "@/hooks/useWorkouts";
@@ -104,6 +103,13 @@ export function WorkoutLogger() {
   const [titulo, setTitulo] = useState("");
   const [fecha, setFecha] = useState(defaultDate || new Date().toISOString().slice(0, 10));
   const [exercises, setExercises] = useState<ExerciseFormData[]>([]);
+
+  // Los ejercicios entran desde muchos sitios (rutina, sesión activa, plantilla,
+  // importación). En vez de sembrar el uid en cada uno, se completa aquí: no
+  // toca nada si ya está, así que no hay bucle de renders.
+  useEffect(() => {
+    setExercises((prev) => ensureSortUids(prev));
+  }, [exercises]);
   const [esPublica, setEsPublica] = useState(false);
   const [gimnasio, setGimnasio] = useState<SelectedGimnasio | null>(null);
   const [rpe, setRpe] = useState<number | null>(null);
@@ -1288,17 +1294,68 @@ export function WorkoutLogger() {
     });
   }, []);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setExercises((prev) => {
-      const oldIndex = prev.findIndex((e) => (e.id || String(prev.indexOf(e))) === active.id);
-      const newIndex = prev.findIndex((e) => (e.id || String(prev.indexOf(e))) === over.id);
-      return arrayMove(prev, oldIndex, newIndex);
-    });
-  };
+  /**
+   * `ejercicio` no tiene columna de orden: al rehidratar se listan por
+   * `created_at` ascendente, y por eso al crearlos se escalonan de milisegundo
+   * en milisegundo. Reordenar en una sesión activa tiene que reescribir esa
+   * escalera o el nuevo orden se pierde al reabrir el entrenamiento.
+   *
+   * En un entreno ya terminado no hace falta: al guardar se borran y reinsertan
+   * los ejercicios en el orden de la lista.
+   */
+  const persistExerciseOrder = useCallback(
+    async (ordered: ExerciseFormData[]) => {
+      if (!effectiveWorkoutId) return;
+      const base = Date.now();
+      const stamps: { id: string; created_at: string }[] = [];
+      ordered.forEach((ex, i) => {
+        if (ex.id) stamps.push({ id: ex.id, created_at: new Date(base + i).toISOString() });
+      });
+      if (stamps.length < 2) return;
 
-  const getExerciseSortId = (ex: ExerciseFormData, index: number) => ex.id || String(index);
+      const byId = new Map(stamps.map((s) => [s.id, s.created_at]));
+      updateWorkoutCache((old) => ({
+        ...old,
+        ejercicios: (old.ejercicios ?? []).map((ej) =>
+          byId.has(ej.id) ? { ...ej, created_at: byId.get(ej.id)! } : ej,
+        ),
+      }));
+
+      try {
+        await Promise.all(
+          stamps.map((s) =>
+            supabase.from("ejercicio").update({ created_at: s.created_at }).eq("id", s.id),
+          ),
+        );
+      } catch (e: unknown) {
+        toast({
+          title: "No se pudo guardar el orden",
+          description: e instanceof Error ? e.message : "Error desconocido",
+          variant: "destructive",
+        });
+      }
+    },
+    [effectiveWorkoutId, toast, updateWorkoutCache],
+  );
+
+  const handleReorderExercises = useCallback(
+    (from: number, to: number) => {
+      // El nuevo orden se calcula fuera del updater: escribir en BD dentro de
+      // un updater lo duplicaría en cada render doble de StrictMode.
+      const next = arrayMove(exercises, from, to);
+      if (next === exercises) return;
+      setExercises(next);
+      if (isActiveWorkout) void persistExerciseOrder(next);
+    },
+    [exercises, isActiveWorkout, persistExerciseOrder],
+  );
+
+  // El id de arrastre nunca puede ser el índice: al mover una ficha los índices
+  // se quedan quietos y pasan a describir otro ejercicio.
+  const getExerciseSortId = useCallback(
+    (ex: ExerciseFormData, index: number) => ex.uid ?? ex.id ?? `sin-uid-${index}`,
+    [],
+  );
   /** Solo sesión activa: no tocar estadísticas hasta finalizar. */
   const invalidateActiveWorkoutQueries = () => {
     queryClient.invalidateQueries({ queryKey: ["lastWorkout"] });
@@ -1975,7 +2032,7 @@ export function WorkoutLogger() {
                 <WorkoutExerciseList
                   exercises={exercises}
                   isActiveWorkout={isActiveWorkout}
-                  onDragEnd={handleDragEnd}
+                  onReorder={handleReorderExercises}
                   getExerciseSortId={getExerciseSortId}
                   onRemoveExercise={removeExercise}
                   onAddSet={addSet}

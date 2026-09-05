@@ -1,6 +1,5 @@
-import { useRef, useEffect } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@/lib/utils";
+import { useSortableItem } from "@/components/ui/sortable-list";
 import { ExerciseCard } from "./ExerciseCard";
 import type { ExerciseFormData, SetFormData } from "@/types/workout";
 
@@ -25,36 +24,21 @@ interface SortableExerciseCardProps {
 }
 
 export function SortableExerciseCard({ id, ...props }: SortableExerciseCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    isDragging,
-    isSorting,
-  } = useSortable({ id });
-
-  // Only animate displacement of other items while a drag is actively happening
-  const wasSorting = useRef(false);
-  useEffect(() => { wasSorting.current = isSorting; }, [isSorting]);
-
-  const shouldAnimate = isSorting && !isDragging;
-
-  const style: React.CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    transition: shouldAnimate ? 'transform 200ms cubic-bezier(0.2, 0, 0, 1)' : 'none',
-  };
+  const { setNodeRef, handleProps, isDragging, isKeyboardDragging } = useSortableItem(id);
 
   return (
-    // La tarjeta visible durante el arrastre la pinta el DragOverlay de la
-    // lista; esta se queda como hueco atenuado en su sitio.
-    <div ref={setNodeRef} style={style} className={isDragging ? 'opacity-30' : undefined}>
-      <ExerciseCard
-        {...props}
-        isInSuperset={props.isInSuperset}
-        dragHandleProps={{ ...listeners, ...attributes }}
-        onViewExerciseDetails={props.onViewExerciseDetails}
-      />
+    // Mientras la ficha está en el aire la pinta el overlay de la lista; esta
+    // se queda invisible pero ocupando su sitio, para que nada se recoloque.
+    // Con teclado no hay overlay: la propia ficha se levanta y se mueve.
+    <div
+      ref={setNodeRef}
+      className={cn(
+        isDragging && "pointer-events-none opacity-0",
+        isKeyboardDragging && "relative z-10 rounded-xl shadow-lg ring-1 ring-primary/40",
+      )}
+      inert={isDragging || undefined}
+    >
+      <ExerciseCard {...props} dragHandleProps={handleProps} />
     </div>
   );
 }

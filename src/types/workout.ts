@@ -251,6 +251,12 @@ export interface ExerciseFormData {
   nombre: string;
   sets: SetFormData[];
   id?: string;
+  /**
+   * Identidad estable de la fila en el formulario, solo en cliente. La necesita
+   * el reordenado: un ejercicio recién añadido aún no tiene `id`, y usar el
+   * índice hace que la fila y sus datos se separen al mover. Ver `sortableUid`.
+   */
+  uid?: string;
   /** Copiado del catálogo o rutina al crear la fila de ejercicio en sesión. */
   registro_series?: RegistroSeries;
   repRange?: string;

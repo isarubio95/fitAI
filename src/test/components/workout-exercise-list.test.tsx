@@ -13,7 +13,7 @@ const noop = () => undefined;
 
 const listProps = {
   isActiveWorkout: true,
-  onDragEnd: noop,
+  onReorder: noop,
   getExerciseSortId: (ex: ExerciseFormData, index: number) => ex.id ?? `${ex.nombre}-${index}`,
   onRemoveExercise: noop,
   onAddSet: noop,

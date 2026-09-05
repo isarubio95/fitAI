@@ -1,35 +1,20 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type ComponentProps } from "react";
 import { formatMSS, parseMSS } from "@/hooks/useRestTimer";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-  type DraggableSyntheticListeners,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 import { useRoutineById } from "@/hooks/useRoutines";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
-import { vaulSafeDragHandleProps } from "@/lib/vaulSafeDragHandle";
 import { Card, CardContent } from "@/components/ui/card";
-import { SortableDragOverlay } from "@/components/ui/sortable-drag-overlay";
-import { restrictToVerticalAxis } from "@/lib/dndModifiers";
+import {
+  SortableList,
+  useSortableAnchor,
+  useSortableItem,
+  type SortableHandleProps,
+} from "@/components/ui/sortable-list";
+import { arrayMove, ensureSortUids } from "@/lib/sortableUid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -186,6 +171,14 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
   const [descripcion, setDescripcion] = useState("");
   const [icono, setIcono] = useState<RoutineIconKey>(DEFAULT_ROUTINE_ICON_KEY);
   const [ejercicios, setEjercicios] = useState<RoutineExerciseFormData[]>([]);
+
+  // Estas filas no tienen id de base de datos y entran desde varios sitios
+  // (rutina existente, prefill, duplicado, importación CSV). En vez de sembrar
+  // el uid en cada uno, se completa aquí; si ya está no toca nada, así que no
+  // hay bucle de renders.
+  useEffect(() => {
+    setEjercicios((prev) => ensureSortUids(prev));
+  }, [ejercicios]);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedExerciseDetail, setSelectedExerciseDetail] = useState<
@@ -195,8 +188,6 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
   // When linking a superset, we store the index + generated superset_id
   const [supersetLink, setSupersetLink] = useState<{ afterIndex: number; supersetId: string } | null>(null);
   const [initialSnapshot, setInitialSnapshot] = useState<RoutineFormEditSnapshot | null>(null);
-  /** Índice del ejercicio en arrastre; alimenta la tarjeta del DragOverlay. */
-  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
   const isEdit = !!routineId;
 
@@ -330,25 +321,9 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
     [supersetLink]
   );
 
-  const dndSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const handleRoutineDragStart = (event: DragStartEvent) => {
-    setDraggingIndex(Number(event.active.id));
-  };
-
-  const handleRoutineDragEnd = (event: DragEndEvent) => {
-    setDraggingIndex(null);
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setEjercicios((prev) => {
-      const oldIndex = Number(active.id);
-      const newIndex = Number(over.id);
-      return arrayMove(prev, oldIndex, newIndex).map((ej, i) => ({ ...ej, orden: i }));
-    });
-  };
+  const handleReorder = useCallback((from: number, to: number) => {
+    setEjercicios((prev) => arrayMove(prev, from, to).map((ej, i) => ({ ...ej, orden: i })));
+  }, []);
 
   const removeExercise = (index: number) => {
     setEjercicios((prev) => prev.filter((_, i) => i !== index).map((ej, i) => ({ ...ej, orden: i })));
@@ -493,7 +468,37 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
   };
 
   const groups = groupExercises(ejercicios);
-  const draggingExercise = draggingIndex == null ? null : ejercicios[draggingIndex] ?? null;
+  const sortIds = useMemo(
+    // Nunca el índice: al mover una fila los índices se quedan quietos y pasan
+    // a describir otro ejercicio.
+    () => ejercicios.map((ej, i) => ej.uid ?? `sin-uid-${i}`),
+    [ejercicios],
+  );
+  const renderDragOverlay = useCallback(
+    (id: string) => {
+      const index = sortIds.indexOf(id);
+      const ej = ejercicios[index];
+      if (!ej) return null;
+      return (
+        <ExerciseRow
+          exercise={ej}
+          index={index}
+          onUpdateField={noop}
+          onUpdatePlan={noop}
+          onRemove={noop}
+          onLinkSuperset={noop}
+          onBreakSuperset={noop}
+          isInSuperset={!!ej.superset_id}
+          onViewExerciseInfo={noop}
+        />
+      );
+    },
+    [ejercicios, sortIds],
+  );
+  const getDragLabel = useCallback(
+    (id: string) => ejercicios[sortIds.indexOf(id)]?.nombre ?? "ejercicio",
+    [ejercicios, sortIds],
+  );
 
   // Con id + origen basta: `ExerciseDetailSheet` pide el detalle completo por
   // id. Filtrar antes por el catálogo en memoria dejaba el botón muerto para
@@ -579,82 +584,59 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
                     </div>
                   </div>
 
-                  <DndContext
-                    sensors={dndSensors}
-                    collisionDetection={closestCenter}
-                    modifiers={[restrictToVerticalAxis]}
-                    onDragStart={handleRoutineDragStart}
-                    onDragEnd={handleRoutineDragEnd}
-                    onDragCancel={() => setDraggingIndex(null)}
+                  <SortableList
+                    items={sortIds}
+                    onReorder={handleReorder}
+                    renderOverlay={renderDragOverlay}
+                    getItemLabel={getDragLabel}
+                    className="flex flex-col gap-1 bg-background"
                   >
-                    <SortableContext items={ejercicios.map((_, i) => i)} strategy={verticalListSortingStrategy}>
-                      <div className="flex flex-col gap-1 bg-background">
-                        {groups.map((group) => {
-                          const isSuperset = !!group.supersetId && group.items.length > 1;
+                    {groups.map((group) => {
+                      const isSuperset = !!group.supersetId && group.items.length > 1;
 
-                          if (isSuperset) {
-                            return (
-                              <div key={group.supersetId} className="flex flex-col gap-1 bg-background">
-                                <div className="bg-primary/5 px-6 pt-2 pb-1">
-                                  <span className="text-xs font-medium text-primary">🔗 Superserie</span>
-                                </div>
-                                <div className="flex flex-col gap-1 bg-background">
-                                  {group.items.map(({ exercise: ej, originalIndex: i }) => (
-                                    <SortableExerciseRow
-                                      key={i}
-                                      sortId={i}
-                                      exercise={ej}
-                                      index={i}
-                                      onUpdateField={updateExerciseField}
-                                      onUpdatePlan={updateSeriesPlan}
-                                      onRemove={removeExercise}
-                                      onLinkSuperset={startSupersetLink}
-                                      onBreakSuperset={breakSuperset}
-                                      isInSuperset
-                                      onViewExerciseInfo={handleViewExerciseInfo}
-                                    />
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          }
+                      if (isSuperset) {
+                        return (
+                          <div key={group.supersetId} className="flex flex-col gap-1 bg-background">
+                            <SupersetHeader anchorId={sortIds[group.items[0].originalIndex]} />
+                            <div className="flex flex-col gap-1 bg-background">
+                              {group.items.map(({ exercise: ej, originalIndex: i }) => (
+                                <SortableExerciseRow
+                                  key={sortIds[i]}
+                                  sortId={sortIds[i]}
+                                  exercise={ej}
+                                  index={i}
+                                  onUpdateField={updateExerciseField}
+                                  onUpdatePlan={updateSeriesPlan}
+                                  onRemove={removeExercise}
+                                  onLinkSuperset={startSupersetLink}
+                                  onBreakSuperset={breakSuperset}
+                                  isInSuperset
+                                  onViewExerciseInfo={handleViewExerciseInfo}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
 
-                          const { exercise: ej, originalIndex: i } = group.items[0];
-                          return (
-                            <SortableExerciseRow
-                              key={i}
-                              sortId={i}
-                              exercise={ej}
-                              index={i}
-                              onUpdateField={updateExerciseField}
-                              onUpdatePlan={updateSeriesPlan}
-                              onRemove={removeExercise}
-                              onLinkSuperset={startSupersetLink}
-                              onBreakSuperset={breakSuperset}
-                              isInSuperset={false}
-                              onViewExerciseInfo={handleViewExerciseInfo}
-                            />
-                          );
-                        })}
-                      </div>
-                    </SortableContext>
-
-                    <SortableDragOverlay>
-                      {draggingExercise ? (
-                        <ExerciseRow
-                          exercise={draggingExercise}
-                          index={draggingIndex ?? 0}
-                          onUpdateField={noop}
-                          onUpdatePlan={noop}
-                          onRemove={noop}
-                          onLinkSuperset={noop}
-                          onBreakSuperset={noop}
-                          isInSuperset={!!draggingExercise.superset_id}
-                          onViewExerciseInfo={noop}
+                      const { exercise: ej, originalIndex: i } = group.items[0];
+                      return (
+                        <SortableExerciseRow
+                          key={sortIds[i]}
+                          sortId={sortIds[i]}
+                          exercise={ej}
+                          index={i}
+                          onUpdateField={updateExerciseField}
+                          onUpdatePlan={updateSeriesPlan}
+                          onRemove={removeExercise}
+                          onLinkSuperset={startSupersetLink}
+                          onBreakSuperset={breakSuperset}
+                          isInSuperset={false}
+                          onViewExerciseInfo={handleViewExerciseInfo}
                         />
-                      ) : null}
-                    </SortableDragOverlay>
-                  </DndContext>
+                      );
+                    })}
+                  </SortableList>
 
                   <div className="px-6 py-4">
                     <ExerciseSelector
@@ -687,9 +669,22 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
   );
 }
 
+/**
+ * Cabecera de superserie. No se arrastra, pero acompaña a la primera fila de su
+ * grupo: si se quedara fija, el bloque se partiría al reordenar.
+ */
+function SupersetHeader({ anchorId }: { anchorId: string }) {
+  const ref = useSortableAnchor(anchorId);
+  return (
+    <div ref={ref} className="bg-primary/5 px-6 pt-2 pb-1">
+      <span className="text-xs font-medium text-primary">🔗 Superserie</span>
+    </div>
+  );
+}
+
 /** Sortable wrapper for ExerciseRow */
 function SortableExerciseRow({ sortId, ...props }: {
-  sortId: number;
+  sortId: string;
   exercise: RoutineExerciseFormData;
   index: number;
   onUpdateField: <K extends keyof RoutineExerciseFormData>(
@@ -704,22 +699,20 @@ function SortableExerciseRow({ sortId, ...props }: {
   isInSuperset: boolean;
   onViewExerciseInfo: (ej: RoutineExerciseFormData) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging, isSorting } = useSortable({ id: sortId });
-  const shouldAnimate = isSorting && !isDragging;
-  const style: React.CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    transition: shouldAnimate ? 'transform 200ms cubic-bezier(0.2, 0, 0, 1)' : 'none',
-  };
+  const { setNodeRef, handleProps, isDragging, isKeyboardDragging } = useSortableItem(sortId);
   return (
+    // Mientras la fila está en el aire la pinta el overlay de la lista; esta se
+    // queda invisible pero ocupando su sitio, para que nada se recoloque.
+    // Con teclado no hay overlay: la propia fila se levanta y se mueve.
     <div
       ref={setNodeRef}
-      style={style}
-      // La tarjeta visible durante el arrastre la pinta el DragOverlay; esta
-      // fila se queda como hueco atenuado en su sitio.
-      className={cn(isDragging && 'opacity-30')}
-      {...attributes}
+      className={cn(
+        isDragging && 'pointer-events-none opacity-0',
+        isKeyboardDragging && 'relative z-10 rounded-xl shadow-lg ring-1 ring-primary/40',
+      )}
+      inert={isDragging || undefined}
     >
-      <ExerciseRow {...props} dragHandleProps={listeners} />
+      <ExerciseRow {...props} dragHandleProps={handleProps} />
     </div>
   );
 }
@@ -749,7 +742,7 @@ function ExerciseRow({
   onLinkSuperset: (index: number) => void;
   onBreakSuperset: (index: number) => void;
   isInSuperset: boolean;
-  dragHandleProps?: DraggableSyntheticListeners;
+  dragHandleProps?: SortableHandleProps;
   onViewExerciseInfo: (ej: RoutineExerciseFormData) => void;
 }) {
   const [confirmDeleteExercise, setConfirmDeleteExercise] = useState(false);
@@ -765,14 +758,18 @@ function ExerciseRow({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap min-w-0">
           <div
-            {...vaulSafeDragHandleProps(dragHandleProps)}
-            aria-label={dragHandleProps ? "Reordenar ejercicio" : undefined}
+            {...(dragHandleProps ?? {})}
             className={cn(
-              "-ml-2 flex h-11 w-11 shrink-0 items-center justify-center",
-              dragHandleProps && "cursor-grab touch-none active:cursor-grabbing",
+              "-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg",
+              "text-muted-foreground transition-colors duration-150",
+              dragHandleProps &&
+                "cursor-grab outline-none active:cursor-grabbing hover:text-foreground" +
+                  " focus-visible:ring-2 focus-visible:ring-ring" +
+                  " active:bg-muted/60 active:text-foreground" +
+                  " aria-pressed:bg-primary/10 aria-pressed:text-primary",
             )}
           >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
+            <GripVertical className="h-4 w-4" />
           </div>
           <h3 className="font-semibold text-sm truncate">{ej.nombre}</h3>
           {(ej.tipo_ejercicio_id || ej.usuario_ejercicio_id) && (
