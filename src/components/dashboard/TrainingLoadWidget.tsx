@@ -44,13 +44,18 @@ function saveCachedTrainingLoadData(payload: TrainingLoadData): void {
 function GaugeSkeleton() {
   return (
     <Card className={PAGE_CARD}>
-      <div className="space-y-2 px-3 pb-4 pt-5">
-        <Skeleton className="mx-auto h-4 w-24" />
-        <Skeleton
-          className="mx-auto w-full max-w-[200px] rounded-full"
-          style={{ aspectRatio: ZONE_GAUGE_ASPECT_RATIO }}
-        />
-        <Skeleton className="mx-auto h-4 w-32" />
+      <div className="space-y-2 pb-4 pt-5">
+        <div className="flex items-center justify-between gap-1 px-5">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-4 shrink-0 rounded-sm" />
+        </div>
+        <div className="px-3">
+          <Skeleton
+            className="mx-auto w-full max-w-[200px] rounded-full"
+            style={{ aspectRatio: ZONE_GAUGE_ASPECT_RATIO }}
+          />
+          <Skeleton className="mx-auto mt-2 h-4 w-32" />
+        </div>
       </div>
     </Card>
   );
@@ -130,22 +135,24 @@ export function TrainingLoadWidget({ interactive = true }: { interactive?: boole
           <GaugeSkeleton />
         ) : (
           <GaugeCard
+            title="Tu forma hoy"
             onOpen={() => openDetail("form")}
             ariaLabel="Ver el detalle de tu forma"
             interactive={interactive}
           >
-            <FormHero form={totals.form} />
+            <FormHero form={totals.form} showTitle={false} />
           </GaugeCard>
         )}
         {showRecoverySkeleton ? (
           <GaugeSkeleton />
         ) : (
           <GaugeCard
+            title="Tu recuperación"
             onOpen={() => openDetail("recovery")}
             ariaLabel="Ver el detalle de tu fatiga muscular"
             interactive={interactive}
           >
-            <RecoveryHero snapshot={recovery} />
+            <RecoveryHero snapshot={recovery} showTitle={false} />
           </GaugeCard>
         )}
       </div>

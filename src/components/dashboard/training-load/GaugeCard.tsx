@@ -6,16 +6,18 @@ import { cn } from "@/lib/utils";
 /**
  * Card compacta del dashboard: solo el anillo y su leyenda.
  * Todo el bloque es el área táctil que abre el detalle a pantalla completa.
- * Padding `px-3` (y no `px-5`) para que el anillo conserve el tamaño que tenía
- * cuando ambos compartían una sola card en un `grid-cols-2`.
+ * El título sigue el `px-5` del resto de cabeceras; el anillo usa `px-3` para
+ * conservar el tamaño que tenía cuando ambos compartían una sola card.
  */
 export function GaugeCard({
+  title,
   onOpen,
   ariaLabel,
   interactive = true,
   className,
   children,
 }: {
+  title: string;
   onOpen: () => void;
   ariaLabel: string;
   /** En modo ordenar del dashboard la card no debe abrir nada, ni por teclado. */
@@ -31,13 +33,16 @@ export function GaugeCard({
         disabled={!interactive}
         tabIndex={interactive ? undefined : -1}
         aria-label={ariaLabel}
-        className="touch-styled relative block w-full px-3 pb-4 pt-5 text-left"
+        className="touch-styled block w-full pb-4 pt-5 text-left"
       >
-        <ChevronRight
-          aria-hidden
-          className="absolute right-2 top-3 h-4 w-4 text-muted-foreground/60"
-        />
-        {children}
+        <div className="flex items-center justify-between gap-1 px-5">
+          <p className="min-w-0 truncate text-[15px] text-muted-foreground">{title}</p>
+          <ChevronRight
+            aria-hidden
+            className="h-4 w-4 shrink-0 text-muted-foreground/60"
+          />
+        </div>
+        <div className="px-3">{children}</div>
       </button>
     </Card>
   );

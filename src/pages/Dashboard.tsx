@@ -74,7 +74,23 @@ import { AnimatePresence, motion } from "framer-motion";
 // 'heatmap' se retiró: su mapa corporal vive ahora en el detalle de fatiga muscular.
 // El filtro de `widgetOrder` descarta los ids desconocidos, así que los órdenes
 // ya guardados se migran solos sin perder la posición del resto.
-const DEFAULT_WIDGET_ORDER = ['calendar', 'gamification', 'progress', 'training-load'];
+const DEFAULT_WIDGET_ORDER = ['calendar', 'training-load', 'gamification', 'progress'];
+
+/** Si el usuario no reordenó a mano, sustituimos el default anterior. */
+const LEGACY_DEFAULT_WIDGET_ORDER = ['calendar', 'gamification', 'progress', 'training-load'];
+
+function resolveWidgetOrder(saved: unknown): string[] {
+  if (!Array.isArray(saved)) return DEFAULT_WIDGET_ORDER;
+  const validItems = saved.filter(
+    (w): w is string => typeof w === "string" && DEFAULT_WIDGET_ORDER.includes(w),
+  );
+  const missing = DEFAULT_WIDGET_ORDER.filter((w) => !validItems.includes(w));
+  const merged = [...validItems, ...missing];
+  if (merged.every((id, i) => id === LEGACY_DEFAULT_WIDGET_ORDER[i])) {
+    return DEFAULT_WIDGET_ORDER;
+  }
+  return merged;
+}
 
 const CALENDAR_VIEW_STORAGE_KEY = "gym-log.dashboard.calendar-view";
 
@@ -224,10 +240,7 @@ const Dashboard = () => {
     const saved = localStorage.getItem('dashboard-widget-order');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        const validItems = parsed.filter((w: string) => DEFAULT_WIDGET_ORDER.includes(w));
-        const missing = DEFAULT_WIDGET_ORDER.filter(w => !validItems.includes(w));
-        return [...validItems, ...missing];
+        return resolveWidgetOrder(JSON.parse(saved));
       } catch {
         // Ignorar JSON inválido en localStorage
       }
