@@ -424,7 +424,7 @@ export function ExerciseProgressWidget({ flushHeader = false }: { flushHeader?: 
             <SelectTrigger
               className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "h-10 w-full max-w-full justify-between gap-2 overflow-hidden text-left [&>span]:min-w-0 [&>span]:flex-1 [&>span]:truncate",
+                "h-10 w-full max-w-full justify-between gap-2 overflow-hidden rounded-full text-left [&>span]:min-w-0 [&>span]:flex-1 [&>span]:truncate",
               )}
             >
               <SelectValue placeholder="Ejercicio" />

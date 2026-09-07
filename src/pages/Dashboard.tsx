@@ -399,7 +399,7 @@ const Dashboard = () => {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="bg-background hover:bg-background"
+                  className="rounded-full bg-background hover:bg-background"
                   disabled={!plannedKnown}
                   onClick={() => {
                     if (!plannedKnown) return;
