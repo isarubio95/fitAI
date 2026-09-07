@@ -32,6 +32,8 @@ import { useImportGoogleAvatar } from "@/hooks/useImportGoogleAvatar";
 import { useHideSplashWhenReady } from "@/hooks/useHideSplashWhenReady";
 import { HeaderSectionTabs } from "./HeaderSectionTabs";
 import { RouteFallback } from "./RouteFallback";
+import { YouProgressSkeleton } from "./YouProgressSkeleton";
+import { LibraryExercisesSkeleton } from "./LibraryExercisesSkeleton";
 import { DeferredGlobalDrawers } from "./DeferredGlobalDrawers";
 import { NativeShortcutHandler } from "./NativeShortcutHandler";
 
@@ -320,7 +322,18 @@ export function AppLayout() {
               el fallback también tapa header y bottom nav y la pantalla parpadea
               entera al cambiar de sección.
             */}
-            <Suspense fallback={<RouteFallback />}>
+            <Suspense
+              fallback={
+                location.pathname === "/evolution" &&
+                normalizeYouTab(currentTab) === "progress" ? (
+                  <YouProgressSkeleton />
+                ) : location.pathname === "/routines" && currentTab === "ejercicios" ? (
+                  <LibraryExercisesSkeleton />
+                ) : (
+                  <RouteFallback />
+                )
+              }
+            >
               <Outlet />
             </Suspense>
           </main>

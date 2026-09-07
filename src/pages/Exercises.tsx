@@ -5,11 +5,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { filterButtonActive } from "@/lib/filter-pill-styles";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
+import { PAGE_STACK_INSET, LIBRARY_EXERCISES_LIST, LIBRARY_EXERCISES_PAGE } from "@/lib/pageStyles";
+import { ExerciseRowSkeleton } from "@/components/layout/LibraryExercisesSkeleton";
 import { EQUIPOS, parseEquipoList } from "@/constants/exerciseEquipment";
 import { difficultyToLevel } from "@/lib/exerciseDifficulty";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMediaUrl";
@@ -464,13 +464,7 @@ const Exercises = () => {
   };
 
   return (
-    <div
-      className={cn(
-        "flex w-full min-w-0 max-w-2xl flex-col overflow-x-clip bg-background px-0 pb-6 mx-auto md:px-8 md:pt-6",
-        PAGE_CARD_STACK_GAP,
-        "max-md:-mb-24 max-md:pb-[calc(var(--app-bottom-nav-inset,5.5rem)+3.5rem)] md:pb-20",
-      )}
-    >
+    <div className={LIBRARY_EXERCISES_PAGE}>
       {user ? (
         <Button
           type="button"
@@ -889,20 +883,9 @@ const Exercises = () => {
         </Card>
       )}
 
-      <div className={cn("flex w-full flex-col gap-2.5 bg-background pt-1 md:gap-2.75", PAGE_STACK_INSET)}>
+      <div className={cn(LIBRARY_EXERCISES_LIST, PAGE_STACK_INSET)}>
         {catalogLoading || difficultyLoading
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex w-full overflow-hidden rounded-xl border border-border/40 bg-card"
-              >
-                <Skeleton className="h-21 w-20 shrink-0 rounded-none" />
-                <div className="min-w-0 flex-1 space-y-2 p-3">
-                  <Skeleton className="h-10 w-4/5" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              </div>
-            ))
+          ? Array.from({ length: 8 }).map((_, i) => <ExerciseRowSkeleton key={i} />)
           : visibleExercises.map((ex) => {
               const isOwn = ex.usuario_id === user?.id;
               const IconComponent = getExerciseIcon(ex as { musculos_involucrados?: string[] | null });

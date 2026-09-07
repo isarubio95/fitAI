@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
 import { useCardioHistory } from "@/hooks/useCardioSessions";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -36,7 +35,16 @@ import {
   CHART_SCRUB_CURSOR,
   CHART_SCRUB_TOOLTIP_WRAPPER,
 } from "@/components/dashboard/chartScrub";
-import { PAGE_CARD, PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, PROGRESS_CARD_HEADER } from "@/lib/pageStyles";
+import {
+  PAGE_CARD,
+  PAGE_CARD_STACK_GAP,
+  PAGE_STACK_INSET,
+  PROGRESS_CARD_HEADER,
+  PROGRESS_CHART_HEIGHT,
+  YOU_PROGRESS_PAGE,
+  YOU_PROGRESS_STACK,
+} from "@/lib/pageStyles";
+import { YouProgressAboveFoldSkeleton } from "@/components/layout/YouProgressSkeleton";
 import { useMountAfterPaint } from "@/hooks/useMountAfterPaint";
 import { cn } from "@/lib/utils";
 import {
@@ -56,7 +64,6 @@ const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
   { key: "6m", label: "6 meses" },
 ];
 
-const CHART_HEIGHT = 190;
 const Y_TICK_COUNT = 5;
 /** Una etiqueta más que el 1RM del dashboard (6). */
 const X_MAX_LABELS = 7;
@@ -304,7 +311,7 @@ function ProgressAreaChart({
   const yAxisWidth = yAxisWidthForTicks(dataKey, yScale.ticks);
 
   return (
-    <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+    <ResponsiveContainer width="100%" height={PROGRESS_CHART_HEIGHT}>
       <AreaChart data={data} margin={{ top: 12, right: chartYAxis.marginRight, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -536,8 +543,12 @@ const WorkoutHistory = () => {
   const hasAnySession = (workouts?.length ?? 0) > 0 || (cardio?.length ?? 0) > 0;
 
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8">
-      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, "pt-3 md:pt-3.5")}>
+    <div className={YOU_PROGRESS_PAGE}>
+      <div className={YOU_PROGRESS_STACK} aria-busy={isLoading}>
+      {isLoading ? (
+        <YouProgressAboveFoldSkeleton />
+      ) : (
+      <>
       <div className={cn("flex w-full flex-col gap-3 md:gap-3.5")}>
         <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodKey)} className="w-full">
           <AnimatedTabsList value={period} className={cn(pillTabsListClass, "w-full")}>
@@ -562,22 +573,16 @@ const WorkoutHistory = () => {
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary/12 ring-1 ring-inset ring-primary/15">
                       <Icon className="size-4 text-primary" />
                     </div>
-                    {isLoading ? (
-                      <Skeleton className="h-6 w-16" />
-                    ) : (
-                      <p className="text-xl font-bold leading-none">{kpi.value}</p>
-                    )}
+                    <p className="text-xl font-bold leading-none">{kpi.value}</p>
                   </div>
                   <p className="text-xs font-semibold">{kpi.label}</p>
                   <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                    {isLoading ? (
-                      <Skeleton className="h-2.5 w-20" />
-                    ) : kpi.sub ? (
+                    {kpi.sub ? (
                       <p className="text-xs text-muted-foreground">{kpi.sub}</p>
                     ) : (
                       <span />
                     )}
-                    {isLoading ? <Skeleton className="h-5 w-12 rounded-full" /> : <ChangeBadge pct={kpi.pct} />}
+                    <ChangeBadge pct={kpi.pct} />
                   </div>
                 </CardContent>
               </Card>
@@ -586,7 +591,7 @@ const WorkoutHistory = () => {
         </div>
       </div>
 
-      {!isLoading && !hasAnySession && (
+      {!hasAnySession && (
         <Card className={cardClass}>
           <CardContent className="px-5 py-10 text-center">
             <p className="text-sm text-muted-foreground">
@@ -603,43 +608,27 @@ const WorkoutHistory = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="px-5 pt-0">
-          {isLoading ? (
-            <div className="space-y-3 py-2" aria-busy="true" aria-label="Cargando gráfico">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-24" />
-                <div className="flex gap-7">
-                  <Skeleton className="h-6 w-20" />
-                  <Skeleton className="h-6 w-14" />
-                  <Skeleton className="h-6 w-16" />
-                </div>
-              </div>
-              <Skeleton className="h-44 w-full rounded-none md:rounded-lg" />
-            </div>
-          ) : (
-            <>
-              {consistencyPoint && (
-                <ChartScrubSummary date={consistencyPoint.date}>
-                  <ChartScrubStat
-                    label="Sesiones"
-                    value={`${consistencyPoint.workouts}`}
-                    color="hsl(var(--primary))"
-                  />
-                  <ChartScrubStat label="Gym" value={`${consistencyPoint.gym}`} />
-                  <ChartScrubStat label="Cardio" value={`${consistencyPoint.cardio}`} />
-                </ChartScrubSummary>
-              )}
-              <ProgressAreaChart
-                data={chartData}
-                dataKey="workouts"
-                yScale={consistencyYScale}
-                xTicks={xTicks}
-                lastIndex={lastIndex}
-                displayPoint={consistencyPoint}
-                onPoint={handleConsistencyScrub}
-                gradientId="weeklyConsistencyGradient"
+          {consistencyPoint && (
+            <ChartScrubSummary date={consistencyPoint.date}>
+              <ChartScrubStat
+                label="Sesiones"
+                value={`${consistencyPoint.workouts}`}
+                color="hsl(var(--primary))"
               />
-            </>
+              <ChartScrubStat label="Gym" value={`${consistencyPoint.gym}`} />
+              <ChartScrubStat label="Cardio" value={`${consistencyPoint.cardio}`} />
+            </ChartScrubSummary>
           )}
+          <ProgressAreaChart
+            data={chartData}
+            dataKey="workouts"
+            yScale={consistencyYScale}
+            xTicks={xTicks}
+            lastIndex={lastIndex}
+            displayPoint={consistencyPoint}
+            onPoint={handleConsistencyScrub}
+            gradientId="weeklyConsistencyGradient"
+          />
         </CardContent>
       </Card>
 
@@ -650,39 +639,29 @@ const WorkoutHistory = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="px-5 pt-0">
-          {isLoading ? (
-            <div className="space-y-3 py-2" aria-busy="true" aria-label="Cargando gráfico">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-6 w-28" />
-              </div>
-              <Skeleton className="h-44 w-full rounded-none md:rounded-lg" />
-            </div>
-          ) : (
-            <>
-              {volumePoint && (
-                <ChartScrubSummary date={volumePoint.date}>
-                  <ChartScrubStat
-                    label="Volumen"
-                    value={formatVolume(volumePoint.volume)}
-                    color="hsl(var(--primary))"
-                  />
-                </ChartScrubSummary>
-              )}
-              <ProgressAreaChart
-                data={chartData}
-                dataKey="volume"
-                yScale={volumeYScale}
-                xTicks={xTicks}
-                lastIndex={lastIndex}
-                displayPoint={volumePoint}
-                onPoint={handleVolumeScrub}
-                gradientId="volumeGradient"
+          {volumePoint && (
+            <ChartScrubSummary date={volumePoint.date}>
+              <ChartScrubStat
+                label="Volumen"
+                value={formatVolume(volumePoint.volume)}
+                color="hsl(var(--primary))"
               />
-            </>
+            </ChartScrubSummary>
           )}
+          <ProgressAreaChart
+            data={chartData}
+            dataKey="volume"
+            yScale={volumeYScale}
+            xTicks={xTicks}
+            lastIndex={lastIndex}
+            displayPoint={volumePoint}
+            onPoint={handleVolumeScrub}
+            gradientId="volumeGradient"
+          />
         </CardContent>
       </Card>
+      </>
+      )}
 
       {/*
         * Estos tres widgets son la parte más cara de Progreso (cada uno con su

@@ -27,6 +27,32 @@ export const PAGE_CARD = "w-full overflow-hidden rounded-2xl md:rounded-3xl";
 export const PROGRESS_CARD_HEADER = "px-5 pb-4";
 export const PROGRESS_CARD_HEADER_SKELETON = "px-5 pb-2";
 
+/** Altura del AreaChart de Constancia / Volumen. El skeleton debe usar la misma. */
+export const PROGRESS_CHART_HEIGHT = 190;
+
+/** Página de Progreso (Tú): marco exterior compartido con el skeleton. */
+export const YOU_PROGRESS_PAGE =
+  "flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8";
+
+/** Stack de cards de Progreso: mismos gaps, inset y padding superior que el contenido. */
+export const YOU_PROGRESS_STACK = [
+  "flex w-full flex-col bg-background md:bg-transparent",
+  PAGE_CARD_STACK_GAP,
+  PAGE_STACK_INSET,
+  "pt-3 md:pt-3.5",
+].join(" ");
+
+/** Página de Ejercicios (Biblioteca): mismo marco que el catálogo cargado. */
+export const LIBRARY_EXERCISES_PAGE = [
+  "flex w-full min-w-0 max-w-2xl flex-col overflow-x-clip bg-background px-0 pb-6 mx-auto md:px-8 md:pt-6",
+  PAGE_CARD_STACK_GAP,
+  "max-md:-mb-24 max-md:pb-[calc(var(--app-bottom-nav-inset,5.5rem)+3.5rem)] md:pb-20",
+].join(" ");
+
+/** Lista de filas de ejercicio: mismo gap que el catálogo cargado. */
+export const LIBRARY_EXERCISES_LIST =
+  "flex w-full flex-col gap-2.5 bg-background pt-1 md:gap-2.75";
+
 /** Fila de pills de sección encima del contenido (solo escritorio). */
 export const SECTION_PILLS_ROW =
   "hidden md:flex md:max-w-2xl md:mx-auto md:w-full md:items-center md:justify-between md:gap-3 md:px-8";
