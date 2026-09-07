@@ -46,7 +46,7 @@ function GaugeSkeleton() {
     <Card className={PAGE_CARD}>
       <div className="space-y-2 pb-4 pt-5">
         <div className="flex items-center justify-between gap-1 px-5">
-          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-5 w-28" />
           <Skeleton className="h-4 w-4 shrink-0 rounded-sm" />
         </div>
         <div className="px-3">

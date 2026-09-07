@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card, CardTitle } from "@/components/ui/card";
 import { PAGE_CARD } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 
@@ -36,11 +36,10 @@ export function GaugeCard({
         className="touch-styled block w-full pb-4 pt-5 text-left"
       >
         <div className="flex items-center justify-between gap-1 px-5">
-          <p className="min-w-0 truncate text-[15px] text-muted-foreground">{title}</p>
-          <ChevronRight
-            aria-hidden
-            className="h-4 w-4 shrink-0 text-muted-foreground/60"
-          />
+          <CardTitle asChild className="min-w-0 truncate text-base font-bold">
+            <h2>{title}</h2>
+          </CardTitle>
+          <ChevronRight aria-hidden className="h-4 w-4 shrink-0" />
         </div>
         <div className="px-3">{children}</div>
       </button>
