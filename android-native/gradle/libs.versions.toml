@@ -1,0 +1,171 @@
+#
+# Version catalog único de android-native.
+#
+# Las versiones de build (AGP, Kotlin, SDK) se mantienen alineadas con
+# `android/variables.gradle` del proyecto Capacitor a propósito: mientras las dos
+# apps convivan, compartir toolchain evita descubrir incompatibilidades nuevas
+# que no tienen nada que ver con el port.
+#
+[versions]
+# --- Build toolchain ---
+agp = "9.2.1"
+kotlin = "2.4.10"
+ksp = "2.4.10-2.0.4"
+jvmTarget = "21"
+
+# --- SDK ---
+minSdk = "26"
+compileSdk = "36"
+targetSdk = "36"
+
+# --- AndroidX base ---
+androidxCore = "1.17.0"
+androidxActivity = "1.11.0"
+androidxLifecycle = "2.9.4"
+androidxSplashScreen = "1.2.0"
+androidxBrowser = "1.9.0"
+androidxSecurityCrypto = "1.1.0"
+
+# --- Compose ---
+composeBom = "2025.09.00"
+navigationCompose = "2.9.6"
+
+# --- DI ---
+hilt = "2.57.2"
+hiltNavigationCompose = "1.3.0"
+
+# --- Datos ---
+room = "2.8.2"
+datastore = "1.1.7"
+paging = "3.3.6"
+work = "2.10.5"
+
+# --- Red / serialización ---
+supabase = "3.2.4"
+ktor = "3.3.1"
+kotlinxSerialization = "1.9.0"
+kotlinxDatetime = "0.6.2"
+kotlinxCoroutines = "1.10.2"
+
+# --- Media / mapas / charts ---
+coil = "3.3.0"
+maplibre = "11.13.0"
+vico = "2.2.1"
+
+# --- Sensores ---
+playServicesLocation = "21.3.0"
+healthConnect = "1.1.0-rc02"
+nordicBle = "1.2.0"
+
+# --- Test ---
+junit4 = "4.13.2"
+junitJupiter = "5.11.4"
+turbine = "1.2.1"
+mockk = "1.14.2"
+androidxTestJunit = "1.3.0"
+androidxTestRunner = "1.7.0"
+espresso = "3.7.0"
+robolectric = "4.14.1"
+roborazzi = "1.46.1"
+
+[libraries]
+# --- AndroidX base ---
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
+androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "androidxLifecycle" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidxLifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidxLifecycle" }
+androidx-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidxSplashScreen" }
+androidx-browser = { module = "androidx.browser:browser", version.ref = "androidxBrowser" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "androidxSecurityCrypto" }
+
+# --- Compose (versiones vía BOM) ---
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+compose-foundation = { module = "androidx.compose.foundation:foundation" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+
+# --- DI ---
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
+hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+hilt-work = { module = "androidx.hilt:hilt-work", version = "1.3.0" }
+
+# --- Datos ---
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging" }
+paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
+work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+
+# --- Supabase (versiones vía BOM) ---
+supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
+supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
+supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt" }
+supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt" }
+supabase-functions = { module = "io.github.jan-tennert.supabase:functions-kt" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+
+# --- Kotlin stdlib extras ---
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+
+# --- Media / mapas / charts ---
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+# El catálogo de ejercicios sirve GIF (`tipo_ejercicio.gif_url`): sin esto se ven estáticos.
+coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
+maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
+vico-compose-m3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "vico" }
+
+# --- Sensores ---
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+health-connect-client = { module = "androidx.health.connect:connect-client", version.ref = "healthConnect" }
+nordic-ble-client = { module = "no.nordicsemi.android.kotlin.ble:client", version.ref = "nordicBle" }
+
+# --- Test ---
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version = "1.11.4" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+androidx-test-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestJunit" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
+roborazzi-junit-rule = { module = "io.github.takahirom.roborazzi:roborazzi-junit-rule", version.ref = "roborazzi" }
+
+# --- Referencias para los convention plugins (dependencias de build-logic) ---
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+compose-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+ksp-gradlePlugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+room = { id = "androidx.room", version.ref = "room" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
