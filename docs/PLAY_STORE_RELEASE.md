@@ -76,10 +76,21 @@ Despues, abre una terminal nueva y vuelve a ejecutar el comando.
 
 ## 7) Health Connect (FC post-entreno)
 
-La app lee **frecuencia cardiaca** desde Health Connect al guardar cardio live si no hubo sensor BLE.
+La app lee **solo frecuencia cardiaca** desde Health Connect al guardar cardio live si no hubo sensor BLE.
+
+El plugin `@capgo/capacitor-health` declara en su manifest todos los tipos que soporta. El
+`AndroidManifest.xml` de la app los anula con `tools:node="remove"` y deja unicamente
+`android.permission.health.READ_HEART_RATE`. No tocar `node_modules` (se pisa en cada `npm install`).
+
+Tras un build **release**, comprueba que el merge no reintrodujo permisos extra:
+
+- Manifest fusionado, p. ej. `android/app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml`
+- O `aapt dump permissions` sobre el `.aab`
+
+El unico permiso `android.permission.health.*` debe ser `READ_HEART_RATE`.
 
 En Play Console:
 
-1. Declara el permiso / uso de datos de salud (Heart rate) en Data safety y, si aplica, en la seccion de Health Connect.
+1. Declara el permiso / uso de datos de salud **solo Heart rate (read)** en Data safety y, si aplica, en la seccion de Health Connect. No listes pasos, glucosa, sueno, VO2, nutricion ni el resto de tipos del plugin.
 2. Usa la URL de politica de privacidad de la ficha (la app tambien incluye `public/privacypolicy.html` para el dialogo nativo de Health Connect).
 3. En pruebas: conceder permiso en Ajustes de la app → «Conectar Health Connect»; el reloj debe sincronizar FC con Health Connect antes o justo despues del entreno.

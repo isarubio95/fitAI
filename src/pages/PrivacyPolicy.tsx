@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 
-const LAST_UPDATED = "18 de agosto de 2026";
+const LAST_UPDATED = "8 de septiembre de 2026";
 
 export default function PrivacyPolicy() {
   const { user } = useAuth();
@@ -64,7 +64,10 @@ export default function PrivacyPolicy() {
                   <strong className="text-foreground">Datos de cardio y ubicación:</strong> si utilizas
                   funciones de cardio en vivo, podemos registrar rutas GPS, distancia, ritmo y duración de la
                   sesión. Si conectas un sensor de frecuencia cardíaca por Bluetooth, podemos registrar tu FC
-                  durante el entrenamiento y asociarla a esa sesión. Al buscar gimnasios cercanos usamos tu
+                  durante el entrenamiento y asociarla a esa sesión. En Android, si lo autorizas, también
+                  podemos leer solo frecuencia cardíaca desde Health Connect para asociarla a un entreno
+                  cuando no hubo sensor Bluetooth; no leemos ni escribimos otros tipos de Health Connect
+                  (pasos, glucosa, sueño, nutrición, etc.). Al buscar gimnasios cercanos usamos tu
                   ubicación puntual; no se guarda un track GPS de esa búsqueda.
                 </li>
                 <li>
