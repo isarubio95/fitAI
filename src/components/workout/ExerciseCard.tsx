@@ -342,36 +342,6 @@ export function ExerciseCard({
               <GripVertical className="h-4 w-4" />
             </div>
             <h3 className="truncate text-sm font-semibold">{exercise.nombre}</h3>
-            {onViewExerciseDetails && (
-              <button
-                type="button"
-                title="Ver cómo se hace este ejercicio"
-                onClick={() => onViewExerciseDetails(exercise)}
-                className={cn(
-                  badgeVariants({ variant: "outline" }),
-                  "touch-styled h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
-                  "transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent",
-                  "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100",
-                )}
-              >
-                <Info className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {onViewExercisePerformance && (
-              <button
-                type="button"
-                title="Ver tu rendimiento en este ejercicio"
-                onClick={() => onViewExercisePerformance(exercise)}
-                className={cn(
-                  badgeVariants({ variant: "outline" }),
-                  "touch-styled h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
-                  "transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent",
-                  "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100",
-                )}
-              >
-                <ChartBar className="h-3.5 w-3.5" />
-              </button>
-            )}
           </div>
           <div className="flex flex-wrap items-center gap-1">
             {exercise.targetRir != null && (
@@ -379,10 +349,42 @@ export function ExerciseCard({
                 🎯 RIR: {exercise.targetRir}
               </Badge>
             )}
-            <Badge variant="outline" className={cn("text-xs", headerMetaBadgeClass)}>
-              <Timer className="h-3 w-3" />
-              {formatMSS(restSeconds)}
-            </Badge>
+            <div className="flex items-center gap-1">
+              <Badge variant="outline" className={cn("text-xs", headerMetaBadgeClass)}>
+                <Timer className="h-3 w-3" />
+                {formatMSS(restSeconds)}
+              </Badge>
+              {onViewExerciseDetails && (
+                <button
+                  type="button"
+                  title="Ver cómo se hace este ejercicio"
+                  onClick={() => onViewExerciseDetails(exercise)}
+                  className={cn(
+                    badgeVariants({ variant: "outline" }),
+                    "touch-styled h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
+                    "transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent",
+                    "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100",
+                  )}
+                >
+                  <Info className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {onViewExercisePerformance && (
+                <button
+                  type="button"
+                  title="Ver tu rendimiento en este ejercicio"
+                  onClick={() => onViewExercisePerformance(exercise)}
+                  className={cn(
+                    badgeVariants({ variant: "outline" }),
+                    "touch-styled h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
+                    "transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent",
+                    "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100",
+                  )}
+                >
+                  <ChartBar className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
             {lastSessionLabel ? (
               <span className="text-xs text-muted-foreground">{lastSessionLabel}</span>
             ) : null}

@@ -408,4 +408,36 @@ describe("ExerciseCard", () => {
     expect(handle).toHaveAttribute("data-vaul-no-drag");
     expect(handle).toHaveStyle({ touchAction: "none" });
   });
+
+  it("agrupa info y rendimiento a la derecha del badge de descanso", () => {
+    render(
+      <ExerciseCard
+        exercise={{
+          nombre: "Press banca",
+          registro_series: "peso_reps",
+          sets: [emptySet()],
+          descanso: 90,
+        }}
+        exerciseIndex={0}
+        onRemoveExercise={() => undefined}
+        onAddSet={() => undefined}
+        onRemoveSet={() => undefined}
+        onUpdateSet={() => undefined}
+        onViewExerciseDetails={() => undefined}
+        onViewExercisePerformance={() => undefined}
+      />,
+    );
+
+    const restBadge = screen.getByText("1:30");
+    const info = screen.getByTitle("Ver cómo se hace este ejercicio");
+    const performance = screen.getByTitle("Ver tu rendimiento en este ejercicio");
+    const group = restBadge.parentElement;
+
+    expect(group).toContainElement(info);
+    expect(group).toContainElement(performance);
+    expect(screen.getByRole("heading", { name: "Press banca" }).parentElement).not.toContainElement(info);
+    const order = [...(group?.children ?? [])];
+    expect(order.indexOf(restBadge)).toBeLessThan(order.indexOf(info));
+    expect(order.indexOf(info)).toBeLessThan(order.indexOf(performance));
+  });
 });
