@@ -19,6 +19,7 @@ import {
 } from "@/lib/mapBasemap";
 import { MAP_COLORS } from "@/lib/stravaDarkMapStyle";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
+import type { GymMapViewport } from "@/lib/gimnasioSearch";
 import type { GimnasioCatalogItem } from "@/types/gimnasio";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,8 @@ type Props = {
   onSelect: (gym: GimnasioCatalogItem) => void;
   /** Se dispara cuando se pulsa en el mapa pero no se toca ningún pin/cluster de gimnasio. */
   onDeselect?: () => void;
+  /** Viewport visible: el padre carga solo los gimnasios de esa caja. */
+  onBoundsChange?: (viewport: GymMapViewport) => void;
   className?: string;
   /** Si true, pide GPS al cargar y centra el mapa. */
   locateOnLoad?: boolean;
@@ -165,6 +168,7 @@ export function GymDirectoryMap({
   selectedId,
   onSelect,
   onDeselect,
+  onBoundsChange,
   className,
   locateOnLoad = true,
 }: Props) {
@@ -176,6 +180,8 @@ export function GymDirectoryMap({
   onSelectRef.current = onSelect;
   const onDeselectRef = useRef(onDeselect);
   onDeselectRef.current = onDeselect;
+  const onBoundsChangeRef = useRef(onBoundsChange);
+  onBoundsChangeRef.current = onBoundsChange;
   const basemapRef = useRef<MapBasemapId>(readCardioMapBasemap());
   const [basemap, setBasemap] = useState<MapBasemapId>(() => basemapRef.current);
   const [ready, setReady] = useState(false);
@@ -224,6 +230,22 @@ export function GymDirectoryMap({
 
       map.on("load", paintGyms);
       map.on("style.load", paintGyms);
+
+      const emitBounds = () => {
+        if (!map) return;
+        const bounds = map.getBounds();
+        const center = map.getCenter();
+        onBoundsChangeRef.current?.({
+          minLat: bounds.getSouth(),
+          maxLat: bounds.getNorth(),
+          minLng: bounds.getWest(),
+          maxLng: bounds.getEast(),
+          center: { lat: center.lat, lng: center.lng },
+          zoom: map.getZoom(),
+        });
+      };
+      map.on("load", emitBounds);
+      map.on("moveend", emitBounds);
 
       map.on("click", (event) => {
         // Si el click no está sobre un cluster ni sobre un punto, cerramos la selección.

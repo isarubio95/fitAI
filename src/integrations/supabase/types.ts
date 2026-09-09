@@ -885,6 +885,7 @@ export type Database = {
           osm_id: number | null
           osm_type: string | null
           provider: string | null
+          search_norm: string
           source: string
           tipo: string
         }
@@ -902,6 +903,7 @@ export type Database = {
           osm_id?: number | null
           osm_type?: string | null
           provider?: string | null
+          search_norm?: string
           source?: string
           tipo?: string
         }
@@ -919,6 +921,7 @@ export type Database = {
           osm_id?: number | null
           osm_type?: string | null
           provider?: string | null
+          search_norm?: string
           source?: string
           tipo?: string
         }
@@ -1701,6 +1704,24 @@ export type Database = {
           weight: number
         }[]
       }
+      get_exercise_set_history: {
+        Args: {
+          p_months?: number
+          p_tipo_ejercicio_id?: string | null
+          p_usuario_ejercicio_id?: string | null
+        }
+        Returns: {
+          actividad_id: string
+          actividad_titulo: string | null
+          day: string
+          duracion_seg: number | null
+          numero_serie: number
+          peso_kg: number
+          repeticiones: number
+          rir: number | null
+          tipo_serie: string
+        }[]
+      }
       gym_normalize_tipo_nombre: { Args: { p_nombre: string }; Returns: string }
       list_exercises_with_history: {
         Args: never
@@ -1708,6 +1729,31 @@ export type Database = {
           id: string
           last_performed: string
           name: string
+        }[]
+      }
+      search_gimnasios: {
+        Args: {
+          p_lat?: number | null
+          p_limit?: number
+          p_lng?: number | null
+          p_max_lat?: number | null
+          p_max_lng?: number | null
+          p_min_lat?: number | null
+          p_min_lng?: number | null
+          p_pinned_ids?: string[]
+          p_query?: string
+        }
+        Returns: {
+          brand: string | null
+          ciudad: string | null
+          direccion: string | null
+          distance_km: number | null
+          id: string
+          lat: number
+          lng: number
+          nombre: string
+          source: string
+          tipo: string
         }[]
       }
       show_limit: { Args: never; Returns: number }

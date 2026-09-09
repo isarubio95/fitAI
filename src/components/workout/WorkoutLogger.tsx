@@ -47,6 +47,8 @@ import { WorkoutMetaForm } from "./workout-logger/WorkoutMetaForm";
 import { useCalculateAndAwardXP, useRemoveWorkoutXP, type XPBreakdown } from "@/hooks/useGamification";
 import { checkAndAwardLogros, type LogroRow } from "@/hooks/useLogros";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
+import { ExercisePerformanceDrawer } from "@/components/exercise/ExercisePerformanceDrawer";
+import type { ExerciseHistoryTarget } from "@/hooks/useExerciseSetHistory";
 import {
   DEFAULT_ROUTINE_ICON_KEY,
   resolveRoutineIconKey,
@@ -148,6 +150,12 @@ export function WorkoutLogger() {
   const [selectedExerciseDetail, setSelectedExerciseDetail] = useState<
     ComponentProps<typeof ExerciseDetailSheet>["exercise"]
   >(null);
+  const [performanceExercise, setPerformanceExercise] = useState<{
+    nombre: string;
+    target: ExerciseHistoryTarget;
+  } | null>(null);
+  /** Se separa de `performanceExercise` para que la animación de cierre juegue con datos. */
+  const [performanceOpen, setPerformanceOpen] = useState(false);
   const [editBaseline, setEditBaseline] = useState<string | null>(null);
   const [workoutIcon, setWorkoutIcon] = useState<RoutineIconKey>(DEFAULT_ROUTINE_ICON_KEY);
   /** Entrenamiento iniciado desde una rutina (biblioteca o planificada): sin fecha editable ni "guardar como rutina". */
@@ -1294,6 +1302,16 @@ export function WorkoutLogger() {
     });
   }, []);
 
+  const handleViewExercisePerformance = useCallback((exercise: ExerciseFormData) => {
+    // Mismos dos FK excluyentes que usa `useLastPerformance` en la propia ficha.
+    const target: ExerciseHistoryTarget = exercise.tipo_ejercicio_id
+      ? { tipo_ejercicio_id: exercise.tipo_ejercicio_id }
+      : { usuario_ejercicio_id: exercise.usuario_ejercicio_id };
+    if (!target.tipo_ejercicio_id && !target.usuario_ejercicio_id) return;
+    setPerformanceExercise({ nombre: exercise.nombre, target });
+    setPerformanceOpen(true);
+  }, []);
+
   /**
    * `ejercicio` no tiene columna de orden: al rehidratar se listan por
    * `created_at` ascendente, y por eso al crearlos se escalonan de milisegundo
@@ -2043,6 +2061,7 @@ export function WorkoutLogger() {
                   onAutoSaveSet={handleAutoSaveSet}
                   onSetCompleted={handleSetCompleted}
                   onViewExerciseDetails={handleViewExerciseDetails}
+                  onViewExercisePerformance={handleViewExercisePerformance}
                 />
 
                 {!showFloatingActionBar && (
@@ -2136,6 +2155,15 @@ export function WorkoutLogger() {
         }}
         currentUserId={user?.id}
       />
+
+      {performanceExercise && (
+        <ExercisePerformanceDrawer
+          open={performanceOpen}
+          onOpenChange={setPerformanceOpen}
+          exerciseName={performanceExercise.nombre}
+          target={performanceExercise.target}
+        />
+      )}
     </>
   );
 }

@@ -4,6 +4,18 @@ const EARTH_RADIUS_KM = 6371;
 
 export type GeoPoint = { lat: number; lng: number };
 
+export type GimnasioBBox = {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+};
+
+export type GymMapViewport = GimnasioBBox & {
+  center: GeoPoint;
+  zoom: number;
+};
+
 export type RankedGimnasio = GimnasioCatalogItem & {
   distanceKm: number | null;
 };

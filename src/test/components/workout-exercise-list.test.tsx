@@ -24,6 +24,7 @@ const listProps = {
   onAutoSaveSet: noop,
   onSetCompleted: noop,
   onViewExerciseDetails: noop,
+  onViewExercisePerformance: noop,
 };
 
 describe("WorkoutExerciseList", () => {

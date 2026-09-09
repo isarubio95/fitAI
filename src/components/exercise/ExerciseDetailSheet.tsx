@@ -11,11 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Dumbbell, Layers, Pencil, Bookmark, Wrench } from "lucide-react";
+import { ChartBar, Dumbbell, Layers, Pencil, Bookmark, Wrench } from "lucide-react";
 import {
   useExerciseFavorites,
   type ExerciseFavoriteSource,
 } from "@/hooks/useExerciseFavorites";
+import { ExercisePerformanceDrawer } from "@/components/exercise/ExercisePerformanceDrawer";
 import { useToast } from "@/hooks/use-toast";
 import { fetchExerciseCatalogDetail } from "@/hooks/useExerciseCatalog";
 import { difficultyToLevel } from "@/lib/exerciseDifficulty";
@@ -106,6 +107,19 @@ const ExerciseDetailSheet = ({
   const { toast } = useToast();
   const { isFavorite, toggleFavorite } = useExerciseFavorites();
   const [detail, setDetail] = useState<ExerciseDetail | null>(exercise);
+  const [showPerformance, setShowPerformance] = useState(false);
+  /**
+   * El historial no se monta hasta que se abre por primera vez (arrastra su
+   * propia query), pero una vez montado se queda, para que la animación de
+   * cierre siga jugando. Mismo criterio que los detalles de `TrainingLoadWidget`.
+   */
+  const [performanceMounted, setPerformanceMounted] = useState(false);
+
+  // Si la ficha se cierra, el historial no puede quedar abierto por encima de
+  // nada: se cierran juntos.
+  useEffect(() => {
+    if (!open) setShowPerformance(false);
+  }, [open]);
 
   useEffect(() => {
     setDetail(exercise);
@@ -132,153 +146,179 @@ const ExerciseDetailSheet = ({
   const canFavorite = !!currentUserId;
   const favored = canFavorite && isFavorite(source, detail.id);
 
-  return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent
-        side="bottom"
-        overlayClassName={overlayClassName}
-        className={cn("h-[85lvh] max-h-[85lvh] bg-card p-0", className)}
-      >
-        <ScrollArea className="h-full">
-          <div className="flex flex-col">
-            {/* Media */}
-            <div className={cn("relative w-full aspect-video bg-muted flex items-center justify-center overflow-hidden", drawerSheetRadiusTop)}>
-              {mediaUrl ? (
-                <img
-                  src={mediaUrl}
-                  alt={detail.nombre}
-                  className="w-full h-full object-contain bg-muted"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <Dumbbell className="h-12 w-12" />
-                  <span className="text-sm">Sin imagen disponible</span>
-                </div>
-              )}
-            </div>
+  const performanceTarget =
+    source === "usuario" ? { usuario_ejercicio_id: detail.id } : { tipo_ejercicio_id: detail.id };
 
-            <div className={cn("p-5 space-y-5", drawerSafeAreaBottom)}>
-              {/* Header */}
-              <DrawerHeader className="p-0">
-                <div className="flex items-center justify-between gap-3">
-                  <DrawerTitle className="min-w-0 flex-1 text-left text-xl leading-snug">
-                    {detail.nombre}
-                  </DrawerTitle>
-                  <div className="flex shrink-0 items-center gap-2 self-center">
-                    {canFavorite && (
+  return (
+    <>
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent
+          side="bottom"
+          overlayClassName={overlayClassName}
+          className={cn("h-[85lvh] max-h-[85lvh] bg-card p-0", className)}
+        >
+          <ScrollArea className="h-full">
+            <div className="flex flex-col">
+              {/* Media */}
+              <div className={cn("relative w-full aspect-video bg-muted flex items-center justify-center overflow-hidden", drawerSheetRadiusTop)}>
+                {mediaUrl ? (
+                  <img
+                    src={mediaUrl}
+                    alt={detail.nombre}
+                    className="w-full h-full object-contain bg-muted"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Dumbbell className="h-12 w-12" />
+                    <span className="text-sm">Sin imagen disponible</span>
+                  </div>
+                )}
+              </div>
+
+              <div className={cn("p-5 space-y-5", drawerSafeAreaBottom)}>
+                {/* Header */}
+                <DrawerHeader className="p-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <DrawerTitle className="min-w-0 flex-1 text-left text-xl leading-snug">
+                      {detail.nombre}
+                    </DrawerTitle>
+                    <div className="flex shrink-0 items-center gap-2 self-center">
                       <button
                         type="button"
-                        className={cn(
-                          "touch-styled inline-flex size-5 shrink-0 items-center justify-center p-0",
-                          favored ? "text-primary" : "text-muted-foreground",
-                        )}
-                        aria-label={
-                          favored
-                            ? `Quitar ${detail.nombre} de favoritos`
-                            : `Guardar ${detail.nombre} en favoritos`
-                        }
-                        aria-pressed={favored}
-                        onClick={async (e) => {
+                        className="touch-styled inline-flex size-5 shrink-0 items-center justify-center p-0 text-muted-foreground"
+                        aria-label={`Ver el rendimiento en ${detail.nombre}`}
+                        onClick={(e) => {
                           (e.currentTarget as HTMLButtonElement).blur();
-                          try {
-                            await toggleFavorite({ source, id: detail.id });
-                          } catch (err: unknown) {
-                            toast({
-                              title: "No se pudo actualizar favoritos",
-                              description: err instanceof Error ? err.message : "Error desconocido",
-                              variant: "destructive",
-                            });
-                          }
+                          setPerformanceMounted(true);
+                          setShowPerformance(true);
                         }}
                       >
-                        <Bookmark
-                          className={cn("size-5", favored && "fill-current")}
-                          strokeWidth={2}
-                        />
+                        <ChartBar className="size-5" strokeWidth={2} />
                       </button>
+                      {canFavorite && (
+                        <button
+                          type="button"
+                          className={cn(
+                            "touch-styled inline-flex size-5 shrink-0 items-center justify-center p-0",
+                            favored ? "text-primary" : "text-muted-foreground",
+                          )}
+                          aria-label={
+                            favored
+                              ? `Quitar ${detail.nombre} de favoritos`
+                              : `Guardar ${detail.nombre} en favoritos`
+                          }
+                          aria-pressed={favored}
+                          onClick={async (e) => {
+                            (e.currentTarget as HTMLButtonElement).blur();
+                            try {
+                              await toggleFavorite({ source, id: detail.id });
+                            } catch (err: unknown) {
+                              toast({
+                                title: "No se pudo actualizar favoritos",
+                                description: err instanceof Error ? err.message : "Error desconocido",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                        >
+                          <Bookmark
+                            className={cn("size-5", favored && "fill-current")}
+                            strokeWidth={2}
+                          />
+                        </button>
+                      )}
+                      {isOwn && onEdit && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => onEdit(detail)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" /> Editar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </DrawerHeader>
+
+                {/* Metadatos en líneas separadas */}
+                {(detail.body_part || detail.equipment || detail.tipo || detail.grupo_muscular || detail.dificultad) && (
+                  <div className="rounded-2xl bg-background p-4 space-y-2.5">
+                    {difficultyToLevel(detail.dificultad) && (
+                      <MetaRow label="Dificultad">
+                        <DifficultyBars level={difficultyToLevel(detail.dificultad)!} />
+                      </MetaRow>
                     )}
-                    {isOwn && onEdit && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5"
-                        onClick={() => onEdit(detail)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" /> Editar
-                      </Button>
+                    {detail.tipo && (
+                      <MetaRow label="Tipo">
+                        <span className="inline-flex items-center gap-2">
+                          <Dumbbell className="h-4 w-4 text-primary" />
+                          <span className="capitalize">{detail.tipo}</span>
+                        </span>
+                      </MetaRow>
+                    )}
+                    {detail.grupo_muscular && (
+                      <MetaRow label="Grupo">
+                        <span className="inline-flex items-center gap-2">
+                          <Layers className="h-4 w-4 text-primary" />
+                          <span className="capitalize">{detail.grupo_muscular}</span>
+                        </span>
+                      </MetaRow>
+                    )}
+                    {detail.equipment && (
+                      <MetaRow label="Equipamiento">
+                        <span className="inline-flex items-center gap-2">
+                          <Wrench className="h-4 w-4 text-primary" />
+                          <span className="capitalize">{detail.equipment}</span>
+                        </span>
+                      </MetaRow>
+                    )}
+                    {detail.body_part && (
+                      <MetaRow label="Músculos">
+                        <div className="flex flex-wrap gap-2">
+                          {(Array.isArray(detail.body_part) ? detail.body_part : [detail.body_part]).map((part) => (
+                            <Badge key={part} variant="secondary" className="capitalize">
+                              💪 {part}
+                            </Badge>
+                          ))}
+                        </div>
+                      </MetaRow>
                     )}
                   </div>
-                </div>
-              </DrawerHeader>
+                )}
 
-              {/* Metadatos en líneas separadas */}
-              {(detail.body_part || detail.equipment || detail.tipo || detail.grupo_muscular || detail.dificultad) && (
-                <div className="rounded-2xl bg-background p-4 space-y-2.5">
-                  {difficultyToLevel(detail.dificultad) && (
-                    <MetaRow label="Dificultad">
-                      <DifficultyBars level={difficultyToLevel(detail.dificultad)!} />
-                    </MetaRow>
-                  )}
-                  {detail.tipo && (
-                    <MetaRow label="Tipo">
-                      <span className="inline-flex items-center gap-2">
-                        <Dumbbell className="h-4 w-4 text-primary" />
-                        <span className="capitalize">{detail.tipo}</span>
-                      </span>
-                    </MetaRow>
-                  )}
-                  {detail.grupo_muscular && (
-                    <MetaRow label="Grupo">
-                      <span className="inline-flex items-center gap-2">
-                        <Layers className="h-4 w-4 text-primary" />
-                        <span className="capitalize">{detail.grupo_muscular}</span>
-                      </span>
-                    </MetaRow>
-                  )}
-                  {detail.equipment && (
-                    <MetaRow label="Equipamiento">
-                      <span className="inline-flex items-center gap-2">
-                        <Wrench className="h-4 w-4 text-primary" />
-                        <span className="capitalize">{detail.equipment}</span>
-                      </span>
-                    </MetaRow>
-                  )}
-                  {detail.body_part && (
-                    <MetaRow label="Músculos">
-                      <div className="flex flex-wrap gap-2">
-                        {(Array.isArray(detail.body_part) ? detail.body_part : [detail.body_part]).map((part) => (
-                          <Badge key={part} variant="secondary" className="capitalize">
-                            💪 {part}
-                          </Badge>
-                        ))}
-                      </div>
-                    </MetaRow>
-                  )}
-                </div>
-              )}
-
-              {/* Instructions */}
-              {detail.instructions && detail.instructions.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm">Instrucciones</h3>
-                  <ol className="space-y-2.5 list-none">
-                    {detail.instructions.map((step, i) => (
-                      <li key={i} className="flex gap-3 text-sm leading-relaxed">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
-                          {i + 1}
-                        </span>
-                        <span className="text-muted-foreground pt-0.5">{step}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
+                {/* Instructions */}
+                {detail.instructions && detail.instructions.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-sm">Instrucciones</h3>
+                    <ol className="space-y-2.5 list-none">
+                      {detail.instructions.map((step, i) => (
+                        <li key={i} className="flex gap-3 text-sm leading-relaxed">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+                            {i + 1}
+                          </span>
+                          <span className="text-muted-foreground pt-0.5">{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </ScrollArea>
-      </DrawerContent>
-    </Drawer>
+          </ScrollArea>
+        </DrawerContent>
+      </Drawer>
+
+      {performanceMounted && (
+        <ExercisePerformanceDrawer
+          open={showPerformance}
+          onOpenChange={setShowPerformance}
+          exerciseName={detail.nombre}
+          target={performanceTarget}
+        />
+      )}
+    </>
   );
 };
 

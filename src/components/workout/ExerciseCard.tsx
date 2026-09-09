@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Plus, Info, Timer, GripVertical } from "lucide-react";
+import { Trash2, Plus, ChartBar, Info, Timer, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   type ExerciseFormData,
@@ -76,6 +76,8 @@ interface ExerciseCardProps {
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
   dragHandleProps?: SortableHandleProps;
   onViewExerciseDetails?: (exercise: ExerciseFormData) => void;
+  /** Abre el historial de rendimiento de este ejercicio. */
+  onViewExercisePerformance?: (exercise: ExerciseFormData) => void;
 }
 
 export function ExerciseCard({
@@ -92,6 +94,7 @@ export function ExerciseCard({
   onSetCompleted,
   dragHandleProps,
   onViewExerciseDetails,
+  onViewExercisePerformance,
 }: ExerciseCardProps) {
   const { data: lastPerf } = useLastPerformance({
     tipo_ejercicio_id: exercise.tipo_ejercicio_id,
@@ -352,6 +355,21 @@ export function ExerciseCard({
                 )}
               >
                 <Info className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {onViewExercisePerformance && (
+              <button
+                type="button"
+                title="Ver tu rendimiento en este ejercicio"
+                onClick={() => onViewExercisePerformance(exercise)}
+                className={cn(
+                  badgeVariants({ variant: "outline" }),
+                  "touch-styled h-7 w-7 shrink-0 p-0 inline-flex items-center justify-center",
+                  "transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent",
+                  "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100",
+                )}
+              >
+                <ChartBar className="h-3.5 w-3.5" />
               </button>
             )}
           </div>

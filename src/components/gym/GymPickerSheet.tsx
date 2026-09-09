@@ -15,14 +15,18 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GymAddSheet } from "@/components/gym/GymAddSheet";
 import { GymDirectoryDrawer } from "@/components/gym/GymDirectoryDrawer";
-import { useGimnasiosCatalog, useDefaultGimnasio, useLastGimnasio } from "@/hooks/useGimnasios";
+import {
+  GIMNASIO_SEARCH_LIMIT,
+  useDefaultGimnasio,
+  useGimnasiosSearch,
+  useLastGimnasio,
+} from "@/hooks/useGimnasios";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
 import {
   formatGymDistance,
   formatGimnasioListTitle,
   duplicateGymNames,
   duplicateGymNamesInCity,
-  rankGimnasios,
 } from "@/lib/gimnasioSearch";
 import type { GimnasioCatalogItem, SelectedGimnasio } from "@/types/gimnasio";
 import { cn } from "@/lib/utils";
@@ -48,7 +52,6 @@ export function GymPickerSheet({
   nestedOverlayClassName,
   nestedContentClassName,
 }: Props) {
-  const { data: gyms = [], isLoading } = useGimnasiosCatalog();
   const { data: defaultGym } = useDefaultGimnasio();
   const { data: lastGym } = useLastGimnasio();
   const { point: origin, request: requestLocation } = useBrowserLocation(open);
@@ -56,21 +59,16 @@ export function GymPickerSheet({
   const [addOpen, setAddOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
 
-  const duplicateNames = useMemo(() => duplicateGymNames(gyms), [gyms]);
-  const sameCityDuplicates = useMemo(() => duplicateGymNamesInCity(gyms), [gyms]);
+  const { data: ranked = [], isLoading } = useGimnasiosSearch({
+    query,
+    origin,
+    pinnedIds: [defaultGym?.id, lastGym?.id],
+    limit: GIMNASIO_SEARCH_LIMIT,
+    enabled: open,
+  });
 
-  const pinnedId = defaultGym?.id ?? lastGym?.id ?? null;
-
-  const ranked = useMemo(
-    () =>
-      rankGimnasios(gyms, {
-        query,
-        origin,
-        recentId: pinnedId,
-        limit: 50,
-      }),
-    [gyms, query, origin, pinnedId],
-  );
+  const duplicateNames = useMemo(() => duplicateGymNames(ranked), [ranked]);
+  const sameCityDuplicates = useMemo(() => duplicateGymNamesInCity(ranked), [ranked]);
 
   const handleSelect = (gym: GimnasioCatalogItem) => {
     onSelect({

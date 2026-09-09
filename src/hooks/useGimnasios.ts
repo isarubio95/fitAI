@@ -1,12 +1,113 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchAllPages } from "@/lib/supabaseBatch";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import type { GimnasioBBox, GeoPoint, RankedGimnasio } from "@/lib/gimnasioSearch";
 import type { GimnasioCatalogItem, SelectedGimnasio } from "@/types/gimnasio";
 
 export const GIMNASIOS_QUERY_KEY = ["gimnasios"] as const;
+export const GIMNASIO_SEARCH_LIMIT = 50;
+export const GIMNASIO_MAP_LIMIT = 2000;
 
 const CATALOG_SELECT = "id, nombre, lat, lng, direccion, ciudad, brand, source, tipo";
+
+export type FetchGimnasiosSearchParams = {
+  query?: string;
+  origin?: GeoPoint | null;
+  bbox?: GimnasioBBox | null;
+  pinnedIds?: Array<string | null | undefined>;
+  limit?: number;
+};
+
+function roundCoord(value: number, digits: number): number {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
+
+function uniquePinnedIds(ids: FetchGimnasiosSearchParams["pinnedIds"]): string[] {
+  return [...new Set((ids ?? []).filter((id): id is string => Boolean(id)))];
+}
+
+export function gimnasiosSearchQueryKey(params: FetchGimnasiosSearchParams) {
+  const origin = params.origin;
+  const bbox = params.bbox;
+  return [
+    ...GIMNASIOS_QUERY_KEY,
+    "search",
+    {
+      q: params.query?.trim() ?? "",
+      lat: origin ? roundCoord(origin.lat, 3) : null,
+      lng: origin ? roundCoord(origin.lng, 3) : null,
+      bbox: bbox
+        ? {
+            minLat: roundCoord(bbox.minLat, 3),
+            maxLat: roundCoord(bbox.maxLat, 3),
+            minLng: roundCoord(bbox.minLng, 3),
+            maxLng: roundCoord(bbox.maxLng, 3),
+          }
+        : null,
+      pinned: uniquePinnedIds(params.pinnedIds).sort(),
+      limit: params.limit ?? GIMNASIO_SEARCH_LIMIT,
+    },
+  ] as const;
+}
+
+export async function fetchGimnasiosSearch(
+  params: FetchGimnasiosSearchParams = {},
+): Promise<RankedGimnasio[]> {
+  const pinned = uniquePinnedIds(params.pinnedIds);
+  const { data, error } = await supabase.rpc("search_gimnasios", {
+    p_query: params.query?.trim() ?? "",
+    p_lat: params.origin?.lat ?? null,
+    p_lng: params.origin?.lng ?? null,
+    p_min_lat: params.bbox?.minLat ?? null,
+    p_max_lat: params.bbox?.maxLat ?? null,
+    p_min_lng: params.bbox?.minLng ?? null,
+    p_max_lng: params.bbox?.maxLng ?? null,
+    p_pinned_ids: pinned,
+    p_limit: params.limit ?? GIMNASIO_SEARCH_LIMIT,
+  });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    nombre: row.nombre,
+    lat: row.lat,
+    lng: row.lng,
+    direccion: row.direccion,
+    ciudad: row.ciudad,
+    brand: row.brand,
+    source: row.source,
+    tipo: row.tipo,
+    distanceKm: row.distance_km,
+  }));
+}
+
+export function useGimnasiosSearch(
+  params: FetchGimnasiosSearchParams & {
+    enabled?: boolean;
+    debounceMs?: number;
+  } = {},
+) {
+  const { user } = useAuth();
+  const rawQuery = params.query ?? "";
+  const delayMs = rawQuery.trim() ? (params.debounceMs ?? 250) : 0;
+  const debouncedQuery = useDebouncedValue(rawQuery, delayMs);
+  const searchParams: FetchGimnasiosSearchParams = {
+    query: debouncedQuery,
+    origin: params.origin,
+    bbox: params.bbox,
+    pinnedIds: params.pinnedIds,
+    limit: params.limit,
+  };
+
+  return useQuery({
+    queryKey: gimnasiosSearchQueryKey(searchParams),
+    enabled: (params.enabled ?? true) && !!user,
+    staleTime: 60 * 1000,
+    placeholderData: keepPreviousData,
+    queryFn: () => fetchGimnasiosSearch(searchParams),
+  });
+}
 
 export async function fetchLastGimnasioForUser(userId: string): Promise<SelectedGimnasio | null> {
   const { data, error } = await supabase
@@ -38,24 +139,6 @@ export async function fetchPrefillGimnasioForUser(userId: string): Promise<Selec
   const defaultGym = await fetchDefaultGimnasioForUser(userId).catch(() => null);
   if (defaultGym) return defaultGym;
   return fetchLastGimnasioForUser(userId).catch(() => null);
-}
-
-export function useGimnasiosCatalog() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...GIMNASIOS_QUERY_KEY, "catalog"],
-    enabled: !!user,
-    staleTime: 24 * 60 * 60 * 1000,
-    queryFn: async (): Promise<GimnasioCatalogItem[]> => {
-      return fetchAllPages<GimnasioCatalogItem>((from, to) =>
-        supabase
-          .from("gimnasio")
-          .select(CATALOG_SELECT)
-          .order("nombre", { ascending: true })
-          .range(from, to),
-      );
-    },
-  });
 }
 
 export function useLastGimnasio() {

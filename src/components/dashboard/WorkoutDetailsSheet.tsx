@@ -33,6 +33,7 @@ import { formatCardioDuration } from "@/lib/cardioFormat";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import { WorkoutMuscleMiniMap } from "@/components/dashboard/WorkoutMuscleMiniMap";
 import { GymStartMetaRow } from "@/components/dashboard/GymStartMetaRow";
+import { isWorkingSet } from "@/lib/setTypes";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -684,7 +685,9 @@ export function WorkoutDetailsContent({
       for (const s of doneSeries) {
         const reps = Number(s.repeticiones);
         const kg = Number(s.peso_kg);
-        if (reps <= 0 || kg <= 0) continue;
+        // El récord del ejercicio sale del trabajo efectivo: un calentamiento
+        // cargado no puede marcarse como la mejor serie de la sesión.
+        if (reps <= 0 || kg <= 0 || !isWorkingSet(s.tipo_serie)) continue;
         const rm = estimate1RM(kg, reps);
         if (rm > bestRmForExercise) {
           bestRmForExercise = rm;

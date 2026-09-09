@@ -2,14 +2,14 @@ import { lazy, Suspense, useMemo, useState } from "react";
 import { Loader2, MapPin, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useGimnasiosCatalog } from "@/hooks/useGimnasios";
+import { GIMNASIO_MAP_LIMIT, useGimnasiosSearch } from "@/hooks/useGimnasios";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
 import {
   formatGymDistance,
   formatGimnasioListTitle,
   duplicateGymNames,
   duplicateGymNamesInCity,
-  rankGimnasios,
+  type GymMapViewport,
 } from "@/lib/gimnasioSearch";
 import type { GimnasioCatalogItem, SelectedGimnasio } from "@/types/gimnasio";
 import { cn } from "@/lib/utils";
@@ -32,20 +32,43 @@ export function GymDirectoryExplorer({
   actionLabel = "Entrenar aquí",
   onGymAction,
 }: Props) {
-  const { data: gyms = [], isLoading } = useGimnasiosCatalog();
   const { point: origin } = useBrowserLocation(true);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<GimnasioCatalogItem | null>(null);
+  const [viewport, setViewport] = useState<GymMapViewport | null>(null);
 
-  const duplicateNames = useMemo(() => duplicateGymNames(gyms), [gyms]);
-  const sameCityDuplicates = useMemo(() => duplicateGymNamesInCity(gyms), [gyms]);
+  const mapQuery = useGimnasiosSearch({
+    origin: viewport?.center ?? origin,
+    bbox: viewport,
+    limit: GIMNASIO_MAP_LIMIT,
+    enabled: !!viewport,
+    debounceMs: 0,
+  });
 
-  const suggestions = useMemo(
-    () =>
-      query.trim()
-        ? rankGimnasios(gyms, { query, origin, limit: 8 })
-        : [],
-    [gyms, query, origin],
+  const suggestionsQuery = useGimnasiosSearch({
+    query,
+    origin,
+    limit: 8,
+    enabled: query.trim().length > 0,
+  });
+
+  const gyms = useMemo(() => {
+    const list = mapQuery.data ?? [];
+    if (selected && !list.some((gym) => gym.id === selected.id)) {
+      return [selected, ...list];
+    }
+    return list;
+  }, [mapQuery.data, selected]);
+
+  const suggestions = query.trim() ? (suggestionsQuery.data ?? []) : [];
+
+  const duplicateNames = useMemo(
+    () => duplicateGymNames([...gyms, ...suggestions]),
+    [gyms, suggestions],
+  );
+  const sameCityDuplicates = useMemo(
+    () => duplicateGymNamesInCity([...gyms, ...suggestions]),
+    [gyms, suggestions],
   );
 
   const handleAction = () => {
@@ -65,6 +88,7 @@ export function GymDirectoryExplorer({
           selectedId={selected?.id ?? null}
           onSelect={setSelected}
           onDeselect={() => setSelected(null)}
+          onBoundsChange={setViewport}
           className="absolute inset-0"
         />
       </Suspense>
@@ -109,7 +133,7 @@ export function GymDirectoryExplorer({
         ) : null}
       </div>
 
-      {isLoading ? (
+      {mapQuery.isLoading && gyms.length === 0 ? (
         <div className="absolute inset-x-0 top-1/2 z-10 flex -translate-y-1/2 justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>

@@ -2,10 +2,12 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
+import type { FetchGimnasiosSearchParams } from "@/hooks/useGimnasios";
+import type { GimnasioCatalogItem } from "@/types/gimnasio";
 
-const { mockUseGimnasiosCatalog, mockUseDefaultGimnasio, mockUseLastGimnasio, mockUseBrowserLocation, mockUseCreateGimnasio } =
+const { mockUseGimnasiosSearch, mockUseDefaultGimnasio, mockUseLastGimnasio, mockUseBrowserLocation, mockUseCreateGimnasio } =
   vi.hoisted(() => ({
-    mockUseGimnasiosCatalog: vi.fn(),
+    mockUseGimnasiosSearch: vi.fn(),
     mockUseDefaultGimnasio: vi.fn(),
     mockUseLastGimnasio: vi.fn(),
     mockUseBrowserLocation: vi.fn(),
@@ -21,10 +23,11 @@ vi.mock("@/components/gym/GymDirectoryDrawer", () => ({
 }));
 
 vi.mock("@/hooks/useGimnasios", () => ({
-  useGimnasiosCatalog: mockUseGimnasiosCatalog,
+  useGimnasiosSearch: mockUseGimnasiosSearch,
   useDefaultGimnasio: mockUseDefaultGimnasio,
   useLastGimnasio: mockUseLastGimnasio,
   useCreateGimnasio: mockUseCreateGimnasio,
+  GIMNASIO_SEARCH_LIMIT: 50,
 }));
 
 vi.mock("@/hooks/useBrowserLocation", () => ({
@@ -41,6 +44,30 @@ function wrap(ui: ReactNode) {
   return <MemoryRouter>{ui}</MemoryRouter>;
 }
 
+const nearGym: GimnasioCatalogItem = {
+  id: "g-near",
+  nombre: "Basic-Fit",
+  lat: 40.417,
+  lng: -3.704,
+  ciudad: "Madrid",
+  direccion: "Calle Mayor 12",
+  brand: "Basic-Fit",
+  source: "osm",
+  tipo: "private",
+};
+
+const lastGym: GimnasioCatalogItem = {
+  id: "g-last",
+  nombre: "Gimnasio de siempre",
+  lat: 40.5,
+  lng: -3.7,
+  ciudad: "Madrid",
+  direccion: null,
+  brand: null,
+  source: "user",
+  tipo: "unknown",
+};
+
 describe("GymPickerSheet", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -55,32 +82,20 @@ describe("GymPickerSheet", () => {
       data: { id: "g-last", nombre: "Gimnasio de siempre" },
     });
     mockUseCreateGimnasio.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
-    mockUseGimnasiosCatalog.mockReturnValue({
-      isLoading: false,
-      data: [
-        {
-          id: "g-near",
-          nombre: "Basic-Fit",
-          lat: 40.417,
-          lng: -3.704,
-          ciudad: "Madrid",
-          direccion: "Calle Mayor 12",
-          brand: "Basic-Fit",
-          source: "osm",
-          tipo: "private",
-        },
-        {
-          id: "g-last",
-          nombre: "Gimnasio de siempre",
-          lat: 40.5,
-          lng: -3.7,
-          ciudad: "Madrid",
-          direccion: null,
-          brand: null,
-          source: "user",
-          tipo: "unknown",
-        },
-      ],
+    mockUseGimnasiosSearch.mockImplementation((opts: FetchGimnasiosSearchParams = {}) => {
+      const q = (opts.query ?? "").trim().toLowerCase();
+      const all = [
+        { ...nearGym, distanceKm: 0.4 },
+        { ...lastGym, distanceKm: 8.2 },
+      ];
+      const data = q
+        ? all.filter(
+            (gym) =>
+              gym.nombre.toLowerCase().includes(q) ||
+              (gym.ciudad ?? "").toLowerCase().includes(q),
+          )
+        : all;
+      return { isLoading: false, data, isFetching: false };
     });
   });
 
@@ -114,6 +129,18 @@ describe("GymPickerSheet", () => {
     });
     expect(screen.getByText("Basic-Fit (Calle Mayor 12)")).toBeInTheDocument();
     expect(screen.queryByText("Gimnasio de siempre")).not.toBeInTheDocument();
+  });
+
+  it("no busca el catálogo mientras el sheet está cerrado", () => {
+    render(
+      wrap(
+        <GymPickerSheet open={false} onOpenChange={vi.fn()} selected={null} onSelect={vi.fn()} />,
+      ),
+    );
+
+    expect(mockUseGimnasiosSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ enabled: false }),
+    );
   });
 
   it("marca el último usado cuando no hay gimnasio por defecto", () => {

@@ -31,6 +31,7 @@ export type WorkoutExerciseListProps = {
   onAutoSaveSet: (exerciseIndex: number, setIndex: number) => void;
   onSetCompleted: (exerciseIndex: number, setIndex: number, completed: boolean) => void;
   onViewExerciseDetails: (exercise: ExerciseFormData) => void;
+  onViewExercisePerformance: (exercise: ExerciseFormData) => void;
 };
 
 /** Handlers inertes para la copia de solo lectura que se pinta al arrastrar. */
@@ -63,6 +64,7 @@ export function WorkoutExerciseList({
   onAutoSaveSet,
   onSetCompleted,
   onViewExerciseDetails,
+  onViewExercisePerformance,
 }: WorkoutExerciseListProps) {
   const sortIds = useMemo(
     () => exercises.map((ex, index) => getExerciseSortId(ex, index)),
@@ -155,6 +157,7 @@ export function WorkoutExerciseList({
                             : undefined
                         }
                         onViewExerciseDetails={onViewExerciseDetails}
+                        onViewExercisePerformance={onViewExercisePerformance}
                       />
                     ))}
                   </div>
@@ -186,6 +189,7 @@ export function WorkoutExerciseList({
                   isActiveWorkout ? (si, completed) => onSetCompleted(ei, si, completed) : undefined
                 }
                 onViewExerciseDetails={onViewExerciseDetails}
+                onViewExercisePerformance={onViewExercisePerformance}
               />
             );
           })}
