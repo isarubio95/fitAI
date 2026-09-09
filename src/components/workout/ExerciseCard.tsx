@@ -242,8 +242,8 @@ export function ExerciseCard({
 
   const restSeconds = exercise.descanso ?? 120;
 
-  /** Misma base visual que el badge de descanso (outline + borde tema). */
-  const headerMetaBadgeClass = "gap-1";
+  /** Misma altura que los botones info/historial (h-7) y el mismo outline. */
+  const headerMetaBadgeClass = "h-7 gap-1 leading-none";
 
   const inDrawer = useContext(DrawerInContentContext);
   const surfaceBg = inDrawer && isInSuperset ? "bg-primary/5" : "bg-card";
@@ -343,7 +343,7 @@ export function ExerciseCard({
             </div>
             <h3 className="truncate text-sm font-semibold">{exercise.nombre}</h3>
           </div>
-          <div className="flex flex-wrap items-center gap-1">
+          <div className="flex flex-wrap items-center gap-2">
             {exercise.targetRir != null && (
               <Badge variant="outline" className={cn("text-xs", headerMetaBadgeClass)}>
                 🎯 RIR: {exercise.targetRir}

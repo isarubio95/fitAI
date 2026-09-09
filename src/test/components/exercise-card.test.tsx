@@ -417,6 +417,7 @@ describe("ExerciseCard", () => {
           registro_series: "peso_reps",
           sets: [emptySet()],
           descanso: 90,
+          targetRir: 2,
         }}
         exerciseIndex={0}
         onRemoveExercise={() => undefined}
@@ -429,10 +430,16 @@ describe("ExerciseCard", () => {
     );
 
     const restBadge = screen.getByText("1:30");
+    const rirBadge = screen.getByText(/RIR:\s*2/);
     const info = screen.getByTitle("Ver cómo se hace este ejercicio");
     const performance = screen.getByTitle("Ver tu rendimiento en este ejercicio");
     const group = restBadge.parentElement;
 
+    expect(rirBadge).toHaveClass("h-7");
+    expect(restBadge).toHaveClass("h-7");
+    expect(rirBadge.parentElement).toHaveClass("gap-2");
+    expect(info).toHaveClass("h-7");
+    expect(performance).toHaveClass("h-7");
     expect(group).toContainElement(info);
     expect(group).toContainElement(performance);
     expect(screen.getByRole("heading", { name: "Press banca" }).parentElement).not.toContainElement(info);
