@@ -28,6 +28,9 @@ describe("WorkoutSessionOptions", () => {
     expect(dialog.className).toContain("inset-x-0");
     expect(dialog.className).toContain("md:w-72");
 
+    const optionsRoot = screen.getByRole("button", { name: "Opciones de entrenamiento" }).closest("[data-vaul-no-drag]");
+    expect(optionsRoot).toHaveClass("pointer-events-auto");
+
     const toggle = screen.getByRole("switch", { name: "Mostrar sugerencias de progresión" });
     expect(toggle).toHaveAttribute("data-state", "checked");
 

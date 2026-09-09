@@ -30,7 +30,7 @@ export function WorkoutSessionOptions() {
   }, [open]);
 
   return (
-    <div ref={rootRef} className="inline-flex h-8 items-center" data-vaul-no-drag>
+    <div ref={rootRef} className="pointer-events-auto inline-flex h-8 items-center" data-vaul-no-drag>
       <Button
         type="button"
         variant="ghost"

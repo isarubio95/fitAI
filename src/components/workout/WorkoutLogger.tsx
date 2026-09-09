@@ -14,7 +14,14 @@ import {
   pillCircleTransitionStyleForBottomSheet,
   type PillCirclePhase,
 } from "@/lib/pillCircleTransition";
-import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerDragHandle,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { Flag, Check } from "lucide-react";
 import { ExerciseSelector } from "@/components/exercise/ExerciseSelector";
 import { HeartRatePanel } from "@/components/cardio/live/HeartRatePanel";
@@ -1940,6 +1947,7 @@ export function WorkoutLogger() {
             <>
             <DrawerHeader
               data-active-workout-sheet-header
+              dragEntireHeader
               className="relative z-10 shrink-0 overflow-visible border-b border-border bg-card px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left"
             >
               {isActiveWorkout ? (
@@ -1947,7 +1955,10 @@ export function WorkoutLogger() {
                   <div className="relative flex items-center justify-between gap-3">
                     <div className="flex h-8 min-w-0 flex-1 items-center">
                       {startedFromRoutine ? (
-                        <>
+                        <DrawerDragHandle
+                          aria-hidden={false}
+                          className="pointer-events-auto flex h-8 min-w-0 w-full items-center"
+                        >
                           <DrawerTitle className="sr-only">
                             {titulo.trim() || activeWorkoutHeading}
                           </DrawerTitle>
@@ -1962,7 +1973,7 @@ export function WorkoutLogger() {
                             disabled={creatingActive || preparingLiveSession}
                             className="h-8 w-full min-w-0 truncate bg-transparent text-lg font-semibold leading-8 tracking-tight outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           />
-                        </>
+                        </DrawerDragHandle>
                       ) : (
                         <>
                           <DrawerTitle className="h-8 min-w-0 truncate text-lg font-semibold leading-8 tracking-tight">

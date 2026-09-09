@@ -198,15 +198,76 @@ const DrawerGrabber = ({ className }: { className?: string }) => (
   />
 );
 
-const DrawerHeader = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
+/** Anula el cromado 32×5 px de Vaul para usar `Handle` como superficie de arrastre. */
+const drawerHandleResetClassName =
+  "mx-0! rounded-none! bg-transparent! opacity-100! shadow-none! hover:opacity-100! active:opacity-100!";
+
+type DrawerDragHandleProps = React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Handle> & {
+  /** Cubre al padre (`absolute inset-0`). El padre debe ser `relative`. */
+  overlay?: boolean;
+};
+
+/**
+ * `Handle` de Vaul sin el indicador visual. Con `handleOnly`, solo estas
+ * superficies (y el grabber) inician el arrastre. Los controles interactivos
+ * deben marcarse con `data-vaul-no-drag` y `pointer-events-auto`.
+ */
+const DrawerDragHandle = ({
+  className,
+  overlay = false,
+  preventCycle = true,
+  ...props
+}: DrawerDragHandleProps) => (
+  <DrawerPrimitive.Handle
+    preventCycle={preventCycle}
+    className={cn(
+      drawerHandleResetClassName,
+      overlay
+        ? "pointer-events-auto absolute! inset-0! z-0 h-full! w-full! max-w-none! cursor-grab active:cursor-grabbing"
+        : "relative h-auto! w-auto! max-w-none! [&_[data-vaul-handle-hitarea]]:contents",
+      className,
+    )}
+    {...(overlay ? { "data-drawer-header-drag-overlay": "" } : {})}
+    {...props}
+  />
+);
+DrawerDragHandle.displayName = "DrawerDragHandle";
+
+interface DrawerHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+  /**
+   * Todo el header arrastra el sheet (como el grabber), salvo elementos con
+   * `pointer-events-auto` + `data-vaul-no-drag` (botones, etc.).
+   */
+  dragEntireHeader?: boolean;
+}
+
+const DrawerHeader = ({
+  className,
+  children,
+  dragEntireHeader = false,
+  ...props
+}: DrawerHeaderProps) => {
   const side = React.useContext(DrawerSideContext);
   const showEdgeHandle = side === "bottom" || side === "top";
 
   return (
-    <div className={cn("grid gap-1.5 pt-2.5 pb-4 px-4 text-center sm:text-left", className)} {...props}>
-      {showEdgeHandle && side === "bottom" && <DrawerGrabber className="mb-2" />}
-      {children}
-      {showEdgeHandle && side === "top" && <DrawerGrabber className="mt-2" />}
+    <div
+      className={cn(
+        "grid gap-1.5 pt-2.5 pb-4 px-4 text-center sm:text-left",
+        dragEntireHeader && "relative pointer-events-none",
+        className,
+      )}
+      {...(dragEntireHeader ? { "data-drawer-header-drag": "" } : {})}
+      {...props}
+    >
+      {dragEntireHeader ? <DrawerDragHandle overlay /> : null}
+      {showEdgeHandle && side === "bottom" && (
+        <DrawerGrabber className={cn("mb-2", dragEntireHeader && "relative z-[1]")} />
+      )}
+      {dragEntireHeader ? <div className="relative z-[1]">{children}</div> : children}
+      {showEdgeHandle && side === "top" && (
+        <DrawerGrabber className={cn("mt-2", dragEntireHeader && "relative z-[1]")} />
+      )}
     </div>
   );
 };
@@ -248,4 +309,5 @@ export {
   DrawerFooter,
   DrawerTitle,
   DrawerDescription,
+  DrawerDragHandle,
 };
