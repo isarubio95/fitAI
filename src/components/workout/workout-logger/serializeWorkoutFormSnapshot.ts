@@ -24,6 +24,8 @@ export function serializeWorkoutFormSnapshot(
       tipo_ejercicio_id: ex.tipo_ejercicio_id ?? null,
       usuario_ejercicio_id: ex.usuario_ejercicio_id ?? null,
       superset_id: ex.superset_id ?? null,
+      descanso: ex.descanso ?? null,
+      targetRir: ex.targetRir ?? null,
       sets: ex.sets.map((s) => ({
         id: s.id ?? null,
         repeticiones: Number(s.repeticiones),

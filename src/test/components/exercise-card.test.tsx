@@ -471,7 +471,7 @@ describe("ExerciseCard", () => {
   });
 
   describe("edición en caliente de descanso y RIR", () => {
-    it("no convierte los badges en botones fuera de un entreno activo", () => {
+    it("no convierte los badges en botones si no se pueden editar", () => {
       render(
         <ExerciseCard
           exercise={{

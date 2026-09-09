@@ -1301,7 +1301,9 @@ export function WorkoutLogger() {
         }
       }
 
-      if (!ex.id || !effectiveWorkoutId) return;
+      // En un entreno ya guardado el resto de campos espera a "Actualizar";
+      // descanso y RIR siguen esa misma regla. En el activo sí se persisten ya.
+      if (!isActiveWorkout || !ex.id || !effectiveWorkoutId) return;
       const dbPatch: { descanso?: number; rir_objetivo?: number | null } = {};
       if (patch.descanso != null) dbPatch.descanso = patch.descanso;
       if ("targetRir" in patch) dbPatch.rir_objetivo = patch.targetRir ?? null;
@@ -1313,7 +1315,7 @@ export function WorkoutLogger() {
         // Silent fail; el estado local ya está actualizado
       }
     },
-    [exercises, effectiveWorkoutId, patchExerciseInWorkoutCache, restTimer],
+    [exercises, effectiveWorkoutId, isActiveWorkout, patchExerciseInWorkoutCache, restTimer],
   );
 
   const handleWorkoutIconChange = useCallback(
@@ -1603,6 +1605,23 @@ export function WorkoutLogger() {
             await supabase.from("ejercicio").delete().eq("id", ex.id);
           }
         }
+
+        await Promise.all(
+          ejerciciosLimpios
+            .filter((ex): ex is ExerciseFormData & { id: string } => !!ex.id)
+            .map((ex) =>
+              supabase
+                .from("ejercicio")
+                .update({
+                  descanso: ex.descanso ?? null,
+                  rir_objetivo: ex.targetRir ?? null,
+                })
+                .eq("id", ex.id),
+            ),
+        ).then((results) => {
+          const failed = results.find((r) => r.error);
+          if (failed?.error) throw failed.error;
+        });
 
         if (isActiveWorkout) {
           const endIso = new Date().toISOString();
@@ -2125,12 +2144,12 @@ export function WorkoutLogger() {
                   onViewExerciseDetails={handleViewExerciseDetails}
                   onViewExercisePerformance={handleViewExercisePerformance}
                   onUpdateRest={
-                    isActiveWorkout
+                    isActiveWorkout || isEditingCompletedWorkout
                       ? (ei, seconds) => void persistExerciseMeta(ei, { descanso: seconds })
                       : undefined
                   }
                   onUpdateRir={
-                    isActiveWorkout
+                    isActiveWorkout || isEditingCompletedWorkout
                       ? (ei, rir) => void persistExerciseMeta(ei, { targetRir: rir })
                       : undefined
                   }

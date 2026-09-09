@@ -78,9 +78,9 @@ interface ExerciseCardProps {
   onViewExerciseDetails?: (exercise: ExerciseFormData) => void;
   /** Abre el historial de rendimiento de este ejercicio. */
   onViewExercisePerformance?: (exercise: ExerciseFormData) => void;
-  /** En un entreno activo, el badge de descanso abre el editor. */
+  /** En un entreno activo o al editar uno guardado, el badge de descanso abre el editor. */
   onUpdateRest?: (seconds: number) => void;
-  /** En un entreno activo, el badge de RIR abre el editor. */
+  /** En un entreno activo o al editar uno guardado, el badge de RIR abre el editor. */
   onUpdateRir?: (rir: number) => void;
 }
 

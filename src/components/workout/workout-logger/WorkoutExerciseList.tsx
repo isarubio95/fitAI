@@ -163,15 +163,9 @@ export function WorkoutExerciseList({
                         onViewExerciseDetails={onViewExerciseDetails}
                         onViewExercisePerformance={onViewExercisePerformance}
                         onUpdateRest={
-                          isActiveWorkout && onUpdateRest
-                            ? (seconds) => onUpdateRest(ei, seconds)
-                            : undefined
+                          onUpdateRest ? (seconds) => onUpdateRest(ei, seconds) : undefined
                         }
-                        onUpdateRir={
-                          isActiveWorkout && onUpdateRir
-                            ? (rir) => onUpdateRir(ei, rir)
-                            : undefined
-                        }
+                        onUpdateRir={onUpdateRir ? (rir) => onUpdateRir(ei, rir) : undefined}
                       />
                     ))}
                   </div>
@@ -205,13 +199,9 @@ export function WorkoutExerciseList({
                 onViewExerciseDetails={onViewExerciseDetails}
                 onViewExercisePerformance={onViewExercisePerformance}
                 onUpdateRest={
-                  isActiveWorkout && onUpdateRest
-                    ? (seconds) => onUpdateRest(ei, seconds)
-                    : undefined
+                  onUpdateRest ? (seconds) => onUpdateRest(ei, seconds) : undefined
                 }
-                onUpdateRir={
-                  isActiveWorkout && onUpdateRir ? (rir) => onUpdateRir(ei, rir) : undefined
-                }
+                onUpdateRir={onUpdateRir ? (rir) => onUpdateRir(ei, rir) : undefined}
               />
             );
           })}
