@@ -29,6 +29,7 @@ const PopoverContent = React.forwardRef<
         className,
       )}
       {...props}
+      data-slot="popover-content"
     />
   </PopoverPrimitive.Portal>
 ));

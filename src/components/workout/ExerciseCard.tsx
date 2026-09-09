@@ -4,9 +4,9 @@ import { useLastPerformance, type LastSetData } from "@/hooks/useLastPerformance
 import { useProgressiveOverload } from "@/hooks/useProgressiveOverload";
 import { useProgressiveOverloadPreferences } from "@/hooks/useProgressiveOverloadPreferences";
 import { OverloadSuggestionBanner } from "./OverloadSuggestion";
-import { formatMSS } from "@/hooks/useRestTimer";
 import { Button } from "@/components/ui/button";
-import { Badge, badgeVariants } from "@/components/ui/badge";
+import { badgeVariants } from "@/components/ui/badge";
+import { RestMetaBadge, RirMetaBadge } from "./ExerciseMetaEditors";
 import { SetValueInput } from "./SetValueInput";
 import {
   AlertDialog,
@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Plus, ChartBar, Info, Timer, GripVertical } from "lucide-react";
+import { Trash2, Plus, ChartBar, Info, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   type ExerciseFormData,
@@ -78,6 +78,10 @@ interface ExerciseCardProps {
   onViewExerciseDetails?: (exercise: ExerciseFormData) => void;
   /** Abre el historial de rendimiento de este ejercicio. */
   onViewExercisePerformance?: (exercise: ExerciseFormData) => void;
+  /** En un entreno activo, el badge de descanso abre el editor. */
+  onUpdateRest?: (seconds: number) => void;
+  /** En un entreno activo, el badge de RIR abre el editor. */
+  onUpdateRir?: (rir: number) => void;
 }
 
 export function ExerciseCard({
@@ -95,6 +99,8 @@ export function ExerciseCard({
   dragHandleProps,
   onViewExerciseDetails,
   onViewExercisePerformance,
+  onUpdateRest,
+  onUpdateRir,
 }: ExerciseCardProps) {
   const { data: lastPerf } = useLastPerformance({
     tipo_ejercicio_id: exercise.tipo_ejercicio_id,
@@ -242,9 +248,6 @@ export function ExerciseCard({
 
   const restSeconds = exercise.descanso ?? 120;
 
-  /** Misma altura que los botones info/historial (h-7) y el mismo outline. */
-  const headerMetaBadgeClass = "h-7 gap-1 leading-none";
-
   const inDrawer = useContext(DrawerInContentContext);
   const surfaceBg = inDrawer && isInSuperset ? "bg-primary/5" : "bg-card";
   const wrapperClass = cn(
@@ -344,16 +347,17 @@ export function ExerciseCard({
             <h3 className="truncate text-sm font-semibold">{exercise.nombre}</h3>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {exercise.targetRir != null && (
-              <Badge variant="outline" className={cn("text-xs", headerMetaBadgeClass)}>
-                🎯 RIR: {exercise.targetRir}
-              </Badge>
-            )}
+            <RirMetaBadge
+              value={exercise.targetRir}
+              editable={!!onUpdateRir}
+              onChange={onUpdateRir}
+            />
             <div className="flex items-center gap-1">
-              <Badge variant="outline" className={cn("text-xs", headerMetaBadgeClass)}>
-                <Timer className="h-3 w-3" />
-                {formatMSS(restSeconds)}
-              </Badge>
+              <RestMetaBadge
+                seconds={restSeconds}
+                editable={!!onUpdateRest}
+                onChange={onUpdateRest}
+              />
               {onViewExerciseDetails && (
                 <button
                   type="button"

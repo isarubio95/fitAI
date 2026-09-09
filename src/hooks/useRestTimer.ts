@@ -112,6 +112,28 @@ export function parseMSS(value: string): number | null {
   return null;
 }
 
+/**
+ * Recalcula un descanso en marcha cuando cambia la duración prescrita:
+ * conserva el tiempo ya transcurrido y mueve el final.
+ */
+export function restTimerForNewDuration(
+  state: { endTime: number; duration: number },
+  newDurationSeconds: number,
+  now = Date.now(),
+): Pick<TimerState, "endTime" | "duration" | "remaining" | "finished"> {
+  const duration = Math.max(0, Math.round(newDurationSeconds));
+  const startedAt = state.endTime - state.duration * 1000;
+  const elapsedMs = Math.max(0, now - startedAt);
+  const remainingMs = Math.max(0, duration * 1000 - elapsedMs);
+  const finished = remainingMs <= 0;
+  return {
+    duration,
+    remaining: finished ? 0 : Math.ceil(remainingMs / 1000),
+    finished,
+    endTime: now + remainingMs,
+  };
+}
+
 function playBeep() {
   try {
     // Generate a short beep (440Hz sine wave, ~0.3s)
@@ -159,8 +181,9 @@ export function useRestTimer() {
   const timerRuntimeRef = useRef<{
     activeKey: string | null;
     endTime: number | null;
+    duration: number;
     finished: boolean;
-  }>({ activeKey: null, endTime: null, finished: false });
+  }>({ activeKey: null, endTime: null, duration: 0, finished: false });
 
   const [state, setState] = useState<TimerState>(() => {
     const restored = loadPersistedRestTimer();
@@ -193,9 +216,10 @@ export function useRestTimer() {
     timerRuntimeRef.current = {
       activeKey: state.activeKey,
       endTime: state.endTime,
+      duration: state.duration,
       finished: state.finished,
     };
-  }, [state.activeKey, state.endTime, state.finished]);
+  }, [state.activeKey, state.endTime, state.duration, state.finished]);
 
   // Saber si el descanso venció con la app en segundo plano (evita beep al volver)
   useEffect(() => {
@@ -330,6 +354,26 @@ export function useRestTimer() {
     }
   }, []);
 
+  const retargetDuration = useCallback((durationSeconds: number) => {
+    const t = timerRuntimeRef.current;
+    if (!t.activeKey || t.endTime == null || t.finished) return;
+    const duration = Math.max(0, Math.round(durationSeconds));
+    if (duration === t.duration) return;
+    const next: TimerState = {
+      activeKey: t.activeKey,
+      ...restTimerForNewDuration({ endTime: t.endTime, duration: t.duration }, duration),
+    };
+    persistRestTimer(next, workoutIdRef.current);
+    setState(next);
+    if (isNativeApp()) {
+      if (next.finished || !next.endTime) {
+        void cancelRestTimerNotification();
+      } else {
+        void scheduleRestTimerNotification(next.endTime);
+      }
+    }
+  }, []);
+
   const stop = useCallback(() => {
     if (rafRef.current != null) {
       cancelAnimationFrame(rafRef.current);
@@ -359,6 +403,7 @@ export function useRestTimer() {
     endTime: state.endTime,
     isRunning: !!state.activeKey && !state.finished,
     start,
+    retargetDuration,
     stop,
   };
 }

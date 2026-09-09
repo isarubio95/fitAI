@@ -132,8 +132,13 @@ interface DrawerContentProps extends React.ComponentPropsWithoutRef<typeof Drawe
   overlayClassName?: string;
 }
 
-function isDraggablePillTarget(target: EventTarget | null) {
-  return target instanceof Element && !!target.closest("[data-draggable-pill]");
+function shouldIgnoreDrawerOutside(target: EventTarget | null) {
+  return (
+    target instanceof Element &&
+    !!target.closest(
+      "[data-draggable-pill], [data-radix-popper-content-wrapper], [data-slot=popover-content]",
+    )
+  );
 }
 
 const DrawerContent = React.forwardRef<
@@ -145,11 +150,11 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       onPointerDownOutside={(e) => {
-        if (isDraggablePillTarget(e.target)) e.preventDefault();
+        if (shouldIgnoreDrawerOutside(e.target)) e.preventDefault();
         onPointerDownOutside?.(e);
       }}
       onInteractOutside={(e) => {
-        if (isDraggablePillTarget(e.target)) e.preventDefault();
+        if (shouldIgnoreDrawerOutside(e.target)) e.preventDefault();
         onInteractOutside?.(e);
       }}
       className={cn(

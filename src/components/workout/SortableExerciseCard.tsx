@@ -22,6 +22,8 @@ interface SortableExerciseCardProps {
   onSetCompleted?: (setIndex: number, completed: boolean) => void;
   onViewExerciseDetails?: (exercise: ExerciseFormData) => void;
   onViewExercisePerformance?: (exercise: ExerciseFormData) => void;
+  onUpdateRest?: (seconds: number) => void;
+  onUpdateRir?: (rir: number) => void;
 }
 
 export function SortableExerciseCard({ id, ...props }: SortableExerciseCardProps) {

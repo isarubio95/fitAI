@@ -32,6 +32,8 @@ export type WorkoutExerciseListProps = {
   onSetCompleted: (exerciseIndex: number, setIndex: number, completed: boolean) => void;
   onViewExerciseDetails: (exercise: ExerciseFormData) => void;
   onViewExercisePerformance: (exercise: ExerciseFormData) => void;
+  onUpdateRest?: (exerciseIndex: number, seconds: number) => void;
+  onUpdateRir?: (exerciseIndex: number, rir: number) => void;
 };
 
 /** Handlers inertes para la copia de solo lectura que se pinta al arrastrar. */
@@ -65,6 +67,8 @@ export function WorkoutExerciseList({
   onSetCompleted,
   onViewExerciseDetails,
   onViewExercisePerformance,
+  onUpdateRest,
+  onUpdateRir,
 }: WorkoutExerciseListProps) {
   const sortIds = useMemo(
     () => exercises.map((ex, index) => getExerciseSortId(ex, index)),
@@ -158,6 +162,16 @@ export function WorkoutExerciseList({
                         }
                         onViewExerciseDetails={onViewExerciseDetails}
                         onViewExercisePerformance={onViewExercisePerformance}
+                        onUpdateRest={
+                          isActiveWorkout && onUpdateRest
+                            ? (seconds) => onUpdateRest(ei, seconds)
+                            : undefined
+                        }
+                        onUpdateRir={
+                          isActiveWorkout && onUpdateRir
+                            ? (rir) => onUpdateRir(ei, rir)
+                            : undefined
+                        }
                       />
                     ))}
                   </div>
@@ -190,6 +204,14 @@ export function WorkoutExerciseList({
                 }
                 onViewExerciseDetails={onViewExerciseDetails}
                 onViewExercisePerformance={onViewExercisePerformance}
+                onUpdateRest={
+                  isActiveWorkout && onUpdateRest
+                    ? (seconds) => onUpdateRest(ei, seconds)
+                    : undefined
+                }
+                onUpdateRir={
+                  isActiveWorkout && onUpdateRir ? (rir) => onUpdateRir(ei, rir) : undefined
+                }
               />
             );
           })}

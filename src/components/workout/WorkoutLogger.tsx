@@ -488,6 +488,8 @@ export function WorkoutLogger() {
     restTimer.activeKey,
     restTimer.isRunning,
     restTimer.finished,
+    restTimer.duration,
+    restTimer.endTime,
     titulo,
     pushLiveWorkoutNotification,
   ]);
@@ -752,6 +754,18 @@ export function WorkoutLogger() {
           ...ej,
           series: (ej.series ?? []).map((s) => (s.id === setId ? { ...s, ...patch } : s)),
         })),
+      }));
+    },
+    [updateWorkoutCache],
+  );
+
+  const patchExerciseInWorkoutCache = useCallback(
+    (exerciseId: string, patch: Record<string, unknown>) => {
+      updateWorkoutCache((old) => ({
+        ...old,
+        ejercicios: (old.ejercicios ?? []).map((ej) =>
+          ej.id === exerciseId ? { ...ej, ...patch } : ej,
+        ),
       }));
     },
     [updateWorkoutCache],
@@ -1263,6 +1277,43 @@ export function WorkoutLogger() {
       isPaused,
       titulo,
     ]
+  );
+
+  const persistExerciseMeta = useCallback(
+    async (
+      exerciseIndex: number,
+      patch: { descanso?: number; targetRir?: number | null },
+    ) => {
+      const ex = exercises[exerciseIndex];
+      if (!ex) return;
+
+      setExercises((prev) =>
+        prev.map((e, i) => (i === exerciseIndex ? { ...e, ...patch } : e)),
+      );
+
+      if (patch.descanso != null && restTimer.isRunning && restTimer.activeKey) {
+        const [eiRaw, siRaw] = restTimer.activeKey.split("-");
+        if (Number(eiRaw) === exerciseIndex) {
+          const set = ex.sets[Number(siRaw)];
+          if (set && (set.descanso == null || !Number.isFinite(set.descanso))) {
+            restTimer.retargetDuration(patch.descanso);
+          }
+        }
+      }
+
+      if (!ex.id || !effectiveWorkoutId) return;
+      const dbPatch: { descanso?: number; rir_objetivo?: number | null } = {};
+      if (patch.descanso != null) dbPatch.descanso = patch.descanso;
+      if ("targetRir" in patch) dbPatch.rir_objetivo = patch.targetRir ?? null;
+      if (Object.keys(dbPatch).length === 0) return;
+      try {
+        await supabase.from("ejercicio").update(dbPatch).eq("id", ex.id);
+        patchExerciseInWorkoutCache(ex.id, dbPatch);
+      } catch {
+        // Silent fail; el estado local ya está actualizado
+      }
+    },
+    [exercises, effectiveWorkoutId, patchExerciseInWorkoutCache, restTimer],
   );
 
   const handleWorkoutIconChange = useCallback(
@@ -2073,6 +2124,16 @@ export function WorkoutLogger() {
                   onSetCompleted={handleSetCompleted}
                   onViewExerciseDetails={handleViewExerciseDetails}
                   onViewExercisePerformance={handleViewExercisePerformance}
+                  onUpdateRest={
+                    isActiveWorkout
+                      ? (ei, seconds) => void persistExerciseMeta(ei, { descanso: seconds })
+                      : undefined
+                  }
+                  onUpdateRir={
+                    isActiveWorkout
+                      ? (ei, rir) => void persistExerciseMeta(ei, { targetRir: rir })
+                      : undefined
+                  }
                 />
 
                 {!showFloatingActionBar && (

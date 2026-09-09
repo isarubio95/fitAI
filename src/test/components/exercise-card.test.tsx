@@ -100,6 +100,28 @@ function ActiveExerciseHarness({
   );
 }
 
+function EditableMetaHarness() {
+  const [exercise, setExercise] = useState<ExerciseFormData>({
+    nombre: "Press banca",
+    registro_series: "peso_reps",
+    sets: [emptySet()],
+    descanso: 90,
+    targetRir: 2,
+  });
+  return (
+    <ExerciseCard
+      exercise={exercise}
+      exerciseIndex={0}
+      onRemoveExercise={() => undefined}
+      onAddSet={() => undefined}
+      onRemoveSet={() => undefined}
+      onUpdateSet={() => undefined}
+      onUpdateRest={(seconds) => setExercise((ex) => ({ ...ex, descanso: seconds }))}
+      onUpdateRir={(rir) => setExercise((ex) => ({ ...ex, targetRir: rir }))}
+    />
+  );
+}
+
 describe("ExerciseCard", () => {
   beforeEach(() => {
     mockOverloadSuggestion = null;
@@ -446,5 +468,80 @@ describe("ExerciseCard", () => {
     const order = [...(group?.children ?? [])];
     expect(order.indexOf(restBadge)).toBeLessThan(order.indexOf(info));
     expect(order.indexOf(info)).toBeLessThan(order.indexOf(performance));
+  });
+
+  describe("edición en caliente de descanso y RIR", () => {
+    it("no convierte los badges en botones fuera de un entreno activo", () => {
+      render(
+        <ExerciseCard
+          exercise={{
+            nombre: "Press banca",
+            registro_series: "peso_reps",
+            sets: [emptySet()],
+            descanso: 90,
+            targetRir: 2,
+          }}
+          exerciseIndex={0}
+          onRemoveExercise={() => undefined}
+          onAddSet={() => undefined}
+          onRemoveSet={() => undefined}
+          onUpdateSet={() => undefined}
+        />,
+      );
+
+      expect(screen.queryByRole("button", { name: /Editar descanso/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Editar RIR/ })).not.toBeInTheDocument();
+      expect(screen.getByText("1:30")).toBeInTheDocument();
+      expect(screen.getByText(/RIR:\s*2/)).toBeInTheDocument();
+    });
+
+    it("muestra el badge de RIR aunque no haya objetivo, para poder asignarlo", () => {
+      render(
+        <ExerciseCard
+          exercise={{
+            nombre: "Press banca",
+            registro_series: "peso_reps",
+            sets: [emptySet()],
+          }}
+          exerciseIndex={0}
+          onRemoveExercise={() => undefined}
+          onAddSet={() => undefined}
+          onRemoveSet={() => undefined}
+          onUpdateSet={() => undefined}
+          onUpdateRir={() => undefined}
+        />,
+      );
+
+      expect(screen.getByRole("button", { name: "Editar RIR" })).toBeInTheDocument();
+      expect(screen.getByText(/RIR:\s*—/)).toBeInTheDocument();
+    });
+
+    it("cambia el descanso al pulsar el badge", async () => {
+      render(<EditableMetaHarness />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Editar descanso, 1:30" }));
+      const dialog = await screen.findByRole("dialog", { name: "Descanso entre series" });
+      expect(dialog).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Editar descanso, 1:30" })).toHaveAttribute(
+        "data-vaul-no-drag",
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Sumar 15 segundos" }));
+      expect(screen.getByRole("button", { name: "Editar descanso, 1:45" })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "2:00" }));
+      expect(screen.getByRole("button", { name: "Editar descanso, 2:00" })).toBeInTheDocument();
+    });
+
+    it("cambia el RIR al pulsar el badge", async () => {
+      render(<EditableMetaHarness />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Editar RIR, 2" }));
+      expect(await screen.findByRole("dialog", { name: "RIR objetivo" })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "RIR 4" }));
+      expect(screen.getByRole("button", { name: "Editar RIR, 4" })).toBeInTheDocument();
+      expect(screen.queryByRole("dialog", { name: "RIR objetivo" })).not.toBeInTheDocument();
+    });
   });
 });
