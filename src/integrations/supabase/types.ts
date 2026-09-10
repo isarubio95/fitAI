@@ -1504,6 +1504,7 @@ export type Database = {
           instructions: string[] | null
           musculos_involucrados: string[] | null
           nombre: string
+          nombre_en: string | null
           origen: string | null
           origen_externo_id: string | null
           patron_movimiento: string[]
@@ -1527,6 +1528,7 @@ export type Database = {
           instructions?: string[] | null
           musculos_involucrados?: string[] | null
           nombre: string
+          nombre_en?: string | null
           origen?: string | null
           origen_externo_id?: string | null
           patron_movimiento?: string[]
@@ -1550,6 +1552,7 @@ export type Database = {
           instructions?: string[] | null
           musculos_involucrados?: string[] | null
           nombre?: string
+          nombre_en?: string | null
           origen?: string | null
           origen_externo_id?: string | null
           patron_movimiento?: string[]

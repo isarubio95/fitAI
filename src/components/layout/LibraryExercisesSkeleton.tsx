@@ -13,12 +13,12 @@ const FILTER_CHIPS = [
   { label: "Equipo", Icon: Wrench },
 ] as const;
 
-/** Una fila del catálogo: min-h 5.25rem, thumb blanco 80px, título + equipo + bookmark. */
+/** Una fila del catálogo: min-h 5.25rem, thumb blanco 112px, título + equipo + bookmark. */
 export function ExerciseRowSkeleton() {
   return (
     <Card className="w-full max-w-none overflow-hidden rounded-xl border border-border/40 bg-card shadow-none">
       <CardContent className="flex min-h-[5.25rem] items-stretch p-0">
-        <div className="relative w-20 shrink-0 self-stretch overflow-hidden bg-white">
+        <div className="relative w-28 shrink-0 self-stretch overflow-hidden bg-white">
           <Skeleton className="absolute inset-0 rounded-none bg-muted/70" />
         </div>
         <div className="flex min-w-0 flex-1 items-center gap-3 p-3">

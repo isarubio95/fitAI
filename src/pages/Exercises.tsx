@@ -903,12 +903,12 @@ const Exercises = () => {
                   onClick={() => setSelectedExercise(ex)}
                 >
                   <CardContent className="flex min-h-[5.25rem] items-stretch p-0">
-                    <div className="relative w-20 shrink-0 self-stretch overflow-hidden bg-white">
+                    <div className="relative w-28 shrink-0 self-stretch overflow-hidden bg-white">
                       {mediaUrl ? (
                         <img
                           src={mediaUrl}
                           alt={ex.nombre}
-                          className="absolute inset-0 h-full w-full object-contain"
+                          className="absolute inset-0 h-full w-full object-cover object-center"
                           loading="lazy"
                           decoding="async"
                           draggable={false}
