@@ -150,7 +150,8 @@ describe("ExerciseProgressWidget", () => {
       },
     });
 
-    render(<ExerciseProgressWidget />);
+    render(<ExerciseProgressWidget clockLabel="últimos 12 meses" />);
+    expect(screen.getByText("últimos 12 meses")).toBeInTheDocument();
     expect(screen.getByText(/1 may\.? 2026/i)).toBeInTheDocument();
     expect(screen.getByText("1RM")).toBeInTheDocument();
     expect(screen.getByText("100 kg")).toBeInTheDocument();

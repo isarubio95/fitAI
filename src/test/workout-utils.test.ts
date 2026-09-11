@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   defaultSetForMode,
+  defaultTargetRirForNewExercise,
   formatRitmoSegKmLabel,
   formPatchFromLastSet,
   initialSetCountForRegistro,
@@ -97,6 +98,16 @@ describe("workout utils", () => {
     expect(initialSetCountForRegistro("duracion_ritmo")).toBe(1);
     expect(initialSetsForNewExercise("peso_reps")).toHaveLength(3);
     expect(initialSetsForNewExercise("duracion")).toHaveLength(1);
+  });
+
+  it("prescribe RIR 1 al añadir fuerza desde el catálogo, no al cardio", () => {
+    expect(defaultTargetRirForNewExercise("peso_reps")).toBe(1);
+    expect(defaultTargetRirForNewExercise("solo_reps")).toBe(1);
+    expect(defaultTargetRirForNewExercise("duracion")).toBeNull();
+    expect(defaultTargetRirForNewExercise("duracion_ritmo")).toBeNull();
+    expect(initialSetsForNewExercise("peso_reps").every((s) => s.objetivo_rir === 1)).toBe(true);
+    expect(initialSetsForNewExercise("solo_reps").every((s) => s.objetivo_rir === 1)).toBe(true);
+    expect(initialSetsForNewExercise("duracion").every((s) => s.objetivo_rir == null)).toBe(true);
   });
 
   it("genera set por defecto por modo", () => {

@@ -3,6 +3,10 @@
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+# Perfil persistente del Playwright MCP (sesión real de Supabase).
+.playwright-mcp-profile/
+# Snapshot opcional de cookies/localStorage para --storage-state.
+e2e/.auth/
 
 # Logs
 logs

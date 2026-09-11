@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   DndContext,
   closestCenter,
@@ -61,6 +61,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import {
+  clearCarryFromSearchParams,
+  readCarryFromSearchParams,
+} from "@/lib/catalogExerciseCarry";
+import { useAppendExerciseToRoutine } from "@/hooks/useAppendExerciseToRoutine";
 import type { RutinaWithDetails } from "@/types/routine";
 import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
 import {
@@ -118,9 +123,17 @@ const Routines = () => {
   const duplicateRoutine = useDuplicateRoutine();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const updateOrder = useUpdateRoutineOrder();
   const { toast } = useToast();
   const { openFromTemplate } = useGlobalWorkoutDrawer();
+  const { append: appendToRoutine } = useAppendExerciseToRoutine();
+  const carry = useMemo(() => readCarryFromSearchParams(searchParams), [searchParams]);
+  const autoOpenedCreateRef = useRef(false);
+
+  const clearCarry = () => {
+    setSearchParams(clearCarryFromSearchParams(searchParams), { replace: true });
+  };
 
   const routineNames = useMemo(
     () => (routines ?? []).map((r) => r.nombre),
@@ -247,8 +260,44 @@ const Routines = () => {
     updateOrder.mutate(updates);
   };
 
+  const openCreateWithSeed = () => {
+    setEditId(null);
+    setFormOpen(true);
+  };
+
   const openCreateChoice = () => {
+    if (carry) {
+      openCreateWithSeed();
+      return;
+    }
     setCreateChoiceOpen(true);
+  };
+
+  useEffect(() => {
+    if (!carry) autoOpenedCreateRef.current = false;
+  }, [carry]);
+
+  useEffect(() => {
+    if (isLoading || !carry || autoOpenedCreateRef.current) return;
+    if ((routines?.length ?? 0) === 0) {
+      autoOpenedCreateRef.current = true;
+      openCreateWithSeed();
+    }
+  }, [isLoading, carry, routines]);
+
+  const dropOnRoutine = async (routineId: string) => {
+    if (!carry) return;
+    try {
+      await appendToRoutine({ routineId, carry });
+      toast({ title: "Añadido a la rutina", description: carry.nombre });
+      clearCarry();
+    } catch (e: unknown) {
+      toast({
+        title: "No se pudo añadir a la rutina",
+        description: e instanceof Error ? e.message : "Prueba de nuevo.",
+        variant: "destructive",
+      });
+    }
   };
 
   /** Evita solapar dos modales Radix al cerrar uno y abrir otro. */
@@ -396,6 +445,19 @@ const Routines = () => {
         "max-md:-mb-24 max-md:pb-[calc(var(--app-bottom-nav-inset,5.5rem)+3.5rem)] md:pb-20",
       )}
     >
+      {carry ? (
+        <div className={PAGE_STACK_INSET}>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-card px-4 py-3">
+            <p className="min-w-0 text-sm text-foreground">
+              Llevas {carry.nombre} · toca una rutina para soltarlo
+            </p>
+            <Button type="button" variant="ghost" className="h-11 shrink-0" onClick={clearCarry}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {!isLoading && routineCount > 0 ? (
         <div className={cn("flex items-center justify-between gap-3", PAGE_STACK_INSET)}>
           <p className="text-sm text-muted-foreground">
@@ -486,7 +548,13 @@ const Routines = () => {
                   routine={r}
                   isDragMode={isDragMode}
                   isOpen={openRoutineId === r.id}
-                  onOpenChange={(open) => setOpenRoutineId(open ? r.id : null)}
+                  onOpenChange={(open) => {
+                    if (carry && open) {
+                      void dropOnRoutine(r.id);
+                      return;
+                    }
+                    setOpenRoutineId(open ? r.id : null);
+                  }}
                   lastTrainedAt={lastTrainedByName?.[r.nombre.trim()] ?? null}
                   onEdit={openEdit}
                   onDelete={setDeleteId}
@@ -542,7 +610,13 @@ const Routines = () => {
       </Dialog>
 
       <PredefinedRoutinesExplorer open={predefinedExplorerOpen} onOpenChange={setPredefinedExplorerOpen} />
-      <RoutineForm open={formOpen} onOpenChange={setFormOpen} routineId={editId} />
+      <RoutineForm
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        routineId={editId}
+        seedExercise={!editId ? carry : null}
+        onSaved={carry && !editId ? clearCarry : undefined}
+      />
       <ImportRoutineFromCsvDialog open={importCsvOpen} onOpenChange={setImportCsvOpen} />
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>

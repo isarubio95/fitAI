@@ -153,13 +153,25 @@ export function defaultSetForMode(
 /** Series en blanco al añadir un ejercicio de fuerza desde el catálogo. */
 export const DEFAULT_STRENGTH_SET_COUNT = 3;
 
+/** RIR objetivo al añadir fuerza a un entreno en blanco (no viene de rutina). */
+export const DEFAULT_CATALOG_TARGET_RIR = 1;
+
 export function initialSetCountForRegistro(mode: RegistroSeries): number {
   return registroUsesReps(mode) ? DEFAULT_STRENGTH_SET_COUNT : 1;
 }
 
+/** Fuerza (peso/reps o solo reps) lleva RIR 1; cardio no prescribe RIR. */
+export function defaultTargetRirForNewExercise(mode: RegistroSeries): number | null {
+  return registroUsesReps(mode) ? DEFAULT_CATALOG_TARGET_RIR : null;
+}
+
 export function initialSetsForNewExercise(mode: RegistroSeries): SetFormData[] {
   const blank = defaultSetForMode(mode);
-  return Array.from({ length: initialSetCountForRegistro(mode) }, () => ({ ...blank }));
+  const targetRir = defaultTargetRirForNewExercise(mode);
+  return Array.from({ length: initialSetCountForRegistro(mode) }, () => ({
+    ...blank,
+    ...(targetRir != null ? { objetivo_rir: targetRir } : {}),
+  }));
 }
 
 /** Campos de serie en BD según modo (evita dejar ritmo en modo solo duración). */

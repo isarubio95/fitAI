@@ -14,6 +14,12 @@ export const chartColors = {
   neutral: "hsl(var(--chart-neutral))",
 } as const;
 
+/** Gym = piloto; cardio = azul de ruta (`DESIGN.md`). */
+export const chartDiarySeries = {
+  gym: "hsl(var(--primary))",
+  cardio: chartColors.fitness,
+} as const;
+
 /** Opacidad del área sombreada entre dos series. */
 export const CHART_AREA_OPACITY = 0.16;
 

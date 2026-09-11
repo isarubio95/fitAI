@@ -47,6 +47,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Search, Dumbbell, User, Trash2, Loader2, ArrowDownAZ, Check, ChevronDown, Heart, PanelTopClose, CircleDot, Hand, Footprints, LayoutGrid, Wrench, BicepsFlexed, Filter, X, Plus, Bookmark } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { writeCarryToSearchParams, type CatalogExerciseCarry } from "@/lib/catalogExerciseCarry";
+import { useAppendExerciseToActiveWorkout } from "@/hooks/useAppendExerciseToActiveWorkout";
 import ExerciseDetailSheet from "@/components/exercise/ExerciseDetailSheet";
 import MuscleMultiSelect from "@/components/exercise/MuscleMultiSelect";
 import { type MainMuscleGroup } from "@/constants/muscleGroups";
@@ -247,6 +249,8 @@ const Exercises = () => {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [difficultyLoading, setDifficultyLoading] = useState(false);
   const difficultyLoadingTimerRef = useRef<number | null>(null);
+  const { activeWorkout, append: appendToWorkout, isPending: addingToWorkout } =
+    useAppendExerciseToActiveWorkout();
 
   // Se busca sobre lo que hay escrito, no sobre la URL: la URL va con debounce y
   // eso metía un retardo visible en cada tecla. `useDeferredValue` deja que React
@@ -415,6 +419,39 @@ const Exercises = () => {
     observer.observe(target);
     return () => observer.disconnect();
   }, [hasMoreToRender, loadMore, visibleExercises.length]);
+
+  const carryFromExercise = (ex: CatalogExercise): CatalogExerciseCarry => ({
+    source: exerciseFavoriteSource(ex),
+    id: ex.id,
+    nombre: ex.nombre,
+    registro_series: (ex.registro_series as RegistroSeries) ?? "peso_reps",
+  });
+
+  const handleAddToWorkout = async () => {
+    if (!selectedExercise) return;
+    try {
+      await appendToWorkout(carryFromExercise(selectedExercise));
+      toast({
+        title: "Añadido al entreno",
+        description: selectedExercise.nombre,
+      });
+      setSelectedExercise(null);
+    } catch (e: unknown) {
+      toast({
+        title: "No se pudo añadir al entreno",
+        description: e instanceof Error ? e.message : "Prueba de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddToRoutine = () => {
+    if (!selectedExercise) return;
+    const next = writeCarryToSearchParams(searchParams, carryFromExercise(selectedExercise));
+    next.set("tab", "rutinas");
+    setSelectedExercise(null);
+    setSearchParams(next);
+  };
 
   const handleCreate = async () => {
     if (!user || !newName.trim()) return;
@@ -1081,6 +1118,10 @@ const Exercises = () => {
         onOpenChange={(open) => !open && setSelectedExercise(null)}
         currentUserId={user?.id}
         favoriteSource={selectedExercise ? exerciseFavoriteSource(selectedExercise) : undefined}
+        hasActiveWorkout={!!activeWorkout}
+        onAddToWorkout={user && activeWorkout ? handleAddToWorkout : undefined}
+        onAddToRoutine={user ? handleAddToRoutine : undefined}
+        addingToWorkout={addingToWorkout}
       />
     </div>
   );

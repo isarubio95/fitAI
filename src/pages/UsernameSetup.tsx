@@ -8,12 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PAGE_CARD } from "@/lib/pageStyles";
 
 const USERNAME_REGEX = /^[a-z0-9_]{3,20}$/;
+const USERNAME_FIELD_ID = "community-username";
 
 function normalizeUsername(raw: string) {
   const trimmed = raw.trim().toLowerCase();
-  // Normalización simple: reemplaza espacios y grupos de espacios por '_'
   return trimmed.replace(/\s+/g, "_");
 }
 
@@ -54,7 +55,6 @@ export default function UsernameSetup() {
 
     setIsSaving(true);
     try {
-      // Best-effort: evita el mismo username si ya existe.
       const { data: existing } = await supabase
         .from("perfil")
         .select("id")
@@ -73,10 +73,9 @@ export default function UsernameSetup() {
 
       if (upErr) throw upErr;
 
-      // Refresca el guard para que AppLayout muestre el resto de la app.
-      queryClient.invalidateQueries({ queryKey: ["profileSetup", user.id] });
+      await queryClient.invalidateQueries({ queryKey: ["profileSetup", user.id] });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Error guardando el nombre de usuario.";
+      const message = err instanceof Error ? err.message : "No se pudo guardar el nombre de usuario.";
       setError(message);
       toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
@@ -85,36 +84,42 @@ export default function UsernameSetup() {
   };
 
   return (
-    <div className="min-h-dvh w-full flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-xl">Nombre de usuario</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Input
-                ref={inputRef}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Ej: juan_gym"
-                autoComplete="nickname"
-                inputMode="text"
-                className="h-12"
-              />
-              {error ? <p className="text-sm text-destructive">{error}</p> : null}
-              <p className="text-xs text-muted-foreground">
-                Solo será visible en la comunidad. Puedes cambiarlo más adelante si lo permites.
+    <Card className={PAGE_CARD}>
+      <CardHeader className="px-5 pb-2 pt-6">
+        <CardTitle asChild className="text-xl">
+          <h2>
+            <label htmlFor={USERNAME_FIELD_ID}>Nombre de usuario</label>
+          </h2>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-5 pb-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Input
+              id={USERNAME_FIELD_ID}
+              ref={inputRef}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Ej: juan_gym"
+              autoComplete="nickname"
+              inputMode="text"
+              className="h-12"
+            />
+            {error ? (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
               </p>
-            </div>
+            ) : null}
+            <p className="text-xs text-muted-foreground">
+              Solo será visible en la comunidad. El resto de la app no lo necesita.
+            </p>
+          </div>
 
-            <Button type="submit" className="w-full h-12" disabled={isSaving}>
-              {isSaving ? "Guardando..." : "Continuar"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          <Button type="submit" className="w-full h-12" disabled={isSaving}>
+            {isSaving ? "Guardando..." : "Continuar"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
-

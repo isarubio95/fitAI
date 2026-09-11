@@ -63,6 +63,7 @@ import {
 } from "@/lib/routineIcons";
 import { persistActividadGimnasio, fetchPrefillGimnasioForUser, GIMNASIOS_QUERY_KEY } from "@/hooks/useGimnasios";
 import { mergeCalendarDatePreservingTime } from "@/lib/mergeCalendarDate";
+import { mapWorkoutExerciseToFormData } from "@/lib/persistCatalogExerciseToWorkout";
 import type { SelectedGimnasio } from "@/types/gimnasio";
 import { getDefaultWorkoutTitle } from "@/lib/defaultWorkoutTitle";
 import { completePlannedRoutine } from "@/hooks/useWorkoutPlan";
@@ -82,12 +83,13 @@ import {
   normalizeRegistroSeries,
   defaultSetForMode,
   initialSetCountForRegistro,
+  initialSetsForNewExercise,
+  defaultTargetRirForNewExercise,
   setHasWork,
   serieCountsAsRecorded,
   countRecordedSets,
   serieFieldsForRegistro,
   serieTargetFields,
-  serieTargetsFromRow,
   setIsUnlogged,
   setCanApplyOverloadPatch,
 } from "@/types/workout";
@@ -237,30 +239,9 @@ export function WorkoutLogger() {
       hydratedWorkoutIdRef.current = existingWorkout.id;
       const hydratedTitulo = existingWorkout.titulo;
       const hydratedFecha = new Date(existingWorkout.fecha).toISOString().slice(0, 10);
-      const hydratedExercises: ExerciseFormData[] = existingWorkout.ejercicios.map((ej) => ({
-        tipo_ejercicio_id: ej.tipo_ejercicio_id ?? undefined,
-        usuario_ejercicio_id: ej.usuario_ejercicio_id ?? undefined,
-        nombre: ej.tipo_ejercicio.nombre,
-        id: ej.id,
-        descanso: ej.descanso ?? undefined,
-        repRange: ej.rep_range ?? undefined,
-        targetRir: ej.rir_objetivo ?? undefined,
-        registro_series: normalizeRegistroSeries(ej.registro_series),
-        sets: ej.series
-          .sort((a, b) => a.numero_serie - b.numero_serie)
-          .map((s) => ({
-            repeticiones: s.repeticiones,
-            peso_kg: Number(s.peso_kg),
-            duracion_seg: s.duracion_seg ?? null,
-            ritmo_seg_km: s.ritmo_seg_km ?? null,
-            id: s.id,
-            completed: s.completed,
-            descanso: s.descanso ?? undefined,
-            // Sin esto, rehidratar una sesión perdería el plan por serie
-            // (pirámide, calentamientos) y todas las filas parecerían iguales.
-            ...serieTargetsFromRow(s),
-          })),
-      }));
+      const hydratedExercises: ExerciseFormData[] = existingWorkout.ejercicios.map(
+        mapWorkoutExerciseToFormData,
+      );
       setTitulo(hydratedTitulo);
       setFecha(hydratedFecha);
       setExercises(hydratedExercises);
@@ -300,6 +281,18 @@ export function WorkoutLogger() {
       );
     }
   }, [isEdit, existingWorkout, open, templateExercises, routineIconsByTitle, armSessionClock]);
+
+  // Alta desde el catálogo mientras el logger está abierto: la hidratación
+  // inicial no se vuelve a correr, así que hay que colar las filas nuevas.
+  useEffect(() => {
+    if (!open || !isEdit || !existingWorkout || templateExercises) return;
+    if (hydratedWorkoutIdRef.current !== existingWorkout.id) return;
+    const known = new Set(exercises.map((e) => e.id).filter(Boolean));
+    const extra = existingWorkout.ejercicios.filter((ej) => !known.has(ej.id));
+    if (extra.length === 0) return;
+    setExercises((prev) => [...prev, ...extra.map(mapWorkoutExerciseToFormData)]);
+    if (!existingWorkout.fecha_fin) armSessionClock(existingWorkout.fecha);
+  }, [open, isEdit, existingWorkout, templateExercises, exercises, armSessionClock]);
 
   // Crear sesión activa al abrir (desde rutina/plan o entreno en blanco)
   useEffect(() => {
@@ -925,14 +918,14 @@ export function WorkoutLogger() {
   ) => {
     const { tipo_ejercicio_id, usuario_ejercicio_id, registro_series: rs } = catalogRef;
     const registro_series = normalizeRegistroSeries(rs);
-    const firstSet = defaultSetForMode(registro_series, null, null);
-    const setCount = initialSetCountForRegistro(registro_series);
+    const targetRir = defaultTargetRirForNewExercise(registro_series);
     const localExercise: ExerciseFormData = {
       tipo_ejercicio_id,
       usuario_ejercicio_id,
       nombre,
       registro_series,
-      sets: Array.from({ length: setCount }, () => ({ ...firstSet })),
+      targetRir,
+      sets: initialSetsForNewExercise(registro_series),
     };
     if (effectiveWorkoutId && user) {
       try {
@@ -983,7 +976,7 @@ export function WorkoutLogger() {
       tipo_serie: DEFAULT_TIPO_SERIE,
       objetivo_repes_min: lastWorking?.objetivo_repes_min ?? null,
       objetivo_repes_max: lastWorking?.objetivo_repes_max ?? null,
-      objetivo_rir: lastWorking?.objetivo_rir ?? null,
+      objetivo_rir: lastWorking?.objetivo_rir ?? ex.targetRir ?? null,
       objetivo_peso_kg: lastWorking?.objetivo_peso_kg ?? null,
     };
 

@@ -13,8 +13,14 @@ import { Flame, Snowflake } from "lucide-react";
 import { PAGE_CARD, PAGE_CARD_STACK_GAP, PROGRESS_CARD_HEADER } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 
-export function MuscleRankingWidget() {
-  const { data, isLoading } = useMuscleStatistics();
+export function MuscleRankingWidget({
+  clockLabel,
+  range,
+}: {
+  clockLabel?: string;
+  range?: { start: Date; end: Date };
+} = {}) {
+  const { data, isLoading } = useMuscleStatistics(range);
   const [detailGroup, setDetailGroup] = useState<MainMuscleGroup | null>(null);
 
   if (isLoading) {
@@ -27,6 +33,7 @@ export function MuscleRankingWidget() {
   }
 
   if (!data) return null;
+  if (!data.topGroups.some((row) => row.count > 0)) return null;
 
   return (
     <>
@@ -35,8 +42,11 @@ export function MuscleRankingWidget() {
         <Card className={PAGE_CARD}>
           <CardHeader className={PROGRESS_CARD_HEADER}>
             <CardTitle className="flex items-center gap-1.5 text-base">
-              <Flame className="h-4 w-4 text-primary" /> Más Entrenados
+              <Flame className="h-4 w-4 text-primary" /> Más entrenados
             </CardTitle>
+            {clockLabel ? (
+              <p className="text-xs font-normal text-muted-foreground">{clockLabel}</p>
+            ) : null}
           </CardHeader>
           <CardContent className="space-y-1.5 px-5 pt-0">
             {data.topGroups.map(({ group, count }, i) => (
@@ -55,8 +65,11 @@ export function MuscleRankingWidget() {
         <Card className={PAGE_CARD}>
           <CardHeader className={PROGRESS_CARD_HEADER}>
             <CardTitle className="flex items-center gap-1.5 text-base">
-              <Snowflake className="h-4 w-4 text-muted-foreground" /> Menos Entrenados
+              <Snowflake className="h-4 w-4 text-muted-foreground" /> Menos entrenados
             </CardTitle>
+            {clockLabel ? (
+              <p className="text-xs font-normal text-muted-foreground">{clockLabel}</p>
+            ) : null}
           </CardHeader>
           <CardContent className="space-y-1.5 px-5 pt-0">
             {data.bottomGroups.map(({ group, count }, i) => (

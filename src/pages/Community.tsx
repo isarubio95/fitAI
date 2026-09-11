@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { Loader2, UserPlus, UserCheck } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
+import { profileHasUsername, useProfileSetup } from "@/hooks/useProfileSetup";
+import UsernameSetup from "@/pages/UsernameSetup";
 import { useUserSearch } from "@/hooks/useUserSearch";
 import { useFollows } from "@/hooks/useFollows";
 import { useCommunityFeed, type CommunityFeedItem } from "@/hooks/useCommunityFeed";
@@ -39,6 +41,13 @@ function feedItemKey(item: CommunityFeedItem) {
 
 export default function Community() {
   const { user } = useAuth();
+  const {
+    data: profileSetup,
+    isLoading: profileLoading,
+    isError: profileError,
+    refetch: refetchProfile,
+    isFetching: profileFetching,
+  } = useProfileSetup();
   const [searchParams] = useSearchParams();
   const focusGymId = searchParams.get("gym");
   const focusCardioId = searchParams.get("cardio");
@@ -242,6 +251,8 @@ export default function Community() {
       />
     );
 
+  const needsUsername = !profileLoading && !profileError && !profileHasUsername(profileSetup);
+
   return (
     <>
       <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8">
@@ -254,37 +265,70 @@ export default function Community() {
             showSearchPanel && "flex-1",
           )}
         >
-          <Card className={cn(COMMUNITY_CARD_CLASS, showSearchPanel && "flex-1")}>
-            <CardHeader className="px-5 pb-0 pt-6 md:pt-8">
-              <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
-            </CardHeader>
-            <CardContent
-              className={cn("px-5 pt-3 md:pt-4", showSearchPanel ? "pb-3" : "pb-6")}
-            >
-              {searchFields}
-            </CardContent>
-            {showSearchPanel && (
-              <CardContent className="space-y-3 px-5 pb-6 pt-0">{searchResultsBody}</CardContent>
-            )}
-          </Card>
-
-          {!showSearchPanel && !loadingFeed && !loadingFocused && displayFeed.length === 0 && (
-            <p className="px-5 py-6 text-center text-sm text-muted-foreground">
-              {communityFeedEmptyMessage(followingIds.size)}
-            </p>
+          {profileLoading && (
+            <Skeleton className="h-52 w-full rounded-2xl bg-card md:rounded-3xl" />
           )}
 
-          {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 &&
-            Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 w-full rounded-2xl bg-card md:rounded-3xl" />
-            ))}
+          {profileError && (
+            <Card className={COMMUNITY_CARD_CLASS}>
+              <CardHeader className="px-5 pb-2 pt-6">
+                <CardTitle className="text-base">No se pudo cargar tu perfil</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 px-5 pb-6">
+                <p className="text-sm text-muted-foreground">
+                  Reintenta. El diario sigue disponible en Inicio y Tú.
+                </p>
+                <Button
+                  type="button"
+                  className="h-12 w-full"
+                  disabled={profileFetching}
+                  onClick={() => {
+                    void refetchProfile();
+                  }}
+                >
+                  {profileFetching ? "Reintentando..." : "Reintentar"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
-          {!showSearchPanel && displayFeed.map((item) => renderFeedCard(item))}
+          {needsUsername && <UsernameSetup />}
 
-          {!showSearchPanel && !loadingFeed && hasNextPage && (
-            <div ref={loadMoreRef} className="flex items-center justify-center py-4">
-              {isFetchingNextPage && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
-            </div>
+          {!profileLoading && !profileError && !needsUsername && (
+            <>
+              <Card className={cn(COMMUNITY_CARD_CLASS, showSearchPanel && "flex-1")}>
+                <CardHeader className="px-5 pb-0 pt-6 md:pt-8">
+                  <CardTitle className="text-base">Buscar por nombre de usuario</CardTitle>
+                </CardHeader>
+                <CardContent
+                  className={cn("px-5 pt-3 md:pt-4", showSearchPanel ? "pb-3" : "pb-6")}
+                >
+                  {searchFields}
+                </CardContent>
+                {showSearchPanel && (
+                  <CardContent className="space-y-3 px-5 pb-6 pt-0">{searchResultsBody}</CardContent>
+                )}
+              </Card>
+
+              {!showSearchPanel && !loadingFeed && !loadingFocused && displayFeed.length === 0 && (
+                <p className="px-5 py-6 text-center text-sm text-muted-foreground">
+                  {communityFeedEmptyMessage(followingIds.size)}
+                </p>
+              )}
+
+              {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 &&
+                Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-28 w-full rounded-2xl bg-card md:rounded-3xl" />
+                ))}
+
+              {!showSearchPanel && displayFeed.map((item) => renderFeedCard(item))}
+
+              {!showSearchPanel && !loadingFeed && hasNextPage && (
+                <div ref={loadMoreRef} className="flex items-center justify-center py-4">
+                  {isFetchingNextPage && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                </div>
+              )}
+            </>
           )}
         </section>
       </div>

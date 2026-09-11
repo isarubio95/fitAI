@@ -26,6 +26,14 @@ vi.mock("@/hooks/useExerciseFavorites", () => ({ useExerciseFavorites: mockUseEx
 
 vi.mock("@/components/exercise/ExerciseDetailSheet", () => ({ default: () => null }));
 
+vi.mock("@/hooks/useAppendExerciseToActiveWorkout", () => ({
+  useAppendExerciseToActiveWorkout: () => ({
+    activeWorkout: null,
+    append: vi.fn(),
+    isPending: false,
+  }),
+}));
+
 import Exercises from "@/pages/Exercises";
 
 const CATALOG = [

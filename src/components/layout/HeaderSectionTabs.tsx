@@ -21,7 +21,7 @@ export function HeaderSectionTabs({
   tabs: readonly HeaderSectionTab[];
   activeTab: string;
 }) {
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const animation = useSectionTabUnderlineAnimation();
   const [shownTab, setShownTab] = useOptimisticTab(activeTab);
 
@@ -38,7 +38,9 @@ export function HeaderSectionTabs({
           onClick={() => {
             if (shownTab !== value) animation.enableAnimation();
             setShownTab(value);
-            setSearchParams({ tab: value });
+            const next = new URLSearchParams(searchParams);
+            next.set("tab", value);
+            setSearchParams(next, { replace: true });
           }}
           className={sectionUnderlineTabClass(shownTab === value)}
         >

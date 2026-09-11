@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { chartAxis, chartColors, chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
+import { chartAxis, chartDiarySeries, chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
 import type { TrainingLoadData } from "@/hooks/useTrainingLoad";
 import { cn } from "@/lib/utils";
 import { DetailDrawerShell, DetailSection } from "./DetailDrawerShell";
@@ -96,8 +96,8 @@ export function FormDetailDrawer({
           hint={`De dónde viene la carga en las últimas ${weekly.length} semanas.`}
         >
           <div className="mb-3 flex items-center gap-4 text-xs text-muted-foreground">
-            <LegendDot color={chartColors.fitness}>Fuerza</LegendDot>
-            <LegendDot color={chartColors.fresh}>Cardio</LegendDot>
+            <LegendDot color={chartDiarySeries.gym}>Fuerza</LegendDot>
+            <LegendDot color={chartDiarySeries.cardio}>Cardio</LegendDot>
           </div>
           <ResponsiveContainer width="100%" height={WEEKLY_CHART_HEIGHT}>
             <BarChart
@@ -130,13 +130,13 @@ export function FormDetailDrawer({
               <Bar
                 dataKey="fuerza"
                 stackId="carga"
-                fill={chartColors.fitness}
+                fill={chartDiarySeries.gym}
                 isAnimationActive={false}
               />
               <Bar
                 dataKey="cardio"
                 stackId="carga"
-                fill={chartColors.fresh}
+                fill={chartDiarySeries.cardio}
                 isAnimationActive={false}
                 radius={[3, 3, 0, 0]}
               />

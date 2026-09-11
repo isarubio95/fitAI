@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useWorkoutHistory } from "@/hooks/useWorkouts";
 import { useCardioHistory } from "@/hooks/useCardioSessions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  TrendingUp, TrendingDown,
-  Activity, Weight, Layers, Trophy, Star, Timer, Route,
-} from "lucide-react";
+import { Star, Trophy } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -17,7 +15,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { chartAxis, chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
+import { chartAxis, chartDiarySeries, chartYAxis, ChartYAxisTick } from "@/lib/chart-colors";
 import {
   format, startOfWeek, startOfDay, addDays, subDays, addWeeks, subWeeks,
   startOfMonth, subMonths,
@@ -26,7 +24,6 @@ import { es } from "date-fns/locale";
 import { type ActividadWithDetails } from "@/types/workout";
 import { computeCardioSessionMetrics, type CardioSesionWithDetails } from "@/lib/cardioSessionDisplay";
 import { MuscleRankingWidget } from "@/components/dashboard/MuscleRankingWidget";
-import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
 import {
   ChartScrubStat,
@@ -54,15 +51,13 @@ import {
   Tabs,
   TabsTrigger,
 } from "@/components/ui/tabs";
-
-type PeriodKey = "7d" | "4w" | "3m" | "6m";
-
-const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
-  { key: "7d", label: "7 días" },
-  { key: "4w", label: "4 sem." },
-  { key: "3m", label: "3 meses" },
-  { key: "6m", label: "6 meses" },
-];
+import { buildProgressVerdict, volumeDeltaCopy } from "@/lib/progressVerdict";
+import {
+  parseYouProgressPeriod,
+  YOU_PROGRESS_PERIODS,
+  youProgressPeriodMeta,
+  type YouProgressPeriod,
+} from "@/lib/youProgressPeriod";
 
 const Y_TICK_COUNT = 5;
 /** Una etiqueta más que el 1RM del dashboard (6). */
@@ -122,9 +117,9 @@ function formatYTick(value: number): string {
 const Y_AXIS_WIDE_EXTRA_PX = 5;
 
 function yAxisWidthForTicks(dataKey: "workouts" | "volume", ticks: readonly number[]): number {
-  if (dataKey !== "volume") return chartYAxis.width;
+  const base = chartYAxis.width;
   const wide = ticks.some((tick) => Math.round(Math.abs(tick)).toString().length >= 5);
-  return wide ? chartYAxis.width + Y_AXIS_WIDE_EXTRA_PX : chartYAxis.width;
+  return dataKey === "volume" && wide ? base + Y_AXIS_WIDE_EXTRA_PX : base;
 }
 
 function inRange(fecha: string, start: Date, end: Date) {
@@ -133,46 +128,38 @@ function inRange(fecha: string, start: Date, end: Date) {
 }
 
 function calcGymMetrics(workouts: ActividadWithDetails[], start: Date, end: Date) {
-  let volume = 0;
-  let durationSec = 0;
-  let sets = 0;
   let sessions = 0;
+  let volume = 0;
+  let sets = 0;
+  let durationSec = 0;
   for (const w of workouts) {
     if (!inRange(w.fecha, start, end)) continue;
-    sessions++;
+    sessions += 1;
     for (const ej of w.ejercicios) {
       for (const s of ej.series) {
-        sets++;
+        sets += 1;
         const dur = Number(s.duracion_seg ?? 0);
         const kgReps = s.repeticiones * Number(s.peso_kg);
-        if (dur > 0 && kgReps === 0) {
-          durationSec += dur;
-        } else {
-          volume += kgReps;
-        }
+        if (Number.isFinite(kgReps)) volume += kgReps;
+        if (Number.isFinite(dur) && dur > 0) durationSec += dur;
       }
     }
   }
-  return { volume, durationSec, sets, sessions };
+  return { sessions, volume, sets, durationSec };
 }
 
 function calcCardioMetrics(sessions: CardioSesionWithDetails[], start: Date, end: Date) {
+  let count = 0;
   let distanceM = 0;
   let durationSec = 0;
-  let count = 0;
   for (const s of sessions) {
     if (!inRange(s.fecha_inicio, start, end)) continue;
-    count++;
+    count += 1;
     const m = computeCardioSessionMetrics(s);
-    distanceM += m.distanceM;
-    durationSec += m.durationSec;
+    if (m.distanceM != null) distanceM += m.distanceM;
+    if (m.movingDurationSec != null) durationSec += m.movingDurationSec;
   }
-  return { distanceM, durationSec, sessions: count };
-}
-
-function pctChange(current: number, previous: number): number | null {
-  if (previous === 0) return current > 0 ? 100 : null;
-  return Math.round(((current - previous) / previous) * 100);
+  return { sessions: count, distanceM, durationSec };
 }
 
 function formatVolume(volume: number) {
@@ -180,19 +167,7 @@ function formatVolume(volume: number) {
   return `${Math.round(volume)} kg`;
 }
 
-function formatDistance(m: number) {
-  if (m >= 1000) return `${(m / 1000).toFixed(1)} km`;
-  return `${Math.round(m)} m`;
-}
-
-function formatDuration(sec: number) {
-  const h = Math.floor(sec / 3600);
-  const m = Math.round((sec % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m} min`;
-}
-
-function periodBounds(now: Date, key: PeriodKey) {
+function periodBounds(now: Date, key: YouProgressPeriod) {
   if (key === "7d") {
     const start = startOfDay(subDays(now, 6));
     const end = addDays(startOfDay(now), 1);
@@ -219,13 +194,13 @@ function periodBounds(now: Date, key: PeriodKey) {
 
 type Bucket = { name: string; start: Date; end: Date };
 
-function periodBuckets(now: Date, key: PeriodKey): Bucket[] {
+function periodBuckets(now: Date, key: YouProgressPeriod): Bucket[] {
   if (key === "7d") {
     const buckets: Bucket[] = [];
     for (let i = 6; i >= 0; i--) {
       const start = startOfDay(subDays(now, i));
       buckets.push({
-        name: format(start, "EEE", { locale: es }),
+        name: format(start, "EEE d", { locale: es }),
         start,
         end: addDays(start, 1),
       });
@@ -243,17 +218,6 @@ function periodBuckets(now: Date, key: PeriodKey): Bucket[] {
     });
   }
   return buckets;
-}
-
-function ChangeBadge({ pct }: { pct: number | null }) {
-  if (pct === null) return <span className="text-xs text-muted-foreground">sin datos prev.</span>;
-  const positive = pct >= 0;
-  return (
-    <Badge variant="secondary" className={`gap-0.5 text-xs ${positive ? "text-success" : "text-destructive"}`}>
-      {positive ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
-      {positive ? "+" : ""}{pct}%
-    </Badge>
-  );
 }
 
 function ProgressXTick({
@@ -282,43 +246,36 @@ function ProgressXTick({
       y={yNum + 12}
       textAnchor={isFirst ? "start" : isLast ? "end" : "middle"}
       fill={chartAxis.tick}
-      fontSize={11}
+      fontSize={12}
     >
       {payload.value}
     </text>
   );
 }
 
-function ProgressAreaChart({
+function ProgressChartFrame({
   data,
-  dataKey,
   yScale,
   xTicks,
   lastIndex,
   displayPoint,
   onPoint,
-  gradientId,
+  yAxisWidth,
+  children,
 }: {
   data: ChartPoint[];
-  dataKey: "workouts" | "volume";
   yScale: { domain: [number, number]; ticks: number[] };
   xTicks: string[];
   lastIndex: number | undefined;
   displayPoint: ChartPoint | null;
   onPoint: (point: ChartPoint | undefined) => void;
-  gradientId: string;
+  yAxisWidth: number;
+  children: ReactNode;
 }) {
-  const yAxisWidth = yAxisWidthForTicks(dataKey, yScale.ticks);
-
   return (
     <ResponsiveContainer width="100%" height={PROGRESS_CHART_HEIGHT}>
       <AreaChart data={data} margin={{ top: 12, right: chartYAxis.marginRight, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-          </linearGradient>
-        </defs>
+        {children}
         <CartesianGrid
           stroke={chartAxis.grid}
           strokeOpacity={chartAxis.gridOpacity}
@@ -347,7 +304,7 @@ function ProgressAreaChart({
           axisLine={false}
           tickLine={false}
           tickMargin={0}
-          tick={<ChartYAxisTick axisWidth={yAxisWidth} />}
+          tick={<ChartYAxisTick axisWidth={yAxisWidth} fontSize={12} />}
           tickFormatter={formatYTick}
         />
         <Tooltip
@@ -357,22 +314,6 @@ function ProgressAreaChart({
           isAnimationActive={false}
           wrapperStyle={CHART_SCRUB_TOOLTIP_WRAPPER}
           content={<ChartScrubSync onPoint={onPoint} />}
-        />
-        <Area
-          type="linear"
-          dataKey={dataKey}
-          isAnimationActive={false}
-          stroke="hsl(var(--primary))"
-          strokeWidth={2}
-          fill={`url(#${gradientId})`}
-          dot={{
-            r: 4,
-            fill: "hsl(var(--primary))",
-            strokeWidth: 2,
-            stroke: "hsl(var(--background))",
-            clipDot: false,
-          }}
-          activeDot={{ r: 5, fill: "hsl(var(--primary))", clipDot: false }}
         />
         {displayPoint && (
           <ReferenceLine
@@ -388,13 +329,158 @@ function ProgressAreaChart({
   );
 }
 
+function ProgressHybridChart({
+  data,
+  yScale,
+  xTicks,
+  lastIndex,
+  displayPoint,
+  onPoint,
+}: {
+  data: ChartPoint[];
+  yScale: { domain: [number, number]; ticks: number[] };
+  xTicks: string[];
+  lastIndex: number | undefined;
+  displayPoint: ChartPoint | null;
+  onPoint: (point: ChartPoint | undefined) => void;
+}) {
+  const yAxisWidth = yAxisWidthForTicks("workouts", yScale.ticks);
+
+  return (
+    <ProgressChartFrame
+      data={data}
+      yScale={yScale}
+      xTicks={xTicks}
+      lastIndex={lastIndex}
+      displayPoint={displayPoint}
+      onPoint={onPoint}
+      yAxisWidth={yAxisWidth}
+    >
+      <defs>
+        <linearGradient id="progressGymGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={chartDiarySeries.gym} stopOpacity={0.32} />
+          <stop offset="95%" stopColor={chartDiarySeries.gym} stopOpacity={0} />
+        </linearGradient>
+        <linearGradient id="progressCardioGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={chartDiarySeries.cardio} stopOpacity={0.28} />
+          <stop offset="95%" stopColor={chartDiarySeries.cardio} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <Area
+        type="linear"
+        dataKey="gym"
+        stackId="sessions"
+        isAnimationActive={false}
+        stroke={chartDiarySeries.gym}
+        strokeWidth={2}
+        fill="url(#progressGymGradient)"
+        dot={{
+          r: 4,
+          fill: chartDiarySeries.gym,
+          strokeWidth: 2,
+          stroke: "hsl(var(--background))",
+          clipDot: false,
+        }}
+        activeDot={{ r: 5, fill: chartDiarySeries.gym, clipDot: false }}
+      />
+      <Area
+        type="linear"
+        dataKey="cardio"
+        stackId="sessions"
+        isAnimationActive={false}
+        stroke={chartDiarySeries.cardio}
+        strokeWidth={2}
+        fill="url(#progressCardioGradient)"
+        dot={{
+          r: 4,
+          fill: chartDiarySeries.cardio,
+          strokeWidth: 2,
+          stroke: "hsl(var(--background))",
+          clipDot: false,
+        }}
+        activeDot={{ r: 5, fill: chartDiarySeries.cardio, clipDot: false }}
+      />
+    </ProgressChartFrame>
+  );
+}
+
+function ProgressVolumeChart({
+  data,
+  yScale,
+  xTicks,
+  lastIndex,
+  displayPoint,
+  onPoint,
+}: {
+  data: ChartPoint[];
+  yScale: { domain: [number, number]; ticks: number[] };
+  xTicks: string[];
+  lastIndex: number | undefined;
+  displayPoint: ChartPoint | null;
+  onPoint: (point: ChartPoint | undefined) => void;
+}) {
+  const yAxisWidth = yAxisWidthForTicks("volume", yScale.ticks);
+
+  return (
+    <ProgressChartFrame
+      data={data}
+      yScale={yScale}
+      xTicks={xTicks}
+      lastIndex={lastIndex}
+      displayPoint={displayPoint}
+      onPoint={onPoint}
+      yAxisWidth={yAxisWidth}
+    >
+      <defs>
+        <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={chartDiarySeries.gym} stopOpacity={0.3} />
+          <stop offset="95%" stopColor={chartDiarySeries.gym} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <Area
+        type="linear"
+        dataKey="volume"
+        isAnimationActive={false}
+        stroke={chartDiarySeries.gym}
+        strokeWidth={2}
+        fill="url(#volumeGradient)"
+        dot={{
+          r: 4,
+          fill: chartDiarySeries.gym,
+          strokeWidth: 2,
+          stroke: "hsl(var(--background))",
+          clipDot: false,
+        }}
+        activeDot={{ r: 5, fill: chartDiarySeries.gym, clipDot: false }}
+      />
+    </ProgressChartFrame>
+  );
+}
+
 const WorkoutHistory = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawPeriod = searchParams.get("period");
+  const period = parseYouProgressPeriod(rawPeriod);
+  const periodMeta = youProgressPeriodMeta(period);
   const { data: workouts, isPending: loadingGym } = useWorkoutHistory();
   const { data: cardio, isPending: loadingCardio } = useCardioHistory();
-  const [period, setPeriod] = useState<PeriodKey>("4w");
   const now = useMemo(() => new Date(), []);
   const isLoading = loadingGym || loadingCardio;
   const showPanelWidgets = useMountAfterPaint();
+
+  useEffect(() => {
+    if (rawPeriod === period) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("period", period);
+    setSearchParams(next, { replace: true });
+  }, [period, rawPeriod, searchParams, setSearchParams]);
+
+  const setPeriod = (nextPeriod: YouProgressPeriod) => {
+    if (nextPeriod === rawPeriod) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("period", nextPeriod);
+    setSearchParams(next, { replace: true });
+  };
 
   const bounds = useMemo(() => periodBounds(now, period), [now, period]);
   const buckets = useMemo(() => periodBuckets(now, period), [now, period]);
@@ -418,6 +504,20 @@ const WorkoutHistory = () => {
 
   const sessionsCurr = gymCurr.sessions + cardioCurr.sessions;
   const sessionsPrev = gymPrev.sessions + cardioPrev.sessions;
+  const verdict = useMemo(
+    () =>
+      buildProgressVerdict({
+        period,
+        sessionsCurr,
+        sessionsPrev,
+        gymCurr: gymCurr.sessions,
+        cardioCurr: cardioCurr.sessions,
+        volumeCurr: gymCurr.volume,
+        volumePrev: gymPrev.volume,
+      }),
+    [cardioCurr.sessions, gymCurr.sessions, gymCurr.volume, gymPrev.volume, period, sessionsCurr, sessionsPrev],
+  );
+  const volumeDelta = volumeDeltaCopy(gymCurr.volume, gymPrev.volume);
 
   const chartData = useMemo(() => {
     const gymList = workouts ?? [];
@@ -502,231 +602,172 @@ const WorkoutHistory = () => {
     return Object.values(maxes).sort((a, b) => b.max - a.max).slice(0, 5);
   }, [workouts, bounds]);
 
-  const kpiCards = [
-    {
-      label: "Sesiones",
-      value: String(sessionsCurr),
-      sub: `${gymCurr.sessions} gym · ${cardioCurr.sessions} cardio`,
-      pct: pctChange(sessionsCurr, sessionsPrev),
-      icon: Activity,
-    },
-    {
-      label: "Volumen de fuerza",
-      value: formatVolume(gymCurr.volume),
-      sub: gymCurr.durationSec > 0 ? `Tiempo: ${formatDuration(gymCurr.durationSec)}` : undefined,
-      pct: pctChange(gymCurr.volume, gymPrev.volume),
-      icon: Weight,
-    },
-    {
-      label: cardioCurr.distanceM > 0 ? "Distancia cardio" : "Tiempo cardio",
-      value: cardioCurr.distanceM > 0 ? formatDistance(cardioCurr.distanceM) : formatDuration(cardioCurr.durationSec),
-      sub: cardioCurr.distanceM > 0 && cardioCurr.durationSec > 0
-        ? formatDuration(cardioCurr.durationSec)
-        : undefined,
-      pct: pctChange(
-        cardioCurr.distanceM > 0 ? cardioCurr.distanceM : cardioCurr.durationSec,
-        cardioPrev.distanceM > 0 || cardioCurr.distanceM > 0 ? cardioPrev.distanceM : cardioPrev.durationSec,
-      ),
-      icon: cardioCurr.distanceM > 0 ? Route : Timer,
-    },
-    {
-      label: "Series",
-      value: String(gymCurr.sets),
-      sub: undefined,
-      pct: pctChange(gymCurr.sets, gymPrev.sets),
-      icon: Layers,
-    },
-  ];
-
   const cardClass = PAGE_CARD;
-
   const hasAnySession = (workouts?.length ?? 0) > 0 || (cardio?.length ?? 0) > 0;
 
   return (
     <div className={YOU_PROGRESS_PAGE}>
       <div className={YOU_PROGRESS_STACK} aria-busy={isLoading}>
-      {isLoading ? (
-        <YouProgressAboveFoldSkeleton />
-      ) : (
-      <>
-      <div className={cn("flex w-full flex-col gap-3 md:gap-3.5")}>
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as PeriodKey)} className="w-full">
-          <AnimatedTabsList value={period} className={cn(pillTabsListClass, "w-full")}>
-            {PERIOD_OPTIONS.map((opt) => (
-              <TabsTrigger
-                key={opt.key}
-                value={opt.key}
-                className={cn(pillTabsTriggerClass, "min-w-0 flex-1")}
-              >
-                {opt.label}
-              </TabsTrigger>
-            ))}
-          </AnimatedTabsList>
-        </Tabs>
-        <div className={cn("grid grid-cols-2", PAGE_CARD_STACK_GAP)}>
-          {kpiCards.map((kpi) => {
-            const Icon = kpi.icon;
-            return (
-              <Card key={kpi.label} className={cardClass}>
-                <CardContent className="space-y-1 p-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary/12 ring-1 ring-inset ring-primary/15">
-                      <Icon className="size-4 text-primary" />
-                    </div>
-                    <p className="text-xl font-bold leading-none">{kpi.value}</p>
-                  </div>
-                  <p className="text-xs font-semibold">{kpi.label}</p>
-                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                    {kpi.sub ? (
-                      <p className="text-xs text-muted-foreground">{kpi.sub}</p>
-                    ) : (
-                      <span />
+        {isLoading ? (
+          <YouProgressAboveFoldSkeleton />
+        ) : (
+          <>
+            <div className="flex w-full flex-col gap-3 md:gap-3.5">
+              <Tabs value={period} onValueChange={(v) => setPeriod(v as YouProgressPeriod)} className="w-full">
+                <AnimatedTabsList value={period} className={cn(pillTabsListClass, "w-full")}>
+                  {YOU_PROGRESS_PERIODS.map((opt) => (
+                    <TabsTrigger
+                      key={opt.key}
+                      value={opt.key}
+                      className={cn(pillTabsTriggerClass, "min-w-0 flex-1")}
+                    >
+                      {opt.label}
+                    </TabsTrigger>
+                  ))}
+                </AnimatedTabsList>
+              </Tabs>
+              <div className="space-y-1.5 px-1">
+                <h2 className="text-2xl font-semibold tracking-tight text-balance">
+                  {verdict.headline}
+                </h2>
+                {verdict.detail ? (
+                  <p className="text-sm text-muted-foreground">{verdict.detail}</p>
+                ) : null}
+              </div>
+            </div>
+
+            {hasAnySession && (
+              <>
+                <Card className={cardClass}>
+                  <CardHeader className={PROGRESS_CARD_HEADER}>
+                    <CardTitle asChild className="text-base">
+                      <h3>Constancia</h3>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-5 pt-0">
+                    {consistencyPoint && (
+                      <ChartScrubSummary date={consistencyPoint.date}>
+                        <ChartScrubStat
+                          label="Gym"
+                          value={`${consistencyPoint.gym}`}
+                          color={chartDiarySeries.gym}
+                        />
+                        <ChartScrubStat
+                          label="Cardio"
+                          value={`${consistencyPoint.cardio}`}
+                          color={chartDiarySeries.cardio}
+                        />
+                        <ChartScrubStat
+                          label="Sesiones"
+                          value={`${consistencyPoint.workouts}`}
+                        />
+                      </ChartScrubSummary>
                     )}
-                    <ChangeBadge pct={kpi.pct} />
-                  </div>
+                    <ProgressHybridChart
+                      data={chartData}
+                      yScale={consistencyYScale}
+                      xTicks={xTicks}
+                      lastIndex={lastIndex}
+                      displayPoint={consistencyPoint}
+                      onPoint={handleConsistencyScrub}
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card className={cardClass}>
+                  <CardHeader className={PROGRESS_CARD_HEADER}>
+                    <CardTitle asChild className="text-base">
+                      <h3>Volumen de fuerza</h3>
+                    </CardTitle>
+                    {volumeDelta ? (
+                      <p className="text-xs font-normal text-muted-foreground">{volumeDelta}</p>
+                    ) : null}
+                  </CardHeader>
+                  <CardContent className="px-5 pt-0">
+                    {volumePoint && (
+                      <ChartScrubSummary date={volumePoint.date}>
+                        <ChartScrubStat
+                          label="Volumen"
+                          value={formatVolume(volumePoint.volume)}
+                          color={chartDiarySeries.gym}
+                        />
+                      </ChartScrubSummary>
+                    )}
+                    <ProgressVolumeChart
+                      data={chartData}
+                      yScale={volumeYScale}
+                      xTicks={xTicks}
+                      lastIndex={lastIndex}
+                      displayPoint={volumePoint}
+                      onPoint={handleVolumeScrub}
+                    />
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </>
+        )}
+
+        {showPanelWidgets && (
+          <>
+            <ExerciseProgressWidget flushHeader clockLabel="últimos 12 meses" />
+            <MuscleRankingWidget
+              clockLabel={periodMeta.clockLabel}
+              range={{ start: bounds.start, end: bounds.end }}
+            />
+          </>
+        )}
+
+        {!isLoading && (topExercises.length > 0 || topLoads.length > 0) && (
+          <div className={cn("grid w-full grid-cols-1 bg-background md:grid-cols-2", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
+            {topExercises.length > 0 && (
+              <Card className={cardClass}>
+                <CardHeader className={PROGRESS_CARD_HEADER}>
+                  <CardTitle className="flex items-center gap-1.5 text-base">
+                    <Star className="h-4 w-4 text-primary" /> Top ejercicios
+                  </CardTitle>
+                  <p className="text-xs font-normal text-muted-foreground">{periodMeta.clockLabel}</p>
+                </CardHeader>
+                <CardContent className="space-y-1.5 px-5 pt-0">
+                  {topExercises.map((ex, i) => (
+                    <div key={ex.name} className="flex items-center justify-between text-sm">
+                      <span className="truncate text-muted-foreground">
+                        <span className="mr-1.5 font-medium text-foreground">{i + 1}.</span>
+                        {ex.name}
+                      </span>
+                      <Badge variant="secondary" className="ml-2 shrink-0">{ex.count}×</Badge>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
-            );
-          })}
-        </div>
-      </div>
+            )}
 
-      {!hasAnySession && (
-        <Card className={cardClass}>
-          <CardContent className="px-5 py-10 text-center">
-            <p className="text-sm text-muted-foreground">
-              Aún no hay sesiones. Cuando entrenes, aquí verás el detalle de tu progreso.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card className={cardClass}>
-        <CardHeader className={PROGRESS_CARD_HEADER}>
-          <CardTitle asChild className="text-base">
-            <h2>Constancia</h2>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-5 pt-0">
-          {consistencyPoint && (
-            <ChartScrubSummary date={consistencyPoint.date}>
-              <ChartScrubStat
-                label="Sesiones"
-                value={`${consistencyPoint.workouts}`}
-                color="hsl(var(--primary))"
-              />
-              <ChartScrubStat label="Gym" value={`${consistencyPoint.gym}`} />
-              <ChartScrubStat label="Cardio" value={`${consistencyPoint.cardio}`} />
-            </ChartScrubSummary>
-          )}
-          <ProgressAreaChart
-            data={chartData}
-            dataKey="workouts"
-            yScale={consistencyYScale}
-            xTicks={xTicks}
-            lastIndex={lastIndex}
-            displayPoint={consistencyPoint}
-            onPoint={handleConsistencyScrub}
-            gradientId="weeklyConsistencyGradient"
-          />
-        </CardContent>
-      </Card>
-
-      <Card className={cardClass}>
-        <CardHeader className={PROGRESS_CARD_HEADER}>
-          <CardTitle asChild className="text-base">
-            <h2>Volumen de fuerza</h2>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-5 pt-0">
-          {volumePoint && (
-            <ChartScrubSummary date={volumePoint.date}>
-              <ChartScrubStat
-                label="Volumen"
-                value={formatVolume(volumePoint.volume)}
-                color="hsl(var(--primary))"
-              />
-            </ChartScrubSummary>
-          )}
-          <ProgressAreaChart
-            data={chartData}
-            dataKey="volume"
-            yScale={volumeYScale}
-            xTicks={xTicks}
-            lastIndex={lastIndex}
-            displayPoint={volumePoint}
-            onPoint={handleVolumeScrub}
-            gradientId="volumeGradient"
-          />
-        </CardContent>
-      </Card>
-      </>
-      )}
-
-      {/*
-        * Estos tres widgets son la parte más cara de Progreso (cada uno con su
-        * propia gráfica y sus propias queries). Montarlos en el mismo commit que
-        * el resto bloqueaba el hilo ~1s al entrar en la pestaña, sin que nada se
-        * moviese en pantalla. Van bajo el pliegue, así que se montan tras el
-        * primer pintado.
-        */}
-      {showPanelWidgets && (
-        <>
-          <TrainingLoadWidget />
-          <ExerciseProgressWidget flushHeader />
-          <MuscleRankingWidget />
-        </>
-      )}
-
-      {!isLoading && (topExercises.length > 0 || topLoads.length > 0) && (
-        <div className={cn("grid w-full grid-cols-1 bg-background md:grid-cols-2", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
-          {topExercises.length > 0 && (
-            <Card className={cardClass}>
-              <CardHeader className={PROGRESS_CARD_HEADER}>
-                <CardTitle className="flex items-center gap-1.5 text-base">
-                  <Star className="h-4 w-4 text-primary" /> Top ejercicios
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1.5 px-5 pt-0">
-                {topExercises.map((ex, i) => (
-                  <div key={ex.name} className="flex items-center justify-between text-sm">
-                    <span className="truncate text-muted-foreground">
-                      <span className="font-medium text-foreground mr-1.5">{i + 1}.</span>
-                      {ex.name}
-                    </span>
-                    <Badge variant="secondary" className="shrink-0 ml-2">{ex.count}×</Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {topLoads.length > 0 && (
-            <Card className={cardClass}>
-              <CardHeader className={PROGRESS_CARD_HEADER}>
-                <CardTitle className="flex items-center gap-1.5 text-base">
-                  <Trophy className="h-4 w-4 text-primary" /> Cargas máximas
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1.5 px-5 pt-0">
-                {topLoads.map((ex, i) => (
-                  <div key={ex.name} className="flex items-center justify-between text-sm">
-                    <span className="truncate text-muted-foreground">
-                      <span className="font-medium text-foreground mr-1.5">{i + 1}.</span>
-                      {ex.name}
-                    </span>
-                    <Badge variant="secondary" className="shrink-0 ml-2">{ex.max} kg</Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
+            {topLoads.length > 0 && (
+              <Card className={cardClass}>
+                <CardHeader className={PROGRESS_CARD_HEADER}>
+                  <CardTitle className="flex items-center gap-1.5 text-base">
+                    <Trophy className="h-4 w-4 text-primary" /> Cargas máximas
+                  </CardTitle>
+                  <p className="text-xs font-normal text-muted-foreground">{periodMeta.clockLabel}</p>
+                </CardHeader>
+                <CardContent className="space-y-1.5 px-5 pt-0">
+                  {topLoads.map((ex, i) => (
+                    <div key={ex.name} className="flex items-center justify-between text-sm">
+                      <span className="truncate text-muted-foreground">
+                        <span className="mr-1.5 font-medium text-foreground">{i + 1}.</span>
+                        {ex.name}
+                      </span>
+                      <Badge variant="secondary" className="ml-2 shrink-0">{ex.max} kg</Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default WorkoutHistory;
-

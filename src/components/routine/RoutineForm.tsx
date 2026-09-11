@@ -42,6 +42,8 @@ import type {
   RoutineSetPlan,
   RutinaEjercicioWithDetails,
 } from "@/types/routine";
+import type { CatalogExerciseCarry } from "@/lib/catalogExerciseCarry";
+import { routineExerciseFromCatalog } from "@/lib/routineExerciseDefaults";
 import { type RegistroSeries, normalizeRegistroSeries } from "@/types/workout";
 import {
   PLAN_PRESETS,
@@ -69,6 +71,9 @@ interface RoutineFormProps {
   onOpenChange: (open: boolean) => void;
   routineId?: string | null;
   prefillSnapshot?: RoutineFormSnapshot | null;
+  /** Semilla al crear desde el catálogo. */
+  seedExercise?: CatalogExerciseCarry | null;
+  onSaved?: () => void;
 }
 
 /** Handlers inertes para la copia de solo lectura que muestra el DragOverlay. */
@@ -160,7 +165,14 @@ function routineFormSnapshotsEqual(a: RoutineFormEditSnapshot, b: RoutineFormEdi
   return a.ejercicios.every((ej, i) => exerciseSnapshotKey(ej) === exerciseSnapshotKey(b.ejercicios[i]));
 }
 
-export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnapshot = null }: RoutineFormProps) {
+export function RoutineForm({
+  open,
+  onOpenChange,
+  routineId = null,
+  prefillSnapshot = null,
+  seedExercise = null,
+  onSaved,
+}: RoutineFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -224,12 +236,12 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
         setNombre("");
         setDescripcion("");
         setIcono(DEFAULT_ROUTINE_ICON_KEY);
-        setEjercicios([]);
+        setEjercicios(seedExercise ? [routineExerciseFromCatalog(seedExercise, 0)] : []);
       }
       setSupersetLink(null);
       setInitialSnapshot(null);
     }
-  }, [open, isEdit, prefillSnapshot]);
+  }, [open, isEdit, prefillSnapshot, seedExercise]);
 
   useEffect(() => {
     if (!open) setInitialSnapshot(null);
@@ -455,6 +467,7 @@ export function RoutineForm({ open, onOpenChange, routineId = null, prefillSnaps
       toast({ title: isEdit ? "¡Rutina actualizada!" : "¡Rutina creada!" });
       queryClient.invalidateQueries({ queryKey: ["routines"] });
       queryClient.invalidateQueries({ queryKey: ["routine"] });
+      onSaved?.();
       onOpenChange(false);
     } catch (error: unknown) {
       toast({

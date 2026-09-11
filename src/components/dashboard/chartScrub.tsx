@@ -43,9 +43,9 @@ export function ChartScrubStat({
 }) {
   return (
     <div className="min-w-0">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p
-        className="text-[15px] font-semibold tabular-nums leading-tight text-foreground"
+        className="text-sm font-semibold tabular-nums leading-tight text-foreground"
         style={color ? { color } : undefined}
       >
         {value}

@@ -18,9 +18,6 @@ import { YOU_TABS, YOU_TAB_LABELS, normalizeYouTab } from "@/lib/youPageTabs";
 import { FLOATING_CREATE_SLOT } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
 import { topBarSurface } from "@/lib/surface-styles";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import UsernameSetup from "@/pages/UsernameSetup";
 import { InAppNotificationsProvider } from "@/contexts/InAppNotificationsContext";
 import { InAppNotificationsBell } from "@/components/notifications/InAppNotificationsBell";
 import { InAppFollowerToastSync } from "@/components/notifications/InAppFollowerToastSync";
@@ -42,7 +39,7 @@ export function AppLayout() {
   useLogrosSync();
   useImportGoogleAvatar();
   const { user, loading } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { location, pageTitle, showSectionPills, activeSubsectionLabel } =
     usePageLayoutMeta();
   const [areHeaderPillsCollapsed, setAreHeaderPillsCollapsed] = useState(false);
@@ -52,33 +49,18 @@ export function AppLayout() {
   const areHeaderPillsCollapsedRef = useRef(false);
   const headerRef = useRef<HTMLElement>(null);
 
-  const { data: profileSetup, isLoading: profileLoading } = useQuery({
-    queryKey: ["profileSetup", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("perfil")
-        .select("username")
-        .eq("id", user!.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // El splash nativo aguanta hasta aquí: así el arranque no encadena fondo
-  // vacío + spinner de sesión + spinner de perfil antes de la primera pantalla.
-  useHideSplashWhenReady(!loading && !!user && !profileLoading);
+  // El splash nativo aguanta hasta la sesión. El nick de comunidad no bloquea
+  // el diario: se pide al entrar en Comunidad.
+  useHideSplashWhenReady(!loading && !!user);
 
   const currentTab = searchParams.get("tab") || "";
 
   useEffect(() => {
-    if (loading || !user || profileLoading || !profileSetup?.username || !profileSetup.username.trim()) return;
+    if (loading || !user) return;
     setAreHeaderPillsCollapsed(false);
     areHeaderPillsCollapsedRef.current = false;
     lastScrollYRef.current = window.scrollY;
-  }, [location.pathname, currentTab, loading, user, profileLoading, profileSetup]);
+  }, [location.pathname, currentTab, loading, user]);
 
   useEffect(() => {
     areHeaderPillsCollapsedRef.current = areHeaderPillsCollapsed;
@@ -99,7 +81,7 @@ export function AppLayout() {
     const observer = new ResizeObserver(updateHeaderHeight);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [loading, user, profileLoading, profileSetup, showSectionPills, location.pathname]);
+  }, [loading, user, showSectionPills, location.pathname]);
 
   useEffect(() => {
     const isEditableField = (el: Element | null) => {
@@ -153,7 +135,7 @@ export function AppLayout() {
   }, []);
 
   useEffect(() => {
-    if (loading || !user || profileLoading || !profileSetup?.username || !profileSetup.username.trim()) return;
+    if (loading || !user) return;
     if (!showSectionPills) return;
 
     const onScroll = () => {
@@ -186,7 +168,7 @@ export function AppLayout() {
       window.removeEventListener("scroll", onScroll);
       tickingScrollRef.current = false;
     };
-  }, [showSectionPills, loading, user, profileLoading, profileSetup]);
+  }, [showSectionPills, loading, user]);
 
   if (loading) {
     return (
@@ -197,18 +179,6 @@ export function AppLayout() {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
-
-  if (profileLoading) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!profileSetup?.username || !profileSetup.username.trim()) {
-    return <UsernameSetup />;
-  }
 
   return (
     <GlobalWorkoutDrawerProvider>

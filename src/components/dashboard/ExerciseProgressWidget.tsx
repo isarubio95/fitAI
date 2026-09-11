@@ -211,7 +211,13 @@ function EqualSpacedXLabels({
   );
 }
 
-export function ExerciseProgressWidget({ flushHeader = false }: { flushHeader?: boolean }) {
+export function ExerciseProgressWidget({
+  flushHeader = false,
+  clockLabel,
+}: {
+  flushHeader?: boolean;
+  clockLabel?: string;
+}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: exercises, isLoading: loadingExercises } = useExerciseWithHistory();
@@ -318,10 +324,11 @@ export function ExerciseProgressWidget({ flushHeader = false }: { flushHeader?: 
     <Card className={cn(PAGE_CARD, "min-w-0")}>
       <CardHeader className={headerClass}>
         <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <CardTitle asChild className="text-base font-bold">
-              <h2>Fuerza Máxima</h2>
-            </CardTitle>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <CardTitle asChild className="text-base font-bold">
+                <h2>Fuerza máxima</h2>
+              </CardTitle>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -385,6 +392,10 @@ export function ExerciseProgressWidget({ flushHeader = false }: { flushHeader?: 
                 )}
               </PopoverContent>
             </Popover>
+            </div>
+            {clockLabel ? (
+              <p className="text-xs font-normal text-muted-foreground">{clockLabel}</p>
+            ) : null}
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <button

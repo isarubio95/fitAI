@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ChartBar, Dumbbell, Layers, Pencil, Bookmark, Wrench } from "lucide-react";
+import { ChartBar, Dumbbell, Layers, Loader2, Pencil, Bookmark, Wrench } from "lucide-react";
 import {
   useExerciseFavorites,
   type ExerciseFavoriteSource,
@@ -42,7 +42,7 @@ function DifficultyBars({ level }: { level: 1 | 2 | 3 }) {
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-28 shrink-0 uppercase tracking-wide text-[11px] text-muted-foreground/80">
+      <span className="w-28 shrink-0 text-xs font-medium uppercase tracking-wide text-muted-foreground/80">
         {label}
       </span>
       <div className="min-w-0 text-sm text-foreground/90">{children}</div>
@@ -76,6 +76,12 @@ interface ExerciseDetailSheetProps {
   /** Clases extra del panel (p. ej. z-index en drawers anidados). */
   className?: string;
   overlayClassName?: string;
+  /** Pie de Biblioteca: primaria contextual. Ausente en logger/rutina. */
+  hasActiveWorkout?: boolean;
+  onAddToWorkout?: () => void | Promise<unknown>;
+  onAddToRoutine?: () => void | Promise<unknown>;
+  addingToWorkout?: boolean;
+  addingToRoutine?: boolean;
 }
 
 function resolveFavoriteSource(
@@ -96,6 +102,11 @@ const ExerciseDetailSheet = ({
   favoriteSource,
   className,
   overlayClassName,
+  hasActiveWorkout = false,
+  onAddToWorkout,
+  onAddToRoutine,
+  addingToWorkout = false,
+  addingToRoutine = false,
 }: ExerciseDetailSheetProps) => {
   const { toast } = useToast();
   const { isFavorite, toggleFavorite } = useExerciseFavorites();
@@ -148,9 +159,9 @@ const ExerciseDetailSheet = ({
         <DrawerContent
           side="bottom"
           overlayClassName={overlayClassName}
-          className={cn("h-[85lvh] max-h-[85lvh] bg-card p-0", className)}
+          className={cn("flex h-[85lvh] max-h-[85lvh] flex-col bg-card p-0", className)}
         >
-          <ScrollArea className="h-full">
+          <ScrollArea className="min-h-0 flex-1">
             <div className="flex flex-col">
               {/* Media */}
               <div className={cn("relative w-full aspect-video bg-muted flex items-center justify-center overflow-hidden", drawerSheetRadiusTop)}>
@@ -169,7 +180,7 @@ const ExerciseDetailSheet = ({
                 )}
               </div>
 
-              <div className={cn("p-5 space-y-5", drawerSafeAreaBottom)}>
+              <div className={cn("space-y-5 p-5", !(onAddToWorkout || onAddToRoutine) && drawerSafeAreaBottom)}>
                 {/* Header */}
                 <DrawerHeader className="p-0">
                   <div className="flex items-center justify-between gap-3">
@@ -179,7 +190,7 @@ const ExerciseDetailSheet = ({
                     <div className="flex shrink-0 items-center gap-2 self-center">
                       <button
                         type="button"
-                        className="touch-styled inline-flex size-5 shrink-0 items-center justify-center p-0 text-muted-foreground"
+                        className="touch-styled inline-flex size-11 shrink-0 items-center justify-center p-0 text-muted-foreground"
                         aria-label={`Ver el rendimiento en ${detail.nombre}`}
                         onClick={(e) => {
                           (e.currentTarget as HTMLButtonElement).blur();
@@ -193,7 +204,7 @@ const ExerciseDetailSheet = ({
                         <button
                           type="button"
                           className={cn(
-                            "touch-styled inline-flex size-5 shrink-0 items-center justify-center p-0",
+                            "touch-styled inline-flex size-11 shrink-0 items-center justify-center p-0",
                             favored ? "text-primary" : "text-muted-foreground",
                           )}
                           aria-label={
@@ -240,7 +251,16 @@ const ExerciseDetailSheet = ({
                   <div className="rounded-2xl bg-background p-4 space-y-2.5">
                     {difficultyToLevel(detail.dificultad) && (
                       <MetaRow label="Dificultad">
-                        <DifficultyBars level={difficultyToLevel(detail.dificultad)!} />
+                        <span className="inline-flex items-center gap-2">
+                          <DifficultyBars level={difficultyToLevel(detail.dificultad)!} />
+                          <span>
+                            {difficultyToLevel(detail.dificultad) === 1
+                              ? "Baja"
+                              : difficultyToLevel(detail.dificultad) === 2
+                                ? "Media"
+                                : "Alta"}
+                          </span>
+                        </span>
                       </MetaRow>
                     )}
                     {detail.tipo && (
@@ -272,7 +292,7 @@ const ExerciseDetailSheet = ({
                         <div className="flex flex-wrap gap-2">
                           {(Array.isArray(detail.body_part) ? detail.body_part : [detail.body_part]).map((part) => (
                             <Badge key={part} variant="secondary" className="capitalize">
-                              💪 {part}
+                              {part}
                             </Badge>
                           ))}
                         </div>
@@ -300,6 +320,51 @@ const ExerciseDetailSheet = ({
               </div>
             </div>
           </ScrollArea>
+          {(onAddToWorkout || onAddToRoutine) && (
+            <div
+              className={cn(
+                "shrink-0 border-t border-border/40 bg-card px-5 pt-3",
+                drawerSafeAreaBottom,
+              )}
+            >
+              <div className="flex flex-col gap-2">
+                {hasActiveWorkout && onAddToWorkout ? (
+                  <>
+                    <Button
+                      type="button"
+                      className="h-11 w-full"
+                      disabled={addingToWorkout}
+                      onClick={() => void onAddToWorkout()}
+                    >
+                      {addingToWorkout && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Añadir al entreno
+                    </Button>
+                    {onAddToRoutine && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="h-11 w-full"
+                        disabled={addingToRoutine}
+                        onClick={() => void onAddToRoutine()}
+                      >
+                        Añadir a una rutina
+                      </Button>
+                    )}
+                  </>
+                ) : onAddToRoutine ? (
+                  <Button
+                    type="button"
+                    className="h-11 w-full"
+                    disabled={addingToRoutine}
+                    onClick={() => void onAddToRoutine()}
+                  >
+                    {addingToRoutine && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Añadir a una rutina
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          )}
         </DrawerContent>
       </Drawer>
 

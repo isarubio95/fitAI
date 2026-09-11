@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { MUSCLE_GROUPS, type MainMuscleGroup } from "@/constants/muscleGroups";
@@ -12,11 +13,13 @@ export interface MuscleStatistics {
   bottomGroups: { group: MainMuscleGroup; count: number }[];
 }
 
-export function useMuscleStatistics() {
+export function useMuscleStatistics(range?: { start: Date; end: Date }) {
   const { user } = useAuth();
+  const startKey = range ? format(range.start, "yyyy-MM-dd") : "all";
+  const endKey = range ? format(range.end, "yyyy-MM-dd") : "all";
 
   return useQuery<MuscleStatistics>({
-    queryKey: ["muscleStatistics", user?.id],
+    queryKey: ["muscleStatistics", user?.id, startKey, endKey],
     enabled: !!user,
     queryFn: async () => {
       // Initialize all groups to 0
@@ -32,11 +35,17 @@ export function useMuscleStatistics() {
         }
       }
 
-      const { data: actividades, error: actErr } = await supabase
+      let actividadesQuery = supabase
         .from("actividad")
         .select("id")
         .eq("usuario_id", user!.id)
         .not("fecha_fin", "is", null);
+      if (range) {
+        actividadesQuery = actividadesQuery
+          .gte("fecha", format(range.start, "yyyy-MM-dd"))
+          .lt("fecha", format(range.end, "yyyy-MM-dd"));
+      }
+      const { data: actividades, error: actErr } = await actividadesQuery;
 
       if (actErr) throw actErr;
       if (!actividades?.length) {

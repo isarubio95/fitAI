@@ -73,6 +73,26 @@ describe("RoutineForm", () => {
     expect(screen.getByRole("button", { name: "Guardar" })).toBeDisabled();
   });
 
+  it("siembra el ejercicio que viene del catálogo", () => {
+    render(
+      wrap(
+        <RoutineForm
+          open
+          onOpenChange={() => undefined}
+          seedExercise={{
+            source: "catalogo",
+            id: "t1",
+            nombre: "Press Banca con Barra",
+            registro_series: "peso_reps",
+          }}
+        />,
+      ),
+    );
+
+    expect(screen.getByText("Press Banca con Barra")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Guardar" })).toBeEnabled();
+  });
+
   it("habilita Guardar al añadir el primer ejercicio", () => {
     render(wrap(<RoutineForm open onOpenChange={() => undefined} />));
 
