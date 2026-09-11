@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-11T14:36:00+02:00",
+  "title": "Design System: Track Gym",
+  "extensions": {
+    "colorMeta": {
+      "hierro-midnight": {
+        "role": "neutral",
+        "displayName": "Hierro de midnight",
+        "canonical": "hsl(60 3% 4.5%)",
+        "tonalRamp": ["#0c0c0b", "#1d1d1b", "#2e2e2b", "#4a4a45", "#6e6e67", "#9a9a92", "#cfcfc6", "#ecece9"]
+      },
+      "hierro-ink": {
+        "role": "neutral",
+        "displayName": "Hierro ink",
+        "canonical": "hsl(60 100% 99%)",
+        "tonalRamp": ["#3d3d30", "#6e6e55", "#9a9a7a", "#c4c4a4", "#e4e4c8", "#f5f5dc", "#fbfbe8", "#fdfdf7"]
+      },
+      "hierro-card": {
+        "role": "neutral",
+        "displayName": "Hierro card",
+        "canonical": "hsl(60 3% 11%)",
+        "tonalRamp": ["#0c0c0b", "#1d1d1b", "#2a2a27", "#3d3d38", "#5c5c55", "#8a8a80", "#c4c4b8", "#ecece9"]
+      },
+      "hierro-elevated": {
+        "role": "neutral",
+        "displayName": "Hierro elevated",
+        "canonical": "hsl(60 3% 8%)",
+        "tonalRamp": ["#0c0c0b", "#151514", "#1d1d1b", "#2e2e2b", "#4a4a45", "#7a7a72", "#b8b8ae", "#ecece9"]
+      },
+      "hierro-popover": {
+        "role": "neutral",
+        "displayName": "Hierro popover",
+        "canonical": "hsl(60 3% 14%)",
+        "tonalRamp": ["#0c0c0b", "#1d1d1b", "#242422", "#333330", "#52524c", "#808078", "#c0c0b6", "#ecece9"]
+      },
+      "hierro-secondary": {
+        "role": "neutral",
+        "displayName": "Hierro secondary",
+        "canonical": "hsl(60 2% 22%)",
+        "tonalRamp": ["#121211", "#1d1d1b", "#2e2e2c", "#383836", "#525250", "#7a7a76", "#b4b4ae", "#e8e8e2"]
+      },
+      "hierro-muted": {
+        "role": "neutral",
+        "displayName": "Hierro muted",
+        "canonical": "hsl(60 2% 26%)",
+        "tonalRamp": ["#141413", "#1f1f1d", "#333330", "#424240", "#5e5e5a", "#868680", "#b8b8b2", "#ebebe6"]
+      },
+      "hierro-muted-ink": {
+        "role": "neutral",
+        "displayName": "Hierro muted ink",
+        "canonical": "hsl(70 4% 72%)",
+        "tonalRamp": ["#2a2a24", "#4a4a40", "#6e6e60", "#8a8a7a", "#b0b0a0", "#c8c8b8", "#d8d8cc", "#ecece4"]
+      },
+      "hierro-border": {
+        "role": "neutral",
+        "displayName": "Hierro border",
+        "canonical": "hsl(60 2% 24%)",
+        "tonalRamp": ["#121211", "#1d1d1b", "#2e2e2c", "#3d3d3a", "#5a5a56", "#82827c", "#b6b6b0", "#e6e6e0"]
+      },
+      "piloto-rack": {
+        "role": "primary",
+        "displayName": "Piloto de rack",
+        "canonical": "hsl(142 71% 45%)",
+        "tonalRamp": ["#0d3d22", "#145c32", "#178740", "#21c45d", "#4ade80", "#86efac", "#bbf7d0", "#f0fdf4"]
+      },
+      "piloto-solid": {
+        "role": "primary",
+        "displayName": "Piloto sólido",
+        "canonical": "hsl(142 71% 31%)",
+        "tonalRamp": ["#0a2a18", "#0f3d22", "#145c32", "#178740", "#21c45d", "#4ade80", "#86efac", "#dcfce7"]
+      },
+      "piloto-on": {
+        "role": "primary",
+        "displayName": "Piloto on",
+        "canonical": "hsl(0 0% 100%)",
+        "tonalRamp": ["#525252", "#737373", "#a3a3a3", "#d4d4d4", "#e5e5e5", "#f5f5f5", "#fafafa", "#ffffff"]
+      },
+      "peligro": {
+        "role": "primary",
+        "displayName": "Peligro",
+        "canonical": "hsl(0 73% 48%)",
+        "tonalRamp": ["#450a0a", "#7f1d1d", "#b91c1c", "#d42a2a", "#f87171", "#fca5a5", "#fecaca", "#fef2f2"]
+      },
+      "optimo": {
+        "role": "primary",
+        "displayName": "Óptimo",
+        "canonical": "hsl(88 64% 37%)",
+        "tonalRamp": ["#1a2e0a", "#3f6212", "#4d7c0f", "#65a30d", "#84cc16", "#a3e635", "#d9f99d", "#f7fee7"]
+      },
+      "optimo-ink": {
+        "role": "primary",
+        "displayName": "Óptimo ink",
+        "canonical": "hsl(88 45% 88%)",
+        "tonalRamp": ["#3f6212", "#65a30d", "#84cc16", "#a3e635", "#bef264", "#d9f99d", "#ecfccb", "#f7fee7"]
+      },
+      "optimo-muted": {
+        "role": "primary",
+        "displayName": "Óptimo muted",
+        "canonical": "hsl(88 30% 14%)",
+        "tonalRamp": ["#0a1206", "#1a2e0a", "#243d0e", "#3f6212", "#4d7c0f", "#65a30d", "#a3e635", "#ecfccb"]
+      },
+      "chart-fitness": {
+        "role": "primary",
+        "displayName": "Chart fitness",
+        "canonical": "hsl(209 70% 53%)",
+        "tonalRamp": ["#0c1929", "#1e3a5f", "#1d4ed8", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe", "#eff6ff"]
+      },
+      "chart-fatigue": {
+        "role": "primary",
+        "displayName": "Chart fatigue",
+        "canonical": "hsl(36 86% 55%)",
+        "tonalRamp": ["#431407", "#7c2d12", "#c2410c", "#ea580c", "#f59e0b", "#fbbf24", "#fde68a", "#fffbeb"]
+      },
+      "chart-positive": {
+        "role": "primary",
+        "displayName": "Chart positive",
+        "canonical": "hsl(88 78% 58%)",
+        "tonalRamp": ["#1a2e0a", "#3f6212", "#4d7c0f", "#65a30d", "#84cc16", "#a3e635", "#d9f99d", "#f7fee7"]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Papel",
+        "canonical": "hsl(60 8% 92%)",
+        "tonalRamp": ["#0c0c0b", "#2e2e2b", "#5c5c55", "#8a8a80", "#b8b8ae", "#d4d4cc", "#ecece9", "#f7f7f2"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Títulos de auth y entrada. Poco uso dentro de la bitácora." },
+      "headline": { "displayName": "Headline", "purpose": "Títulos de card (text-2xl semibold)." },
+      "title": { "displayName": "Title", "purpose": "Título de página en el header." },
+      "body": { "displayName": "Body", "purpose": "UI densa. Campos móviles suben a 16px." },
+      "label": { "displayName": "Label", "purpose": "Tabs, microcopy, bottom nav (hasta 10px)." }
+    },
+    "shadows": [
+      {
+        "name": "elevated",
+        "value": "inset 0 1px 0 hsl(var(--hairline)), 0 1px 2px hsl(0 0% 0% / 0.4), 0 14px 32px -20px hsl(0 0% 0% / 0.85)",
+        "purpose": "Cards de contenido. Velo + filo van aparte (--sheen-card)."
+      },
+      {
+        "name": "float",
+        "value": "inset 0 1px 0 hsl(var(--hairline)), 0 2px 8px hsl(0 0% 0% / 0.5), 0 22px 48px -24px hsl(0 0% 0% / 0.95)",
+        "purpose": "Superficies flotantes, no el header/nav de app."
+      }
+    ],
+    "motion": [
+      {
+        "name": "press-in",
+        "value": "80ms cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "Entrada de [data-pressed]: scale 0.965 y opacity 0.8."
+      },
+      {
+        "name": "press-out",
+        "value": "180ms cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "Salida del press. Curva Material; honor prefers-reduced-motion."
+      },
+      {
+        "name": "nav-exit",
+        "value": "90ms cubic-bezier(0.4, 0, 1, 1)",
+        "purpose": "View-transition old(page-content)."
+      },
+      {
+        "name": "nav-enter",
+        "value": "210ms cubic-bezier(0.05, 0.7, 0.1, 1)",
+        "purpose": "View-transition new(page-content), eje X 24px. Solo <main>."
+      },
+      {
+        "name": "tab-underline",
+        "value": "0.28s cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Underline de tab de sección, scaleX desde el centro."
+      }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "CTA filled con piloto sólido y ring inset. Lift solo con ratón.",
+      "html": "<button class=\"ds-btn-primary\">Empezar entreno</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 16px; border: 0; border-radius: 12px; background: hsl(var(--primary-solid)); color: hsl(var(--primary-foreground)); font: 600 0.875rem/1 ui-sans-serif, system-ui, sans-serif; box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.7); transition: transform 150ms ease, background-color 200ms ease; cursor: pointer; } .ds-btn-primary:hover { background: hsl(var(--primary-solid) / 0.9); transform: translateY(-2px); } .ds-btn-primary:active { transform: translateY(1px) scale(0.99); } .ds-btn-primary:focus-visible { outline: none; box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.7), 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)); }"
+    },
+    {
+      "name": "New Button",
+      "kind": "button",
+      "refersTo": "button-new",
+      "description": "Cápsula de crear. Mismo sólido, 36px, ring de acento suave.",
+      "html": "<button class=\"ds-btn-new\"><svg class=\"ds-btn-new-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 5v14M5 12h14\"/></svg>Nueva rutina</button>",
+      "css": ".ds-btn-new { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 16px; border: 0; border-radius: 9999px; background: hsl(var(--primary-solid)); color: hsl(var(--primary-foreground)); font: 600 0.875rem/1 ui-sans-serif, system-ui, sans-serif; box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.2); cursor: pointer; transition: background-color 200ms ease, box-shadow 200ms ease; } .ds-btn-new-icon { width: 17.6px; height: 17.6px; } .ds-btn-new:hover { background: hsl(var(--primary-solid) / 0.9); box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.48); } .ds-btn-new:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Acción secundaria quieta. Velo de acento solo al hover de ratón.",
+      "html": "<button class=\"ds-btn-ghost\">Cancelar</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: transparent; color: hsl(var(--foreground)); font: 500 0.875rem/1 ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color 200ms ease, color 200ms ease; } .ds-btn-ghost:hover { background: hsl(var(--accent) / 0.3); color: hsl(var(--accent-foreground)); } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)); }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo 40px, radio 10px. Anillo 3px al foco. 16px en móvil.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Peso (kg)\" />",
+      "css": ".ds-input { display: block; width: 100%; height: 40px; padding: 8px 12px; border: 1px solid hsl(var(--input)); border-radius: 10px; background: hsl(var(--background)); color: hsl(var(--foreground)); font: 400 1rem/1.4 ui-sans-serif, system-ui, sans-serif; outline: none; transition: border-color 200ms ease, box-shadow 200ms ease; } .ds-input::placeholder { color: hsl(var(--muted-foreground)); } .ds-input:focus-visible { border-color: hsl(var(--ring)); box-shadow: 0 0 0 3px hsl(var(--ring) / 0.5); } .ds-input[aria-invalid=\"true\"] { border-color: hsl(var(--destructive)); box-shadow: 0 0 0 3px hsl(var(--destructive) / 0.4); }"
+    },
+    {
+      "name": "Surface Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Card de contenido: 24px, velo, filo y sombra de apoyo.",
+      "html": "<article class=\"ds-card\"><h3 class=\"ds-card-title\">Día A</h3><p class=\"ds-card-meta\">Full body · 48 min</p></article>",
+      "css": ".ds-card { padding: 24px 20px; border: 1px solid hsl(var(--surface-border)); border-radius: 24px; background-color: hsl(var(--card)); background-image: var(--sheen-card); color: hsl(var(--card-foreground)); box-shadow: var(--elevation-card); } .ds-card-title { margin: 0 0 6px; font: 600 1.5rem/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.025em; } .ds-card-meta { margin: 0; font: 400 0.875rem/1.4 ui-sans-serif, system-ui, sans-serif; color: hsl(var(--muted-foreground)); }"
+    },
+    {
+      "name": "Filter Pill",
+      "kind": "chip",
+      "refersTo": "chip-filter",
+      "description": "Cápsula de sección. Activa = mix de piloto sobre negro, no CTA sólido.",
+      "html": "<div class=\"ds-pills\"><button class=\"ds-pill\">Rutinas</button><button class=\"ds-pill ds-pill-active\">Ejercicios</button></div>",
+      "css": ".ds-pills { display: flex; gap: 8px; } .ds-pill { border: 1px solid hsl(var(--border) / 0.2); border-radius: 9999px; padding: 6px 14px; background: hsl(var(--muted) / 0.4); color: hsl(var(--foreground)); font: 500 0.875rem/1.2 ui-sans-serif, system-ui, sans-serif; cursor: pointer; } .ds-pill:hover { border-color: hsl(var(--border) / 0.35); background: hsl(var(--muted) / 0.55); } .ds-pill-active, .ds-pill-active:hover { border-color: color-mix(in srgb, hsl(var(--primary)) 22%, black); background: color-mix(in srgb, hsl(var(--primary)) 22%, black); color: color-mix(in srgb, hsl(var(--primary)) 55%, white); box-shadow: 0 1px 2px hsl(0 0% 0% / 0.2); }"
+    },
+    {
+      "name": "Bottom Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Tab de app: icono 24px + label 10px. Activo = piloto, sin fill.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-item-active\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 10.5 12 3l9 7.5V21H3z\"/></svg>Inicio</a><a class=\"ds-nav-item\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"2\"/><path d=\"M8 9h8M8 13h5\"/></svg>Biblioteca</a></nav>",
+      "css": ".ds-nav { display: flex; justify-content: space-around; align-items: center; padding: 8px 8px 10px; background: var(--background-fill); border-top: 1px solid hsl(var(--border)); } .ds-nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: hsl(var(--foreground)); font: 500 10px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.025em; text-decoration: none; } .ds-nav-item svg { width: 24px; height: 24px; } .ds-nav-item-active { color: hsl(var(--primary)); }"
+    },
+    {
+      "name": "Rest Timer Pill",
+      "kind": "custom",
+      "refersTo": "chip-filter-active",
+      "description": "Instrumento flotante. Única pieza con cristal; no copiar al chrome.",
+      "html": "<div class=\"ds-rest\"><span class=\"ds-rest-icon\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/></svg></span><div class=\"ds-rest-copy\"><span class=\"ds-rest-kicker\">Descanso</span><span class=\"ds-rest-time\">1:24</span><span class=\"ds-rest-bar\"><i></i></span></div></div>",
+      "css": ".ds-rest { display: flex; align-items: center; gap: 12px; width: max-content; padding: 8px 8px 8px 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 9999px; background: rgba(23,23,23,0.8); color: #93c5fd; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); } .ds-rest-icon { display: flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 9999px; border: 1px solid hsl(209 70% 53% / 0.6); background: hsl(209 70% 53% / 0.25); } .ds-rest-icon svg { width: 16px; height: 16px; } .ds-rest-copy { display: flex; flex-direction: column; gap: 4px; min-width: 140px; } .ds-rest-kicker { font: 600 10px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: #a3a3a3; } .ds-rest-time { font: 400 0.875rem/1 ui-monospace, monospace; font-variant-numeric: tabular-nums; } .ds-rest-bar { display: block; height: 8px; border-radius: 9999px; background: rgba(255,255,255,0.1); overflow: hidden; } .ds-rest-bar i { display: block; width: 62%; height: 100%; background: hsl(209 70% 53%); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La Bitácora de Ruta",
+    "overview": "Track Gym se ve como el instrumento que llevas al gym y a la carretera: una bitácora oscura, densa y táctil. El fondo es casi negro cálido; las superficies flotan un escalón por encima; el acento es un piloto, no un lavado de color. No es una landing de fitness ni un dashboard SaaS. Es una app de operación que se usa con el dedo, a menudo con las manos ocupadas.\n\nLa personalidad es segura y quieta. El tema por defecto es oscuro (clase `.dark`, no `prefers-color-scheme`). El claro existe como el mismo sistema en papel cálido, no como otra marca. El acento de fábrica es verde; el usuario puede cambiarlo (naranja, amarillo, rosa, azul) y eso remapea `--primary`, no inventa un segundo mundo. Fuerza y cardio comparten las mismas superficies: no hay piel «gym» y piel «Strava».\n\nRechazos confirmados: vidrio esmerilado en el chrome móvil, neón de gym, gradientes hero, Material genérico de plantilla, hover que se queda pegado en táctil.",
+    "keyCharacteristics": [
+      "Oscuro cálido primero; claro como par de papel, no como identidad.",
+      "Acento como piloto: activo, CTA y señal. Casi nunca un fondo entero.",
+      "Volumen por velo + filo; sombra solo apoya. Chrome de app opaco.",
+      "Táctil: scale al pulsar, sin anillo de foco en puntero grueso.",
+      "Una sola familia de sistema; sin webfont de marca."
+    ],
+    "rules": [
+      { "name": "The Pilot Rule", "body": "El acento marca activo, CTA y señal. No rellena fondos de pantalla ni skins enteras. Si duda, muted.", "section": "colors" },
+      { "name": "The One Accent Ramp Rule", "body": "Naranja, amarillo, rosa y azul son el mismo rol --primary con otro matiz. No documentar cada uno como marca. El default es el piloto verde.", "section": "colors" },
+      { "name": "The System Face Rule", "body": "No introducir una webfont de «marca fitness». El sistema del aparato es la voz. Display decorativa = otra app.", "section": "typography" },
+      { "name": "The Finger-First Rule", "body": "Hover existe solo con puntero fino. En táctil, el estado es [data-pressed] (scale 0.965, opacity 0.8, 80ms in / 180ms out). Sin anillo de foco en coarse. Sin maximum-scale bloqueado.", "section": "elevation" },
+      { "name": "The Opaque Chrome Rule", "body": "Header y bottom nav son pintura sólida. El cristal no es el lenguaje del shell.", "section": "elevation" },
+      { "name": "The Nested Flat Rule", "body": "Una card dentro de otra (o de un drawer) pierde velo, borde y sombra. El volumen se declara una vez.", "section": "elevation" },
+      { "name": "The Capsule Signal Rule", "body": "Filtros, tabs de sección y CTAs «nuevos» son cápsulas. Los botones de acción primaria de formulario son 12px, no pills. No mezclar.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do pintar CTAs filled con piloto-solid, no con piloto-rack.",
+      "Do usar surface-card / surface-tile / surface-float en vez de inventar sombras.",
+      "Do aplanar cards anidadas y cards dentro de drawer.",
+      "Do reservar hover a puntero fino; en táctil, [data-pressed].",
+      "Do dejar inputs móviles a 16px y el pinch-zoom desbloqueado.",
+      "Do tratar fuerza y cardio con las mismas superficies; el azul chart-fitness señala dato de ruta, no otra marca."
+    ],
+    "donts": [
+      "Don't poner backdrop-filter en header o bottom nav.",
+      "Don't usar la clase shadow-card para elevación.",
+      "Don't rellenar una pantalla con acento ni crear una piel distinta para cardio.",
+      "Don't introducir webfont de display, neón, o vidrio de marketing.",
+      "Don't dejar estilos hover: visibles en WebView táctil.",
+      "Don't animar el chrome en el view-transition de pestaña.",
+      "Don't tratar fitAI como nombre visual; el wordmark es Track Gym + /logo.svg."
+    ]
+  }
+}
