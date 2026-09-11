@@ -82,6 +82,18 @@
   --shadow-elevated: var(--elevation-card);
   --shadow-float: var(--elevation-float);
 
+  /*
+   * Capas nombradas (`z-toast`, `z-drawer`, …).
+   * z-50 queda para el default de shadcn/vaul (logger, dialogs).
+   * 55–85: pickers anidados en una sesión. 100+: chrome de la app.
+   */
+  --z-index-picker-overlay: 55;
+  --z-index-picker: 60;
+  --z-index-detail-overlay: 65;
+  --z-index-detail: 70;
+  --z-index-deep-overlay: 75;
+  --z-index-deep: 80;
+  --z-index-deep-raised: 85;
   --z-index-toast: 100;
   --z-index-overlay: 110;
   --z-index-drawer: 115;

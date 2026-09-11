@@ -267,11 +267,11 @@ const DrawerHeader = ({
     >
       {dragEntireHeader ? <DrawerDragHandle overlay /> : null}
       {showEdgeHandle && side === "bottom" && (
-        <DrawerGrabber className={cn("mb-2", dragEntireHeader && "relative z-[1]")} />
+        <DrawerGrabber className={cn("mb-2", dragEntireHeader && "relative z-1")} />
       )}
-      {dragEntireHeader ? <div className="relative z-[1]">{children}</div> : children}
+      {dragEntireHeader ? <div className="relative z-1">{children}</div> : children}
       {showEdgeHandle && side === "top" && (
-        <DrawerGrabber className={cn("mt-2", dragEntireHeader && "relative z-[1]")} />
+        <DrawerGrabber className={cn("mt-2", dragEntireHeader && "relative z-1")} />
       )}
     </div>
   );

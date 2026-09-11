@@ -53,7 +53,7 @@ function MetaBadgePopover({
         sideOffset={8}
         aria-label={label}
         onOpenAutoFocus={(event) => event.preventDefault()}
-        className={cn("z-[80] w-56 p-3", contentClassName)}
+        className={cn("z-popover w-56 p-3", contentClassName)}
       >
         {children}
       </PopoverContent>

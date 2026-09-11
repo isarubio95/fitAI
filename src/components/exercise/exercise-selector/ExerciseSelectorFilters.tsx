@@ -156,7 +156,7 @@ export function ExerciseSelectorFilters({
               Cambiar
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-[80] w-48 bg-popover">
+          <DropdownMenuContent align="end" className="z-popover w-48 bg-popover">
             <DropdownMenuLabel className="text-xs">Ordenar por</DropdownMenuLabel>
             {SORT_OPTIONS.map((option) => (
               <DropdownMenuItem key={option} onClick={() => onSortChange(option)}>

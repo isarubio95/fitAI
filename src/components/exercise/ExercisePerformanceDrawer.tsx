@@ -168,7 +168,7 @@ export interface ExercisePerformanceDrawerProps {
   target: ExerciseHistoryTarget;
   /**
    * Tiers de apilado. Por defecto se sitúa por encima de la ficha de ejercicio
-   * anidada más profunda del logger (`z-[70]`, ver `ExerciseSelector`).
+   * anidada más profunda del logger (`z-detail`, ver `ExerciseSelector`).
    */
   overlayClassName?: string;
   contentClassName?: string;
@@ -189,8 +189,8 @@ export function ExercisePerformanceDrawer({
   onOpenChange,
   exerciseName,
   target,
-  overlayClassName = "z-[75]",
-  contentClassName = "z-[80]",
+  overlayClassName = "z-deep-overlay",
+  contentClassName = "z-deep",
 }: ExercisePerformanceDrawerProps) {
   const [metric, setMetric] = useState<ExerciseScoreMetric>("1rm");
   const [period, setPeriod] = useState<ExerciseHistoryPeriodKey>(DEFAULT_EXERCISE_HISTORY_PERIOD);

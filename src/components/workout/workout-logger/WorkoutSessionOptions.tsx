@@ -50,7 +50,7 @@ export function WorkoutSessionOptions() {
         <div
           role="dialog"
           aria-label="Opciones"
-          className="absolute inset-x-0 top-full z-[80] mt-2 rounded-xl border border-border/60 bg-popover p-3 text-popover-foreground shadow-md md:inset-x-auto md:left-auto md:right-0 md:w-72"
+          className="absolute inset-x-0 top-full z-10 mt-2 rounded-xl border border-border/60 bg-popover p-3 text-popover-foreground shadow-md md:inset-x-auto md:left-auto md:right-0 md:w-72"
         >
           <p className="mb-3 text-sm font-medium">Opciones</p>
           <div className="flex items-start justify-between gap-4">

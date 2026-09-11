@@ -104,7 +104,7 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
   if (mode === "sheet") {
     return renderDraggableShell(
       dragSheet,
-      "pointer-events-auto absolute bottom-0 left-1/2 z-[60] w-max max-w-[calc(100%-1rem)] touch-none select-none cursor-grab active:cursor-grabbing overflow-visible pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]",
+      "pointer-events-auto absolute bottom-0 left-1/2 z-picker w-max max-w-[calc(100%-1rem)] touch-none select-none cursor-grab active:cursor-grabbing overflow-visible pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]",
       { blockDrawerDrag: true },
     );
   }

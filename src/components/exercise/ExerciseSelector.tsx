@@ -451,8 +451,8 @@ export function ExerciseSelector({
         if (!next) setDetailExercise(null);
       }}
       currentUserId={user?.id}
-      overlayClassName="z-[65]"
-      className="z-[70]"
+      overlayClassName="z-detail-overlay"
+      className="z-detail"
     />
   );
 
@@ -529,8 +529,8 @@ export function ExerciseSelector({
         <Drawer open onOpenChange={onOpenChange} shouldScaleBackground={false}>
           <DrawerContent
             side="bottom"
-            overlayClassName="z-[55]"
-            className="z-[60] flex h-[min(92lvh,49rem)] max-h-[92lvh] flex-col overflow-hidden bg-card p-0"
+            overlayClassName="z-picker-overlay"
+            className="z-picker flex h-[min(92lvh,49rem)] max-h-[92lvh] flex-col overflow-hidden bg-card p-0"
           >
             <DrawerHeader className="shrink-0 bg-card px-4 pb-2 text-left sm:px-6">
               <div className="flex items-baseline justify-between gap-3">

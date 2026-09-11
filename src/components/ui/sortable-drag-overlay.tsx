@@ -34,7 +34,7 @@ export function SortableDragOverlay({
 
   return createPortal(
     <DragOverlay
-      // Por encima del drawer (z-50) y de cualquier chrome flotante.
+      // Token z-drag (999): por encima de drawers, sheets y chrome.
       zIndex={999}
       dropAnimation={{
         duration: 200,

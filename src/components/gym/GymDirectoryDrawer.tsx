@@ -41,10 +41,10 @@ export function GymDirectoryDrawer({
     >
       <DrawerContent
         side="right"
-        overlayClassName={overlayClassName ?? "z-[80]"}
+        overlayClassName={overlayClassName ?? "z-deep"}
         className={cn(
           "inset-0 h-lvh w-full max-w-none flex-col border-0 bg-background p-0",
-          contentClassName ?? "z-[85]",
+          contentClassName ?? "z-deep-raised",
         )}
       >
         <DrawerTitle className="sr-only">Gimnasios</DrawerTitle>

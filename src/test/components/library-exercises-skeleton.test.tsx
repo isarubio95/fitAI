@@ -13,4 +13,14 @@ describe("LibraryExercisesSkeleton", () => {
     expect(screen.getByText("Equipo")).toBeInTheDocument();
     expect(screen.getByText("Crear")).toBeInTheDocument();
   });
+
+  it("el FAB Crear usa h-9 de compoundVariants, sin !h-9", () => {
+    render(<LibraryExercisesSkeleton />);
+    const crear = screen.getByText("Crear").closest("button");
+    expect(crear).toBeTruthy();
+    expect(crear?.className).toMatch(/\bh-9\b/);
+    expect(crear?.className).not.toMatch(/!h-/);
+    expect(crear?.className).not.toMatch(/\bh-10\b/);
+    expect(crear?.className).toMatch(/\brounded-full\b/);
+  });
 });
