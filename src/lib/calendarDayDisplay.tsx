@@ -58,11 +58,11 @@ export function getCalendarDayCircleClasses({
   const showScheduled = dataReady && isScheduled;
 
   const circleFill = showTrained
-    ? "bg-gradient-to-br from-primary/88 via-primary/72 to-accent/82 dark:from-primary/65 dark:via-primary/45 dark:to-accent/70"
+    ? "bg-linear-to-br from-primary/88 via-primary/72 to-accent/82 dark:from-primary/65 dark:via-primary/45 dark:to-accent/70"
     : showCardio
-      ? "bg-gradient-to-br from-blue-500/70 via-blue-500/45 to-cyan-500/60"
+      ? "bg-linear-to-br from-chart-fitness/70 via-chart-fitness/45 to-chart-fresh/60"
       : showScheduled
-        ? "bg-gradient-to-br from-orange-500/55 via-orange-500/35 to-orange-400/50"
+        ? "bg-linear-to-br from-chart-fatigue/55 via-chart-fatigue/35 to-chart-fatigue/50"
         : isPast
           // Degradado cenital muy leve: el disco deja de leerse como un plano.
           ? "bg-linear-to-b from-secondary/60 to-secondary/35"

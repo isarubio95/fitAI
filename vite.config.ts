@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import { VitePWA } from "vite-plugin-pwa";
+import { APP_BACKGROUND_HEX } from "./src/lib/themeChrome.ts";
 import { googleAvatarDevProxy } from "./vite/googleAvatarProxy.ts";
 
 // https://vitejs.dev/config/
@@ -50,8 +51,8 @@ export default defineConfig(({ mode }) => ({
         name: 'Track Gym',
         short_name: 'Track Gym',
         description: 'Track Gym - Tu compañero de entrenamiento',
-        theme_color: '#1a1a18',
-        background_color: '#1a1a18',
+        theme_color: APP_BACKGROUND_HEX.dark,
+        background_color: APP_BACKGROUND_HEX.dark,
         display: 'standalone',
         display_override: ['standalone', 'fullscreen'],
         start_url: '/',

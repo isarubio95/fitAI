@@ -3,7 +3,11 @@
 @import "transition-style/transition.circles.min.css";
 @import "transition-style/transition.wipes.min.css";
 
-@config "../tailwind.config.ts";
+/*
+ * dark: sigue la clase `.dark` (toggle de la app), no prefers-color-scheme.
+ * Incluye el propio nodo `.dark` y sus descendientes.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /*
  * En móvil/táctil los estilos `hover:` NO deben aplicarse.
@@ -20,10 +24,103 @@
   }
 }
 
+@theme inline {
+  --color-background: hsl(var(--background));
+  /* HSL con comas: el chrome y el html/body no pueden usar `hsl(var(--background))` en WebView antiguos. */
+  --color-background-fill: var(--background-fill);
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-solid: hsl(var(--primary-solid));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-success-muted: hsl(var(--success-muted));
+  --color-success-border: hsl(var(--success-border));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-surface-elevated: hsl(var(--surface-elevated));
+  --color-surface-border: hsl(var(--surface-border));
+  --color-hairline: hsl(var(--hairline));
+  --color-chart-fitness: hsl(var(--chart-fitness));
+  --color-chart-fatigue: hsl(var(--chart-fatigue));
+  --color-chart-danger: hsl(var(--chart-danger));
+  --color-chart-positive: hsl(var(--chart-positive));
+  --color-chart-fresh: hsl(var(--chart-fresh));
+  --color-chart-neutral: hsl(var(--chart-neutral));
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+
+  /*
+   * Sombras de elevación. No usar `--shadow-card`: `--color-card` ya genera
+   * `shadow-card` como *color* de sombra, no como box-shadow.
+   * Docs Tailwind v4: `--shadow-*` → utilidad de box-shadow;
+   * `--color-*` → también `shadow-{color}` (color de la sombra).
+   */
+  --shadow-elevated: var(--elevation-card);
+  --shadow-float: var(--elevation-float);
+
+  --z-index-toast: 100;
+  --z-index-overlay: 110;
+  --z-index-drawer: 115;
+  --z-index-nested-overlay: 120;
+  --z-index-nested-drawer: 125;
+  --z-index-sheet: 130;
+  --z-index-nested-sheet: 135;
+  --z-index-popover: 140;
+  --z-index-select: 200;
+  --z-index-drag: 999;
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
 @layer base {
     :root {
     /* Neutros cálidos: equivalente claro de la paleta oscura del sistema. */
     --background: 60 8% 92%;
+    /* Color completo con comas: WebView Android antiguos rechazan HSL moderno. */
+    --background-fill: hsl(60, 8%, 92%);
     --foreground: 60 8% 8%;
     --card: 60 14% 97%;
     --card-foreground: 60 8% 8%;
@@ -55,7 +152,8 @@
      * Profundidad del sistema (ver `.dark` para la variante oscura):
      * - `--hairline`: filo superior que simula luz cenital sobre la superficie.
      * - `--surface-border`: borde de 1px de cualquier superficie elevada.
-     * - `--shadow-card`: cards de contenido. `--shadow-float`: chrome flotante.
+     * - `--elevation-card`: cards de contenido. `--elevation-float`: chrome flotante.
+     *   En @theme: `shadow-elevated` / `shadow-float`. No usar la clase `shadow-card`.
      * - `--sheen-*`: velo en degradado que se pinta ENCIMA del color de fondo,
      *   así una card con `bg-*` propio conserva su color y gana volumen.
      */
@@ -63,11 +161,11 @@
     --surface-border: 60 6% 78% / 0.75;
     --sheen-from: 0 0% 100% / 0.55;
     --sheen-to: 60 8% 70% / 0.05;
-    --shadow-card:
+    --elevation-card:
       inset 0 1px 0 hsl(var(--hairline)),
       0 1px 2px hsl(60 10% 20% / 0.06),
       0 10px 28px -18px hsl(60 10% 15% / 0.35);
-    --shadow-float:
+    --elevation-float:
       inset 0 1px 0 hsl(var(--hairline)),
       0 2px 6px hsl(60 10% 20% / 0.07),
       0 18px 44px -22px hsl(60 10% 15% / 0.42);
@@ -148,6 +246,7 @@
   .dark {
     /* Casi negro (no negro puro): deja sitio para que las superficies floten encima. */
     --background: 60 3% 4.5%;
+    --background-fill: hsl(60, 3%, 4.5%);
     --foreground: 60 100% 99%;
     --card: 60 3% 11%;
     --card-foreground: 60 100% 99%;
@@ -177,11 +276,11 @@
     --surface-border: 0 0% 100% / 0.07;
     --sheen-from: 0 0% 100% / 0.055;
     --sheen-to: 0 0% 100% / 0;
-    --shadow-card:
+    --elevation-card:
       inset 0 1px 0 hsl(var(--hairline)),
       0 1px 2px hsl(0 0% 0% / 0.4),
       0 14px 32px -20px hsl(0 0% 0% / 0.85);
-    --shadow-float:
+    --elevation-float:
       inset 0 1px 0 hsl(var(--hairline)),
       0 2px 8px hsl(0 0% 0% / 0.5),
       0 22px 48px -24px hsl(0 0% 0% / 0.95);
@@ -254,9 +353,11 @@
   }
   html {
     scrollbar-gutter: stable;
+    background-color: var(--background-fill);
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background-color: var(--background-fill);
   }
 
   /*
@@ -315,7 +416,7 @@
   .surface-card {
     border: 1px solid hsl(var(--surface-border));
     background-image: var(--sheen-card);
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--elevation-card);
   }
 
   /* Baldosa interior (métricas dentro de una card): hundida, sin sombra propia. */
@@ -348,33 +449,29 @@
   [data-vaul-drawer] .surface-region-page > [data-slot="card"] {
     background-image: var(--sheen-card);
     border-color: hsl(var(--surface-border));
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--elevation-card);
   }
 }
 
 /*
  * Chrome del layout (header y bottom nav): reglas sin `@layer` y con
  * `!important` para que ningún velo de cristal las pise.
- * HSL con comas: WebView de Android antiguos rechazan la sintaxis moderna.
+ * `--background-fill` lleva HSL con comas: WebView Android antiguos
+ * rechazan `hsl(60 8% 92%)` (sin comas).
  */
 [data-app-top-bar],
 [data-app-bottom-nav] {
-  background-color: hsl(60, 8%, 92%) !important;
+  background-color: var(--background-fill) !important;
   background-image: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   opacity: 1 !important;
 }
 
-html.dark [data-app-top-bar],
-html.dark [data-app-bottom-nav] {
-  background-color: hsl(60, 3%, 4.5%) !important;
-}
-
 .surface-float {
   border: 1px solid hsl(var(--surface-border));
   background: hsl(var(--card));
-  box-shadow: var(--shadow-float);
+  box-shadow: var(--elevation-float);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }

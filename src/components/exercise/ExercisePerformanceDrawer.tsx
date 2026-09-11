@@ -85,7 +85,7 @@ function DayRow({
         onClick={onToggle}
         aria-expanded={expanded}
         aria-controls={panelId}
-        className="touch-styled flex w-full items-center gap-3 rounded-lg px-1 py-2 text-left outline-none [@media(hover:hover)]:hover:bg-accent/40"
+        className="touch-styled flex w-full items-center gap-3 rounded-lg px-1 py-2 text-left outline-none hover:bg-accent/40"
       >
         <span className="w-16 shrink-0 text-xs tabular-nums text-muted-foreground">
           {formatDayLabel(day.day, currentYear)}
@@ -379,7 +379,7 @@ export function ExercisePerformanceDrawer({
                           ? "Ordenar de mayor a menor puntuación"
                           : "Ordenar por fecha, la más reciente primero"
                       }
-                      className="touch-styled inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border/25 px-3 py-1.5 text-xs font-medium text-foreground/90 outline-none [@media(hover:hover)]:hover:bg-accent/40"
+                      className="touch-styled inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border/25 px-3 py-1.5 text-xs font-medium text-foreground/90 outline-none hover:bg-accent/40"
                     >
                       {order === "date" ? (
                         <CalendarDays aria-hidden className="h-3.5 w-3.5" />

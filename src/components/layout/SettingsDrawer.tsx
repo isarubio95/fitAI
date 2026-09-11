@@ -69,8 +69,8 @@ export function SettingsDrawer() {
 
       <DrawerContent
         side="right"
-        overlayClassName="z-[110]"
-        className="z-115 flex h-full w-full flex-col border-0 bg-background p-0 shadow-none"
+        overlayClassName="z-overlay"
+        className="z-drawer flex h-full w-full flex-col border-0 bg-background p-0 shadow-none"
       >
         <DrawerHeader className="px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
           <DrawerTitle className="text-lg">Ajustes</DrawerTitle>
@@ -92,7 +92,7 @@ export function SettingsDrawer() {
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="z-200 bg-popover">
+              <SelectContent className="z-select bg-popover">
                 <SelectItem value="system">Automático (Sistema)</SelectItem>
                 <SelectItem value="light">Claro</SelectItem>
                 <SelectItem value="dark">Oscuro</SelectItem>

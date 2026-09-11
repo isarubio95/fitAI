@@ -216,7 +216,7 @@ const Auth = () => {
                 AUTH_CTA_CLASS,
                 "mt-2",
                 !canSubmit &&
-                  "bg-secondary/60 text-muted-foreground [@media(hover:hover)]:hover:bg-secondary/60",
+                  "bg-secondary/60 text-muted-foreground hover:bg-secondary/60",
               )}
               disabled={submitting || !canSubmit}
             >

@@ -100,7 +100,7 @@ export function BottomNav({
       <nav
         ref={navRef}
         data-app-bottom-nav
-        className="fixed px-2 inset-x-0 bottom-0 z-50 w-full border-t border-border bg-background pb-[calc(0.625rem+var(--app-safe-area-bottom,env(safe-area-inset-bottom,0px)))] pt-2 md:hidden"
+        className="fixed px-2 inset-x-0 bottom-0 z-50 w-full border-t border-border bg-background-fill pb-[calc(0.625rem+var(--app-safe-area-bottom,env(safe-area-inset-bottom,0px)))] pt-2 md:hidden"
       >
         {/* MENÚ DESPLEGABLE DE ACCIONES (fuera del contenedor con overflow-hidden) */}
       <div
@@ -125,7 +125,7 @@ export function BottomNav({
           className="flex w-full items-center gap-3.5 rounded-none px-4 py-3 text-left text-base transition-colors hover:bg-accent/30"
           onClick={() => { tapLight(); openLiveSetup(); setIsMenuOpen(false); }}
         >
-          <CardioWorkoutIcon className="h-6 w-6 text-blue-500" />
+          <CardioWorkoutIcon className="h-6 w-6 text-chart-fitness" />
           <div className="min-w-0">
             <p className="font-medium">Cardio</p>
             <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>

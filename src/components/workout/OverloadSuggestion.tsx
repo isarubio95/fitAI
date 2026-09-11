@@ -8,12 +8,12 @@ export const OVERLOAD_ACTION_STYLES: Record<
   { className: string; Icon: typeof TrendingUp; label: string }
 > = {
   increase_weight: {
-    className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    className: "border-success/40 bg-success/10 text-success-foreground",
     Icon: TrendingUp,
     label: "Subir peso",
   },
   increase_reps: {
-    className: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-400",
+    className: "border-chart-fitness/40 bg-chart-fitness/10 text-chart-fitness",
     Icon: Repeat,
     label: "Subir reps",
   },
@@ -23,7 +23,7 @@ export const OVERLOAD_ACTION_STYLES: Record<
     label: "Mantener",
   },
   deload: {
-    className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    className: "border-chart-fatigue/40 bg-chart-fatigue/10 text-chart-fatigue",
     Icon: TrendingDown,
     label: "Descarga",
   },

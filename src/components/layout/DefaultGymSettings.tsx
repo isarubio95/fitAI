@@ -11,17 +11,18 @@ import {
 } from "@/hooks/useGimnasios";
 import type { SelectedGimnasio } from "@/types/gimnasio";
 import { Label } from "@/components/ui/label";
+import { FIELD_FOCUS_RING } from "@/lib/fieldStyles";
 import { cn } from "@/lib/utils";
 
 const settingsSectionCardClass = cn(
   "space-y-4 rounded-xl border border-border/60 bg-card p-4",
 );
 
-/** Encima de Ajustes (overlay 110 / panel 115). Mapa y «Añadir» un peldaño más. */
-const PICKER_OVERLAY_CLASS = "z-[120]";
-const PICKER_CONTENT_CLASS = "z-[125]";
-const NESTED_OVERLAY_CLASS = "z-[130]";
-const NESTED_CONTENT_CLASS = "z-[135]";
+/** Encima de Ajustes (overlay / drawer). Mapa y «Añadir» un peldaño más. */
+const PICKER_OVERLAY_CLASS = "z-nested-overlay";
+const PICKER_CONTENT_CLASS = "z-nested-drawer";
+const NESTED_OVERLAY_CLASS = "z-sheet";
+const NESTED_CONTENT_CLASS = "z-nested-sheet";
 
 export function DefaultGymSettings() {
   const { user } = useAuth();
@@ -58,8 +59,8 @@ export function DefaultGymSettings() {
           disabled={isLoading}
           onClick={() => setPickerOpen(true)}
           className={cn(
-            "flex h-12 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-left text-base md:text-sm",
-            "focus-visible:border-emerald-500/30 focus-visible:outline-none",
+            "flex h-12 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-left text-base md:text-sm outline-none",
+            FIELD_FOCUS_RING,
             isLoading && "cursor-not-allowed opacity-50",
           )}
         >

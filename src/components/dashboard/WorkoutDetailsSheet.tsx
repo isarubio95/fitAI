@@ -305,7 +305,7 @@ function SeriesList({
             <div className="flex items-center gap-2 min-w-0">
               <span className={cn("text-muted-foreground", done && "text-foreground/80")}>
                 Serie {s.numero_serie}
-                {done ? <Check className="ml-2 inline h-3.5 w-3.5 text-emerald-500" /> : null}
+                {done ? <Check className="ml-2 inline h-3.5 w-3.5 text-success" /> : null}
               </span>
 
               {isBest && bestRm > 0 && registroSeries === "peso_reps" ? (
@@ -313,11 +313,11 @@ function SeriesList({
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="touch-styled inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 outline-none focus-visible:outline-none dark:text-emerald-300"
+                      className="touch-styled inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success-foreground outline-none focus-visible:outline-none"
                       title="Mayor RM estimada (pulsar para ver explicación)"
                       aria-label="Mayor RM estimada: explicación"
                     >
-                      <Trophy className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />
+                      <Trophy className="h-3.5 w-3.5 text-success-foreground" />
                       RM {formatWeight(bestRm)}kg
                     </button>
                   </PopoverTrigger>

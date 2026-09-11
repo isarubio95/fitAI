@@ -8,7 +8,7 @@ export const accentSurfaceBg =
   "bg-[color-mix(in_srgb,hsl(var(--primary))_86%,black)]";
 
 export const accentSurfaceBgHover =
-  "[@media(hover:hover)]:hover:bg-[color-mix(in_srgb,hsl(var(--primary))_78%,black)]";
+  "hover:bg-[color-mix(in_srgb,hsl(var(--primary))_78%,black)]";
 
 export const accentSurfaceFg = "text-primary-foreground";
 
@@ -24,7 +24,7 @@ export const filterPillBase =
   "touch-pill rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors outline-none focus:outline-none focus-visible:outline-none";
 
 export const filterPillInactive =
-  "border-border/20 bg-muted/40 text-foreground [@media(hover:hover)]:hover:border-border/35 [@media(hover:hover)]:hover:bg-muted/55";
+  "border-border/20 bg-muted/40 text-foreground hover:border-border/35 hover:bg-muted/55";
 
 /**
  * Pill activa del sistema de diseño: fondo muy oscuro teñido de acento y
@@ -46,10 +46,10 @@ export const filterPillActive = cn(
 export const filterPillTabsTrigger = cn(
   filterPillBase,
   "border-border/20 bg-muted/40 text-foreground",
-  "data-[state=inactive]:[@media(hover:hover)]:hover:border-border/35 data-[state=inactive]:[@media(hover:hover)]:hover:bg-muted/55",
+  "data-[state=inactive]:hover:border-border/35 data-[state=inactive]:hover:bg-muted/55",
   // Literales completos (Tailwind JIT): mismos valores que pillActive*.
   "data-[state=active]:border-[color-mix(in_srgb,hsl(var(--primary))_22%,black)] data-[state=active]:bg-[color-mix(in_srgb,hsl(var(--primary))_22%,black)] data-[state=active]:text-[color-mix(in_srgb,hsl(var(--primary))_55%,white)] data-[state=active]:shadow-sm",
-  "data-[state=active]:[@media(hover:hover)]:hover:border-[color-mix(in_srgb,hsl(var(--primary))_22%,black)] data-[state=active]:[@media(hover:hover)]:hover:bg-[color-mix(in_srgb,hsl(var(--primary))_28%,black)]",
+  "data-[state=active]:hover:border-[color-mix(in_srgb,hsl(var(--primary))_22%,black)] data-[state=active]:hover:bg-[color-mix(in_srgb,hsl(var(--primary))_28%,black)]",
 );
 
 /** Botones de filtro (outline / toggle). */
@@ -62,4 +62,4 @@ export const filterChipActive =
   "touch-pill border border-primary/35 bg-secondary text-secondary-foreground outline-none focus:outline-none focus-visible:outline-none";
 
 export const filterChipInactive =
-  "touch-pill border border-transparent text-muted-foreground outline-none focus:outline-none focus-visible:outline-none [@media(hover:hover)]:hover:bg-secondary/50";
+  "touch-pill border border-transparent text-muted-foreground outline-none focus:outline-none focus-visible:outline-none hover:bg-secondary/50";

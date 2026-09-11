@@ -89,7 +89,7 @@ export function PostWorkoutModal({
   const rows = [
     {
       key: "base",
-      icon: <CheckCircle2 className="h-4 w-4 text-green-500" />,
+      icon: <CheckCircle2 className="h-4 w-4 text-success" />,
       label: "Base",
       value: baseXp,
       className: "",
@@ -105,10 +105,10 @@ export function PostWorkoutModal({
       ? [
           {
             key: "streak",
-            icon: <Flame className="h-4 w-4 text-orange-500" />,
+            icon: <Flame className="h-4 w-4 text-chart-fatigue" />,
             label: `Racha (+${breakdown.newStreak} ${breakdown.newStreak === 1 ? "semana" : "semanas"})`,
             value: streakXp,
-            className: "text-orange-500",
+            className: "text-chart-fatigue",
           },
         ]
       : []),

@@ -83,10 +83,10 @@ export function ActiveCardioPill() {
                    hover:bg-neutral-800/80 hover:border-white/20 hover:scale-[1.02]
                    transition-all duration-300 ease-out"
       >
-        <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-sky-500/10 border border-sky-500/25">
+        <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-chart-fitness/10 border border-chart-fitness/25">
           <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-chart-fitness opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-chart-fitness" />
           </span>
         </div>
 
@@ -95,12 +95,12 @@ export function ActiveCardioPill() {
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-white leading-none max-w-[42vw] truncate">{label}</span>
             <div className="h-3 w-px bg-white/10 mx-0.5 shrink-0" />
-            <span className="text-sm font-mono tabular-nums text-sky-400 leading-none">{elapsed}</span>
+            <span className="text-sm font-mono tabular-nums text-chart-fitness leading-none">{elapsed}</span>
           </div>
         </div>
 
         <ChevronRight className="h-4 w-4 text-neutral-500 ml-1 transition-transform group-hover:translate-x-0.5 group-hover:text-white shrink-0" />
-        <div className="absolute inset-0 -z-10 rounded-full bg-linear-to-r from-sky-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
+        <div className="absolute inset-0 -z-10 rounded-full bg-linear-to-r from-chart-fitness/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
       </div>
     </div>
   );

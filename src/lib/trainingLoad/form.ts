@@ -34,13 +34,13 @@ export function getFormLabel(form: number): FormLabel {
 export function getFormClass(form: number): string {
   switch (getFormZoneDef(form).key) {
     case "muy-fatigado":
-      return "text-red-500";
+      return "text-chart-danger";
     case "fatigado":
-      return "text-amber-500";
+      return "text-chart-fatigue";
     case "optimo":
-      return "text-emerald-500";
+      return "text-chart-positive";
     case "fresco":
-      return "text-sky-500";
+      return "text-chart-fresh";
     default:
       return "text-muted-foreground";
   }

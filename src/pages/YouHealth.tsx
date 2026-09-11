@@ -317,7 +317,7 @@ const YouHealth = () => {
                           variant="secondary"
                           className={cn(
                             "gap-0.5 text-[10px]",
-                            card.delta <= 0 ? "text-emerald-500" : "text-rose-500",
+                            card.delta <= 0 ? "text-success" : "text-destructive",
                           )}
                         >
                           {card.delta <= 0 ? (

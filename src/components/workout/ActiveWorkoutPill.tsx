@@ -73,10 +73,10 @@ export function ActiveWorkoutPill() {
                    transition-all duration-300 ease-out"
       >
         {/* Status Indicator (Pulse Effect) */}
-        <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20">
+        <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-success/10 border border-success/20">
           <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success"></span>
           </span>
         </div>
 
@@ -91,7 +91,7 @@ export function ActiveWorkoutPill() {
             </span>
             {/* Vertical Separator */}
             <div className="h-3 w-px bg-white/10 mx-0.5" />
-            <span className="text-sm font-mono tabular-nums text-emerald-400 leading-none">
+            <span className="text-sm font-mono tabular-nums text-success leading-none">
               {elapsed}
             </span>
           </div>
@@ -101,7 +101,7 @@ export function ActiveWorkoutPill() {
         <ChevronRight className="h-4 w-4 text-neutral-500 ml-1 transition-transform group-hover:translate-x-0.5 group-hover:text-white" />
         
         {/* Subtle gradient glow behind */}
-        <div className="absolute inset-0 -z-10 rounded-full bg-linear-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
+        <div className="absolute inset-0 -z-10 rounded-full bg-linear-to-r from-success/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
       </div>
     </div>
   );

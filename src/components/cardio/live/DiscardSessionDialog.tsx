@@ -20,7 +20,7 @@ type Props = {
 export function DiscardSessionDialog({ open, pending, onOpenChange, onConfirm }: Props) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="z-110" overlayClassName="z-110">
+      <AlertDialogContent className="z-overlay" overlayClassName="z-overlay">
         <AlertDialogHeader>
           <AlertDialogTitle>¿Descartar este entrenamiento?</AlertDialogTitle>
           <AlertDialogDescription>

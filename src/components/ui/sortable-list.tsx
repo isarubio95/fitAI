@@ -676,7 +676,7 @@ export function SortableList({
               ref={overlayRef}
               aria-hidden
               inert
-              className="pointer-events-none fixed left-0 top-0 z-[999]"
+              className="pointer-events-none fixed left-0 top-0 z-drag"
               style={{ width: drag.width, height: drag.height }}
             >
               <div

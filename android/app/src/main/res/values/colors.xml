@@ -4,8 +4,9 @@
   placeholders de @capacitor/android (#3F51B5 / #303F9F / #FF4081), el índigo y
   rosa de Material 1, visibles en el task switcher y en el chrome nativo.
 
-  Los valores son el equivalente hex de los tokens de src/index.css: el
-  "background" claro es hsl(60 8% 92%) y el acento, el verde del logo.
+  Los valores son el equivalente hex de `--background-fill` / `--background`
+  en src/index.css (`src/lib/themeChrome.ts`): claro hsl(60, 8%, 92%) = #ECECE9.
+  El acento del task switcher es el verde del logo, no el del usuario.
 -->
 <resources>
     <color name="colorPrimary">#22C55E</color>

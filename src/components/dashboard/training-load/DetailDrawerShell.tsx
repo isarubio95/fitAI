@@ -35,8 +35,8 @@ export function DetailDrawerShell({
     <Drawer direction="left" open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         side="left"
-        overlayClassName="z-[120]"
-        className="z-[125] flex h-full max-h-dvh w-full max-w-none flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
+        overlayClassName="z-nested-overlay"
+        className="z-nested-drawer flex h-full max-h-dvh w-full max-w-none flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
       >
         <div className={cn("min-h-0 flex-1 overflow-y-auto bg-background", drawerSafeAreaBottom)}>
           <DrawerHeader className="sticky top-0 z-10 border-b border-border/40 bg-card px-4 pb-3 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">

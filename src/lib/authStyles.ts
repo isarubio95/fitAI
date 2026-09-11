@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * Campo relleno, sin borde, con hueco a la izquierda para el icono.
- * Neutraliza el halo esmeralda fijo de `Input` y lo sustituye por un anillo
- * de acento, para que el foco siga el `data-accent` del usuario.
+ * El `Input` ya usa `ring-ring`; aquí el anillo es inset y de `--primary`
+ * para que el foco siga el `data-accent` sobre el fondo relleno del onboarding.
  */
 export const AUTH_FIELD_CLASS = cn(
   "h-14 rounded-2xl border-0 bg-secondary/60 pl-12 text-base text-foreground placeholder:text-muted-foreground/70",
@@ -35,13 +35,13 @@ export const AUTH_FIELD_TOGGLE_CLASS =
 export const AUTH_CTA_CLASS = cn(
   "h-14 w-full rounded-2xl px-5 text-base font-semibold ring-0",
   "bg-[color-mix(in_srgb,hsl(var(--primary))_70%,white)] text-[hsl(60_3%_6%)]",
-  "[@media(hover:hover)]:hover:bg-[color-mix(in_srgb,hsl(var(--primary))_82%,white)]",
+  "hover:bg-[color-mix(in_srgb,hsl(var(--primary))_82%,white)]",
 );
 
 /**
  * Botón secundario con el mismo relleno que los campos (social login).
- * El `hover:` va sin `@media` explícita para que tailwind-merge lo dedupe
- * contra el `hover:bg-accent/55` de la variante `ghost` de `Button`.
+ * `hover:` (el custom-variant ya exige puntero fino) para que tailwind-merge
+ * lo dedupe contra el `hover:bg-accent/55` de la variante `ghost` de `Button`.
  */
 export const AUTH_SOFT_BUTTON_CLASS =
   "h-14 w-full gap-3 rounded-2xl bg-secondary/60 text-base font-medium text-foreground ring-0 hover:bg-secondary/80 hover:text-foreground";

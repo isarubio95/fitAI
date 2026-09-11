@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Equivalente hex del "background" oscuro de src/index.css: hsl(60 3% 4.5%). -->
+<!-- Equivalente hex de `--background-fill` oscuro: hsl(60, 3%, 4.5%) = #0C0C0B. -->
 <resources>
     <color name="colorPrimary">#22C55E</color>
     <color name="colorPrimaryDark">#16A34A</color>

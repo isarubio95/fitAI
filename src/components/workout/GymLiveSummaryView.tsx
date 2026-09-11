@@ -13,6 +13,7 @@ import { SessionRpePicker } from "@/components/training/SessionRpePicker";
 import { GymPickerSheet } from "@/components/gym/GymPickerSheet";
 import { WorkoutIconPickerTrigger } from "@/components/routine/RoutineIconPicker";
 import { formatCardioDuration } from "@/lib/cardioFormat";
+import { FIELD_FOCUS_RING } from "@/lib/fieldStyles";
 import { cn } from "@/lib/utils";
 import type { RoutineIconKey } from "@/lib/routineIcons";
 import type { SelectedGimnasio } from "@/types/gimnasio";
@@ -145,8 +146,8 @@ export function GymLiveSummaryView({
           disabled={saving}
           onClick={() => setGymPickerOpen(true)}
           className={cn(
-            "flex h-12 w-full items-center gap-2 rounded-xl border border-input bg-background px-3 text-left text-base md:text-sm",
-            "focus-visible:border-emerald-500/30 focus-visible:outline-none",
+            "flex h-12 w-full items-center gap-2 rounded-xl border border-input bg-background px-3 text-left text-base md:text-sm outline-none",
+            FIELD_FOCUS_RING,
             saving && "cursor-not-allowed opacity-50",
           )}
         >

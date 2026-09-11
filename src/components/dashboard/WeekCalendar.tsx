@@ -419,10 +419,10 @@ export function WeekCalendar({
                         const isMissed = !p.actividad_id && isBefore(dayStart, now);
                         const isPending = !p.actividad_id && !isBefore(dayStart, now);
                         const programStripe = isCompleted
-                          ? "border-l-emerald-500/75"
+                          ? "border-l-success/75"
                           : isMissed
-                            ? "border-l-zinc-500/55"
-                            : "border-l-orange-500/70";
+                            ? "border-l-muted-foreground/55"
+                            : "border-l-chart-fatigue/70";
                         return (
                           <div
                             key={p.id}
@@ -492,10 +492,10 @@ export function WeekCalendar({
                         return (
                         <div
                           key={s.id}
-                          className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-blue-500/65 bg-card py-2 pr-2 pl-3"
+                          className="flex items-center justify-between gap-2 rounded-md border border-border border-l-4 border-l-chart-fitness/65 bg-card py-2 pr-2 pl-3"
                         >
                           <div className="min-w-0 flex-1 flex items-center gap-2.5">
-                            <CardioIcon className="h-4 w-4 shrink-0 text-blue-500" strokeWidth={1.75} />
+                            <CardioIcon className="h-4 w-4 shrink-0 text-chart-fitness" strokeWidth={1.75} />
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate">{s.titulo}</p>
                               <p className="text-[11px] text-muted-foreground">

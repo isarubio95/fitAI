@@ -16,7 +16,7 @@ const RPE_HINTS: Record<number, string> = {
 
 function rpeToneClass(n: number | null) {
   if (n == null) return "text-muted-foreground";
-  if (n <= 3) return "text-emerald-600 dark:text-emerald-400";
+  if (n <= 3) return "text-success";
   if (n <= 6) return "text-amber-600 dark:text-amber-400";
   if (n <= 8) return "text-orange-600 dark:text-orange-400";
   return "text-rose-600 dark:text-rose-400";
@@ -24,7 +24,7 @@ function rpeToneClass(n: number | null) {
 
 function rpeFillClass(n: number | null) {
   if (n == null) return "bg-muted-foreground/25";
-  if (n <= 3) return "bg-emerald-500";
+  if (n <= 3) return "bg-success";
   if (n <= 6) return "bg-amber-500";
   if (n <= 8) return "bg-orange-500";
   return "bg-rose-500";
@@ -32,7 +32,7 @@ function rpeFillClass(n: number | null) {
 
 function rpeThumbClass(n: number | null) {
   if (n == null) return "bg-muted-foreground";
-  if (n <= 3) return "bg-emerald-500";
+  if (n <= 3) return "bg-success";
   if (n <= 6) return "bg-amber-500";
   if (n <= 8) return "bg-orange-500";
   return "bg-rose-500";

@@ -66,7 +66,7 @@ function FilterPopup<T extends string>({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="z-[140] w-48 p-1.5"
+        className="z-popover w-48 p-1.5"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <p className="px-2 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">

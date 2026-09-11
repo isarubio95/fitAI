@@ -55,10 +55,10 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
         <div
           className={cn(
             "relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
-            timer.finished ? "bg-emerald-500/10 border-emerald-500/20" : "bg-blue-500/25 border-blue-300/60",
+            timer.finished ? "bg-success/10 border-success/20" : "bg-chart-fitness/25 border-chart-fitness/60",
           )}
         >
-          <Timer className={cn("h-4 w-4", timer.finished ? "text-emerald-400" : "text-blue-200")} />
+          <Timer className={cn("h-4 w-4", timer.finished ? "text-success" : "text-chart-fitness")} />
         </div>
 
         <div className="flex min-w-[140px] max-w-[200px] flex-1 flex-col items-start gap-1">
@@ -69,7 +69,7 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
             <span
               className={cn(
                 "text-sm font-mono tabular-nums leading-none",
-                timer.finished ? "text-emerald-400" : "text-blue-200",
+                timer.finished ? "text-success" : "text-chart-fitness",
               )}
             >
               {label}
@@ -80,7 +80,7 @@ export function RestTimerPill({ mode = "global" }: { mode?: "global" | "sheet" }
             <div
               className={cn(
                 "h-full rounded-full transition-[width] duration-200 ease-linear",
-                timer.finished ? "bg-emerald-400/70" : "bg-blue-400",
+                timer.finished ? "bg-success/70" : "bg-chart-fitness",
               )}
               style={{ width: `${timer.finished ? 0 : percent}%` }}
             />

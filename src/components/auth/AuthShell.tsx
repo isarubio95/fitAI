@@ -19,7 +19,7 @@ export function AuthShell({ children, className }: AuthShellProps) {
 
   return (
     <div
-      className="dark relative min-h-screen w-full overflow-hidden bg-background text-foreground"
+      className="dark relative min-h-dvh w-full overflow-hidden bg-background text-foreground"
       data-accent={accentColor}
     >
       {/* Orbes de acento, en la línea del fondo del `body` pero algo más marcados. */}
@@ -29,7 +29,7 @@ export function AuthShell({ children, className }: AuthShellProps) {
       />
       <div
         className={cn(
-          "relative mx-auto flex min-h-screen w-full max-w-sm flex-col px-5",
+          "relative mx-auto flex min-h-dvh w-full max-w-sm flex-col px-5",
           "pt-[calc(1.5rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))]",
           "pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]",
           className,

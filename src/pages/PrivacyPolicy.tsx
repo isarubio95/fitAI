@@ -12,7 +12,7 @@ export default function PrivacyPolicy() {
   const backLabel = user ? "Volver al inicio" : "Volver al registro";
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8">
+    <div className="min-h-dvh bg-background px-4 py-8">
       <div className="mx-auto w-full max-w-2xl space-y-6">
         <Button variant="ghost" size="sm" className="-ml-2 gap-2" asChild>
           <Link to={backHref}>

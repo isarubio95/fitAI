@@ -13,6 +13,7 @@ import {
   COMMUNITY_PUBLISH_HINT_ON,
 } from "@/lib/communityFeedVisibility";
 import type { SelectedGimnasio } from "@/types/gimnasio";
+import { FIELD_FOCUS_RING } from "@/lib/fieldStyles";
 import { cn } from "@/lib/utils";
 import { MapPin } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -117,8 +118,8 @@ export function WorkoutMetaForm({
             disabled={gymDisabled}
             onClick={() => setGymPickerOpen(true)}
             className={cn(
-              "flex h-12 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-left text-base md:text-sm",
-              "focus-visible:border-emerald-500/30 focus-visible:outline-none",
+              "flex h-12 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-left text-base md:text-sm outline-none",
+              FIELD_FOCUS_RING,
               gymDisabled && "cursor-not-allowed opacity-50",
             )}
           >

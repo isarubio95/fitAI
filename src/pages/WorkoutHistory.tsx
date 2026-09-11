@@ -249,7 +249,7 @@ function ChangeBadge({ pct }: { pct: number | null }) {
   if (pct === null) return <span className="text-xs text-muted-foreground">sin datos prev.</span>;
   const positive = pct >= 0;
   return (
-    <Badge variant="secondary" className={`gap-0.5 text-xs ${positive ? "text-emerald-500" : "text-rose-500"}`}>
+    <Badge variant="secondary" className={`gap-0.5 text-xs ${positive ? "text-success" : "text-destructive"}`}>
       {positive ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
       {positive ? "+" : ""}{pct}%
     </Badge>

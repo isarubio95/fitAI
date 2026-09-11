@@ -276,8 +276,8 @@ function ProfileDrawerSheet() {
     <Drawer direction="left" open={open} onOpenChange={handleProfileOpenChange}>
       <DrawerContent
         side="left"
-        overlayClassName="z-[110]"
-        className="z-[115] flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
+        overlayClassName="z-overlay"
+        className="z-drawer flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
         onPointerDownOutside={(e) => {
           if (nestedProfileLayerOpen) e.preventDefault();
         }}
@@ -523,8 +523,8 @@ function ProfileDrawerSheet() {
     >
       <DrawerContent
         side="left"
-        overlayClassName="z-[120]"
-        className="z-[125] flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none"
+        overlayClassName="z-nested-overlay"
+        className="z-nested-drawer flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none"
       >
         <div className={cn("min-h-0 flex-1 overflow-y-auto bg-background", drawerSafeAreaBottom)}>
           <DrawerHeader className="bg-background px-5 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">

@@ -205,7 +205,7 @@ function getExerciseIcon(ex: { musculos_involucrados?: string[] | null }) {
 function DifficultyBars({ level }: { level: 1 | 2 | 3 }) {
   const color =
     level === 1
-      ? "text-emerald-600 dark:text-emerald-400"
+      ? "text-success"
       : level === 2
         ? "text-amber-600 dark:text-amber-400"
         : "text-orange-600 dark:text-orange-400";

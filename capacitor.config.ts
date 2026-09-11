@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { APP_BACKGROUND_HEX } from './src/lib/themeChrome';
 
 const config: CapacitorConfig = {
   appId: 'com.trackgym.app',
@@ -22,7 +23,7 @@ const config: CapacitorConfig = {
     // lo oculta `useHideSplashWhenReady`.
     SplashScreen: {
       launchAutoHide: false,
-      backgroundColor: '#0C0C0B',
+      backgroundColor: APP_BACKGROUND_HEX.dark,
       androidScaleType: 'CENTER_CROP',
       splashFullScreen: false,
       splashImmersive: false,

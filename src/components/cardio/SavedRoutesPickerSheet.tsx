@@ -93,8 +93,8 @@ function CreateRouteMenuButton({
           Crear ruta
         </Button>
       </DropdownMenuTrigger>
-      {/* Por encima del drawer de rutas (z-120). */}
-      <DropdownMenuContent align="end" className="z-[140] flex w-44 flex-col gap-1 bg-popover">
+      {/* Por encima del drawer de rutas (z-nested-overlay). */}
+      <DropdownMenuContent align="end" className="z-popover flex w-44 flex-col gap-1 bg-popover">
         <DropdownMenuItem onClick={() => onChoose("draw")}>
           <PencilLine className="mr-2 h-4 w-4" /> Dibujar
         </DropdownMenuItem>
@@ -533,10 +533,10 @@ export function SavedRoutesPickerSheet({
         <DrawerContent
           side="right"
           className={cn(
-            "z-120 flex h-full max-h-dvh w-full max-w-none flex-col gap-0 overflow-hidden border-0 bg-background p-0 shadow-none",
+            "z-nested-overlay flex h-full max-h-dvh w-full max-w-none flex-col gap-0 overflow-hidden border-0 bg-background p-0 shadow-none",
             drawerSafeAreaBottom,
           )}
-          overlayClassName="z-120"
+          overlayClassName="z-nested-overlay"
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >

@@ -84,7 +84,7 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
 
   const nivelColor = (nivel: string | null) => {
     switch (nivel) {
-      case "Principiante": return "text-emerald-400";
+      case "Principiante": return "text-success";
       case "Intermedio": return "text-amber-400";
       case "Avanzado": return "text-red-400";
       default: return "text-muted-foreground";

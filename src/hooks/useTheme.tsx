@@ -1,13 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Capacitor, SystemBars, SystemBarsStyle, SystemBarType } from "@capacitor/core";
+import { APP_BACKGROUND_HEX } from "@/lib/themeChrome";
 
 type Theme = "dark" | "light" | "system";
-
-/** Equivalente hex de `--background` (`src/index.css`) en cada esquema. */
-const APP_BACKGROUND_COLOR = {
-  light: "#ecece9",
-  dark: "#0c0c0b",
-} as const;
 
 /** Color de acento/primario: verde (logo), naranja, amarillo, rosa, azul */
 export type AccentColor = "green" | "orange" | "yellow" | "pink" | "blue";
@@ -51,7 +46,7 @@ function applySystemBarsStyle(resolved: "dark" | "light") {
 
 /** Mantiene `<meta name="theme-color">` en sintonía con el tema elegido en la app. */
 function applyThemeColorMeta(resolved: "dark" | "light") {
-  const color = APP_BACKGROUND_COLOR[resolved];
+  const color = APP_BACKGROUND_HEX[resolved];
   // Los meta con `media` los resuelve el navegador según el esquema del sistema,
   // así que los retiramos y dejamos uno solo que refleje la elección del usuario.
   document.querySelectorAll('meta[name="theme-color"][media]').forEach((el) => el.remove());

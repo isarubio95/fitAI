@@ -29,7 +29,7 @@ export function LiveStatsFullscreen({
 
   return (
     <div
-      className="fixed inset-0 z-120 flex flex-col bg-card text-card-foreground"
+      className="fixed inset-0 z-nested-overlay flex flex-col bg-card text-card-foreground"
       role="dialog"
       aria-modal="true"
       aria-label={title}

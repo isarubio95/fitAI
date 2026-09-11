@@ -804,7 +804,7 @@ export function CardioLiveRecorder() {
 
   return (
     <>
-      <div className="fixed inset-0 z-100 flex flex-col bg-card text-card-foreground" {...pillCircleProps}>
+      <div className="fixed inset-0 z-toast flex flex-col bg-card text-card-foreground" {...pillCircleProps}>
         {summary ? (
           <CardioLiveSummaryView
             elapsedSec={elapsedSec}

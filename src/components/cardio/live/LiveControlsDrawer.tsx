@@ -84,9 +84,9 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
       <DrawerContent
         ref={ref}
         side="bottom"
-        className="z-110 mt-0 max-h-[85lvh] overflow-hidden bg-[hsl(var(--surface-elevated))] p-0 transition-[height] duration-300 ease-out"
+        className="z-overlay mt-0 max-h-[85lvh] overflow-hidden bg-surface-elevated p-0 transition-[height] duration-300 ease-out"
         overlayClassName={cn(
-          "z-110 bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none",
+          "z-overlay bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none",
           // Desplegado: el overlay captura el toque fuera para colapsar.
           // Colapsado: deja pasar gestos al mapa / UI detrás.
           controlsExpanded ? "pointer-events-auto" : "pointer-events-none",
@@ -115,7 +115,7 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
             </DrawerHeader>
             <div
               className={cn(
-                "space-y-3 bg-[hsl(var(--surface-elevated))] px-4",
+                "space-y-3 bg-surface-elevated px-4",
                 controlsExpanded ? "pb-4" : "pb-[max(1rem,env(safe-area-inset-bottom))]",
               )}
             >
@@ -167,7 +167,7 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
                     variant="secondary"
                     className={cn(
                       "h-11 min-w-30 rounded-full gap-2 px-8 shadow-none",
-                      paused && "border-sky-500/50",
+                      paused && "border-chart-fitness/50",
                       paused && pauseSource === "auto" && "min-w-40",
                     )}
                     onClick={onPauseToggle}
@@ -200,7 +200,7 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
             )}
           >
             <div className="min-h-0 overflow-hidden">
-              <div className="space-y-4 bg-[hsl(var(--surface-elevated))] px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <div className="space-y-4 bg-surface-elevated px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <HeartRatePanel
                   bpm={hr.bpm}
                   connected={hr.connected}

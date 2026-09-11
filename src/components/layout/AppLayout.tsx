@@ -190,7 +190,7 @@ export function AppLayout() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -200,7 +200,7 @@ export function AppLayout() {
 
   if (profileLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -218,7 +218,7 @@ export function AppLayout() {
       <InAppSocialToastSync />
       <ProfileDrawerProvider>
       <InAppToastNavigationHost />
-      <div className="flex min-h-screen bg-background">
+      <div className="flex min-h-dvh bg-background">
         <DesktopSidebar />
         <div className="relative flex min-w-0 flex-1 flex-col">
           <div
@@ -230,7 +230,7 @@ export function AppLayout() {
             ref={headerRef}
             data-app-top-bar
             className={cn(
-              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border bg-background px-4 pb-2 pt-[calc(0.5rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] md:hidden",
+              "fixed left-0 right-0 top-0 z-40 flex w-full flex-col border-b border-border px-4 pb-2 pt-[calc(0.5rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] md:hidden",
               topBarSurface,
               showSectionPills ? "max-md:gap-2" : "gap-0",
               (location.pathname === "/routines" || location.pathname === "/evolution") && "max-md:pb-0",
@@ -312,7 +312,7 @@ export function AppLayout() {
 
           <main
             className={cn(
-              "flex min-h-screen w-full min-w-0 flex-1 flex-col pb-24 md:pb-0",
+              "flex min-h-dvh w-full min-w-0 flex-1 flex-col pb-24 md:pb-0",
               "max-md:pt-[var(--app-header-height,5rem)]",
               "md:pt-12",
             )}

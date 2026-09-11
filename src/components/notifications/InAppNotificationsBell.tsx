@@ -42,8 +42,8 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
       <Drawer direction="right" open={open} onOpenChange={setOpen}>
         <DrawerContent
           side="right"
-          overlayClassName="z-[110]"
-          className="z-[115] flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none"
+          overlayClassName="z-overlay"
+          className="z-drawer flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none"
         >
           <DrawerHeader className="shrink-0 px-6 pb-3 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
             <div className="flex items-center justify-between gap-3">

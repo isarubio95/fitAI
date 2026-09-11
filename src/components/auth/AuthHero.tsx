@@ -41,7 +41,7 @@ export function AuthHero({ children, className }: AuthHeroProps) {
       {!imageFailed && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-background from-15% via-background/55 via-50% to-transparent"
+          className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-t from-background from-15% via-background/55 via-50% to-transparent"
         />
       )}
       <div>{children}</div>

@@ -9,9 +9,8 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#1a1a18">
-    <meta name="theme-color" content="#ecece8" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#1a1a18" media="(prefers-color-scheme: dark)">
+    <!-- Hex de `--background-fill`. Sin `media`: el tema de la app no es el del sistema. -->
+    <meta name="theme-color" content="#0c0c0b">
     <title>Track Gym</title>
     <meta name="description" content="Track Gym - Tu compañero de entrenamiento" />
     <meta name="author" content="Track Gym" />
@@ -50,6 +49,9 @@
         if (resolved === "dark") {
           document.documentElement.classList.add("dark");
         }
+        var themeColor = resolved === "light" ? "#ecece9" : "#0c0c0b";
+        var themeMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeMeta) themeMeta.setAttribute("content", themeColor);
       })();
     </script>
     <div id="root"></div>

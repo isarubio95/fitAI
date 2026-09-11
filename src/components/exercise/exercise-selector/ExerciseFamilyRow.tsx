@@ -61,7 +61,7 @@ function InfoButton({ exercise, onClick }: { exercise: SelectorExercise; onClick
     <button
       type="button"
       aria-label={`Ver ficha de ${exercise.nombre}`}
-      className="touch-styled inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 transition-colors [@media(hover:hover)]:hover:bg-muted [@media(hover:hover)]:hover:text-foreground"
+      className="touch-styled inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.preventDefault();

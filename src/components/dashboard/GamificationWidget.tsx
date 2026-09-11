@@ -40,11 +40,11 @@ export function GamificationWidget({ userId, contentClassName }: GamificationWid
           <div className="flex items-center gap-1.5">
             <Flame
               className={`h-5 w-5 transition-colors ${
-                hasStreak ? "text-orange-500" : "text-muted-foreground"
+                hasStreak ? "text-chart-fatigue" : "text-muted-foreground"
               }`}
               fill={hasStreak ? "currentColor" : "none"}
             />
-            <span className={`font-semibold text-sm ${hasStreak ? "text-orange-500" : "text-muted-foreground"}`}>
+            <span className={`font-semibold text-sm ${hasStreak ? "text-chart-fatigue" : "text-muted-foreground"}`}>
               {stats.racha_actual} {stats.racha_actual === 1 ? "semana" : "semanas"}
             </span>
           </div>

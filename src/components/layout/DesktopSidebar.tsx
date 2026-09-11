@@ -32,7 +32,7 @@ export function DesktopSidebar() {
   const { openLiveSetup } = useGlobalCardioDrawer();
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-[hsl(var(--surface-elevated)/0.5)] backdrop-blur-2xl h-dvh sticky top-0">
+    <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border bg-surface-elevated/50 backdrop-blur-2xl h-dvh sticky top-0">
       <div className="shrink-0 border-b border-border px-4 py-4">
         <div className="flex items-center gap-2">
           <img src="/logo.svg" alt="Track Gym" className="h-8 w-8 shrink-0 rounded-lg" />
@@ -56,7 +56,7 @@ export function DesktopSidebar() {
               </div>
             </DropdownMenuItem>
             <DropdownMenuItem className="text-base" onClick={() => openLiveSetup()}>
-              <CardioWorkoutIcon className="h-5 w-5 mr-2 text-blue-500" />
+              <CardioWorkoutIcon className="h-5 w-5 mr-2 text-chart-fitness" />
               <div className="min-w-0">
                 <p className="font-medium">Cardio</p>
                 <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>
