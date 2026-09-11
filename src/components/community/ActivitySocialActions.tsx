@@ -173,7 +173,7 @@ export function ActivitySocialActions({
           size="sm"
           className={cn(
             "h-11 flex-1 gap-2 px-3 text-muted-foreground [&_svg]:size-[1.15rem]",
-            liked && "text-rose-600 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-400",
+            liked && "text-chart-danger hover:text-chart-danger",
           )}
           aria-pressed={liked}
           aria-label={liked ? "Quitar me gusta" : "Me gusta"}

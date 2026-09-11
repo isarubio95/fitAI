@@ -87,7 +87,7 @@ export function LiveMetricsBar({
         )}
       >
         {showNoGpsBanner ? (
-          <p className="pointer-events-none border-b border-red-500/25 bg-red-500/15 px-3 py-1.5 text-center text-[11px] font-semibold tracking-wide text-red-600 dark:text-red-400">
+          <p className="pointer-events-none border-b border-destructive/25 bg-destructive/15 px-3 py-1.5 text-center text-[11px] font-semibold tracking-wide text-destructive">
             {noGpsBannerText}
           </p>
         ) : null}

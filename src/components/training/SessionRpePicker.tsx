@@ -17,25 +17,25 @@ const RPE_HINTS: Record<number, string> = {
 function rpeToneClass(n: number | null) {
   if (n == null) return "text-muted-foreground";
   if (n <= 3) return "text-success";
-  if (n <= 6) return "text-amber-600 dark:text-amber-400";
-  if (n <= 8) return "text-orange-600 dark:text-orange-400";
-  return "text-rose-600 dark:text-rose-400";
+  if (n <= 6) return "text-chart-fatigue";
+  if (n <= 8) return "text-chart-danger";
+  return "text-destructive";
 }
 
 function rpeFillClass(n: number | null) {
   if (n == null) return "bg-muted-foreground/25";
   if (n <= 3) return "bg-success";
-  if (n <= 6) return "bg-amber-500";
-  if (n <= 8) return "bg-orange-500";
-  return "bg-rose-500";
+  if (n <= 6) return "bg-chart-fatigue";
+  if (n <= 8) return "bg-chart-danger";
+  return "bg-destructive";
 }
 
 function rpeThumbClass(n: number | null) {
   if (n == null) return "bg-muted-foreground";
   if (n <= 3) return "bg-success";
-  if (n <= 6) return "bg-amber-500";
-  if (n <= 8) return "bg-orange-500";
-  return "bg-rose-500";
+  if (n <= 6) return "bg-chart-fatigue";
+  if (n <= 8) return "bg-chart-danger";
+  return "bg-destructive";
 }
 
 type SessionRpePickerProps = {

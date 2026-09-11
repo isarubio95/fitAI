@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTheme } from "@/hooks/useTheme";
 import {
   AttributionControl,
   Map as MapLibreMap,
@@ -17,6 +18,7 @@ import {
   writeCardioMapBasemap,
   type MapBasemapId,
 } from "@/lib/mapBasemap";
+import { gymMapPinColors } from "@/lib/cssHslToken";
 import { MAP_COLORS } from "@/lib/stravaDarkMapStyle";
 import { useBrowserLocation } from "@/hooks/useBrowserLocation";
 import type { GymMapViewport } from "@/lib/gimnasioSearch";
@@ -82,6 +84,19 @@ function ensureOpenFreeMapGlyphs(map: MapLibreMap) {
   }
 }
 
+function paintGymAccent(map: MapLibreMap) {
+  const { fill, selected } = gymMapPinColors();
+  if (map.getLayer(LAYER_CLUSTERS)) {
+    map.setPaintProperty(LAYER_CLUSTERS, "circle-color", fill);
+  }
+  if (map.getLayer(LAYER_POINTS)) {
+    map.setPaintProperty(LAYER_POINTS, "circle-color", fill);
+  }
+  if (map.getLayer(LAYER_SELECTED)) {
+    map.setPaintProperty(LAYER_SELECTED, "circle-color", selected);
+  }
+}
+
 function addGymLayers(map: MapLibreMap) {
   ensureOpenFreeMapGlyphs(map);
 
@@ -96,13 +111,15 @@ function addGymLayers(map: MapLibreMap) {
     });
   }
 
+  const { fill, selected } = gymMapPinColors();
+
   addLayerIfMissing(map, {
     id: LAYER_CLUSTERS,
     type: "circle",
     source: SOURCE_ID,
     filter: ["has", "point_count"],
     paint: {
-      "circle-color": "#10b981",
+      "circle-color": fill,
       "circle-opacity": 0.92,
       "circle-stroke-width": 2,
       "circle-stroke-color": "#ffffff",
@@ -116,7 +133,7 @@ function addGymLayers(map: MapLibreMap) {
     source: SOURCE_ID,
     filter: ["!", ["has", "point_count"]],
     paint: {
-      "circle-color": "#10b981",
+      "circle-color": fill,
       "circle-radius": 8,
       "circle-stroke-width": 2,
       "circle-stroke-color": "#ffffff",
@@ -129,7 +146,7 @@ function addGymLayers(map: MapLibreMap) {
     source: SOURCE_ID,
     filter: ["==", ["get", "id"], ""],
     paint: {
-      "circle-color": "#34d399",
+      "circle-color": selected,
       "circle-radius": 11,
       "circle-stroke-width": 3,
       "circle-stroke-color": "#ffffff",
@@ -155,6 +172,8 @@ function addGymLayers(map: MapLibreMap) {
   } catch {
     /* sin glifos el recuento no pinta; los círculos sí */
   }
+
+  paintGymAccent(map);
 }
 
 function syncGymsOnMap(map: MapLibreMap, gyms: GimnasioCatalogItem[]) {
@@ -185,6 +204,7 @@ export function GymDirectoryMap({
   const basemapRef = useRef<MapBasemapId>(readCardioMapBasemap());
   const [basemap, setBasemap] = useState<MapBasemapId>(() => basemapRef.current);
   const [ready, setReady] = useState(false);
+  const { accentColor, theme } = useTheme();
   const { point: userPoint, loading: locating, request: requestLocation } = useBrowserLocation(false);
   const didAutoLocate = useRef(false);
 
@@ -338,6 +358,16 @@ export function GymDirectoryMap({
       /* el estilo puede estar recargándose */
     }
   }, [gyms, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    try {
+      paintGymAccent(map);
+    } catch {
+      /* el estilo puede estar recargándose */
+    }
+  }, [accentColor, theme, ready]);
 
   useEffect(() => {
     const map = mapRef.current;

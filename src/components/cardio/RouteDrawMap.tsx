@@ -523,7 +523,7 @@ export function RouteDrawMap({
             "flex h-14 w-14 items-center justify-center rounded-full border shadow-lg backdrop-blur-sm",
             "transition-all duration-150",
             overTrash
-              ? "scale-110 border-red-400/55 bg-red-500/30 text-red-100"
+              ? "scale-110 border-destructive/55 bg-destructive/30 text-destructive-foreground"
               : "border-white/15 bg-[#1a1f21]/90 text-white/85",
           )}
           aria-label="Soltar para eliminar el punto"

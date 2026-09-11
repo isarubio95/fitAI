@@ -81,7 +81,7 @@ export function getCalendarDayCircleClasses({
       ? "border-primary/10"
       : "border-primary/16"
     : showCardio
-      ? "border-blue-400/18"
+      ? "border-chart-fitness/18"
       : isPast
         ? "border-border/70"
         : "border-border/12";
@@ -93,7 +93,7 @@ export function getCalendarDayCircleClasses({
       ? showTrained
         ? "border-primary/28"
         : showCardio
-          ? "border-blue-400/28"
+          ? "border-chart-fitness/28"
           : "border-primary"
       : circleBorder,
     transitionClass: dataReady ? "transition-all duration-200" : "transition-none",

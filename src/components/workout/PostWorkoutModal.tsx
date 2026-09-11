@@ -116,10 +116,10 @@ export function PostWorkoutModal({
       ? [
           {
             key: "logros",
-            icon: <Trophy className="h-4 w-4 text-amber-500" />,
+            icon: <Trophy className="h-4 w-4 text-chart-fatigue" />,
             label: `Logros (${nuevosLogros.length})`,
             value: logrosXp,
-            className: "text-amber-500",
+            className: "text-chart-fatigue",
           },
         ]
       : []),
@@ -152,7 +152,7 @@ export function PostWorkoutModal({
                   initial={{ opacity: 0, scale: 0.85, y: 12 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ delay: 0.15 + index * 0.15, type: "spring", stiffness: 260, damping: 20 }}
-                  className="flex items-center gap-3 rounded-lg border border-amber-500/25 bg-amber-500/10 p-2.5 text-left"
+                  className="flex items-center gap-3 rounded-lg border border-chart-fatigue/25 bg-chart-fatigue/10 p-2.5 text-left"
                 >
                   <motion.div
                     initial={{ rotate: -12, scale: 0.6 }}
@@ -162,13 +162,13 @@ export function PostWorkoutModal({
                     <LogroMedal nivel={logro.nivel} icono={logro.icono} size={56} />
                   </motion.div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-chart-fatigue">
                       ¡Logro desbloqueado!
                     </p>
                     <p className="truncate text-sm font-bold">{logro.nombre}</p>
                     <p className="truncate text-xs text-muted-foreground">{logro.descripcion}</p>
                   </div>
-                  <span className="shrink-0 text-sm font-bold tabular-nums text-amber-500">
+                  <span className="shrink-0 text-sm font-bold tabular-nums text-chart-fatigue">
                     +{logro.xp_recompensa}
                   </span>
                 </motion.div>
@@ -212,7 +212,7 @@ export function PostWorkoutModal({
                   animate={{ scale: [1, 1.15, 1] }}
                   transition={{ delay: 0.7, duration: 0.45, ease: easeOut }}
                 >
-                  <Zap className="h-5 w-5 text-amber-500" />
+                  <Zap className="h-5 w-5 text-chart-fatigue" />
                 </motion.span>
                 Total
               </span>

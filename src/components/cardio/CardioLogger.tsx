@@ -565,8 +565,8 @@ export function CardioLogger() {
         <div className="min-h-0 flex-1 overflow-y-auto bg-card">
         <div className={cn("space-y-6 p-4", drawerSafeAreaBottom)}>
           {hrSummary ? (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2.5 text-sm">
-              <span className="inline-flex items-center gap-1.5 font-medium text-rose-700 dark:text-rose-300">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-chart-danger/25 bg-chart-danger/10 px-3 py-2.5 text-sm">
+              <span className="inline-flex items-center gap-1.5 font-medium text-chart-danger">
                 <Heart className="h-4 w-4" />
                 Pulsaciones
               </span>

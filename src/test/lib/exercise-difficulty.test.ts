@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { difficultyLabel, difficultyToLevel, difficultyToStored } from "@/lib/exerciseDifficulty";
+import { difficultyLabel, difficultyToLevel, difficultyToStored, difficultyToneClass } from "@/lib/exerciseDifficulty";
 
 describe("difficultyToLevel", () => {
   it("acepta los numeros del catalogo", () => {
@@ -51,5 +51,13 @@ describe("difficultyLabel", () => {
     expect(difficultyLabel(1)).toBe("Baja");
     expect(difficultyLabel(2)).toBe("Media");
     expect(difficultyLabel(3)).toBe("Alta");
+  });
+});
+
+describe("difficultyToneClass", () => {
+  it("usa tokens del tema, no paleta default", () => {
+    expect(difficultyToneClass(1)).toBe("text-success");
+    expect(difficultyToneClass(2)).toBe("text-chart-fatigue");
+    expect(difficultyToneClass(3)).toBe("text-chart-danger");
   });
 });

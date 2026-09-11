@@ -43,7 +43,7 @@ export function GymPinMap({ value, onChange, className }: Props) {
       const el = document.createElement("div");
       el.className = "gym-pin-marker";
       el.style.cssText =
-        "width:18px;height:18px;border-radius:999px;background:#10b981;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);";
+        "width:18px;height:18px;border-radius:999px;background:hsl(var(--primary-solid));border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);";
       markerRef.current = new Marker({ element: el, draggable: true }).setLngLat(lngLat).addTo(map);
       markerRef.current.on("dragend", () => {
         const next = markerRef.current?.getLngLat();

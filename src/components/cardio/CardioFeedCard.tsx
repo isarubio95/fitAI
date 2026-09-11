@@ -111,7 +111,7 @@ export function CardioFeedCompactContent({
 
       {metrics.fcMedia != null || metrics.fcMax != null ? (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 text-xs tabular-nums text-muted-foreground">
-          <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400">
+          <span className="inline-flex items-center gap-1 text-chart-danger">
             <Heart className="h-3 w-3" />
             {metrics.fcMedia != null ? (
               <span>

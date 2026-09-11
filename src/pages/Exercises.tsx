@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { PAGE_STACK_INSET, LIBRARY_EXERCISES_LIST, LIBRARY_EXERCISES_PAGE } from "@/lib/pageStyles";
 import { ExerciseRowSkeleton } from "@/components/layout/LibraryExercisesSkeleton";
 import { EQUIPOS, parseEquipoList } from "@/constants/exerciseEquipment";
-import { difficultyToLevel } from "@/lib/exerciseDifficulty";
+import { difficultyToLevel, difficultyToneClass } from "@/lib/exerciseDifficulty";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMediaUrl";
 import { compareExerciseNames, searchExercises } from "@/lib/exerciseSearch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -203,15 +203,8 @@ function getExerciseIcon(ex: { musculos_involucrados?: string[] | null }) {
 }
 
 function DifficultyBars({ level }: { level: 1 | 2 | 3 }) {
-  const color =
-    level === 1
-      ? "text-success"
-      : level === 2
-        ? "text-amber-600 dark:text-amber-400"
-        : "text-orange-600 dark:text-orange-400";
-
   return (
-    <span className={cn("inline-flex items-end gap-[3px]", color)} aria-hidden>
+    <span className={cn("inline-flex items-end gap-[3px]", difficultyToneClass(level))} aria-hidden>
       {[1, 2, 3].map((i) => (
         <span
           key={i}

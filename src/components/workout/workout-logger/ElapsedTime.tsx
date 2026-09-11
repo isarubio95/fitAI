@@ -51,7 +51,7 @@ export function ElapsedTime({
       className={cn(
         "inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-mono leading-none tabular-nums transition-colors",
         clockOn && paused
-          ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+          ? "border-chart-fatigue/30 bg-chart-fatigue/10 text-chart-fatigue"
           : "border-border/60 bg-muted/60 text-foreground",
       )}
       aria-label="Tiempo transcurrido"

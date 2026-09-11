@@ -43,6 +43,13 @@ export function difficultyLabel(level: DifficultyLevel): string {
   return DIFFICULTY_OPTIONS.find((o) => o.level === level)?.label ?? String(level);
 }
 
+/** Color de las barras de dificultad: tokens del tema, no paleta default. */
+export function difficultyToneClass(level: DifficultyLevel): string {
+  if (level === 1) return "text-success";
+  if (level === 2) return "text-chart-fatigue";
+  return "text-chart-danger";
+}
+
 /** Valor canónico a escribir en BD: siempre `"1" | "2" | "3"`. */
 export function difficultyToStored(d: unknown): string | null {
   const level = difficultyToLevel(d);

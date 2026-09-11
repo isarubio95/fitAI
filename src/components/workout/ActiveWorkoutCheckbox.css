@@ -47,7 +47,7 @@
   transition: 0.2s ease width, 0.2s ease height;
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .checkbox-wrapper label:hover:before {
     width: calc(var(--size) * .55);
     height: calc(var(--size) * .55);

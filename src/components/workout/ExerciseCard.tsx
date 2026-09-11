@@ -298,7 +298,7 @@ export function ExerciseCard({
             title={tipoSerieLabel(s.tipo_serie)}
             className={cn(
               "ml-0.5 align-super text-[9px] font-semibold",
-              s.tipo_serie === "calentamiento" ? "text-amber-500" : "text-primary",
+              s.tipo_serie === "calentamiento" ? "text-chart-fatigue" : "text-primary",
             )}
           >
             {short}

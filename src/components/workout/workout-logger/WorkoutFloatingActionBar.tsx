@@ -92,7 +92,7 @@ export function WorkoutFloatingActionBar({
             size="icon"
             className={cn(
               "h-12 w-12 rounded-full",
-              isPaused && "bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 hover:text-amber-600 dark:text-amber-400",
+              isPaused && "bg-chart-fatigue/15 text-chart-fatigue hover:bg-chart-fatigue/20 hover:text-chart-fatigue",
             )}
             onClick={onTogglePause}
             disabled={!canPause}

@@ -70,7 +70,7 @@ export function CardioLiveSummaryView({
         </p>
         {fcMedia != null || fcMax != null ? (
           <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm tabular-nums">
-            <span className="inline-flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
+            <span className="inline-flex items-center gap-1.5 text-chart-danger">
               <Heart className="h-3.5 w-3.5" />
               {fcMedia != null ? (
                 <span>

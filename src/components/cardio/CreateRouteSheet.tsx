@@ -337,7 +337,7 @@ export function CreateRouteSheet({
                 </div>
               ) : null}
               {drawing.snapUnavailable && drawing.snapEnabled ? (
-                <p className="text-xs text-amber-500">
+                <p className="text-xs text-chart-fatigue">
                   No se pudo calcular el camino de algún tramo: quedó en línea recta.
                 </p>
               ) : null}

@@ -20,6 +20,7 @@ describe("SessionRpePicker", () => {
     render(<SessionRpePicker value={7} onChange={vi.fn()} />);
 
     expect(screen.getByText("Muy duro")).toBeInTheDocument();
+    expect(screen.getByText("7", { selector: "p" })).toHaveClass("text-chart-danger");
     expect(screen.getByRole("slider", { name: /esfuerzo 7/i })).toHaveAttribute("aria-valuenow", "7");
   });
 });

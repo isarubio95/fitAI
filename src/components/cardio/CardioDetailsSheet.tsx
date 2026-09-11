@@ -188,7 +188,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
 
               {(metrics.fcMedia != null || metrics.fcMax != null) && (
                 <p className="flex shrink-0 items-center gap-2 px-6 text-sm tabular-nums text-muted-foreground">
-                  <Heart className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                  <Heart className="h-4 w-4 text-chart-danger" />
                   {metrics.fcMedia != null ? (
                     <span>
                       Media <span className="font-semibold text-foreground">{metrics.fcMedia}</span> bpm

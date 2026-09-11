@@ -33,7 +33,7 @@ export function HeartRatePanel({
         <Heart
           className={cn(
             "h-6 w-6 shrink-0",
-            connected ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground",
+            connected ? "text-chart-danger" : "text-muted-foreground",
             hasBpm && "animate-pulse",
           )}
         />
@@ -47,7 +47,7 @@ export function HeartRatePanel({
           ) : connecting ? (
             <p className="text-[12px] text-muted-foreground">Conectando…</p>
           ) : connection === "disconnected" ? (
-            <p className="text-[12px] text-amber-600 dark:text-amber-400">Sin señal</p>
+            <p className="text-[12px] text-chart-fatigue">Sin señal</p>
           ) : (
             <p className="text-[12px] text-muted-foreground">
               Bandas y relojes Bluetooth
@@ -77,7 +77,7 @@ export function HeartRatePanel({
           {connected ? "Desconectar" : connection === "disconnected" || deviceName ? "Reconectar" : "Conectar"}
         </Button>
       </div>
-      {error ? <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{error}</p> : null}
+      {error ? <p className="mt-2 text-xs text-chart-fatigue">{error}</p> : null}
     </div>
   );
 }
