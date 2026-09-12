@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLogros, pickFeaturedLogros } from "@/hooks/useLogros";
 import { useProfileActivityHistory } from "@/hooks/useProfileActivityHistory";
 import { supabase } from "@/integrations/supabase/client";
+import { FollowButton } from "@/components/community/FollowButton";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
@@ -153,24 +154,40 @@ function ProfileDrawerSheet() {
     },
   });
 
-  const { data: followCounts, isLoading: loadingFollowCounts } = useQuery({
+  const {
+    data: followCounts,
+    isLoading: loadingFollowCounts,
+    isError: followCountsError,
+    refetch: refetchFollowCounts,
+  } = useQuery({
     queryKey: ["follow-counts", profileUserId],
     enabled: open && !!profileUserId,
     queryFn: async () => {
       const [followersRes, followingRes] = await Promise.all([
-        supabase.from("seguimiento").select("seguido_id").eq("seguido_id", profileUserId),
-        supabase.from("seguimiento").select("seguidor_id").eq("seguidor_id", profileUserId),
+        supabase
+          .from("seguimiento")
+          .select("id", { count: "exact", head: true })
+          .eq("seguido_id", profileUserId),
+        supabase
+          .from("seguimiento")
+          .select("id", { count: "exact", head: true })
+          .eq("seguidor_id", profileUserId),
       ]);
       if (followersRes.error) throw followersRes.error;
       if (followingRes.error) throw followingRes.error;
       return {
-        seguidores: followersRes.data?.length ?? 0,
-        seguidos: followingRes.data?.length ?? 0,
+        seguidores: followersRes.count ?? 0,
+        seguidos: followingRes.count ?? 0,
       };
     },
   });
 
-  const { data: followUsers = [], isLoading: loadingFollowUsers } = useQuery({
+  const {
+    data: followUsers = [],
+    isLoading: loadingFollowUsers,
+    isError: followUsersError,
+    refetch: refetchFollowUsers,
+  } = useQuery({
     queryKey: ["follow-users", profileUserId, followListMode],
     enabled: open && !!profileUserId && !!followListMode,
     queryFn: async (): Promise<{ id: string; username: string | null; avatar_url: string | null }[]> => {
@@ -371,7 +388,9 @@ function ProfileDrawerSheet() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setFollowListMode("seguidores")}
+                  onClick={() =>
+                    followCountsError ? void refetchFollowCounts() : setFollowListMode("seguidores")
+                  }
                   disabled={loadingFollowCounts}
                   aria-busy={loadingFollowCounts}
                   className="flex flex-col items-center text-center rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
@@ -379,15 +398,22 @@ function ProfileDrawerSheet() {
                   {loadingFollowCounts ? (
                     <Skeleton className="h-4 w-7" aria-hidden />
                   ) : (
-                    <p className="text-base font-bold tabular-nums leading-none">
-                      {followCounts?.seguidores ?? 0}
+                    <p
+                      className={cn(
+                        "text-base font-bold tabular-nums leading-none",
+                        followCountsError && "text-muted-foreground",
+                      )}
+                    >
+                      {followCountsError ? "—" : (followCounts?.seguidores ?? 0)}
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground leading-tight mt-1">Seguidores</p>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFollowListMode("seguidos")}
+                  onClick={() =>
+                    followCountsError ? void refetchFollowCounts() : setFollowListMode("seguidos")
+                  }
                   disabled={loadingFollowCounts}
                   aria-busy={loadingFollowCounts}
                   className="flex flex-col items-center text-center rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
@@ -395,8 +421,13 @@ function ProfileDrawerSheet() {
                   {loadingFollowCounts ? (
                     <Skeleton className="h-4 w-7" aria-hidden />
                   ) : (
-                    <p className="text-base font-bold tabular-nums leading-none">
-                      {followCounts?.seguidos ?? 0}
+                    <p
+                      className={cn(
+                        "text-base font-bold tabular-nums leading-none",
+                        followCountsError && "text-muted-foreground",
+                      )}
+                    >
+                      {followCountsError ? "—" : (followCounts?.seguidos ?? 0)}
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground leading-tight mt-1">Seguidos</p>
@@ -404,6 +435,11 @@ function ProfileDrawerSheet() {
               </div>
             </div>
           </div>
+          {!isViewingSelf && profileUserId ? (
+            <div className="mt-4">
+              <FollowButton userId={profileUserId} className="h-11 w-full min-h-11" />
+            </div>
+          ) : null}
           </DrawerHeader>
 
           <div className="space-y-6 pb-6">
@@ -545,24 +581,44 @@ function ProfileDrawerSheet() {
                   </div>
                 ))}
               </div>
+            ) : followUsersError ? (
+              <div className="flex flex-col items-start gap-3 py-2">
+                <p className="text-sm text-muted-foreground">No se pudo cargar la lista.</p>
+                <Button type="button" variant="secondary" className="h-11" onClick={() => void refetchFollowUsers()}>
+                  Reintentar
+                </Button>
+              </div>
             ) : followUsers.length === 0 ? (
-              <p className="py-2 text-sm text-muted-foreground">No hay usuarios para mostrar.</p>
+              <p className="py-2 text-sm text-muted-foreground">
+                {followListMode === "seguidores"
+                  ? isViewingSelf
+                    ? "Aún no tienes seguidores."
+                    : "Aún no tiene seguidores."
+                  : isViewingSelf
+                    ? "Aún no sigues a nadie."
+                    : "Aún no sigue a nadie."}
+              </p>
             ) : (
               <div className="flex flex-col gap-3">
                 {followUsers.map((p) => (
-                  <button
+                  <div
                     key={p.id}
-                    type="button"
-                    className="flex w-full items-center gap-3 rounded-md border bg-card px-2 py-2 text-left transition-colors hover:bg-muted/50"
-                    onClick={() => {
-                      setFollowListMode(null);
-                      if (p.id === user?.id) openMyProfile();
-                      else openUserProfile(p.id);
-                    }}
+                    className="flex w-full items-center gap-3 rounded-md border bg-card px-2 py-2"
                   >
-                    <UserAvatar avatarUrl={p.avatar_url} username={p.username} className="h-8 w-8" />
-                    <p className="text-sm font-medium truncate">{p.username ?? "Usuario"}</p>
-                  </button>
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => {
+                        setFollowListMode(null);
+                        if (p.id === user?.id) openMyProfile();
+                        else openUserProfile(p.id);
+                      }}
+                    >
+                      <UserAvatar avatarUrl={p.avatar_url} username={p.username} className="h-8 w-8" />
+                      <p className="text-sm font-medium truncate">{p.username ?? "Usuario"}</p>
+                    </button>
+                    <FollowButton userId={p.id} size="sm" className="h-10" />
+                  </div>
                 ))}
               </div>
             )}

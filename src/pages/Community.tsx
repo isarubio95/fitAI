@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Loader2, UserPlus, UserCheck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
+import { FollowButton } from "@/components/community/FollowButton";
 import { useAuth } from "@/hooks/useAuth";
 import { profileHasUsername, useProfileSetup } from "@/hooks/useProfileSetup";
 import UsernameSetup from "@/pages/UsernameSetup";
@@ -58,7 +59,7 @@ export default function Community() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const { data: searchResults = [], isLoading: searching } = useUserSearch(usernameQuery);
-  const { followingIds, toggleFollow, isToggling, isFetched: followsFetched } = useFollows();
+  const { followingIds, isFetched: followsFetched } = useFollows();
   const {
     data,
     isLoading: loadingFeedQuery,
@@ -179,7 +180,6 @@ export default function Community() {
       <div className="flex flex-col gap-2">
         {searchResults.map((p) => {
           const isOwn = p.id === user?.id;
-          const isFollowing = followingIds.has(p.id);
 
           const openProfile = () => {
             if (p.id === user?.id) openMyProfile();
@@ -203,27 +203,7 @@ export default function Community() {
                 </div>
               </button>
 
-              {!isOwn && (
-                <Button
-                  variant={isFollowing ? "secondary" : "default"}
-                  onClick={() => toggleFollow(p.id)}
-                  disabled={isToggling.has(p.id)}
-                  className={cn(
-                    "mt-0 w-auto",
-                    isFollowing && "bg-border hover:bg-border/80 dark:hover:bg-border/90",
-                  )}
-                >
-                  {isFollowing ? (
-                    <span className="flex items-center gap-3">
-                      <UserCheck className="h-4 w-4" /> Siguiendo
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-3">
-                      <UserPlus className="h-4 w-4" /> Seguir
-                    </span>
-                  )}
-                </Button>
-              )}
+              {!isOwn && <FollowButton userId={p.id} className="mt-0 w-auto" />}
             </div>
           );
         })}

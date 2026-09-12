@@ -109,11 +109,7 @@ export function useProfileAvatarUpload() {
 
       const optimizedBlob = await processAvatarFile(file);
       const avatarPath = `${userId}/avatar-${Date.now()}.jpg`;
-
       const previousPath = normalizeAvatarStoragePath(currentAvatarPath);
-      if (previousPath) {
-        await supabase.storage.from(PROFILE_AVATAR_BUCKET).remove([previousPath]);
-      }
 
       const { error: uploadError } = await supabase.storage
         .from(PROFILE_AVATAR_BUCKET)
@@ -129,7 +125,14 @@ export function useProfileAvatarUpload() {
         .update({ avatar_url: avatarPath })
         .eq("id", userId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        await supabase.storage.from(PROFILE_AVATAR_BUCKET).remove([avatarPath]);
+        throw updateError;
+      }
+
+      if (previousPath) {
+        await supabase.storage.from(PROFILE_AVATAR_BUCKET).remove([previousPath]);
+      }
 
       const { data: signedData, error: signedError } = await supabase.storage
         .from(PROFILE_AVATAR_BUCKET)

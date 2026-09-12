@@ -217,20 +217,27 @@ export async function hydrateActividadesWithDetails(
   }));
 }
 
-export function useWorkoutHistory(profileUserId?: string) {
+/** Propio: todas las sesiones completadas. Ajeno: solo `es_publica`. */
+export function useWorkoutHistory(profileUserId?: string, opts?: { onlyPublic?: boolean }) {
   const { user } = useAuth();
   const id = profileUserId ?? user?.id;
+  const onlyPublic = opts?.onlyPublic ?? (id != null && id !== user?.id);
   return useQuery({
-    queryKey: ["workoutHistory", id],
+    queryKey: ["workoutHistory", id, onlyPublic],
     enabled: !!id,
     queryFn: async (): Promise<ActividadWithDetails[]> => {
-      const { data: actividades, error } = await supabase
+      let q = supabase
         .from("actividad")
         .select("*")
         .eq("usuario_id", id!)
         .not("fecha_fin", "is", null)
         .order("fecha", { ascending: false });
 
+      if (onlyPublic) {
+        q = q.eq("es_publica", true);
+      }
+
+      const { data: actividades, error } = await q;
       if (error) throw error;
       if (!actividades?.length) return [];
 

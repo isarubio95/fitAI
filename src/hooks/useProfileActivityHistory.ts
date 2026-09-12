@@ -31,7 +31,7 @@ export function useProfileActivityHistory(profileUserId?: string, limit = 5) {
   const id = profileUserId ?? user?.id;
   const isSelf = !!id && id === user?.id;
 
-  const workoutsQuery = useWorkoutHistory(id);
+  const workoutsQuery = useWorkoutHistory(id, { onlyPublic: !isSelf });
   const cardioQuery = useCardioHistory(id, { onlyPublic: !isSelf });
 
   const workouts = workoutsQuery.data ?? [];

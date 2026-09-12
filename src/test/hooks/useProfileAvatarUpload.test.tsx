@@ -132,11 +132,14 @@ describe("useProfileAvatarUpload", () => {
       });
     });
 
-    expect(storageRemove).toHaveBeenCalledWith(["user-77/avatar-old.jpg"]);
     expect(storageUpload).toHaveBeenCalledWith(
       "user-77/avatar-123456789.jpg",
       expect.any(Blob),
       expect.objectContaining({ contentType: "image/jpeg", upsert: false }),
+    );
+    expect(storageRemove).toHaveBeenCalledWith(["user-77/avatar-old.jpg"]);
+    expect(storageUpload.mock.invocationCallOrder[0]).toBeLessThan(
+      storageRemove.mock.invocationCallOrder[0],
     );
     expect(dbFrom).toHaveBeenCalledWith("perfil");
     expect(dbUpdate).toHaveBeenCalledWith({ avatar_url: "user-77/avatar-123456789.jpg" });
@@ -172,6 +175,49 @@ describe("useProfileAvatarUpload", () => {
         userId: "user-2",
       }),
     ).rejects.toThrow("La imagen supera el límite de 8 MB.");
+  });
+
+  it("no borra el avatar anterior si el upload falla", async () => {
+    storageUpload.mockResolvedValue({ error: { message: "storage down" } });
+
+    const queryClient = new QueryClient();
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useProfileAvatarUpload(), { wrapper });
+    const imgFile = new File([new Uint8Array([137, 80, 78, 71])], "avatar.png", { type: "image/png" });
+
+    await expect(
+      result.current.mutateAsync({
+        file: imgFile,
+        userId: "user-3",
+        currentAvatarPath: `${PROFILE_AVATAR_BUCKET}/user-3/avatar-old.jpg`,
+      }),
+    ).rejects.toMatchObject({ message: "storage down" });
+
+    expect(storageRemove).not.toHaveBeenCalled();
+  });
+
+  it("revierte el archivo nuevo si el perfil no se actualiza", async () => {
+    dbEq.mockResolvedValue({ error: { message: "perfil locked" } });
+
+    const queryClient = new QueryClient();
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useProfileAvatarUpload(), { wrapper });
+    const imgFile = new File([new Uint8Array([137, 80, 78, 71])], "avatar.png", { type: "image/png" });
+
+    await expect(
+      result.current.mutateAsync({
+        file: imgFile,
+        userId: "user-4",
+        currentAvatarPath: `${PROFILE_AVATAR_BUCKET}/user-4/avatar-old.jpg`,
+      }),
+    ).rejects.toMatchObject({ message: "perfil locked" });
+
+    expect(storageRemove).toHaveBeenCalledTimes(1);
+    expect(storageRemove).toHaveBeenCalledWith(["user-4/avatar-123456789.jpg"]);
   });
 });
 

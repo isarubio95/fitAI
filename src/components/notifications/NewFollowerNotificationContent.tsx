@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
-import { User, UserCheck, UserPlus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { User, UserPlus } from "lucide-react";
 import { UserAvatar } from "@/components/UserAvatar";
+import { FollowButton } from "@/components/community/FollowButton";
 import { useProfileDrawer } from "@/components/layout/profileDrawerContext";
-import { useFollows } from "@/hooks/useFollows";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -28,9 +27,7 @@ export function NewFollowerNotificationContent({
   trailing,
 }: Props) {
   const { openUserProfile } = useProfileDrawer();
-  const { followingIds, toggleFollow, isToggling } = useFollows();
   const displayName = username?.trim() || "Usuario";
-  const isFollowing = followingIds.has(seguidorId);
 
   const openProfile = () => {
     openUserProfile(seguidorId);
@@ -65,35 +62,7 @@ export function NewFollowerNotificationContent({
           <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-none">{displayName}</p>
         </button>
 
-        <Button
-          type="button"
-          size="sm"
-          variant={isFollowing ? "secondary" : "default"}
-          className={cn(
-            "h-9 shrink-0 self-center gap-1.5 px-3",
-            isFollowing && "bg-border hover:bg-border/80 dark:hover:bg-border/90",
-          )}
-          disabled={isToggling.has(seguidorId)}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            void toggleFollow(seguidorId);
-          }}
-        >
-          {isToggling.has(seguidorId) ? (
-            "…"
-          ) : isFollowing ? (
-            <span className="flex items-center gap-1.5">
-              <UserCheck className="h-4 w-4 shrink-0" />
-              Siguiendo
-            </span>
-          ) : (
-            <span className="flex items-center gap-1.5">
-              <UserPlus className="h-4 w-4 shrink-0" />
-              Seguir
-            </span>
-          )}
-        </Button>
+        <FollowButton userId={seguidorId} size="sm" className="h-10 self-center" />
       </div>
     </div>
   );
