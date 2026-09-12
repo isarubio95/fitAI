@@ -351,7 +351,7 @@ function ProfileDrawerSheet() {
                 <X className="h-5 w-5" />
               </DrawerChromeButton>
             </div>
-            <div className="mt-3 flex items-start gap-4">
+            <div className="mt-3 flex items-center gap-4">
             <div className="relative mr-1 shrink-0">
               <UserAvatar
                 candidates={headerAvatarCandidates}
@@ -365,20 +365,20 @@ function ProfileDrawerSheet() {
                   type="button"
                   size="icon"
                   variant="secondary"
-                  className="absolute -bottom-2 -right-2 h-11 w-11 rounded-full border border-border shadow-sm"
+                  className="absolute -bottom-0.5 -right-0.5 h-8 w-8 rounded-full border border-border shadow-sm"
                   disabled={uploadAvatar.isPending}
                   onClick={() => fileInputRef.current?.click()}
                   aria-label="Cambiar foto de perfil"
                 >
                   {uploadAvatar.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-3.5 w-3.5" />
                   )}
                 </Button>
               )}
             </div>
-            <div className="min-w-0 flex-1 flex flex-col gap-3">
+            <div className="min-w-0 flex-1">
               {isViewingSelf && (
                 <>
                   <input
