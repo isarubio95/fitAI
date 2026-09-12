@@ -367,7 +367,7 @@ export function WeekCalendar({
                                 {w.ejercicios.length} ejercicios · {totalSets} series
                               </p>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center gap-3 shrink-0">
                               {onWorkoutDetailsClick && (
                                 <Button
                                   variant="ghost"
@@ -442,7 +442,7 @@ export function WeekCalendar({
                                 {isMissed && "Perdido"}
                               </p>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center gap-3 shrink-0">
                               {onPlannedClick && isPending && (
                                 <Button
                                   size="sm"
@@ -504,7 +504,7 @@ export function WeekCalendar({
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-3 shrink-0">
                             {onCardioDetailsClick && (
                               <Button
                                 variant="ghost"
