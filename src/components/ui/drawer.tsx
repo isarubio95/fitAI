@@ -175,9 +175,11 @@ const DrawerContent = React.forwardRef<
             drawerSheetRadiusBottom,
           ),
         side === "left" &&
-          "inset-y-0 left-0 h-lvh w-[92vw] max-w-md flex-col border-x-0 border-t-0 border-b-0 md:border-r",
+          // overflow-hidden (no overflow-x-hidden): un solo eje hidden
+          // computa el otro a auto y el panel se vuelve un scrollport extra.
+          "inset-y-0 left-0 h-dvh max-h-dvh w-[92vw] max-w-md flex-col overflow-hidden border-x-0 border-t-0 border-b-0 md:border-r",
         side === "right" &&
-          "inset-y-0 right-0 h-lvh w-[92vw] max-w-md flex-col border-x-0 border-t-0 border-b-0 md:border-l",
+          "inset-y-0 right-0 h-dvh max-h-dvh w-[92vw] max-w-md flex-col overflow-hidden border-x-0 border-t-0 border-b-0 md:border-l",
         className,
       )}
       {...props}

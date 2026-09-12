@@ -18,8 +18,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { FollowButton } from "@/components/community/FollowButton";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
-import { ChevronRight, Pencil, Loader2 } from "lucide-react";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  drawerSafeAreaBottom,
+} from "@/components/ui/drawer";
+import { ArrowLeft, ChevronRight, Loader2, Pencil, X } from "lucide-react";
 import { LogroMedal } from "@/components/logros/LogroMedal";
 import { LogrosDrawer } from "@/components/logros/LogrosDrawer";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
@@ -43,6 +50,31 @@ import { useCardioSessionLikes } from "@/hooks/useCardioSessionLikes";
 import { useCardioSessionCommentCounts } from "@/hooks/useCardioSessionComments";
 
 export { useProfileDrawer };
+
+function DrawerChromeButton({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <DrawerClose asChild>
+      <button
+        type="button"
+        aria-label={label}
+        className={cn(
+          "touch-styled flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          className,
+        )}
+      >
+        {children}
+      </button>
+    </DrawerClose>
+  );
+}
 
 export function ProfileDrawerProvider({ children }: { children: ReactNode }) {
   return (
@@ -290,11 +322,11 @@ function ProfileDrawerSheet() {
 
   return (
     <>
-    <Drawer direction="left" open={open} onOpenChange={handleProfileOpenChange}>
+    <Drawer direction="right" open={open} onOpenChange={handleProfileOpenChange}>
       <DrawerContent
-        side="left"
+        side="right"
         overlayClassName="z-overlay"
-        className="z-drawer flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
+        className="z-drawer flex h-full max-h-dvh flex-col gap-0 overflow-hidden border-0 bg-background p-0 shadow-none"
         onPointerDownOutside={(e) => {
           if (nestedProfileLayerOpen) e.preventDefault();
         }}
@@ -302,10 +334,24 @@ function ProfileDrawerSheet() {
           if (nestedProfileLayerOpen) e.preventDefault();
         }}
       >
-        <div className={cn("min-h-0 flex-1 overflow-y-auto bg-card dark:bg-transparent", drawerSafeAreaBottom)}>
-          <DrawerHeader className="bg-card px-5 pb-2 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left dark:bg-transparent">
-            <DrawerTitle className="sr-only">{loadingPerfil ? "Perfil" : displayName}</DrawerTitle>
-            <div className="flex gap-4 items-start">
+        <div className={cn("min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-background", drawerSafeAreaBottom)}>
+          <DrawerHeader className="bg-background px-5 pb-2 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] pr-[max(1.25rem,env(safe-area-inset-right,0px))] text-left">
+            <div className="flex items-center justify-between gap-1">
+              {loadingPerfil ? (
+                <>
+                  <DrawerTitle className="sr-only">Perfil</DrawerTitle>
+                  <Skeleton className="h-6 w-36" aria-hidden />
+                </>
+              ) : (
+                <DrawerTitle className="min-w-0 flex-1 truncate text-lg font-semibold leading-tight">
+                  {displayName}
+                </DrawerTitle>
+              )}
+              <DrawerChromeButton label="Cerrar" className="-mr-1">
+                <X className="h-5 w-5" />
+              </DrawerChromeButton>
+            </div>
+            <div className="mt-3 flex items-start gap-4">
             <div className="relative mr-1 shrink-0">
               <UserAvatar
                 candidates={headerAvatarCandidates}
@@ -319,15 +365,15 @@ function ProfileDrawerSheet() {
                   type="button"
                   size="icon"
                   variant="secondary"
-                  className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full border border-border shadow-sm"
+                  className="absolute -bottom-2 -right-2 h-11 w-11 rounded-full border border-border shadow-sm"
                   disabled={uploadAvatar.isPending}
                   onClick={() => fileInputRef.current?.click()}
                   aria-label="Cambiar foto de perfil"
                 >
                   {uploadAvatar.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Pencil className="h-4 w-4" />
                   )}
                 </Button>
               )}
@@ -368,13 +414,8 @@ function ProfileDrawerSheet() {
                   />
                 </>
               )}
-              {loadingPerfil ? (
-                <Skeleton className="h-6 w-36" aria-hidden />
-              ) : (
-                <p className="text-lg font-semibold leading-tight truncate">{displayName}</p>
-              )}
-              <div className="flex w-fit gap-5">
-                <div className="flex flex-col items-center text-center" aria-busy={loadingWorkoutHistory}>
+              <div className="flex w-fit gap-2">
+                <div className="flex min-h-11 min-w-11 flex-col items-center justify-center px-2 py-1 text-center" aria-busy={loadingWorkoutHistory}>
                   {loadingWorkoutHistory ? (
                     <Skeleton className="h-4 w-7" aria-hidden />
                   ) : (
@@ -393,7 +434,7 @@ function ProfileDrawerSheet() {
                   }
                   disabled={loadingFollowCounts}
                   aria-busy={loadingFollowCounts}
-                  className="flex flex-col items-center text-center rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
+                  className="flex min-h-11 min-w-11 flex-col items-center justify-center rounded-md border-0 bg-transparent px-2 py-1 text-center shadow-none active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
                 >
                   {loadingFollowCounts ? (
                     <Skeleton className="h-4 w-7" aria-hidden />
@@ -416,7 +457,7 @@ function ProfileDrawerSheet() {
                   }
                   disabled={loadingFollowCounts}
                   aria-busy={loadingFollowCounts}
-                  className="flex flex-col items-center text-center rounded-none border-0 bg-transparent p-0 shadow-none hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
+                  className="flex min-h-11 min-w-11 flex-col items-center justify-center rounded-md border-0 bg-transparent px-2 py-1 text-center shadow-none active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
                 >
                   {loadingFollowCounts ? (
                     <Skeleton className="h-4 w-7" aria-hidden />
@@ -442,8 +483,14 @@ function ProfileDrawerSheet() {
           ) : null}
           </DrawerHeader>
 
-          <div className="space-y-6 pb-6">
-          {statsUserId ? <GamificationWidget userId={statsUserId} contentClassName="pt-5 pb-0" /> : null}
+          <div className="space-y-6 bg-background pb-6">
+          {statsUserId ? (
+            <GamificationWidget
+              userId={statsUserId}
+              className="bg-background"
+              contentClassName="pt-5 pb-0"
+            />
+          ) : null}
 
           <div className="space-y-3 bg-card dark:bg-transparent">
             <button
@@ -551,22 +598,27 @@ function ProfileDrawerSheet() {
     />
 
     <Drawer
-      direction="left"
+      direction="right"
       open={!!followListMode}
       onOpenChange={(next) => {
         if (!next) setFollowListMode(null);
       }}
     >
       <DrawerContent
-        side="left"
+        side="right"
         overlayClassName="z-nested-overlay"
-        className="z-nested-drawer flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none"
+        className="z-nested-drawer flex h-full max-h-dvh flex-col gap-0 overflow-hidden border-0 bg-background p-0 shadow-none"
       >
-        <div className={cn("min-h-0 flex-1 overflow-y-auto bg-background", drawerSafeAreaBottom)}>
-          <DrawerHeader className="bg-background px-5 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
-            <DrawerTitle className="text-lg font-semibold">
-              {followListMode === "seguidores" ? "Seguidores" : "Seguidos"}
-            </DrawerTitle>
+        <div className={cn("min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-background", drawerSafeAreaBottom)}>
+          <DrawerHeader className="bg-background px-5 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] pr-[max(1.25rem,env(safe-area-inset-right,0px))] text-left">
+            <div className="flex items-center gap-1">
+              <DrawerChromeButton label="Volver" className="-ml-1">
+                <ArrowLeft className="h-5 w-5" />
+              </DrawerChromeButton>
+              <DrawerTitle className="min-w-0 truncate text-lg font-semibold">
+                {followListMode === "seguidores" ? "Seguidores" : "Seguidos"}
+              </DrawerTitle>
+            </div>
           </DrawerHeader>
           <div className="mt-3 px-5 pb-6">
             {loadingFollowUsers ? (
@@ -607,7 +659,7 @@ function ProfileDrawerSheet() {
                   >
                     <button
                       type="button"
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left outline-none transition-colors active:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => {
                         setFollowListMode(null);
                         if (p.id === user?.id) openMyProfile();

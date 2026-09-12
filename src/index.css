@@ -580,6 +580,94 @@
   }
 }
 
+/*
+ * Racha semanal: fuego de material (brasa → núcleo → punta), no naranja plano
+ * ni halo neón. El resplandor tiene offset (luz que cae), no un bloom centrado.
+ */
+.streak-fire {
+  --fire-tip: hsl(48 100% 88%);
+  --fire-core: hsl(42 100% 68%);
+  --fire-mid: hsl(var(--chart-fatigue));
+  --fire-edge: hsl(18 96% 50%);
+  --fire-ember: hsl(8 84% 44%);
+  --fire-glow: hsl(28 100% 52% / 0.42);
+}
+
+:root:not(.dark) .streak-fire {
+  --fire-tip: hsl(40 92% 42%);
+  --fire-core: hsl(36 90% 38%);
+  --fire-mid: hsl(var(--chart-fatigue));
+  --fire-edge: hsl(16 86% 36%);
+  --fire-ember: hsl(6 78% 34%);
+  --fire-glow: hsl(24 88% 38% / 0.28);
+}
+
+.streak-fire-text {
+  background-image: linear-gradient(
+    165deg,
+    var(--fire-tip) 0%,
+    var(--fire-core) 22%,
+    var(--fire-mid) 52%,
+    var(--fire-edge) 82%,
+    var(--fire-ember) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.streak-fire-text::selection {
+  background: color-mix(in srgb, var(--fire-mid) 38%, transparent);
+  color: var(--fire-ember);
+  -webkit-text-fill-color: var(--fire-ember);
+}
+
+.streak-fire-mark svg:last-of-type {
+  filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--fire-edge) 55%, transparent));
+}
+
+.streak-fire-glow {
+  position: absolute;
+  inset: -5px -4px -2px;
+  border-radius: 999px;
+  background: radial-gradient(
+    70% 80% at 50% 72%,
+    var(--fire-glow) 0%,
+    color-mix(in srgb, var(--fire-edge) 22%, transparent) 48%,
+    transparent 72%
+  );
+  pointer-events: none;
+  animation: streak-fire-flicker 1.85s cubic-bezier(0.33, 0, 0.2, 1) infinite;
+}
+
+@keyframes streak-fire-flicker {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: translateY(0) scale(1);
+  }
+  28% {
+    opacity: 1;
+    transform: translateY(-0.5px) scale(1.08);
+  }
+  52% {
+    opacity: 0.48;
+    transform: translateY(0.4px) scale(0.94);
+  }
+  76% {
+    opacity: 0.86;
+    transform: translateY(-0.25px) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-fire-glow {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
 /* En móvil ocultamos barras de scroll para una experiencia más nativa (desktop sin cambios) */
 @media (max-width: 767px) {
   html,
@@ -882,6 +970,16 @@ html[data-nav-direction="back"]::view-transition-new(page-content) {
  * nunca llega a Vaul. pan-y deja el scroll vertical y cede el gesto horizontal.
  * Opt-out: data-vaul-allow-horizontal-pan (carruseles internos).
  */
+/*
+ * Laterales: el panel no es un scrollport. `overflow-x: hidden` solo en un eje
+ * computa overflow-y a auto (CSS overflow) y deja un pozo vacío bajo el
+ * contenido cuando el gesto encadena al drawer.
+ */
+[data-vaul-drawer][data-vaul-drawer-direction="left"],
+[data-vaul-drawer][data-vaul-drawer-direction="right"] {
+  overflow: hidden;
+}
+
 [data-vaul-drawer][data-vaul-drawer-direction="left"] *:not([data-vaul-allow-horizontal-pan]),
 [data-vaul-drawer][data-vaul-drawer-direction="right"] *:not([data-vaul-allow-horizontal-pan]) {
   touch-action: pan-y;

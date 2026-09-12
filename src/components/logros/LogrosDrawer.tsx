@@ -1,11 +1,18 @@
 import { useMemo } from "react";
-import { Zap } from "lucide-react";
+import { ArrowLeft, Zap } from "lucide-react";
 import { useLogros, useLogroStats, getLogroProgress, type LogroConEstado } from "@/hooks/useLogros";
 import { LogroMedal, NIVEL_LABELS } from "@/components/logros/LogroMedal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  drawerSafeAreaBottom,
+} from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
 
@@ -120,23 +127,32 @@ export function LogrosDrawer({ open, onOpenChange, userId, isSelf, username }: L
   const title = isSelf ? "Tus logros" : `Logros de ${username ?? "usuario"}`;
 
   return (
-    <Drawer direction="left" open={open} onOpenChange={onOpenChange}>
+    <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
       <DrawerContent
-        side="left"
+        side="right"
         overlayClassName="z-nested-overlay"
-        className="z-nested-drawer flex h-full max-h-dvh w-full max-w-none flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
+        className="z-nested-drawer flex h-full max-h-dvh flex-col gap-0 overflow-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
       >
-        <div className={cn("min-h-0 flex-1 overflow-y-auto bg-card dark:bg-transparent", drawerSafeAreaBottom)}>
-          <DrawerHeader className="bg-card px-6 pb-1 pt-[calc(1.75rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left dark:bg-transparent">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+        <div className={cn("min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-card dark:bg-transparent", drawerSafeAreaBottom)}>
+          <DrawerHeader className="bg-card px-5 pb-1 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] pr-[max(1.25rem,env(safe-area-inset-right,0px))] text-left dark:bg-transparent">
+            <div className="flex items-start gap-1">
+              <DrawerClose asChild>
+                <button
+                  type="button"
+                  aria-label="Volver"
+                  className="touch-styled -ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+              </DrawerClose>
+              <div className="min-w-0 flex-1 pt-2">
                 <DrawerTitle className="text-lg font-semibold">{title}</DrawerTitle>
                 <p className="text-xs text-muted-foreground">
                   {isLoading ? "…" : `${unlockedTotal} de ${logros.length} desbloqueados`}
                 </p>
               </div>
               {!isLoading && (
-                <div className="flex shrink-0 items-center gap-1 text-sm font-semibold tabular-nums text-primary">
+                <div className="flex shrink-0 items-center gap-1 pt-2.5 text-sm font-semibold tabular-nums text-primary">
                   <Zap className="h-4 w-4" /> {formatNumber(xpLogros)} XP
                 </div>
               )}
