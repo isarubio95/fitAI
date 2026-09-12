@@ -1,6 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { format } from "date-fns";
-import { Flame, Moon, Scale } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronDown, Moon, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -17,65 +16,27 @@ import { useToast } from "@/hooks/use-toast";
 import { useDailyHealth, type SaludDiariaPatch } from "@/hooks/useDailyHealth";
 import { useMeasurements, type MedidaInsert } from "@/hooks/useMeasurements";
 import { cn } from "@/lib/utils";
-
-const sectionCardClass = "space-y-4 rounded-xl border border-border/60 bg-secondary/40 p-4";
-
-const MEASURE_FIELDS = [
-  { key: "peso", label: "Peso (kg)", step: "0.1", inputMode: "decimal" },
-  { key: "grasa", label: "% Grasa", step: "0.1", inputMode: "decimal" },
-  { key: "cintura", label: "Cintura (cm)", step: "0.1", inputMode: "decimal" },
-  { key: "pecho", label: "Pecho (cm)", step: "0.1", inputMode: "decimal" },
-  { key: "brazo", label: "Brazo (cm)", step: "0.1", inputMode: "decimal" },
-  { key: "pierna", label: "Pierna (cm)", step: "0.1", inputMode: "decimal" },
-] as const;
-
-type MeasureKey = (typeof MEASURE_FIELDS)[number]["key"];
-
-type HealthLogForm = Record<MeasureKey, string> & {
-  fecha: string;
-  calorias: string;
-  suenoHoras: string;
-  fcReposo: string;
-  notas: string;
-  calidad: number | null;
-};
+import {
+  COMPOSITION_FIELDS,
+  dailyHealthFieldsFromForm,
+  dateHasHealthRecord,
+  emptyHealthLogForm,
+  findRecordByFecha,
+  formFromRecords,
+  hasCompositionValues,
+  HEALTH_FOCUS_FIELD,
+  isoDateKey,
+  MEASURE_FIELDS,
+  parseOptionalNumber,
+  readInputValue,
+  sameHealthDay,
+  todayIso,
+  type HealthLogForm,
+  type MeasureKey,
+} from "@/lib/healthLogForm";
+import { formatSleepHours, type HealthMetric } from "@/lib/healthMetrics";
 
 const SLEEP_QUALITY = [1, 2, 3, 4, 5] as const;
-
-function todayIso() {
-  return format(new Date(), "yyyy-MM-dd");
-}
-
-function emptyForm(): HealthLogForm {
-  return {
-    fecha: todayIso(),
-    peso: "",
-    grasa: "",
-    cintura: "",
-    pecho: "",
-    brazo: "",
-    pierna: "",
-    calorias: "",
-    suenoHoras: "",
-    fcReposo: "",
-    notas: "",
-    calidad: null,
-  };
-}
-
-function parseOptionalNumber(
-  raw: string,
-  min?: number,
-  max?: number,
-): { ok: true; value: number | null } | { ok: false } {
-  const trimmed = raw.trim();
-  if (!trimmed) return { ok: true, value: null };
-  const n = Number(trimmed.replace(",", "."));
-  if (!Number.isFinite(n)) return { ok: false };
-  if (min != null && n < min) return { ok: false };
-  if (max != null && n > max) return { ok: false };
-  return { ok: true, value: n };
-}
 
 function Field({
   id,
@@ -99,38 +60,93 @@ function Field({
 type HealthLogDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  focusMetric?: HealthMetric;
 };
 
-export function HealthLogDrawer({ open, onOpenChange }: HealthLogDrawerProps) {
+export function HealthLogDrawer({ open, onOpenChange, focusMetric = "peso" }: HealthLogDrawerProps) {
   const { toast } = useToast();
-  const { addMeasurement, isAdding } = useMeasurements();
-  const { upsertDailyHealth, isSaving } = useDailyHealth();
-  const [form, setForm] = useState<HealthLogForm>(emptyForm);
+  const { addMeasurement, isAdding, data: medidas, isPending: loadingMedidas } = useMeasurements();
+  const { upsertDailyHealth, isSaving, data: daily, isPending: loadingDaily } = useDailyHealth();
+  const [form, setForm] = useState<HealthLogForm>(emptyHealthLogForm);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const didPrefill = useRef(false);
+  const dirty = useRef(false);
   const saving = isAdding || isSaving;
+  const loading = loadingMedidas || loadingDaily;
+
+  const currentMedida = findRecordByFecha(medidas, form.fecha);
+  const currentDaily = findRecordByFecha(daily, form.fecha);
+  const updatingExisting = dateHasHealthRecord(form.fecha, currentMedida, currentDaily);
 
   useEffect(() => {
-    if (open) setForm(emptyForm());
-  }, [open]);
+    if (!open) {
+      didPrefill.current = false;
+      dirty.current = false;
+      setForm(emptyHealthLogForm());
+      setMoreOpen(false);
+      return;
+    }
+    if (loading) return;
+    if (didPrefill.current) return;
+    if (dirty.current) {
+      didPrefill.current = true;
+      return;
+    }
+    didPrefill.current = true;
+    const fecha = todayIso();
+    const medida = findRecordByFecha(medidas, fecha);
+    const row = findRecordByFecha(daily, fecha);
+    setMoreOpen(hasCompositionValues(medida, fecha));
+    setForm(formFromRecords(fecha, medida, row));
+  }, [open, loading, medidas, daily]);
 
   const setField = (key: Exclude<keyof HealthLogForm, "calidad">, value: string) => {
+    dirty.current = true;
     setForm((current) => ({ ...current, [key]: value }));
   };
 
+  const applyFecha = (fecha: string) => {
+    const next = isoDateKey(fecha) || todayIso();
+    if (sameHealthDay(next, form.fecha)) return;
+    dirty.current = false;
+    const medida = findRecordByFecha(medidas, next);
+    const row = findRecordByFecha(daily, next);
+    setMoreOpen(hasCompositionValues(medida, next));
+    setForm(formFromRecords(next, medida, row));
+  };
+
   const handleOpenChange = (next: boolean) => {
-    if (!next) setForm(emptyForm());
+    if (!next) {
+      didPrefill.current = false;
+      dirty.current = false;
+      setForm(emptyHealthLogForm());
+      setMoreOpen(false);
+    }
     onOpenChange(next);
   };
 
   const handleSubmit = async () => {
     if (saving) return;
 
-    const fecha = form.fecha.trim() || todayIso();
-    const notas = form.notas.trim() || null;
+    const synced: HealthLogForm = {
+      ...form,
+      fecha: isoDateKey(form.fecha) || todayIso(),
+      peso: readInputValue("health-log-peso", form.peso),
+      calorias: readInputValue("health-log-calorias", form.calorias),
+      suenoHoras: readInputValue("health-log-sueno", form.suenoHoras),
+      fcReposo: readInputValue("health-log-fc", form.fcReposo),
+    };
+    for (const field of COMPOSITION_FIELDS) {
+      synced[field.key] = readInputValue(`health-log-${field.key}`, form[field.key]);
+    }
+
+    const fecha = synced.fecha;
+    const notas = synced.notas.trim() || null;
 
     const medidaPayload: Omit<MedidaInsert, "usuario_id"> = { fecha, notas };
     let hasMedida = false;
     for (const field of MEASURE_FIELDS) {
-      const parsed = parseOptionalNumber(form[field.key], 0);
+      const parsed = parseOptionalNumber(synced[field.key], 0);
       if (!parsed.ok) {
         toast({ title: `${field.label}: valor no válido`, variant: "destructive" });
         return;
@@ -139,116 +155,108 @@ export function HealthLogDrawer({ open, onOpenChange }: HealthLogDrawerProps) {
       if (parsed.value != null) hasMedida = true;
     }
 
-    const calorias = parseOptionalNumber(form.calorias, 0, 20000);
-    const suenoHoras = parseOptionalNumber(form.suenoHoras, 0, 24);
-    const fcReposo = parseOptionalNumber(form.fcReposo, 30, 120);
-    if (!calorias.ok) {
-      toast({ title: "Calorías: usa un número entre 0 y 20.000", variant: "destructive" });
-      return;
-    }
-    if (!suenoHoras.ok) {
-      toast({ title: "Sueño: usa horas entre 0 y 24", variant: "destructive" });
-      return;
-    }
-    if (!fcReposo.ok) {
-      toast({ title: "FC reposo: usa un valor entre 30 y 120", variant: "destructive" });
+    const dailyParsed = dailyHealthFieldsFromForm(synced);
+    if (!dailyParsed.ok) {
+      const message =
+        dailyParsed.error === "calorias"
+          ? "Calorías: usa un número entre 0 y 20.000"
+          : dailyParsed.error === "sueno"
+            ? "Sueño: usa horas entre 0 y 24"
+            : "FC reposo: usa un valor entre 30 y 120";
+      toast({ title: message, variant: "destructive" });
       return;
     }
 
-    const suenoMin = suenoHoras.value != null ? Math.round(suenoHoras.value * 60) : null;
-    const caloriasEnteras = calorias.value != null ? Math.round(calorias.value) : null;
-    const fcEntera = fcReposo.value != null ? Math.round(fcReposo.value) : null;
-    const hasSalud =
-      caloriasEnteras != null || suenoMin != null || form.calidad != null || fcEntera != null;
-
-    if (!hasMedida && !hasSalud) {
+    if (!hasMedida && !dailyParsed.fields) {
       toast({ title: "Añade al menos un dato", variant: "destructive" });
       return;
     }
 
     try {
       if (hasMedida) await addMeasurement(medidaPayload);
-      if (hasSalud) {
-        const patch: SaludDiariaPatch = { fecha };
-        if (caloriasEnteras != null) patch.calorias = caloriasEnteras;
-        if (suenoMin != null) patch.sueno_min = suenoMin;
-        if (form.calidad != null) patch.calidad_sueno = form.calidad;
-        if (fcEntera != null) patch.fc_reposo = fcEntera;
-        if (notas) patch.notas = notas;
+      if (dailyParsed.fields) {
+        const patch: SaludDiariaPatch = { ...dailyParsed.fields };
         await upsertDailyHealth(patch);
       }
 
       handleOpenChange(false);
-      toast({ title: "Registro guardado" });
+      const saved: string[] = [];
+      if (dailyParsed.fields?.sueno_min != null) saved.push(formatSleepHours(dailyParsed.fields.sueno_min));
+      if (dailyParsed.fields?.calidad_sueno != null) {
+        saved.push(`calidad ${dailyParsed.fields.calidad_sueno}/5`);
+      }
+      toast({
+        title: updatingExisting ? "Registro actualizado" : "Registro guardado",
+        description: saved.length ? saved.join(" · ") : undefined,
+      });
     } catch {
-      toast({ title: "Error al guardar", variant: "destructive" });
+      toast({ title: "No se pudo guardar. Inténtalo de nuevo.", variant: "destructive" });
     }
   };
 
   return (
-    <Drawer open={open} onOpenChange={handleOpenChange}>
+    <Drawer handleOnly open={open} onOpenChange={handleOpenChange}>
       <DrawerContent
         side="bottom"
         className="flex h-[92lvh] max-h-[92lvh] min-h-0 flex-col overflow-hidden bg-card p-0"
-        onOpenAutoFocus={(event) => event.preventDefault()}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          const id = HEALTH_FOCUS_FIELD[focusMetric];
+          requestAnimationFrame(() => document.getElementById(id)?.focus());
+        }}
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
         <DrawerHeader className="shrink-0 text-left">
           <DrawerTitle>Registrar salud</DrawerTitle>
-          <DrawerDescription>
-            Peso, medidas, calorías, sueño o frecuencia cardíaca. Los campos vacíos se ignoran.
-          </DrawerDescription>
+          <DrawerDescription>Los campos vacíos se ignoran.</DrawerDescription>
         </DrawerHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4">
-          <div className="space-y-4 pb-2">
+        <div
+          data-vaul-no-drag
+          className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4"
+        >
+          <div className="space-y-5 pb-2">
             <Field id="health-log-fecha" label="Fecha">
               <Input
                 id="health-log-fecha"
                 type="date"
                 max={todayIso()}
                 value={form.fecha}
-                onChange={(event) => setField("fecha", event.target.value)}
+                onChange={(event) => applyFecha(event.target.value)}
                 className="h-12"
               />
             </Field>
 
-            <section className={sectionCardClass}>
-              <p className="flex items-center gap-2 text-sm font-semibold">
-                <Scale className="h-4 w-4 text-muted-foreground" />
-                Medidas
+            {updatingExisting && (
+              <p className="text-xs text-muted-foreground">
+                {form.fecha === todayIso()
+                  ? "Hoy ya hay registro. Guardar actualiza los campos que rellenes."
+                  : "Este día ya tiene registro. Guardar actualiza esos campos."}
               </p>
-              <div className="grid grid-cols-2 gap-3">
-                {MEASURE_FIELDS.map((field) => (
-                  <Field key={field.key} id={`health-log-${field.key}`} label={field.label}>
-                    <Input
-                      id={`health-log-${field.key}`}
-                      type="number"
-                      step={field.step}
-                      min={0}
-                      inputMode={field.inputMode}
-                      autoComplete="off"
-                      placeholder="—"
-                      value={form[field.key]}
-                      onChange={(event) => setField(field.key, event.target.value)}
-                      className="h-12"
-                    />
-                  </Field>
-                ))}
-              </div>
-            </section>
+            )}
 
-            <section className={sectionCardClass}>
+            <section className="space-y-4">
               <p className="flex items-center gap-2 text-sm font-semibold">
-                <Flame className="h-4 w-4 text-muted-foreground" />
-                Día a día
+                <Scale className="h-4 w-4 text-primary" />
+                Día
               </p>
               <div className="grid grid-cols-2 gap-3">
+                <Field id="health-log-peso" label="Peso (kg)">
+                  <Input
+                    id="health-log-peso"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="kg"
+                    value={form.peso}
+                    onChange={(event) => setField("peso", event.target.value)}
+                    className="h-12"
+                  />
+                </Field>
                 <Field id="health-log-calorias" label="Calorías ingeridas">
                   <Input
                     id="health-log-calorias"
-                    type="number"
-                    min={0}
+                    type="text"
                     inputMode="numeric"
                     autoComplete="off"
                     placeholder="kcal"
@@ -257,30 +265,25 @@ export function HealthLogDrawer({ open, onOpenChange }: HealthLogDrawerProps) {
                     className="h-12"
                   />
                 </Field>
-                <Field id="health-log-sueno" label="Sueño (horas)">
+                <Field id="health-log-sueno" label="Horas de anoche">
                   <Input
                     id="health-log-sueno"
-                    type="number"
-                    min={0}
-                    max={24}
-                    step="0.25"
+                    type="text"
                     inputMode="decimal"
                     autoComplete="off"
-                    placeholder="7.5"
+                    placeholder="7,5"
                     value={form.suenoHoras}
                     onChange={(event) => setField("suenoHoras", event.target.value)}
                     className="h-12"
                   />
                 </Field>
-                <Field id="health-log-fc" label="FC reposo (lpm)" className="col-span-2">
+                <Field id="health-log-fc" label="FC reposo (lpm)">
                   <Input
                     id="health-log-fc"
-                    type="number"
-                    min={30}
-                    max={120}
+                    type="text"
                     inputMode="numeric"
                     autoComplete="off"
-                    placeholder="60"
+                    placeholder="lpm"
                     value={form.fcReposo}
                     onChange={(event) => setField("fcReposo", event.target.value)}
                     className="h-12"
@@ -298,12 +301,13 @@ export function HealthLogDrawer({ open, onOpenChange }: HealthLogDrawerProps) {
                     <button
                       key={n}
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
+                        dirty.current = true;
                         setForm((current) => ({
                           ...current,
                           calidad: current.calidad === n ? null : n,
-                        }))
-                      }
+                        }));
+                      }}
                       onPointerUp={(event) => {
                         if (event.pointerType === "touch") event.currentTarget.blur();
                       }}
@@ -321,8 +325,38 @@ export function HealthLogDrawer({ open, onOpenChange }: HealthLogDrawerProps) {
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-muted-foreground">1 mala · 5 excelente. Opcional.</p>
+                <p className="text-xs text-muted-foreground">1 mala · 5 excelente. Opcional.</p>
               </div>
+            </section>
+
+            <section className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setMoreOpen((current) => !current)}
+                aria-expanded={moreOpen}
+                className="flex w-full items-center justify-between py-1 text-left text-sm font-semibold"
+              >
+                <span>Más medidas</span>
+                <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", moreOpen && "rotate-180")} />
+              </button>
+              {moreOpen && (
+                <div className="grid grid-cols-2 gap-3">
+                  {COMPOSITION_FIELDS.map((field) => (
+                    <Field key={field.key} id={`health-log-${field.key}`} label={field.label}>
+                      <Input
+                        id={`health-log-${field.key}`}
+                        type="text"
+                        inputMode={field.inputMode}
+                        autoComplete="off"
+                        placeholder={field.key === "grasa" ? "%" : "cm"}
+                        value={form[field.key as MeasureKey]}
+                        onChange={(event) => setField(field.key, event.target.value)}
+                        className="h-12"
+                      />
+                    </Field>
+                  ))}
+                </div>
+              )}
             </section>
 
             <Field id="health-log-notas" label="Notas">
@@ -339,7 +373,7 @@ export function HealthLogDrawer({ open, onOpenChange }: HealthLogDrawerProps) {
 
         <DrawerFooter className="shrink-0 border-t border-border/60 bg-card pt-3">
           <Button type="button" className="w-full" onClick={() => void handleSubmit()} disabled={saving}>
-            {saving ? "Guardando…" : "Guardar"}
+            {saving ? "Guardando…" : updatingExisting ? "Actualizar" : "Guardar"}
           </Button>
         </DrawerFooter>
       </DrawerContent>

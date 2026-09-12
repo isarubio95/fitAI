@@ -25,7 +25,7 @@ const badgeButtonClass = cn(
   "touch-styled text-xs",
   HEADER_META_BADGE_CLASS,
   "pointer-events-auto cursor-pointer hover:bg-accent/55 hover:text-accent-foreground",
-  "focus:bg-transparent focus-visible:bg-transparent active:scale-100",
+  "focus:bg-transparent focus-visible:bg-transparent",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 );
 

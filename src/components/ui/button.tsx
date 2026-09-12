@@ -6,12 +6,12 @@ import { cn } from "@/lib/utils";
 import { accentSurfaceRing } from "@/lib/filter-pill-styles";
 
 const buttonVariants = cva(
-  "touch-styled inline-flex items-center justify-center gap-2 whitespace-nowrap border-0 transition-transform duration-150 active:scale-95 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 disabled:shadow-none",
+  "touch-styled inline-flex items-center justify-center gap-2 whitespace-nowrap border-0 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 disabled:shadow-none",
   {
     variants: {
       variant: {
         default: cn(
-          "rounded-xl ring-1 ring-inset px-4 text-sm font-semibold leading-none shadow-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-none active:translate-y-[1px] active:scale-[0.99]",
+          "rounded-xl ring-1 ring-inset px-4 text-sm font-semibold leading-none shadow-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-none",
           accentSurfaceRing,
           "bg-primary-solid text-primary-foreground hover:bg-primary-solid/90",
         ),

@@ -133,6 +133,8 @@
     --background: 60 8% 92%;
     /* Color completo con comas: WebView Android antiguos rechazan HSL moderno. */
     --background-fill: hsl(60, 8%, 92%);
+    /* Cápsula de la bottom nav: `--surface-elevated` con comas para WebView. */
+    --bottom-nav-fill: hsl(60, 12%, 96%);
     --foreground: 60 8% 8%;
     --card: 60 14% 97%;
     --card-foreground: 60 8% 8%;
@@ -259,6 +261,7 @@
     /* Casi negro (no negro puro): deja sitio para que las superficies floten encima. */
     --background: 60 3% 4.5%;
     --background-fill: hsl(60, 3%, 4.5%);
+    --bottom-nav-fill: hsl(60, 3%, 8%);
     --foreground: 60 100% 99%;
     --card: 60 3% 11%;
     --card-foreground: 60 100% 99%;
@@ -471,9 +474,16 @@
  * `--background-fill` lleva HSL con comas: WebView Android antiguos
  * rechazan `hsl(60 8% 92%)` (sin comas).
  */
-[data-app-top-bar],
-[data-app-bottom-nav] {
+[data-app-top-bar] {
   background-color: var(--background-fill) !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+[data-app-bottom-nav-bar] {
+  background-color: var(--bottom-nav-fill) !important;
   background-image: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -706,16 +716,18 @@
    * En dispositivos táctiles desactivamos el hover persistente: la WebView de
    * Android lo deja pegado tras un tap. Solo `:hover` — `:active` y el feedback
    * de pulsación se gestionan más abajo con [data-pressed].
-   * Excluye switches: son <button> y necesitan bg/borde propios al activarse.
+   * Excluye switches y [aria-pressed=true]: si no, el hover pegado vacía el
+   * fondo del control activo hasta pulsar fuera.
    */
-  button:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]):not([role="switch"]),
-  [role="button"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  [role="tab"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  [role="menuitem"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  [role="option"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  [role="link"]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  a[href]:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
-  summary:hover:not(.touch-pill):not(.touch-styled):not([data-draggable-pill]) {
+  button:hover:not([data-pressed]):not(.touch-pill):not(.touch-styled):not([data-draggable-pill]):not([role="switch"]):not([aria-pressed="true"]),
+  [role="button"]:hover:not([data-pressed]):not(.touch-pill):not(.touch-styled):not([data-draggable-pill]):not([aria-pressed="true"]),
+  [role="tab"]:hover:not([data-pressed]):not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="menuitem"]:hover:not([data-pressed]):not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="option"]:hover:not([data-pressed]):not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [role="link"]:hover:not([data-pressed]):not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  a[href]:hover:not([data-pressed]):not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  summary:hover:not([data-pressed]):not(.touch-pill):not(.touch-styled):not([data-draggable-pill]),
+  [data-pressable]:hover:not([data-pressed]):not(.touch-pill):not(.touch-styled):not([data-draggable-pill]) {
     background-color: transparent !important;
     background-image: none !important;
     color: inherit !important;
@@ -752,7 +764,8 @@
   [role="menuitem"]:not([data-draggable-pill]),
   [role="option"]:not([data-draggable-pill]),
   [role="link"]:not([data-draggable-pill]),
-  summary:not([data-draggable-pill]) {
+  summary:not([data-draggable-pill]),
+  [data-pressable]:not([data-draggable-pill]):not([data-dnd-handle]) {
     touch-action: manipulation;
   }
 
@@ -761,9 +774,9 @@
     touch-action: none;
   }
 
-  *:focus,
-  *:focus-visible,
-  *:focus-within {
+  *:focus:not([data-pressed]),
+  *:focus-visible:not([data-pressed]),
+  *:focus-within:not([data-pressed]) {
     outline: none !important;
     box-shadow: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;
@@ -784,32 +797,40 @@
  * apoyar el dedo y lo cambia a "release" al levantarlo, de modo que la entrada
  * es rápida (80 ms) y la salida suave (180 ms) — la curva de Material.
  *
- * Solo `transform` y `opacity`: ambas van en el compositor, así que el feedback
- * no compite con el hilo principal aunque la pantalla esté renderizando.
- * Sin `@layer`, para ganar a utilidades como `active:scale-*` sin `!important`.
+ * Hundimiento con `transform` (compositor) + velo inset de `--foreground`:
+ * en oscuro aclara el fondo; en claro lo oscurece. `!important` gana a
+ * utilidades de transform (`hover:-translate-y-*`, `transition-all`).
  */
 @media (hover: none), (pointer: coarse) {
   [data-pressed] {
-    transform: scale(0.965);
-    opacity: 0.8;
+    transform: translateY(1px) scale(0.97) !important;
+    box-shadow: inset 0 0 0 100vmax hsl(var(--foreground) / 0.08) !important;
     transition:
       transform 80ms cubic-bezier(0.2, 0, 0, 1),
-      opacity 80ms cubic-bezier(0.2, 0, 0, 1);
+      box-shadow 80ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  /*
+   * Iconos de chrome (bottom nav, días del calendario): el velo ensucia el
+   * color propio del icono/círculo. Solo se hunden.
+   */
+  [data-pressed][data-press-sink] {
+    box-shadow: none !important;
   }
 
   [data-pressed="release"] {
-    transform: none;
-    opacity: 1;
+    transform: none !important;
+    box-shadow: none !important;
     transition:
       transform 180ms cubic-bezier(0.2, 0, 0, 1),
-      opacity 180ms cubic-bezier(0.2, 0, 0, 1);
+      box-shadow 180ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   @media (prefers-reduced-motion: reduce) {
     [data-pressed],
     [data-pressed="release"] {
-      transform: none;
-      transition: opacity 80ms linear;
+      transform: none !important;
+      transition: box-shadow 80ms linear;
     }
   }
 }
@@ -1026,6 +1047,44 @@ html[data-nav-direction="back"]::view-transition-new(page-content) {
   transition: none !important;
   transform: none !important;
   opacity: 0 !important;
+}
+
+/*
+ * Overlay desde la pill: el atenuado no corre en paralelo al círculo.
+ * Mientras el sheet se revela (in) o se recoge (out) la página queda igual;
+ * el velo entra al sentar y sale al empezar el cierre.
+ */
+@keyframes pill-overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+[data-vaul-overlay][data-open-from-pill][data-pill-circle="in"],
+[data-vaul-overlay][data-open-from-pill][data-pill-circle="out"] {
+  animation: none !important;
+  opacity: 0 !important;
+  backdrop-filter: none;
+}
+
+[data-vaul-overlay][data-open-from-pill][data-pill-circle="settled"] {
+  animation: pill-overlay-fade-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-vaul-overlay][data-open-from-pill][data-pill-circle="in"],
+  [data-vaul-overlay][data-open-from-pill][data-pill-circle="settled"] {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  [data-vaul-overlay][data-open-from-pill][data-pill-circle="out"] {
+    animation: none !important;
+    opacity: 0 !important;
+  }
 }
 
 /* Toasts: tamaño fijo y sin escalado del SO para que no cambien de posición en móvil */

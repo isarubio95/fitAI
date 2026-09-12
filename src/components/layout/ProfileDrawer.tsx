@@ -434,7 +434,7 @@ function ProfileDrawerSheet() {
                   }
                   disabled={loadingFollowCounts}
                   aria-busy={loadingFollowCounts}
-                  className="flex min-h-11 min-w-11 flex-col items-center justify-center rounded-md border-0 bg-transparent px-2 py-1 text-center shadow-none active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
+                  className="flex min-h-11 min-w-11 flex-col items-center justify-center rounded-md border-0 bg-transparent px-2 py-1 text-center shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
                 >
                   {loadingFollowCounts ? (
                     <Skeleton className="h-4 w-7" aria-hidden />
@@ -457,7 +457,7 @@ function ProfileDrawerSheet() {
                   }
                   disabled={loadingFollowCounts}
                   aria-busy={loadingFollowCounts}
-                  className="flex min-h-11 min-w-11 flex-col items-center justify-center rounded-md border-0 bg-transparent px-2 py-1 text-center shadow-none active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
+                  className="flex min-h-11 min-w-11 flex-col items-center justify-center rounded-md border-0 bg-transparent px-2 py-1 text-center shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-100"
                 >
                   {loadingFollowCounts ? (
                     <Skeleton className="h-4 w-7" aria-hidden />
@@ -659,7 +659,7 @@ function ProfileDrawerSheet() {
                   >
                     <button
                       type="button"
-                      className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left outline-none transition-colors active:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => {
                         setFollowListMode(null);
                         if (p.id === user?.id) openMyProfile();

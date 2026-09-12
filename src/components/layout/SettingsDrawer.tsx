@@ -16,12 +16,13 @@ import {
 } from "@/components/ui/select";
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { Bell, Dumbbell, Settings, SunMoon } from "lucide-react";
+import { Bell, Dumbbell, Settings, SunMoon, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { PAGE_CARD_STACK_GAP, PAGE_STACK_TOP } from "@/lib/pageStyles";
@@ -60,7 +61,7 @@ export function SettingsDrawer() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-11 w-11 rounded-full bg-transparent text-muted-foreground transition-colors hover:bg-transparent active:bg-transparent focus-visible:bg-transparent hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
+          className="h-11 w-11 rounded-full bg-transparent text-muted-foreground transition-colors hover:bg-transparent focus-visible:bg-transparent hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5"
           aria-label="Ajustes"
         >
           <Settings />
@@ -72,8 +73,19 @@ export function SettingsDrawer() {
         overlayClassName="z-overlay"
         className="z-drawer flex h-full w-full flex-col border-0 bg-background p-0 shadow-none"
       >
-        <DrawerHeader className="px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
-          <DrawerTitle className="text-lg">Ajustes</DrawerTitle>
+        <DrawerHeader className="px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] pr-[max(1.5rem,env(safe-area-inset-right,0px))] text-left">
+          <div className="flex items-center justify-between gap-1">
+            <DrawerTitle className="min-w-0 flex-1 truncate text-lg">Ajustes</DrawerTitle>
+            <DrawerClose asChild>
+              <button
+                type="button"
+                aria-label="Cerrar"
+                className="touch-styled -mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </DrawerClose>
+          </div>
         </DrawerHeader>
 
         <div

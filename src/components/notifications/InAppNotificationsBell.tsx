@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Bell } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, drawerSafeAreaBottom } from "@/components/ui/drawer";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  drawerSafeAreaBottom,
+} from "@/components/ui/drawer";
 import { useInAppNotifications } from "@/hooks/useInAppNotifications";
 import { cn } from "@/lib/utils";
 import { NotificationFeedRow } from "@/components/notifications/NotificationFeedRow";
@@ -21,7 +28,7 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
         variant="ghost"
         size="icon"
         className={cn(
-          "relative h-11 w-11 shrink-0 rounded-full bg-transparent text-muted-foreground transition-colors hover:bg-transparent active:bg-transparent focus-visible:bg-transparent hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5",
+          "relative h-11 w-11 shrink-0 rounded-full bg-transparent text-muted-foreground transition-colors hover:bg-transparent focus-visible:bg-transparent hover:text-foreground/58 dark:text-foreground dark:hover:text-accent-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-5",
           className,
         )}
         aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount})` : "Notificaciones"}
@@ -45,18 +52,31 @@ export function InAppNotificationsBell({ className }: { className?: string }) {
           overlayClassName="z-overlay"
           className="z-drawer flex h-full max-h-dvh w-full flex-col gap-0 overflow-x-hidden border-0 bg-background p-0 shadow-none"
         >
-          <DrawerHeader className="shrink-0 px-6 pb-3 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] text-left">
-            <div className="flex items-center justify-between gap-3">
-              <DrawerTitle className="text-2xl font-semibold tracking-tight">Notificaciones</DrawerTitle>
-              {dismissableCount > 0 ? (
-                <button
-                  type="button"
-                  className="shrink-0 text-sm font-medium text-primary transition-opacity hover:opacity-80"
-                  onClick={() => markAllRead()}
-                >
-                  Marcar leídas
-                </button>
-              ) : null}
+          <DrawerHeader className="shrink-0 px-6 pb-3 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] pr-[max(1.5rem,env(safe-area-inset-right,0px))] text-left">
+            <div className="flex items-center justify-between gap-1">
+              <DrawerTitle className="min-w-0 flex-1 truncate text-2xl font-semibold tracking-tight">
+                Notificaciones
+              </DrawerTitle>
+              <div className="flex shrink-0 items-center gap-1">
+                {dismissableCount > 0 ? (
+                  <button
+                    type="button"
+                    className="px-2 text-sm font-medium text-primary transition-opacity hover:opacity-80"
+                    onClick={() => markAllRead()}
+                  >
+                    Marcar leídas
+                  </button>
+                ) : null}
+                <DrawerClose asChild>
+                  <button
+                    type="button"
+                    aria-label="Cerrar"
+                    className="touch-styled -mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </DrawerClose>
+              </div>
             </div>
           </DrawerHeader>
 

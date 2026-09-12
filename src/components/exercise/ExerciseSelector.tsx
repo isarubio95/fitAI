@@ -501,7 +501,7 @@ export function ExerciseSelector({
       >
         <div
           className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-full bg-primary-solid text-primary-foreground shadow-md active:scale-[0.82] active:duration-100 active:ease-out",
+            "flex h-12 w-12 items-center justify-center rounded-full bg-primary-solid text-primary-foreground shadow-md",
             rotationClass,
           )}
         >

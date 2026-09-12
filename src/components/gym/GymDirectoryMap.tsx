@@ -469,7 +469,7 @@ export function GymDirectoryMap({
         className={cn(
           "touch-styled absolute right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full",
           "border border-white/15 bg-[#1a1f21]/90 text-white shadow-lg backdrop-blur-sm",
-          "transition-colors active:scale-95",
+          "transition-colors",
         )}
         style={{
           // Misma lógica: mantener el botón siempre por encima del BottomNav.

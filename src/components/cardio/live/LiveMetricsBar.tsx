@@ -83,7 +83,6 @@ export function LiveMetricsBar({
           /* touch-styled: evita que el CSS táctil global vacíe el fondo con :hover pegado */
           "touch-styled mx-auto flex w-full max-w-lg flex-col overflow-hidden rounded-[1.75rem] text-left",
           "border border-border/80 bg-surface-elevated/95 shadow-lg backdrop-blur-xl",
-          "transition-transform active:scale-[0.98]",
         )}
       >
         {showNoGpsBanner ? (

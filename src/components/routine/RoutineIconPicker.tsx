@@ -95,7 +95,7 @@ export function WorkoutIconPickerTrigger({
           aria-expanded={open}
           className={cn(
             "touch-styled relative flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-input bg-background transition-colors",
-            "hover:bg-accent/55 active:scale-[0.97]",
+            "hover:bg-accent/55",
             "outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
             "data-[state=open]:border-input data-[state=open]:bg-background data-[state=open]:ring-0 data-[state=open]:ring-offset-0",
             disabled && "pointer-events-none opacity-50",

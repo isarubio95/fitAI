@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { Home, User, ClipboardList, CirclePlus, Users } from "lucide-react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
+import { Home, User, ClipboardList, CirclePlus, Heart, Users } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
@@ -10,14 +11,22 @@ import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
 import { tapLight } from "@/lib/haptics";
 import { preloadRoute } from "@/lib/routePreload";
 import { markNavDirection } from "@/lib/navDirection";
+import { openHealthLog } from "@/lib/healthLogNav";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
   { to: "/routines", icon: ClipboardList, label: "Biblioteca" },
-  { type: "add" },
+  { type: "add" as const },
   { to: "/community", icon: Users, label: "Comunidad" },
   { to: "/evolution", icon: User, label: "Tú" },
 ];
+
+/** Misma curva que el indicador de `AnimatedTabsList`. */
+const INDICATOR_TRANSITION = { duration: 0.24, ease: [0.22, 1, 0.36, 1] } as const;
+
+function isTabActive(to: string, path: string) {
+  return to === "/" ? path === "/" : path.startsWith(to);
+}
 
 export function BottomNav({
   skipInsetSync = false,
@@ -29,11 +38,21 @@ export function BottomNav({
   onNavigate?: () => void;
 }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { openNew } = useGlobalWorkoutDrawer();
   const { openLiveSetup } = useGlobalCardioDrawer();
+  const reduceMotion = useReducedMotion();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLElement | null)[]>([]);
+  const canAnimateIndicator = useRef(false);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
   const activePath = locationOverride ?? location.pathname;
+
+  const activeIndex = isMenuOpen
+    ? navItems.findIndex((item) => item.type === "add")
+    : navItems.findIndex((item) => item.to && isTabActive(item.to, activePath));
 
   useBackCloseLayer({
     open: isMenuOpen,
@@ -42,6 +61,46 @@ export function BottomNav({
     },
     kind: "popover",
   });
+
+  const updateIndicator = useCallback(() => {
+    const bar = barRef.current;
+    const item = activeIndex >= 0 ? itemRefs.current[activeIndex] : null;
+    if (!bar || !item) {
+      setIndicator((prev) => (prev.width === 0 ? prev : { left: 0, width: 0 }));
+      return;
+    }
+
+    const barRect = bar.getBoundingClientRect();
+    const itemRect = item.getBoundingClientRect();
+    const inset = 4;
+    const next = {
+      left: itemRect.left - barRect.left + inset,
+      width: Math.max(itemRect.width - inset * 2, 0),
+    };
+    setIndicator((prev) =>
+      prev.left === next.left && prev.width === next.width ? prev : next,
+    );
+  }, [activeIndex]);
+
+  useLayoutEffect(() => {
+    updateIndicator();
+  }, [updateIndicator, activePath, isMenuOpen]);
+
+  useEffect(() => {
+    if (indicator.width > 0) canAnimateIndicator.current = true;
+  }, [indicator.width]);
+
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const observer = new ResizeObserver(updateIndicator);
+    observer.observe(bar);
+    window.addEventListener("resize", updateIndicator);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateIndicator);
+    };
+  }, [updateIndicator]);
 
   // Expone el espacio inferior real (nav + safe area) para FAB, pills y overlays
   // aunque el usuario tenga el tamaño de fuente del sistema aumentado.
@@ -84,6 +143,8 @@ export function BottomNav({
     setIsMenuOpen(false);
   }, [location.pathname]);
 
+  const itemClassName = "relative z-10 flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2";
+
   return (
     <>
       {/* Overlay que difumina la página cuando el menú Registrar está abierto */}
@@ -100,12 +161,14 @@ export function BottomNav({
       <nav
         ref={navRef}
         data-app-bottom-nav
-        className="fixed px-2 inset-x-0 bottom-0 z-50 w-full border-t border-border bg-background-fill pb-[calc(0.625rem+var(--app-safe-area-bottom,env(safe-area-inset-bottom,0px)))] pt-2 md:hidden"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 w-full px-3 pb-[calc(0.5rem+var(--app-safe-area-bottom,env(safe-area-inset-bottom,0px)))] pt-1 md:hidden"
       >
         {/* MENÚ DESPLEGABLE DE ACCIONES (fuera del contenedor con overflow-hidden) */}
       <div
+        aria-hidden={!isMenuOpen}
+        inert={!isMenuOpen}
         className={cn(
-          "absolute bottom-[calc(100%+0.5rem)] left-1/2 -translate-x-1/2 flex w-[min(92vw,22.5rem)] origin-bottom flex-col overflow-hidden rounded-3xl border border-border bg-card ease-in-out",
+          "pointer-events-auto absolute bottom-[calc(100%+0.5rem)] left-1/2 -translate-x-1/2 flex w-[min(92vw,22.5rem)] origin-bottom flex-col overflow-hidden rounded-3xl border border-border bg-card ease-in-out",
           isMenuOpen
             ? "pointer-events-auto scale-100 opacity-100 transition-all duration-300"
             : "pointer-events-none scale-50 opacity-0 duration-0",
@@ -131,61 +194,102 @@ export function BottomNav({
             <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>
           </div>
         </button>
+        <button
+          className="flex w-full items-center gap-3.5 rounded-none px-4 py-3 text-left text-base transition-colors hover:bg-accent/30"
+          onClick={() => {
+            tapLight();
+            openHealthLog(navigate);
+            setIsMenuOpen(false);
+          }}
+        >
+          <Heart className="h-6 w-6" />
+          <div className="min-w-0">
+            <p className="font-medium">Salud</p>
+            <p className="text-xs text-muted-foreground">Peso, sueño, calorías o FC reposo</p>
+          </div>
+        </button>
       </div>
 
       {/* BARRA DE NAVEGACIÓN */}
-      <div className="relative flex items-center justify-around py-1">
+      <div
+        ref={barRef}
+        data-app-bottom-nav-bar
+        className="relative flex items-center overflow-hidden rounded-full border border-border px-1 py-1 shadow-float pointer-events-auto"
+      >
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-primary/10"
+          initial={false}
+          animate={{
+            left: indicator.left,
+            width: indicator.width,
+            opacity: indicator.width > 0 ? 1 : 0,
+          }}
+          transition={
+            reduceMotion || !canAnimateIndicator.current
+              ? { duration: 0 }
+              : INDICATOR_TRANSITION
+          }
+        />
         {navItems.map((item, index) => {
           // Renderizado del botón central +
           if (item.type === "add") {
             return (
-              <div key="add-button" className="flex flex-1 flex-col items-center justify-center gap-1">
-                <button
-                  onClick={() => {
-                    tapLight();
-                    if (onNavigate) {
-                      onNavigate();
-                      return;
-                    }
-                    setIsMenuOpen(!isMenuOpen);
-                  }}
+              <button
+                key="add-button"
+                ref={(el) => {
+                  itemRefs.current[index] = el;
+                }}
+                onClick={() => {
+                  tapLight();
+                  if (onNavigate) {
+                    onNavigate();
+                    return;
+                  }
+                  setIsMenuOpen(!isMenuOpen);
+                }}
+                data-press-sink
+                aria-expanded={isMenuOpen}
+                aria-haspopup="menu"
+                className={cn(
+                  "touch-styled group",
+                  itemClassName,
+                  "focus:outline-none",
+                )}
+              >
+                <div className="relative">
+                  <CirclePlus
+                    className={cn(
+                      "h-6 w-6 stroke-[2px] transition-[color,transform] duration-200 ease-out",
+                      isMenuOpen
+                        ? "rotate-45 nav-icon-pop text-primary"
+                        : "text-muted-foreground dark:text-foreground group-hover:text-foreground"
+                    )}
+                  />
+                </div>
+                <span
                   className={cn(
-                    "touch-styled group flex flex-col items-center justify-center gap-1",
-                    "transition-transform duration-200 ease-out active:scale-[0.94] active:duration-100",
-                    "focus:outline-none"
+                    "text-[10px] font-medium tracking-wide transition-colors duration-200",
+                    isMenuOpen
+                      ? "text-primary"
+                      : "text-muted-foreground dark:text-foreground"
                   )}
                 >
-                  <div className="relative">
-                    <CirclePlus
-                      className={cn(
-                        "h-6 w-6 stroke-[2px] transition-[color,transform] duration-200 ease-out",
-                        isMenuOpen
-                          ? "rotate-45 nav-icon-pop text-primary"
-                          : "text-muted-foreground dark:text-foreground group-hover:text-foreground"
-                      )}
-                    />
-                  </div>
-                  <span
-                    className={cn(
-                      "text-[10px] font-medium tracking-wide transition-colors duration-200",
-                      isMenuOpen
-                        ? "text-primary"
-                        : "text-muted-foreground dark:text-foreground"
-                    )}
-                  >
-                    Registrar
-                  </span>
-                </button>
-              </div>
+                  Registrar
+                </span>
+              </button>
             );
           }
 
           // Renderizado normal de los NavLinks
           const { to, icon: Icon, label } = item;
-          const isItemActive = to === "/" ? activePath === "/" : activePath.startsWith(to!);
+          const isItemActive = !isMenuOpen && isTabActive(to!, activePath);
           return (
             <NavLink
               key={to}
+              ref={(el) => {
+                itemRefs.current[index] = el;
+              }}
               to={to!}
               end={to === "/"}
               // Anima la entrada de la nueva sección (ver ::view-transition-* en
@@ -201,35 +305,34 @@ export function BottomNav({
                 onNavigate?.();
                 if (location.pathname === to) window.scrollTo(0, 0);
               }}
+              data-press-sink
               className={cn(
-                "touch-styled group flex flex-1 flex-col items-center justify-center gap-1",
-                "transition-transform duration-200 ease-out active:scale-[0.94] active:duration-100",
-                "focus:outline-none"
+                "touch-styled group",
+                itemClassName,
+                "focus:outline-none",
               )}
             >
-              <>
-                  <div className="relative">
-                    <Icon
-                      key={isItemActive ? "active" : "inactive"}
-                      className={cn(
-                        "h-6 w-6 stroke-[2px] transition-colors duration-200 ease-out",
-                        isItemActive
-                          ? "nav-icon-pop text-primary"
-                          : "text-muted-foreground dark:text-foreground group-hover:text-foreground"
-                      )}
-                    />
-                  </div>
-                  <span
-                    className={cn(
-                      "text-[10px] font-medium tracking-wide transition-colors duration-200",
-                      isItemActive
-                        ? "text-primary"
-                        : "text-muted-foreground dark:text-foreground"
-                    )}
-                  >
-                    {label}
-                  </span>
-              </>
+              <div className="relative">
+                <Icon
+                  key={isItemActive ? "active" : "inactive"}
+                  className={cn(
+                    "h-6 w-6 stroke-[2px] transition-colors duration-200 ease-out",
+                    isItemActive
+                      ? "nav-icon-pop text-primary"
+                      : "text-muted-foreground dark:text-foreground group-hover:text-foreground"
+                  )}
+                />
+              </div>
+              <span
+                className={cn(
+                  "text-[10px] font-medium tracking-wide transition-colors duration-200",
+                  isItemActive
+                    ? "text-primary"
+                    : "text-muted-foreground dark:text-foreground"
+                )}
+              >
+                {label}
+              </span>
             </NavLink>
           );
         })}

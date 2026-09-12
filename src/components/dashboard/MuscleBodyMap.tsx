@@ -103,6 +103,7 @@ const BodyView = memo(function BodyView({
                   !isLoading && "transition-colors duration-300",
                   isMuscle && interactive && "cursor-pointer hover:brightness-[0.97] dark:hover:brightness-110",
                 )}
+                {...(isMuscle && interactive && onZoneClick ? { "data-pressable": true } : {})}
                 style={{ fill: zoneFillColor(zone, getLevel, colors, isLoading) }}
                 onClick={isMuscle && interactive && onZoneClick ? () => onZoneClick(zone.group!) : undefined}
                 onMouseMove={

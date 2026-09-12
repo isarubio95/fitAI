@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
+import { useWorkoutById } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useDraggablePillPosition } from "@/hooks/useDraggablePillPosition";
 import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
+import { tapLight } from "@/lib/haptics";
 import { ChevronRight } from "lucide-react";
 
 function formatElapsed(startDate: string): string {
@@ -16,6 +18,9 @@ function formatElapsed(startDate: string): string {
 
 export function ActiveWorkoutPill() {
   const { data: active } = useActiveWorkout();
+  // La query del logger se desactiva al minimizar; sin observador la caché
+  // se queda fría y al pulsar la pill se pinta un frame de «rutina sin empezar».
+  useWorkoutById(active?.id ?? null);
   const { openActiveWorkout, state } = useGlobalWorkoutDrawer();
   const [elapsed, setElapsed] = useState("0:00");
   /** En desktop: bottom-24. En móvil: encima del BottomNav (+ holgura). */
@@ -35,6 +40,7 @@ export function ActiveWorkoutPill() {
 
   const openFromPill = () => {
     if (!active) return;
+    tapLight();
     openActiveWorkout(active.id, pillCircleOriginFromElement(drag.elRef.current));
   };
 
@@ -66,11 +72,12 @@ export function ActiveWorkoutPill() {
       }}
     >
       <div
+        data-pressable
         className="group relative flex cursor-pointer items-center gap-3 pl-2 pr-4 py-2 rounded-full 
                    bg-neutral-900/80 backdrop-blur-md 
                    border border-white/10 shadow-2xl shadow-black/40
                    hover:bg-neutral-800/80 hover:border-white/20 hover:scale-[1.02]
-                   transition-all duration-300 ease-out"
+                   transition-[background-color,border-color,box-shadow,transform] duration-300 ease-out"
       >
         {/* Status Indicator (Pulse Effect) */}
         <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-success/10 border border-success/20">

@@ -86,7 +86,7 @@ export const LiveControlsDrawer = forwardRef<HTMLDivElement, Props>(function Liv
         side="bottom"
         className="z-overlay mt-0 max-h-[85lvh] overflow-hidden bg-surface-elevated p-0 transition-[height] duration-300 ease-out"
         overlayClassName={cn(
-          "z-overlay bg-transparent backdrop-blur-none dark:bg-transparent dark:backdrop-blur-none",
+          "z-overlay bg-transparent backdrop-blur-none supports-backdrop-filter:bg-transparent dark:bg-transparent dark:backdrop-blur-none dark:supports-backdrop-filter:bg-transparent",
           // Desplegado: el overlay captura el toque fuera para colapsar.
           // Colapsado: deja pasar gestos al mapa / UI detrás.
           controlsExpanded ? "pointer-events-auto" : "pointer-events-none",

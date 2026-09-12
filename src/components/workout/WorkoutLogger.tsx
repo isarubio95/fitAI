@@ -42,6 +42,11 @@ import {
   wasWorkoutStartedFromRoutine,
 } from "./workout-logger/fromRoutineStorage";
 import { serializeWorkoutFormSnapshot } from "./workout-logger/serializeWorkoutFormSnapshot";
+import {
+  isReopeningKnownActiveWorkout,
+  sessionHasStartedForDrawer,
+  shouldShowWorkoutEmptyStart,
+} from "./workout-logger/activeSessionRestore";
 import { WorkoutExerciseList } from "./workout-logger/WorkoutExerciseList";
 import { WorkoutEmptyExerciseState } from "./workout-logger/WorkoutEmptyExerciseState";
 import { SWIPE_DISMISS_WINDOW_MS } from "./workout-logger/constants";
@@ -228,12 +233,32 @@ export function WorkoutLogger() {
     }
   }, [open, templateExercises, templateTitle]);
 
-  // Pre-fill form when editing existing workout (no hacerlo si abrimos desde plantilla: createActiveWorkout ya puso exercises con superset_id)
-  useEffect(() => {
-    if (!open) {
-      hydratedWorkoutIdRef.current = null;
-      return;
-    }
+  // Cambio de entrenamiento (p. ej. editar uno pasado con otro activo minimizado):
+  // no heredar el formulario anterior en el primer paint.
+  useLayoutEffect(() => {
+    if (!open || !effectiveWorkoutId) return;
+    const previousId = hydratedWorkoutIdRef.current;
+    if (!previousId || previousId === effectiveWorkoutId) return;
+    hydratedWorkoutIdRef.current = null;
+    setTitulo("");
+    setExercises([]);
+    setSessionClockStartedAt(null);
+    setStartedFromRoutine(false);
+    setPausedAt(null);
+    setPausedAccumMs(0);
+    setEditBaseline(null);
+    setLiveStep("recording");
+    setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
+    setEsPublica(false);
+    setGimnasio(null);
+    setRpe(null);
+    setComentarios("");
+  }, [open, effectiveWorkoutId, setSessionClockStartedAt]);
+
+  // Pre-fill antes del pintado: un useEffect dejaba un frame de «rutina sin empezar»
+  // al reabrir la pill (el reset de cierre vaciaba el form y la hidratación llegaba tarde).
+  useLayoutEffect(() => {
+    if (!open) return;
     if (isEdit && existingWorkout && !templateExercises) {
       if (hydratedWorkoutIdRef.current === existingWorkout.id) return;
       hydratedWorkoutIdRef.current = existingWorkout.id;
@@ -282,6 +307,17 @@ export function WorkoutLogger() {
     }
   }, [isEdit, existingWorkout, open, templateExercises, routineIconsByTitle, armSessionClock]);
 
+  // Cabecera inmediata al reabrir la pill, aunque el detalle aún no haya llegado.
+  useLayoutEffect(() => {
+    if (!open || !workoutId || templateExercises) return;
+    if (!serverActiveWorkout || serverActiveWorkout.id !== workoutId) return;
+    if (serverActiveWorkout.hasExercises) {
+      armSessionClock(serverActiveWorkout.fecha);
+    }
+    setTitulo((prev) => prev || serverActiveWorkout.titulo || "");
+    setStartedFromRoutine((prev) => prev || wasWorkoutStartedFromRoutine(workoutId));
+  }, [open, workoutId, templateExercises, serverActiveWorkout, armSessionClock]);
+
   // Alta desde el catálogo mientras el logger está abierto: la hidratación
   // inicial no se vuelve a correr, así que hay que colar las filas nuevas.
   useEffect(() => {
@@ -328,6 +364,7 @@ export function WorkoutLogger() {
   // Antes del pintado: un alta nueva no debe mostrar el título/ejercicios del entreno anterior.
   useLayoutEffect(() => {
     if (!open || workoutId || activeWorkoutId) return;
+    hydratedWorkoutIdRef.current = null;
     if (templateExercises && templateTitle) {
       setTitulo(templateTitle);
       setExercises(templateExercises);
@@ -339,6 +376,9 @@ export function WorkoutLogger() {
       setRpe(null);
       setComentarios("");
       setExercisePickerOpen(false);
+      setPausedAt(null);
+      setPausedAccumMs(0);
+      setLiveStep("recording");
       armSessionClock();
       return;
     }
@@ -352,32 +392,27 @@ export function WorkoutLogger() {
       setRpe(null);
       setComentarios("");
       setExercisePickerOpen(false);
+      setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
+      setPausedAt(null);
+      setPausedAccumMs(0);
+      setLiveStep("recording");
       setSessionClockStartedAt(null);
     }
   }, [open, workoutId, activeWorkoutId, defaultDate, templateExercises, templateTitle, templateRoutineIcon, initialGimnasio, setSessionClockStartedAt, armSessionClock]);
 
-  // Reset al cerrar para que la próxima apertura no herede el formulario anterior.
+  // Al minimizar un entreno activo no vaciamos el formulario: si no, la pill
+  // pinta un frame de «Comenzar entrenamiento» / lista vacía. El alta nueva
+  // y el cambio de id se limpian en los layout effects de apertura.
   useEffect(() => {
     if (!open) {
       setActiveWorkoutId(null);
-      setPausedAt(null);
-      setPausedAccumMs(0);
-      setEditBaseline(null);
-      setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
-      setEsPublica(false);
-      setGimnasio(null);
-      setRpe(null);
-      setComentarios("");
-      setLiveStep("recording");
-      setRoutineFormOpen(false);
-      setTitulo("");
-      setExercises([]);
       setExercisePickerOpen(false);
       setSelectedExerciseDetail(null);
-      setSessionClockStartedAt(null);
+      setRoutineFormOpen(false);
+      setPerformanceOpen(false);
       liveWorkoutStartedRef.current = false;
     }
-  }, [open, setSessionClockStartedAt]);
+  }, [open]);
 
   const togglePause = useCallback(() => {
     if (!sessionClockStartedAtRef.current) return;
@@ -577,6 +612,7 @@ export function WorkoutLogger() {
       }));
 
       setActiveWorkoutId(actividad.id);
+      hydratedWorkoutIdRef.current = actividad.id;
       setTitulo(templateTitle);
       setWorkoutIcon(templateIcon);
       setFecha(plannedDate || new Date().toISOString().slice(0, 10));
@@ -647,6 +683,7 @@ export function WorkoutLogger() {
       if (actError) throw actError;
 
       setActiveWorkoutId(actividad.id);
+      hydratedWorkoutIdRef.current = actividad.id;
       setTitulo(defaultTitle);
       setWorkoutIcon(DEFAULT_ROUTINE_ICON_KEY);
       setFecha(defaultDate || now.toISOString().slice(0, 10));
@@ -1505,6 +1542,7 @@ export function WorkoutLogger() {
       }
       clearWorkoutStartedFromRoutine(targetId);
       setStartedFromRoutine(false);
+      hydratedWorkoutIdRef.current = null;
       const deletedFecha = existingWorkout?.fecha ? new Date(existingWorkout.fecha).toISOString().slice(0, 10) : undefined;
       setConfirmDelete(false);
       setDeleting(false);
@@ -1677,6 +1715,7 @@ export function WorkoutLogger() {
           if (effectiveWorkoutId) clearWorkoutStartedFromRoutine(effectiveWorkoutId);
           setStartedFromRoutine(false);
           setLiveStep("recording");
+          hydratedWorkoutIdRef.current = null;
           invalidateWorkoutQueries({ workoutId: effectiveWorkoutId, fecha });
           close();
         } else {
@@ -1912,20 +1951,41 @@ export function WorkoutLogger() {
     return () => window.clearTimeout(t);
   }, [open]);
 
-  const pillCircleProps = pillAnim
-    ? {
-        "data-open-from-pill": true as const,
-        "data-pill-circle": pillAnim.phase,
-        ...(pillAnim.phase !== "settled"
-          ? {
-              "transition-style": pillCircleTransitionAttr(pillAnim.phase),
-              style: pillCircleTransitionStyleForBottomSheet(pillAnim.origin, 1, pillAnim.phase),
-            }
-          : { style: { clipPath: "none" } }),
-      }
-    : {};
+  const pillPhase: PillCirclePhase | null =
+    pillAnim?.phase ?? (open && pillOrigin ? "in" : null);
+  const pillOriginResolved = pillAnim?.origin ?? pillOrigin ?? null;
+  const pillCircleProps =
+    pillPhase && pillOriginResolved
+      ? {
+          "data-open-from-pill": true as const,
+          "data-pill-circle": pillPhase,
+          ...(pillPhase !== "settled"
+            ? {
+                "transition-style": pillCircleTransitionAttr(pillPhase),
+                style: pillCircleTransitionStyleForBottomSheet(pillOriginResolved, 1, pillPhase),
+              }
+            : { style: { clipPath: "none" } }),
+        }
+      : {};
 
-  const sessionHasStarted = !!sessionClockStartedAt;
+  const reopeningKnownActiveWorkout = isReopeningKnownActiveWorkout({
+    workoutId,
+    activeId: serverActiveWorkout?.id,
+    hasExercises: serverActiveWorkout?.hasExercises,
+  });
+  const sessionHasStarted = sessionHasStartedForDrawer({
+    sessionClockStartedAt,
+    reopeningKnownActiveWorkout,
+  });
+  const waitingForExistingWorkout =
+    reopeningKnownActiveWorkout &&
+    exercises.length === 0 &&
+    (loadingWorkout || !existingWorkout || existingWorkout.id !== workoutId);
+  const showEmptyExerciseStart = shouldShowWorkoutEmptyStart({
+    showFloatingActionBar,
+    exerciseCount: exercises.length,
+    waitingForExistingWorkout,
+  });
   const activeWorkoutHeading = sessionHasStarted
     ? "Entrenamiento activo"
     : "Comenzar entrenamiento";
@@ -2170,7 +2230,7 @@ export function WorkoutLogger() {
               />
             )}
 
-            {showFloatingActionBar && exercises.length === 0 ? (
+            {showEmptyExerciseStart ? (
               <WorkoutEmptyExerciseState
                 open={exercisePickerOpen}
                 onOpenChange={setExercisePickerOpen}

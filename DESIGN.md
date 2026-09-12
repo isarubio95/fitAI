@@ -141,7 +141,7 @@ Rechazos confirmados: vidrio esmerilado en el chrome móvil, neón de gym, gradi
 - Oscuro cálido primero; claro como par de papel, no como identidad.
 - Acento como piloto: activo, CTA y señal. Casi nunca un fondo entero.
 - Volumen por velo + filo; sombra solo apoya. Chrome de app opaco.
-- Táctil: scale al pulsar, sin anillo de foco en puntero grueso.
+- Táctil: hundimiento + velo al pulsar, sin anillo de foco en puntero grueso.
 - Una sola familia de sistema; sin webfont de marca.
 
 ## Colors
@@ -200,7 +200,7 @@ Scrollbars ocultos bajo 768px. `touch-action: manipulation` en controles; `pan-y
 
 Navegación de secciones: view transition solo en `<main>` (eje compartido, 24px). Header y nav no viajan. Paneles a pantalla completa (Tú, Biblioteca) aparecen sin fade: un fade sobre midnight se lee como parpadeo negro.
 
-**The Finger-First Rule.** Hover existe solo con puntero fino. En táctil, el estado es `[data-pressed]` (scale 0.965, opacity 0.8, 80ms in / 180ms out). Sin anillo de foco en coarse. Sin `maximum-scale` bloqueado.
+**The Finger-First Rule.** Hover existe solo con puntero fino. En táctil, el estado es `[data-pressed]`: hundimiento `translateY(1px) scale(0.97)` y velo inset de `--foreground` al 8% (aclara en oscuro, oscurece en claro; 80ms in / 180ms out). Iconos de la bottom nav y días del calendario (`[data-press-sink]`): solo hundimiento, sin velo. Sin fade de opacidad. Sin anillo de foco en coarse. Sin `maximum-scale` bloqueado.
 
 ## Elevation & Depth
 
@@ -237,7 +237,7 @@ Táctil y seguro: el dedo nota el apoyo. CTAs pesados, pills inequívocas, campo
 
 ### Buttons
 - **Shape:** CTA default 12px (`rounded-xl`), alto 40px, `font-semibold`. Variante `new`: cápsula 36px.
-- **Primary:** `piloto-solid` + texto blanco + ring inset `piloto` al 70%. Hover de ratón: lift −2px y sólido al 90%. Active: +1px. Táctil: el lift no aplica; manda `[data-pressed]`.
+- **Primary:** `piloto-solid` + texto blanco + ring inset `piloto` al 70%. Hover de ratón: lift −2px y sólido al 90%. Táctil: el lift no aplica; manda `[data-pressed]`.
 - **New:** mismo sólido, cápsula, ring de acento más suave. Alta para «crear».
 - **Outline / filter / secondary / ghost:** superficie de hierro, ring de `input`/`border`. Hover de ratón: velo de acento al 55% (30% en oscuro). Sin lift.
 - **Destructive:** `peligro`; hover baja brillo.

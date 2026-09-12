@@ -712,13 +712,16 @@ export function CardioLiveRecorder() {
     }
   };
 
+  const effectivePillPhase: PillCirclePhase | null =
+    pillCirclePhase ?? (open && pillOrigin ? "in" : null);
+
   // Variables del círculo en el DOM (drawer portaleado; no hereda el clip del full-screen).
   useLayoutEffect(() => {
     if (!open || step !== "recording") return;
     const el = controlsDrawerRef.current;
-    if (!el || !pillOrigin || !pillCirclePhase) return;
+    if (!el || !pillOrigin || !effectivePillPhase) return;
 
-    if (pillCirclePhase === "settled") {
+    if (effectivePillPhase === "settled") {
       el.style.clipPath = "none";
       return;
     }
@@ -726,14 +729,14 @@ export function CardioLiveRecorder() {
     const styles = pillCircleTransitionStyleForBottomSheet(
       pillOrigin,
       0.48,
-      pillCirclePhase,
+      effectivePillPhase,
       controlsDrawerHeightPx > 0 ? controlsDrawerHeightPx : undefined,
     );
     for (const [key, value] of Object.entries(styles)) {
       if (value == null) continue;
       el.style.setProperty(key, String(value));
     }
-  }, [open, step, pillOrigin, pillCirclePhase, controlsDrawerHeightPx]);
+  }, [open, step, pillOrigin, effectivePillPhase, controlsDrawerHeightPx]);
 
   if (!liveOpen) {
     if (!showPostWorkout) return null;
@@ -758,13 +761,13 @@ export function CardioLiveRecorder() {
   const summary = step === "summary" && open && !loadingSession;
 
   const pillCircleProps =
-    open && pillOrigin && pillCirclePhase
+    open && pillOrigin && effectivePillPhase
       ? {
-          "data-pill-circle": pillCirclePhase,
-          ...(pillCirclePhase !== "settled"
+          "data-pill-circle": effectivePillPhase,
+          ...(effectivePillPhase !== "settled"
             ? {
-                "transition-style": pillCircleTransitionAttr(pillCirclePhase),
-                style: pillCircleTransitionStyle(pillOrigin, pillCirclePhase),
+                "transition-style": pillCircleTransitionAttr(effectivePillPhase),
+                style: pillCircleTransitionStyle(pillOrigin, effectivePillPhase),
               }
             : { style: { clipPath: "none" } }),
         }
@@ -772,12 +775,12 @@ export function CardioLiveRecorder() {
 
   // Misma animación en el drawer portaleado bajo el mapa.
   const controlsDrawerPillProps =
-    open && pillOrigin && pillCirclePhase
+    open && pillOrigin && effectivePillPhase
       ? {
           "data-open-from-pill": true as const,
-          "data-pill-circle": pillCirclePhase,
-          ...(pillCirclePhase !== "settled"
-            ? { "transition-style": pillCircleTransitionAttr(pillCirclePhase) }
+          "data-pill-circle": effectivePillPhase,
+          ...(effectivePillPhase !== "settled"
+            ? { "transition-style": pillCircleTransitionAttr(effectivePillPhase) }
             : {}),
         }
       : {};

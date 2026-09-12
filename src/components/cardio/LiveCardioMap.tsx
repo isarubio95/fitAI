@@ -172,7 +172,7 @@ function addRouteLayers(map: MapLibreMap) {
 const MAP_CONTROL_CLASS = cn(
   "touch-styled flex h-10 w-10 items-center justify-center rounded-full text-white",
   "border border-white/15 bg-[#1a1f21]/90 shadow-lg backdrop-blur-sm",
-  "transition-colors active:scale-95",
+  "transition-colors",
 );
 
 /**

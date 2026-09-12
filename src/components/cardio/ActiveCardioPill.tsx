@@ -4,6 +4,7 @@ import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useDraggablePillPosition } from "@/hooks/useDraggablePillPosition";
 import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
+import { tapLight } from "@/lib/haptics";
 import { ChevronRight } from "lucide-react";
 
 function formatElapsed(startDate: string): string {
@@ -45,6 +46,7 @@ export function ActiveCardioPill() {
   const label = firstDisciplinaNombre(active);
 
   const openFromPill = () => {
+    tapLight();
     openLiveRecording(active.id, pillCircleOriginFromElement(drag.elRef.current));
   };
 
@@ -77,11 +79,12 @@ export function ActiveCardioPill() {
       }}
     >
       <div
+        data-pressable
         className="group relative flex cursor-pointer items-center gap-3 pl-2 pr-4 py-2 rounded-full 
                    bg-neutral-900/80 backdrop-blur-md 
                    border border-white/10 shadow-2xl shadow-black/40
                    hover:bg-neutral-800/80 hover:border-white/20 hover:scale-[1.02]
-                   transition-all duration-300 ease-out"
+                   transition-[background-color,border-color,box-shadow,transform] duration-300 ease-out"
       >
         <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-chart-fitness/10 border border-chart-fitness/25">
           <span className="relative flex h-2.5 w-2.5">

@@ -209,6 +209,7 @@ function PredefinedRouteCard({
   return (
     <li>
       <div
+        data-pressable={disabled ? undefined : true}
         className={cn(
           routeListCardClass(selected),
           "cursor-pointer",

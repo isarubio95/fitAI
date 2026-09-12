@@ -22,7 +22,6 @@ import {
   aggregateRoutineMuscleSets,
   summarizeRoutineMuscleGroups,
 } from "@/lib/muscleMapping";
-import { resolveRoutineIcon } from "@/lib/routineIcons";
 import {
   estimateRoutineDurationMinutes,
   formatEstimatedDurationLabel,
@@ -37,6 +36,16 @@ const noop = () => {};
 
 const LONG_PRESS_MS = 480;
 const LONG_PRESS_MOVE_PX = 12;
+/** Misma curva que el expand del calendario: frena al final, sin rebote. */
+const EXPAND_EASING = "cubic-bezier(0.32, 0.72, 0, 1)";
+const EXPAND_MS_MIN = 280;
+const EXPAND_MS_MAX = 460;
+
+function routineExpandDurationMs(contentPx: number) {
+  return Math.round(
+    Math.min(EXPAND_MS_MAX, Math.max(EXPAND_MS_MIN, 200 + contentPx * 0.3)),
+  );
+}
 
 interface RoutineCardProps {
   routine: RutinaWithDetails;
@@ -74,6 +83,8 @@ function RoutineCardBase({
   isDragging = false,
 }: RoutineCardBaseProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expandMs, setExpandMs] = useState(320);
+  const expandContentRef = useRef<HTMLDivElement>(null);
   const suppressClickRef = useRef(false);
   const longPressRef = useRef<{
     timer: ReturnType<typeof setTimeout> | null;
@@ -81,7 +92,6 @@ function RoutineCardBase({
     y: number;
   }>({ timer: null, x: 0, y: 0 });
 
-  const RoutineTitleIcon = resolveRoutineIcon(r.icono);
   const description = r.descripcion?.trim() || null;
   const durationLabel = formatEstimatedDurationLabel(
     estimateRoutineDurationMinutes(r.ejercicios),
@@ -172,6 +182,8 @@ function RoutineCardBase({
       suppressClickRef.current = false;
       return;
     }
+    const px = expandContentRef.current?.scrollHeight ?? 0;
+    if (px > 0) setExpandMs(routineExpandDurationMs(px));
     onOpenChange(!isOpen);
   };
 
@@ -254,10 +266,7 @@ function RoutineCardBase({
               />
               <div className="min-w-0 flex-1">
                 <div className="mb-0.5 flex min-w-0 items-center gap-2">
-                  <h2 className="flex min-w-0 items-center gap-2 font-semibold text-base">
-                    <RoutineTitleIcon className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{r.nombre}</span>
-                  </h2>
+                  <h2 className="min-w-0 truncate font-semibold text-base">{r.nombre}</h2>
                   <Badge
                     variant="secondary"
                     className="shrink-0 border-0 bg-muted/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-muted/70"
@@ -301,19 +310,25 @@ function RoutineCardBase({
                 onClick={toggleOpen}
               >
                 <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                  className={cn(
+                    "h-4 w-4 transition-transform motion-reduce:transition-none",
+                    isOpen && "rotate-180",
+                  )}
+                  style={{ transitionDuration: `${expandMs}ms`, transitionTimingFunction: EXPAND_EASING }}
                 />
               </Button>
             </div>
           </div>
 
           <div
-            className={`grid px-2 min-[361px]:px-3 transition-all duration-200 ease-out ${
-              isOpen ? "grid-rows-[1fr] opacity-100 mt-3 pb-3" : "grid-rows-[0fr] opacity-0"
-            }`}
+            className={cn(
+              "grid px-2 min-[361px]:px-3 transition-[grid-template-rows] motion-reduce:transition-none",
+              isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+            )}
+            style={{ transitionDuration: `${expandMs}ms`, transitionTimingFunction: EXPAND_EASING }}
           >
-            <div className="overflow-hidden" inert={!isOpen ? true : undefined}>
-              <div className="space-y-4">
+            <div className="min-h-0 overflow-hidden" inert={!isOpen ? true : undefined}>
+              <div ref={expandContentRef} className="space-y-4 pt-3 pb-3">
                 {volumeRows.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-[11px] font-medium text-muted-foreground">Series por grupo</p>

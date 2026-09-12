@@ -335,7 +335,7 @@ export function ExerciseProgressWidget({
                   variant="ghost"
                   size="icon"
                   aria-label="Qué es la fuerza máxima"
-                  className="touch-styled h-6 w-6 rounded-full transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100"
+                  className="touch-styled h-6 w-6 rounded-full transition-none hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
                 >
                   <Info className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>

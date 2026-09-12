@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isoDateKey } from "@/lib/healthLogForm";
 import { useAuth } from "./useAuth";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
@@ -48,8 +49,9 @@ export function useDailyHealth() {
 
   const upsertMutation = useMutation({
     mutationFn: async (patch: SaludDiariaPatch) => {
-      const existing = (query.data ?? []).find((row) => row.fecha === patch.fecha);
-      const row = mergeDailyHealth(existing, patch, user!.id);
+      const fecha = isoDateKey(patch.fecha);
+      const existing = (query.data ?? []).find((row) => isoDateKey(row.fecha) === fecha);
+      const row = mergeDailyHealth(existing, { ...patch, fecha }, user!.id);
       const { error } = await supabase
         .from("salud_diaria")
         .upsert({ ...row, updated_at: new Date().toISOString() }, { onConflict: "usuario_id,fecha" });

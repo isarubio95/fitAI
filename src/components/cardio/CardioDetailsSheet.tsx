@@ -16,6 +16,7 @@ import {
   useSaveCardioRouteFromSession,
 } from "@/hooks/useSavedCardioRoutes";
 import { useToast } from "@/hooks/use-toast";
+import { PAGE_STACK_TOP } from "@/lib/pageStyles";
 import { firstNested } from "@/lib/firstNested";
 import {
   computeCardioSessionMetrics,
@@ -47,7 +48,7 @@ type CardioDetailsSheetProps = {
 
 function StatBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-xl bg-card px-3 py-3 text-center">
+    <div className="min-w-0 rounded-xl border border-border/40 px-3 py-3 text-center">
       <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 font-mono text-base font-semibold tabular-nums">{value}</p>
     </div>
@@ -97,7 +98,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         className={cn(
-          "flex h-[92dvh] max-h-[92dvh] flex-col gap-0 overflow-hidden bg-card p-0",
+          "flex h-[92dvh] max-h-[92dvh] flex-col gap-0 overflow-hidden bg-background p-0",
           drawerSafeAreaBottom,
         )}
       >
@@ -123,7 +124,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
           )}
         </DrawerHeader>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background pt-4">
+        <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden bg-background", PAGE_STACK_TOP)}>
           {isLoading || !session || !metrics ? (
             <div className="space-y-3 px-6 pb-4">
               <Skeleton className="h-48 w-full rounded-xl" />
@@ -173,8 +174,8 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
                   </Suspense>
                 </div>
               ) : (
-                <div className="mx-6 flex shrink-0 items-center gap-4 rounded-2xl bg-muted/30 px-4 py-6">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-background/80 shadow-sm">
+                <div className="mx-6 flex shrink-0 items-center gap-4 rounded-2xl border border-border/40 px-4 py-6">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl">
                     {Icon ? <Icon className="h-8 w-8" aria-hidden /> : null}
                   </div>
                   <div>
@@ -268,7 +269,7 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
               ) : null}
 
               {session.comentarios?.trim() ? (
-                <div className="mx-6 shrink-0 rounded-xl bg-muted/30 p-3 text-left">
+                <div className="mx-6 shrink-0 rounded-xl border border-border/40 p-3 text-left">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Notas
                   </p>

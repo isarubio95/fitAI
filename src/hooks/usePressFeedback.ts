@@ -13,15 +13,15 @@ const PRESSABLE_SELECTOR = [
   '[role="link"]',
   "a[href]",
   "summary",
+  "[data-pressable]",
 ].join(",");
 
 /**
- * Componentes que ya traen su propia animación de pulsación (pills flotantes,
- * handles de dnd-kit, switches) o que no deben encogerse.
+ * Controles que no deben hundirse: switches (el thumb es el feedback),
+ * handles de dnd-kit y el wrapper de pills arrastrables (su transform es
+ * la posición). Un descendiente `[data-pressable]` sí recibe el golpe.
  */
 const EXCLUDED_SELECTOR = [
-  ".touch-pill",
-  ".touch-styled",
   ".no-press",
   "[data-draggable-pill]",
   "[data-dnd-handle]",
@@ -44,12 +44,17 @@ export function usePressFeedback() {
     let pointerId: number | null = null;
     const releaseTimers = new WeakMap<HTMLElement, number>();
 
+    const unstickHover = (el: HTMLElement) => {
+      if (typeof el.blur === "function") el.blur();
+    };
+
     /** Quita el estado de golpe, sin animación de salida (el gesto no era un tap). */
     const cancel = () => {
       if (!pressed) return;
       const timer = releaseTimers.get(pressed);
       if (timer) window.clearTimeout(timer);
       pressed.removeAttribute("data-pressed");
+      unstickHover(pressed);
       pressed = null;
       pointerId = null;
     };
@@ -62,6 +67,7 @@ export function usePressFeedback() {
       pointerId = null;
 
       el.setAttribute("data-pressed", "release");
+      unstickHover(el);
       const timer = window.setTimeout(() => {
         el.removeAttribute("data-pressed");
         releaseTimers.delete(el);
@@ -76,7 +82,8 @@ export function usePressFeedback() {
       const target = event.target as Element | null;
       const candidate = target?.closest?.(PRESSABLE_SELECTOR) as HTMLElement | null;
       if (!candidate) return;
-      if (candidate.closest(EXCLUDED_SELECTOR)) return;
+      if (candidate.matches(EXCLUDED_SELECTOR)) return;
+      if (candidate.closest(EXCLUDED_SELECTOR) && !candidate.hasAttribute("data-pressable")) return;
       if (candidate.hasAttribute("disabled") || candidate.getAttribute("aria-disabled") === "true") return;
 
       // Si el elemento venía de una salida en curso, corta el temporizador.

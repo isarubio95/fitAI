@@ -130,6 +130,9 @@ interface DrawerContentProps extends React.ComponentPropsWithoutRef<typeof Drawe
   side?: DrawerSide;
   /** Clases extra para el overlay (p. ej. z-index en drawers anidados). */
   overlayClassName?: string;
+  /** Réplica en el overlay: el atenuado espera a que el círculo de la pill asiente. */
+  "data-open-from-pill"?: boolean;
+  "data-pill-circle"?: string;
 }
 
 function shouldIgnoreDrawerOutside(target: EventTarget | null) {
@@ -144,11 +147,31 @@ function shouldIgnoreDrawerOutside(target: EventTarget | null) {
 const DrawerContent = React.forwardRef<
   React.ComponentRef<typeof DrawerPrimitive.Content>,
   DrawerContentProps
->(({ className, children, side = "bottom", overlayClassName, onPointerDownOutside, onInteractOutside, ...props }, ref) => (
+>(({
+  className,
+  children,
+  side = "bottom",
+  overlayClassName,
+  onPointerDownOutside,
+  onInteractOutside,
+  "data-open-from-pill": openFromPill,
+  "data-pill-circle": pillCircle,
+  ...props
+}, ref) => (
   <DrawerPortal>
-    <DrawerOverlay className={overlayClassName} />
+    <DrawerOverlay
+      className={overlayClassName}
+      {...(openFromPill
+        ? {
+            "data-open-from-pill": true,
+            ...(pillCircle ? { "data-pill-circle": pillCircle } : {}),
+          }
+        : {})}
+    />
     <DrawerPrimitive.Content
       ref={ref}
+      {...(openFromPill ? { "data-open-from-pill": true } : {})}
+      {...(pillCircle ? { "data-pill-circle": pillCircle } : {})}
       onPointerDownOutside={(e) => {
         if (shouldIgnoreDrawerOutside(e.target)) e.preventDefault();
         onPointerDownOutside?.(e);

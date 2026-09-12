@@ -28,7 +28,7 @@ import {
   formatRitmoSegKmLabel,
 } from "@/types/workout";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD, PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
+import { PAGE_CARD, PAGE_CARD_STACK_GAP, PAGE_STACK_TOP } from "@/lib/pageStyles";
 import { formatCardioDuration } from "@/lib/cardioFormat";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import { WorkoutMuscleMiniMap } from "@/components/dashboard/WorkoutMuscleMiniMap";
@@ -47,6 +47,9 @@ import {
   type TooltipContentProps,
 } from "recharts";
 import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
+
+/** Detalle a hoja plana: las cards no pintan superficie; el drawer ya es el fondo. */
+const DETAIL_FLAT_CARD = cn(PAGE_CARD, "border-transparent bg-transparent shadow-none");
 
 type WorkoutDetailsSheetProps = {
   open: boolean;
@@ -445,7 +448,7 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent
           side="bottom"
-          className="flex h-[92lvh] max-h-[92lvh] flex-col overflow-hidden bg-card p-0"
+          className="flex h-[92lvh] max-h-[92lvh] flex-col overflow-hidden bg-background p-0"
         >
           <DrawerHeader className="shrink-0 border-b border-border bg-card text-left">
             <DrawerTitle className={isLoading || !workout ? "sr-only" : undefined}>
@@ -466,7 +469,7 @@ export function WorkoutDetailsSheet({ open, onOpenChange, workoutId }: WorkoutDe
             )}
           </DrawerHeader>
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-card">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-background">
             <WorkoutDetailsContent
               workout={workout}
               isLoading={isLoading}
@@ -785,7 +788,7 @@ export function WorkoutDetailsContent({
             <Skeleton className="mx-auto h-32 w-full max-w-[280px] rounded-xl" />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className={cn("space-y-4", PAGE_STACK_TOP)}>
             <div className="space-y-2">
               <Skeleton className="h-6 w-2/3" />
               <Skeleton className="h-4 w-1/3" />
@@ -819,16 +822,16 @@ export function WorkoutDetailsContent({
             </DrawerHeader>
           ) : null}
 
-          <div className={cn("surface-region-page flex flex-col bg-background", PAGE_CARD_STACK_GAP)}>
+          <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP, PAGE_STACK_TOP)}>
             {workout.comentarios ? (
-              <Card className={PAGE_CARD}>
+              <Card className={DETAIL_FLAT_CARD}>
                 <CardContent className="px-6 py-6 text-sm text-muted-foreground whitespace-pre-wrap">
                   {workout.comentarios}
                 </CardContent>
               </Card>
             ) : null}
 
-            <Card className={PAGE_CARD}>
+            <Card className={DETAIL_FLAT_CARD}>
               <CardContent className="px-6 py-6">
                 <div className="flex items-baseline justify-between gap-3 mb-4">
                   <div className="font-semibold leading-none">Series por grupo muscular</div>
@@ -866,7 +869,7 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card className={PAGE_CARD}>
+            <Card className={DETAIL_FLAT_CARD}>
               <CardContent className="px-3 py-6 sm:px-6">
                 <div className="flex items-baseline justify-between gap-3 mb-3 px-3 sm:px-0">
                   <div className="font-semibold leading-none">Peso levantado por grupo</div>
@@ -925,7 +928,7 @@ export function WorkoutDetailsContent({
               </CardContent>
             </Card>
 
-            <Card className={PAGE_CARD}>
+            <Card className={DETAIL_FLAT_CARD}>
               <CardContent className="px-0 py-6">
                 <div className="px-6 pb-4">
                   <div className="flex items-baseline justify-between gap-3">
@@ -943,7 +946,7 @@ export function WorkoutDetailsContent({
                           return (
                             <div
                               key={`${g.supersetId}-${idx}`}
-                              className="overflow-hidden rounded-xl border-2 border-primary/40 bg-muted/50"
+                              className="overflow-hidden rounded-xl border-2 border-primary/40"
                             >
                               <div className="px-3 pt-2 pb-1">
                                 <span className="text-xs font-medium text-primary">Superserie</span>
@@ -962,7 +965,7 @@ export function WorkoutDetailsContent({
                         return (
                           <div
                             key={ex.id}
-                            className="rounded-xl border border-border/40 bg-muted/50"
+                            className="rounded-xl border border-border/40"
                           >
                             <ExerciseBlock ex={ex} topExerciseId={topExerciseId} rmByExerciseId={rmByExerciseId} />
                           </div>

@@ -287,6 +287,7 @@ export function WeekCalendar({
               <button
                 key={key}
                 type="button"
+                data-press-sink
                 onClick={handleClick}
                 className={cn(
                   "group relative aspect-square w-full p-1 cursor-pointer",

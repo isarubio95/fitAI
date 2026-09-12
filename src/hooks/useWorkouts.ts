@@ -126,46 +126,43 @@ export function useWorkoutsForDate(date: Date | undefined) {
   });
 }
 
+export async function fetchWorkoutById(id: string): Promise<ActividadWithDetails | null> {
+  const { data: actividad, error } = await supabase.from("actividad").select("*").eq("id", id).single();
+  if (error) throw error;
+
+  const { data: ejercicios, error: ejError } = await supabase
+    .from("ejercicio")
+    .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
+    .eq("actividad_id", id)
+    .order("created_at", { ascending: true });
+  if (ejError) throw ejError;
+
+  const ejerciciosJoined = (ejercicios ?? []) as EjercicioJoinRow[];
+  const ejercicioIds = ejerciciosJoined.map((e) => e.id);
+  let series: Serie[] = [];
+  if (ejercicioIds.length > 0) {
+    const { data, error: sError } = await supabase
+      .from("serie")
+      .select("*")
+      .in("ejercicio_id", ejercicioIds)
+      .order("created_at", { ascending: true })
+      .order("numero_serie", { ascending: true });
+    if (sError) throw sError;
+    series = data ?? [];
+  }
+
+  return {
+    ...actividad,
+    ejercicios: ejerciciosJoined.map((ej) => mapEjercicioWithSeries(ej, series)),
+  };
+}
+
 export function useWorkoutById(id: string | null) {
   const { user } = useAuth();
   return useQuery({
     queryKey: ["workout", id],
     enabled: !!user && !!id,
-    queryFn: async (): Promise<ActividadWithDetails | null> => {
-      if (!id) return null;
-      const { data: actividad, error } = await supabase
-        .from("actividad")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (error) throw error;
-
-      const { data: ejercicios, error: ejError } = await supabase
-        .from("ejercicio")
-        .select("*, tipo_ejercicio(*), usuario_ejercicio(*)")
-        .eq("actividad_id", id)
-        .order("created_at", { ascending: true });
-      if (ejError) throw ejError;
-
-      const ejerciciosJoined = (ejercicios ?? []) as EjercicioJoinRow[];
-      const ejercicioIds = ejerciciosJoined.map((e) => e.id);
-      let series: Serie[] = [];
-      if (ejercicioIds.length > 0) {
-        const { data, error: sError } = await supabase
-          .from("serie")
-          .select("*")
-          .in("ejercicio_id", ejercicioIds)
-          .order("created_at", { ascending: true })
-          .order("numero_serie", { ascending: true });
-        if (sError) throw sError;
-        series = data ?? [];
-      }
-
-      return {
-        ...actividad,
-        ejercicios: ejerciciosJoined.map((ej) => mapEjercicioWithSeries(ej, series)),
-      };
-    },
+    queryFn: () => fetchWorkoutById(id!),
   });
 }
 

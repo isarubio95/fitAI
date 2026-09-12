@@ -926,6 +926,7 @@ const Exercises = () => {
               return (
                 <Card
                   key={`${favSource}:${ex.id}`}
+                  data-pressable
                   className={cn(
                     "w-full max-w-none cursor-pointer overflow-hidden rounded-xl border bg-card shadow-none transition-colors hover:border-primary/50",
                     isOwn ? "border-primary/30" : "border-border/40",

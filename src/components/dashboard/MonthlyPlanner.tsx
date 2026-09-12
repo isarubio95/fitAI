@@ -278,6 +278,7 @@ export function MonthlyPlanner({
                   <button
                     key={i}
                     type="button"
+                    data-press-sink
                     onClick={handleClick}
                     className={cn(
                       "group relative aspect-square w-full p-1 cursor-pointer",

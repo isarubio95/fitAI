@@ -251,6 +251,7 @@ export function LyftaImportSettings({ resetToken }: Props) {
             <label
               key={opt.value}
               htmlFor={`lyfta-scope-${opt.value}`}
+              data-pressable
               className="flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-border/50 px-1.5 py-2"
             >
               <RadioGroupItem
