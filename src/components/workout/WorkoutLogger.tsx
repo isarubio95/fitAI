@@ -71,6 +71,7 @@ import { mergeCalendarDatePreservingTime } from "@/lib/mergeCalendarDate";
 import { mapWorkoutExerciseToFormData } from "@/lib/persistCatalogExerciseToWorkout";
 import type { SelectedGimnasio } from "@/types/gimnasio";
 import { getDefaultWorkoutTitle } from "@/lib/defaultWorkoutTitle";
+import { isCommunityPublishDefaultEnabled } from "@/lib/communityPublishPreferences";
 import { completePlannedRoutine } from "@/hooks/useWorkoutPlan";
 import { startOfMonth } from "date-fns";
 import {
@@ -221,6 +222,7 @@ export function WorkoutLogger() {
   const hydratedWorkoutIdRef = useRef<string | null>(null);
   const persistInflightRef = useRef(new WeakSet<ExerciseFormData>());
   const linkedPlannedIdRef = useRef<string | undefined>(undefined);
+  const communityPublishSeededRef = useRef(false);
 
   useEffect(() => {
     if (open && plannedId) linkedPlannedIdRef.current = plannedId;
@@ -240,6 +242,7 @@ export function WorkoutLogger() {
     const previousId = hydratedWorkoutIdRef.current;
     if (!previousId || previousId === effectiveWorkoutId) return;
     hydratedWorkoutIdRef.current = null;
+    communityPublishSeededRef.current = false;
     setTitulo("");
     setExercises([]);
     setSessionClockStartedAt(null);
@@ -365,6 +368,7 @@ export function WorkoutLogger() {
   useLayoutEffect(() => {
     if (!open || workoutId || activeWorkoutId) return;
     hydratedWorkoutIdRef.current = null;
+    communityPublishSeededRef.current = false;
     if (templateExercises && templateTitle) {
       setTitulo(templateTitle);
       setExercises(templateExercises);
@@ -1581,6 +1585,10 @@ export function WorkoutLogger() {
     }
     restTimer.stop();
     setPausedAt((prev) => prev ?? Date.now());
+    if (!communityPublishSeededRef.current) {
+      setEsPublica(isCommunityPublishDefaultEnabled());
+      communityPublishSeededRef.current = true;
+    }
     setLiveStep("summary");
   };
 

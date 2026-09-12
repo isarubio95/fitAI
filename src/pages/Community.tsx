@@ -31,8 +31,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, PAGE_STACK_TOP } from "@/lib/pageStyles";
+import { APP_PAGE_SHELL, APP_PAGE_STACK } from "@/lib/pageStyles";
+import { CommunitySearchCardSkeleton, CommunityUserRowSkeleton, FeedCardSkeleton } from "@/components/layout/skeletons/blocks";
 import { communityFeedEmptyMessage } from "@/lib/communityFeedVisibility";
 import { cn } from "@/lib/utils";
 
@@ -171,7 +171,7 @@ export default function Community() {
     searching ? (
       <div className="flex flex-col gap-2">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full rounded-xl bg-card" />
+          <CommunityUserRowSkeleton key={i} />
         ))}
       </div>
     ) : searchResults.length === 0 ? (
@@ -235,18 +235,15 @@ export default function Community() {
 
   return (
     <>
-      <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8">
+      <div className={APP_PAGE_SHELL}>
         <section
           className={cn(
-            "flex w-full flex-col bg-background md:bg-transparent",
-            PAGE_CARD_STACK_GAP,
-            PAGE_STACK_INSET,
-            PAGE_STACK_TOP,
+            APP_PAGE_STACK,
             showSearchPanel && "flex-1",
           )}
         >
           {profileLoading && (
-            <Skeleton className="h-52 w-full rounded-2xl bg-card md:rounded-3xl" />
+            <CommunitySearchCardSkeleton />
           )}
 
           {profileError && (
@@ -298,7 +295,12 @@ export default function Community() {
 
               {!showSearchPanel && (loadingFeed || loadingFocused) && displayFeed.length === 0 &&
                 Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-28 w-full rounded-2xl bg-card md:rounded-3xl" />
+                  <FeedCardSkeleton
+                    key={i}
+                    variant={i % 2 === 0 ? "gym" : "cardio"}
+                    showAuthor
+                    showSocial
+                  />
                 ))}
 
               {!showSearchPanel && displayFeed.map((item) => renderFeedCard(item))}

@@ -2,7 +2,7 @@ import { useId } from "react";
 import { useProfileStats, xpProgress } from "@/hooks/useGamification";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
+import { GamificationCardSkeleton } from "@/components/layout/skeletons/blocks";
 import { Flame, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD } from "@/lib/pageStyles";
@@ -64,13 +64,7 @@ export function GamificationWidget({ userId, contentClassName, className }: Gami
   const cardClass = cn(PAGE_CARD, className);
 
   if (isLoading) {
-    return (
-      <Card className={cardClass}>
-        <CardContent className={bodyClass}>
-          <Skeleton className="h-16 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <GamificationCardSkeleton className={className} contentClassName={contentClassName} />;
   }
 
   if (!stats) return null;

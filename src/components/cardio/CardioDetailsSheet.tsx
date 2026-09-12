@@ -126,9 +126,21 @@ export function CardioDetailsSheet({ open, onOpenChange, sessionId }: CardioDeta
 
         <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden bg-background", PAGE_STACK_TOP)}>
           {isLoading || !session || !metrics ? (
-            <div className="space-y-3 px-6 pb-4">
-              <Skeleton className="h-48 w-full rounded-xl" />
-              <Skeleton className="h-20 w-full rounded-xl" />
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+              <div className="grid shrink-0 grid-cols-2 gap-2 px-4">
+                {["Tiempo", "Distancia", "Desnivel", "Ritmo"].map((label) => (
+                  <div
+                    key={label}
+                    className="min-w-0 rounded-xl border border-border/40 px-3 py-3 text-center"
+                  >
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {label}
+                    </p>
+                    <Skeleton className="mx-auto mt-1 h-6 w-16" />
+                  </div>
+                ))}
+              </div>
+              <div className="map-route-skeleton relative h-64 w-full shrink-0" aria-hidden />
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">

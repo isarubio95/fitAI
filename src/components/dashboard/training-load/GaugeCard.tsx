@@ -35,7 +35,7 @@ export function GaugeCard({
         aria-label={ariaLabel}
         className="touch-styled block w-full pb-4 pt-5 text-left"
       >
-        <div className="flex items-center justify-between gap-1 px-5">
+        <div className="flex items-center justify-between gap-1 px-5 pb-1">
           <CardTitle asChild className="min-w-0 truncate text-base font-bold">
             <h2>{title}</h2>
           </CardTitle>

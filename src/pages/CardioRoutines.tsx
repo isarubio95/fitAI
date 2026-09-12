@@ -7,8 +7,8 @@ import { CardioRoutineForm } from "@/components/cardio/CardioRoutineForm";
 import { useCardioRoutines, useDeleteCardioRoutine } from "@/hooks/useCardioRoutines";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useToast } from "@/hooks/use-toast";
-import { PAGE_CARD_STACK_GAP } from "@/lib/pageStyles";
-import { cn } from "@/lib/utils";
+import { CARDIO_ROUTINES_PAGE } from "@/lib/pageStyles";
+import { CardioRoutineCardsSkeleton } from "@/components/layout/skeletons/pages";
 
 export default function CardioRoutines() {
   const { data, isLoading } = useCardioRoutines();
@@ -22,7 +22,7 @@ export default function CardioRoutines() {
   const editing = useMemo(() => data?.find((r) => r.id === editId) ?? null, [data, editId]);
 
   return (
-    <div className={cn("flex w-full min-w-0 flex-col px-4 md:mx-auto md:max-w-2xl md:px-8 md:pt-6", PAGE_CARD_STACK_GAP)}>
+    <div className={CARDIO_ROUTINES_PAGE}>
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Rutinas de Cardio</h2>
         <Button onClick={() => { setEditId(null); setFormOpen(true); }}>
@@ -30,7 +30,7 @@ export default function CardioRoutines() {
         </Button>
       </div>
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Cargando...</p>
+        <CardioRoutineCardsSkeleton />
       ) : !data?.length ? (
         <p className="text-sm text-muted-foreground">Aún no tienes Rutinas de Cardio.</p>
       ) : (

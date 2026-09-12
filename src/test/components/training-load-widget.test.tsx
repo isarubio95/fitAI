@@ -116,16 +116,17 @@ describe("TrainingLoadWidget", () => {
     });
 
     render(<TrainingLoadWidget />);
-    expect(screen.getByText("Tu forma hoy")).toBeInTheDocument();
-    expect(screen.getByText("Tu recuperación")).toBeInTheDocument();
+    expect(screen.getByText("Forma")).toBeInTheDocument();
+    expect(screen.getByText("Recuperación")).toBeInTheDocument();
     expect(screen.getAllByText("−8").length).toBeGreaterThan(0);
-    expect(screen.getByText("Buena ventana para una sesión exigente.")).toBeInTheDocument();
-    expect(screen.getByText("Ningún grupo limita el entrenamiento de hoy.")).toBeInTheDocument();
-    // Los extremos del anillo no llevan etiqueta: el estado va en el centro.
+    expect(screen.getByText("Óptimo")).toBeInTheDocument();
+    expect(screen.getAllByText("Listo")).toHaveLength(1);
+    expect(screen.queryByText("Buena ventana para una sesión exigente.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ningún grupo limita el entrenamiento de hoy.")).not.toBeInTheDocument();
+    // Los extremos del anillo no llevan etiqueta: el estado va en el chip central.
     expect(screen.queryByText("Agotado")).not.toBeInTheDocument();
     expect(screen.queryByText("Inactivo")).not.toBeInTheDocument();
     expect(screen.queryByText("Cargado")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Listo")).toHaveLength(1);
     // El histórico y las barras se movieron al detalle de forma.
     expect(screen.queryByTestId("form-surplus")).not.toBeInTheDocument();
     expect(screen.queryByTestId("chart-scrub-layer")).not.toBeInTheDocument();
@@ -237,7 +238,9 @@ describe("TrainingLoadWidget", () => {
 
     render(<TrainingLoadWidget />);
     expect(screen.getByText("3d")).toBeInTheDocument();
-    expect(screen.getByText("Pecho necesita un par de días más.")).toBeInTheDocument();
+    expect(screen.getByText("Recuperando")).toBeInTheDocument();
+    expect(screen.getByText("Pecho")).toBeInTheDocument();
+    expect(screen.queryByText("Pecho necesita un par de días más.")).not.toBeInTheDocument();
     expect(screen.getByLabelText(/Recuperación: 3d, Recuperando, Pecho/)).toBeInTheDocument();
   });
 });

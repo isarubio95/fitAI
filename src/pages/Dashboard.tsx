@@ -24,7 +24,7 @@ import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears, addMo
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD, PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, PAGE_STACK_TOP } from "@/lib/pageStyles";
+import { APP_PAGE_SHELL, APP_PAGE_STACK, PAGE_CARD } from "@/lib/pageStyles";
 import { usePlannedRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import {
   Dialog,
@@ -596,7 +596,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:max-w-2xl md:mx-auto md:bg-transparent md:px-8">
+    <div className={APP_PAGE_SHELL}>
       {headerActionsSlot &&
         createPortal(
           <Button
@@ -626,7 +626,7 @@ const Dashboard = () => {
           items={widgetOrder}
           strategy={verticalListSortingStrategy}
         >
-          <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, PAGE_STACK_TOP)}>
+          <div className={APP_PAGE_STACK}>
             {widgetOrder.map((id) => (
               <SortableWidget key={id} id={id} isDragMode={isDragMode}>
                 {renderWidget(id)}

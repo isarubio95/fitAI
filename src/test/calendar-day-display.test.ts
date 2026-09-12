@@ -14,16 +14,16 @@ const base = {
 };
 
 describe("getCalendarDayCircleClasses", () => {
-  it("deja el día vacío sin relleno ni borde", () => {
+  it("pinta el día vacío como baldosa neutra", () => {
     const styles = getCalendarDayCircleClasses(base);
-    expect(styles.circleFill).toBe("bg-transparent");
-    expect(styles.circleBorder).toBe("border-transparent");
+    expect(styles.circleFill).toContain("bg-muted");
+    expect(styles.circleBorder).toBe("border-border/70");
     expect(styles.hasMark).toBe(false);
   });
 
-  it("marca hoy vacío con borde piloto, sin baldosa", () => {
+  it("marca hoy vacío con borde piloto y baldosa", () => {
     const styles = getCalendarDayCircleClasses({ ...base, today: true });
-    expect(styles.circleFill).toBe("bg-transparent");
+    expect(styles.circleFill).toContain("bg-muted");
     expect(styles.circleBorder).toBe("border-primary");
     expect(styles.hasMark).toBe(false);
   });

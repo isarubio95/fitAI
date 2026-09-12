@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
+import { MuscleRankingPairSkeleton } from "@/components/layout/skeletons/blocks";
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle,
   drawerSafeAreaBottom,
@@ -24,12 +24,7 @@ export function MuscleRankingWidget({
   const [detailGroup, setDetailGroup] = useState<MainMuscleGroup | null>(null);
 
   if (isLoading) {
-    return (
-      <div className={cn("grid w-full grid-cols-1 bg-background sm:grid-cols-2", PAGE_CARD_STACK_GAP)}>
-        <Skeleton className="h-56 w-full rounded-none border-0 bg-card md:rounded-3xl" />
-        <Skeleton className="h-56 w-full rounded-none border-0 bg-card md:rounded-3xl" />
-      </div>
-    );
+    return <MuscleRankingPairSkeleton clockLabel={clockLabel} />;
   }
 
   if (!data) return null;

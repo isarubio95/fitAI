@@ -19,6 +19,7 @@ import { durationPartsFromSeconds, secondsFromDurationParts, toDatetimeLocalValu
 import { firstNested } from "@/lib/firstNested";
 import { cn } from "@/lib/utils";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
+import { isCommunityPublishDefaultEnabled } from "@/lib/communityPublishPreferences";
 import { PostWorkoutModal } from "@/components/workout/PostWorkoutModal";
 import type { XPBreakdown } from "@/hooks/useGamification";
 import type { LogroRow } from "@/hooks/useLogros";
@@ -100,7 +101,7 @@ export function CardioLogger() {
   const [durMinutos, setDurMinutos] = useState("");
   const [durSegundos, setDurSegundos] = useState("");
   const [comentarios, setComentarios] = useState("");
-  const [esPublica, setEsPublica] = useState(false);
+  const [esPublica, setEsPublica] = useState(isCommunityPublishDefaultEnabled);
   const [rpe, setRpe] = useState<number | null>(null);
   const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
   const [postWorkoutLogros, setPostWorkoutLogros] = useState<LogroRow[]>([]);
@@ -309,7 +310,7 @@ export function CardioLogger() {
     setDurMinutos("");
     setDurSegundos("");
     setComentarios("");
-    setEsPublica(false);
+    setEsPublica(isCommunityPublishDefaultEnabled());
     setRpe(null);
     setRunningRitmo("");
     setRunningCadencia("");

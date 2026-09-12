@@ -8,8 +8,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSectionTabUnderlineAnimation } from "@/hooks/useSectionTabUnderlineAnimation";
 import { Suspense, lazy } from "react";
-import { RouteFallback } from "@/components/layout/RouteFallback";
 import { LibraryExercisesSkeleton } from "@/components/layout/LibraryExercisesSkeleton";
+import { RoutinesSkeleton } from "@/components/layout/skeletons/pages";
 
 // Estáticos, Library arrastraba las dos subpantallas (Exercises son 1100 líneas
 // más el catálogo) aunque el usuario solo abriera una.
@@ -46,7 +46,7 @@ export default function Library() {
       </div>
 
       <TabsContent value="rutinas" className={SECTION_TAB_PANEL}>
-        <Suspense fallback={<RouteFallback />}>
+        <Suspense fallback={<RoutinesSkeleton />}>
           <Routines />
         </Suspense>
       </TabsContent>

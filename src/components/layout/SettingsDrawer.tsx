@@ -3,6 +3,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { useProgressiveOverloadPreferences } from "@/hooks/useProgressiveOverloadPreferences";
+import { useCommunityPublishPreferences } from "@/hooks/useCommunityPublishPreferences";
 import { ColorThemeSelector } from "@/components/ColorThemeSelector";
 import { PhysiologySettings } from "@/components/layout/PhysiologySettings";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { Bell, Dumbbell, Settings, SunMoon, X } from "lucide-react";
+import { Bell, Dumbbell, Settings, SunMoon, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { PAGE_CARD_STACK_GAP, PAGE_STACK_TOP } from "@/lib/pageStyles";
@@ -52,6 +53,8 @@ export function SettingsDrawer() {
   } = useNotificationPreferences();
   const { enabled: overloadSuggestionsEnabled, setEnabled: setOverloadSuggestionsEnabled } =
     useProgressiveOverloadPreferences();
+  const { enabled: publishWorkoutsEnabled, setEnabled: setPublishWorkoutsEnabled } =
+    useCommunityPublishPreferences();
   const [open, setOpen] = useState(false);
   const showLiveToggle = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 
@@ -169,6 +172,27 @@ export function SettingsDrawer() {
                 checked={overloadSuggestionsEnabled}
                 onCheckedChange={setOverloadSuggestionsEnabled}
                 aria-label="Mostrar sugerencias de progresión"
+              />
+            </div>
+          </div>
+
+          <div className={settingsSectionCardClass}>
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              Comunidad
+            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 space-y-1">
+                <p className="text-sm font-medium leading-none">Publicar entrenamientos</p>
+                <p className="text-xs leading-snug text-muted-foreground">
+                  Valor inicial del interruptor al terminar un entreno. Puedes
+                  cambiarlo en ese momento.
+                </p>
+              </div>
+              <Switch
+                checked={publishWorkoutsEnabled}
+                onCheckedChange={setPublishWorkoutsEnabled}
+                aria-label="Publicar entrenamientos por defecto"
               />
             </div>
           </div>

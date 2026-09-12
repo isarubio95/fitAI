@@ -68,7 +68,7 @@ export function getCalendarDayCircleClasses({
       ? "bg-linear-to-br from-chart-fitness/70 via-chart-fitness/45 to-chart-fresh/60"
       : showScheduled
         ? "bg-linear-to-br from-chart-fatigue/55 via-chart-fatigue/35 to-chart-fatigue/50"
-        : "bg-transparent";
+        : "bg-muted/55 dark:bg-muted/40";
 
   const circleText = showTrained || showCardio
     ? "text-primary-foreground"
@@ -86,7 +86,7 @@ export function getCalendarDayCircleClasses({
       ? "border-chart-fitness/18"
       : showScheduled
         ? "border-chart-fatigue/20"
-        : "border-transparent";
+        : "border-border/70";
 
   return {
     circleFill,
@@ -194,7 +194,7 @@ export function CalendarDayCell({
         interactive &&
           (styles.hasMark
             ? "group-hover:scale-[1.03]"
-            : "group-hover:bg-secondary/40"),
+            : "group-hover:bg-muted dark:group-hover:bg-muted/55"),
       )}
     >
       <CalendarDayCircleContent day={day} display={display} today={today} />

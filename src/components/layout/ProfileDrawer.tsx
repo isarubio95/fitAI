@@ -39,6 +39,7 @@ import {
   type WorkoutFeedCardSocial,
 } from "@/components/dashboard/WorkoutFeedCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FeedCardSkeleton } from "@/components/layout/skeletons/blocks";
 import { cn } from "@/lib/utils";
 import { PAGE_CARD_STACK_GAP, PAGE_STACK_TOP } from "@/lib/pageStyles";
 import { buildAuthAvatarCandidates } from "@/hooks/useUserAvatar";
@@ -541,7 +542,12 @@ function ProfileDrawerSheet() {
             {loadingWorkoutHistory ? (
               <div className={cn("surface-region-page flex flex-col bg-background px-3", PAGE_CARD_STACK_GAP, PAGE_STACK_TOP)}>
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-28 w-full rounded-2xl bg-card md:rounded-3xl" />
+                  <FeedCardSkeleton
+                    key={i}
+                    variant={i % 2 === 0 ? "gym" : "cardio"}
+                    showAuthor
+                    showSocial
+                  />
                 ))}
               </div>
             ) : lastWorkouts.length === 0 ? (

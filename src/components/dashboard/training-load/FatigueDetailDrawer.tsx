@@ -207,7 +207,7 @@ export function FatigueDetailDrawer({
       description="Fatiga local por grupo en los últimos 28 días"
     >
       <DetailSection>
-        <RecoveryHero snapshot={snapshot} />
+        <RecoveryHero snapshot={snapshot} showTitle={false} />
         <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border/40 pt-4">
           {[
             { label: "Cargados", value: counts.cargado, color: RECOVERY_ZONES[3].color },

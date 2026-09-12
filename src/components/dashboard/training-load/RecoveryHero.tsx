@@ -8,17 +8,19 @@ import { getRecoveryAdvice } from "./recoveryZones";
 export function RecoveryHero({
   snapshot,
   showTitle = true,
+  showAdvice = true,
 }: {
   snapshot: MuscleRecoverySnapshot;
   showTitle?: boolean;
+  showAdvice?: boolean;
 }) {
   const advice = getRecoveryAdvice(snapshot.days, snapshot.group);
 
   return (
     <div className="text-center">
       {showTitle ? <p className="text-[15px] text-muted-foreground">Tu recuperación</p> : null}
-      <RecoveryGauge days={snapshot.days} group={snapshot.group} className="mt-1" />
-      <p className="mt-2 text-[15px] text-muted-foreground">{advice}</p>
+      <RecoveryGauge days={snapshot.days} group={snapshot.group} className={showTitle ? "mt-1" : undefined} />
+      {showAdvice ? <p className="mt-2 text-[15px] text-muted-foreground">{advice}</p> : null}
     </div>
   );
 }

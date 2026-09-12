@@ -18,10 +18,14 @@ import {
 } from "@dnd-kit/sortable";
 import { useRoutines, useDeleteRoutine, useUpdateRoutineOrder, useDuplicateRoutine, useRoutineLastTrainedByName } from "@/hooks/useRoutines";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
+import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, ROUTINES_PAGE } from "@/lib/pageStyles";
+import {
+  RoutinesCardListSkeleton,
+  RoutinesFabSkeleton,
+  RoutinesToolbarSkeleton,
+} from "@/components/layout/skeletons/blocks";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus,
   Dumbbell,
@@ -438,13 +442,7 @@ const Routines = () => {
   const fabFullyHidden = routineExpanded && fabPhase === null;
 
   return (
-    <div
-      className={cn(
-        "flex w-full min-w-0 max-w-2xl flex-1 flex-col overflow-x-hidden bg-background px-0 pb-6 mx-auto pt-2.5 md:px-8 md:pt-6",
-        PAGE_CARD_STACK_GAP,
-        "max-md:-mb-24 max-md:pb-[calc(var(--app-bottom-nav-inset,5.5rem)+3.5rem)] md:pb-20",
-      )}
-    >
+    <div className={ROUTINES_PAGE}>
       {carry ? (
         <div className={PAGE_STACK_INSET}>
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-card px-4 py-3">
@@ -458,7 +456,9 @@ const Routines = () => {
         </div>
       ) : null}
 
-      {!isLoading && routineCount > 0 ? (
+      {isLoading ? (
+        <RoutinesToolbarSkeleton />
+      ) : routineCount > 0 ? (
         <div className={cn("flex items-center justify-between gap-3", PAGE_STACK_INSET)}>
           <p className="text-sm text-muted-foreground">
             {routineCount} {routineCount === 1 ? "rutina" : "rutinas"}
@@ -484,7 +484,9 @@ const Routines = () => {
         </div>
       ) : null}
 
-      {routineCount > 0 ? (
+      {isLoading ? (
+        <RoutinesFabSkeleton />
+      ) : routineCount > 0 ? (
         <div
           data-routine-fab={fabPhase ?? "hidden"}
           aria-hidden={fabFullyHidden}
@@ -518,11 +520,7 @@ const Routines = () => {
       ) : null}
 
       {isLoading ? (
-        <div className={cn("flex w-full flex-col bg-background", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-xl border border-border/40 bg-card" />
-          ))}
-        </div>
+        <RoutinesCardListSkeleton />
       ) : !routines?.length ? (
         <div className={cn("space-y-3 py-12 text-center", PAGE_STACK_INSET)}>
           <Dumbbell className="h-12 w-12 mx-auto text-muted-foreground/50" />

@@ -15,7 +15,11 @@ import {
   YOU_PROGRESS_STACK,
 } from "@/lib/pageStyles";
 import { cn } from "@/lib/utils";
-import { DEFAULT_YOU_PROGRESS_PERIOD, YOU_PROGRESS_PERIODS } from "@/lib/youProgressPeriod";
+import { DEFAULT_YOU_PROGRESS_PERIOD, YOU_PROGRESS_PERIODS, youProgressPeriodMeta } from "@/lib/youProgressPeriod";
+import {
+  ExerciseProgressCardSkeleton,
+  MuscleRankingPairSkeleton,
+} from "@/components/layout/skeletons/blocks";
 
 /**
  * Silueta de Progreso: pills, veredicto y cards de gráfico, para que el
@@ -44,7 +48,7 @@ function PeriodPillsSkeleton() {
 function ChartSummarySkeleton({ stats }: { stats: readonly string[] }) {
   return (
     <div className="mb-3.5 min-h-13">
-      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-3 w-28" />
       <div className="mt-1 flex flex-wrap gap-x-7 gap-y-1">
         {stats.map((label) => (
           <div key={label} className="min-w-0">
@@ -73,10 +77,7 @@ function ChartCardSkeleton({
       </CardHeader>
       <CardContent className="px-5 pt-0">
         <ChartSummarySkeleton stats={stats} />
-        <Skeleton
-          className="w-full rounded-md"
-          style={{ height: PROGRESS_CHART_HEIGHT }}
-        />
+        <Skeleton className="w-full rounded-md" style={{ height: PROGRESS_CHART_HEIGHT }} />
       </CardContent>
     </Card>
   );
@@ -105,6 +106,8 @@ export function YouProgressSkeleton() {
       <span className="sr-only">Cargando…</span>
       <div className={YOU_PROGRESS_STACK}>
         <YouProgressAboveFoldSkeleton />
+        <ExerciseProgressCardSkeleton flushHeader clockLabel="últimos 12 meses" />
+        <MuscleRankingPairSkeleton clockLabel={youProgressPeriodMeta(DEFAULT_YOU_PROGRESS_PERIOD).clockLabel} />
       </div>
     </div>
   );

@@ -5,6 +5,10 @@ import {
   PROGRESSIVE_OVERLOAD_SUGGESTIONS_KEY,
   isProgressiveOverloadSuggestionsEnabled,
 } from "@/lib/progressiveOverloadPreferences";
+import {
+  COMMUNITY_PUBLISH_DEFAULT_KEY,
+  isCommunityPublishDefaultEnabled,
+} from "@/lib/communityPublishPreferences";
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ signOut: vi.fn() }),
@@ -37,12 +41,13 @@ vi.mock("@capacitor/core", () => ({
 
 import { SettingsDrawer } from "@/components/layout/SettingsDrawer";
 
-describe("SettingsDrawer sugerencias de progresión", () => {
+describe("SettingsDrawer preferencias", () => {
   afterEach(() => {
     localStorage.removeItem(PROGRESSIVE_OVERLOAD_SUGGESTIONS_KEY);
+    localStorage.removeItem(COMMUNITY_PUBLISH_DEFAULT_KEY);
   });
 
-  it("expone el toggle y persiste la preferencia", async () => {
+  it("expone el toggle de progresión y persiste la preferencia", async () => {
     render(
       <MemoryRouter>
         <SettingsDrawer />
@@ -56,5 +61,21 @@ describe("SettingsDrawer sugerencias de progresión", () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("data-state", "unchecked");
     expect(isProgressiveOverloadSuggestionsEnabled()).toBe(false);
+  });
+
+  it("expone el toggle de publicar entrenamientos activo por defecto", async () => {
+    render(
+      <MemoryRouter>
+        <SettingsDrawer />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ajustes" }));
+    const toggle = await screen.findByRole("switch", { name: "Publicar entrenamientos por defecto" });
+    expect(toggle).toHaveAttribute("data-state", "checked");
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("data-state", "unchecked");
+    expect(isCommunityPublishDefaultEnabled()).toBe(false);
   });
 });

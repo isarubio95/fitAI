@@ -19,11 +19,11 @@ import { useCardioSessionLikes } from "@/hooks/useCardioSessionLikes";
 import { useCardioSessionCommentCounts } from "@/hooks/useCardioSessionComments";
 import { useMountAfterPaint } from "@/hooks/useMountAfterPaint";
 import { usePagedWindow } from "@/hooks/usePagedWindow";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET } from "@/lib/pageStyles";
+import { PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, YOU_ACTIVITIES_PAGE } from "@/lib/pageStyles";
 import { filterPillActive, filterPillBase, filterPillInactive } from "@/lib/filter-pill-styles";
 import { pinFocusedYouActivity } from "@/lib/youActivityHref";
+import { FeedListSkeleton } from "@/components/layout/skeletons/blocks";
 
 type ActivityFilter = "all" | "gym" | "cardio";
 
@@ -33,33 +33,8 @@ const FILTERS: { id: ActivityFilter; label: string }[] = [
   { id: "cardio", label: "Cardio" },
 ];
 
-const PAGE_WRAP_CLASS =
-  "flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3";
-
 function ActivitiesFeedSkeleton() {
-  return (
-    <div
-      className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP)}
-      aria-busy="true"
-      aria-label="Cargando actividades"
-    >
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div
-          key={i}
-          className="surface-card space-y-4 rounded-2xl bg-card px-5 pb-4 pt-6 md:rounded-3xl"
-        >
-          <div className="flex items-start gap-3">
-            <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
-            <div className="min-w-0 flex-1 space-y-2 pt-1">
-              <Skeleton className="h-3.5 w-28" />
-              <Skeleton className="h-3 w-20" />
-            </div>
-          </div>
-          <Skeleton className="h-24 w-full rounded-xl" />
-        </div>
-      ))}
-    </div>
-  );
+  return <FeedListSkeleton showAuthor showSocial />;
 }
 
 function YouActivitiesFrame({
@@ -72,7 +47,7 @@ function YouActivitiesFrame({
   children: ReactNode;
 }) {
   return (
-    <div className={PAGE_WRAP_CLASS}>
+    <div className={YOU_ACTIVITIES_PAGE}>
       <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET)}>
         <div className="flex gap-2 overflow-x-auto px-4 py-2 md:px-0">
           {FILTERS.map((opt) => (

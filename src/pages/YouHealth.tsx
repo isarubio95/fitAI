@@ -30,7 +30,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Scale, TrendingUp, TrendingDown, Plus, Flame, Heart, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD, PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, PAGE_STACK_TOP } from "@/lib/pageStyles";
+import { APP_PAGE_STACK, PAGE_CARD, YOU_HEALTH_PAGE } from "@/lib/pageStyles";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   healthFabBottomClass,
@@ -299,12 +299,9 @@ const YouHealth = () => {
 
   return (
     <div
-      className={cn(
-        "flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8",
-        healthPageBottomPad(fabOffset),
-      )}
+      className={cn(YOU_HEALTH_PAGE, healthPageBottomPad(fabOffset))}
     >
-      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_CARD_STACK_GAP, PAGE_STACK_INSET, PAGE_STACK_TOP)}>
+      <div className={APP_PAGE_STACK}>
         {showFab && (
           <Button
             type="button"
@@ -371,10 +368,7 @@ const YouHealth = () => {
                           <p className="mt-0.5 text-xs text-muted-foreground">{card.hint}</p>
                         )}
                       </div>
-                      {isLoading ? (
-                        <Skeleton className="h-5 w-12 rounded-full" />
-                      ) : (
-                        card.delta != null && (
+                      {!isLoading && card.delta != null && (
                           <Badge variant="secondary" className={cn("gap-0.5 text-xs", healthDeltaClass(tone))}>
                             {card.delta <= 0 ? (
                               <TrendingDown className="h-3 w-3" />
@@ -383,7 +377,6 @@ const YouHealth = () => {
                             )}
                             {formatHealthDelta(card.delta, card.deltaLabel ?? null)}
                           </Badge>
-                        )
                       )}
                     </div>
                   </button>
@@ -406,7 +399,7 @@ const YouHealth = () => {
         ) : isLoading ? (
           <Card className={cardClass} aria-busy="true" aria-label="Cargando gráfico">
             <CardContent className="px-5 py-8">
-              <Skeleton className="mb-3 h-4 w-40" />
+              <h2 className="mb-3 text-sm font-semibold">{HEALTH_CHART_TITLE.peso}</h2>
               <Skeleton className="aspect-2/1 w-full rounded-xl" />
             </CardContent>
           </Card>

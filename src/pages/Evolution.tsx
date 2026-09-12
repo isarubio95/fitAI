@@ -9,8 +9,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSectionTabUnderlineAnimation } from "@/hooks/useSectionTabUnderlineAnimation";
 import { YOU_TABS, YOU_TAB_LABELS, normalizeYouTab, youTabNeedsRedirect } from "@/lib/youPageTabs";
-import { RouteFallback } from "@/components/layout/RouteFallback";
 import { YouProgressSkeleton } from "@/components/layout/YouProgressSkeleton";
+import { YouActivitiesSkeleton, YouHealthSkeleton } from "@/components/layout/skeletons/pages";
 
 // Estáticos, Evolution arrastraba las tres subpantallas (con recharts) aunque
 // el usuario solo abriera una.
@@ -60,13 +60,13 @@ export default function EvolutionPage() {
       </TabsContent>
 
       <TabsContent value="health" className={SECTION_TAB_PANEL}>
-        <Suspense fallback={<RouteFallback />}>
+        <Suspense fallback={<YouHealthSkeleton />}>
           <YouHealth />
         </Suspense>
       </TabsContent>
 
       <TabsContent value="activities" className={SECTION_TAB_PANEL}>
-        <Suspense fallback={<RouteFallback />}>
+        <Suspense fallback={<YouActivitiesSkeleton />}>
           <YouActivities />
         </Suspense>
       </TabsContent>

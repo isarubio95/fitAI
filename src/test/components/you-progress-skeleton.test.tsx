@@ -13,6 +13,9 @@ describe("YouProgressSkeleton", () => {
     expect(screen.getByText("Gym")).toBeInTheDocument();
     expect(screen.getByText("Cardio")).toBeInTheDocument();
     expect(screen.getByText("Sesiones")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Fuerza máxima" })).toBeInTheDocument();
+    expect(screen.getByText("Más entrenados")).toBeInTheDocument();
+    expect(screen.getByText("Menos entrenados")).toBeInTheDocument();
     expect(screen.queryByText("Series")).not.toBeInTheDocument();
   });
 });

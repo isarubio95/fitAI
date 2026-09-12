@@ -1,4 +1,4 @@
-import { formatRecoveryDays, getRecoveryAdvice, getRecoveryZone, RECOVERY_ZONES } from "./recoveryZones";
+import { formatRecoveryDays, getRecoveryZone, RECOVERY_ZONES } from "./recoveryZones";
 import { ZoneGauge } from "./ZoneGauge";
 
 export function RecoveryGauge({
@@ -22,6 +22,7 @@ export function RecoveryGauge({
       valueLabel={valueLabel}
       zoneLabel={zone.label}
       zoneColor={zone.color}
+      metaLabel={group}
       ariaLabel={`Recuperación: ${valueLabel}, ${zone.label}${groupHint}`}
     />
   );

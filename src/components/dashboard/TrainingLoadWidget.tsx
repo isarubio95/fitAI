@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PAGE_CARD } from "@/lib/pageStyles";
+import { GaugeCardSkeleton, TrainingLoadPairSkeleton } from "@/components/layout/skeletons/blocks";
 import { useMuscleFatigue } from "@/hooks/useMuscleFatigue";
 import { useTrainingLoad, type TrainingLoadData } from "@/hooks/useTrainingLoad";
 import { pickMuscleRecoveryBottleneck } from "@/lib/trainingLoad";
@@ -10,7 +8,6 @@ import { RecoveryHero } from "@/components/dashboard/training-load/RecoveryHero"
 import { GaugeCard } from "@/components/dashboard/training-load/GaugeCard";
 import { FormDetailDrawer } from "@/components/dashboard/training-load/FormDetailDrawer";
 import { FatigueDetailDrawer } from "@/components/dashboard/training-load/FatigueDetailDrawer";
-import { ZONE_GAUGE_ASPECT_RATIO } from "@/components/dashboard/training-load/ZoneGauge";
 
 const TRAINING_LOAD_DATA_STORAGE_KEY = "gym-log.training-load.data.v4";
 const EMPTY_MUSCLE_MAP: Record<string, number> = {};
@@ -39,26 +36,6 @@ function saveCachedTrainingLoadData(payload: TrainingLoadData): void {
   } catch {
     // ignore
   }
-}
-
-function GaugeSkeleton() {
-  return (
-    <Card className={PAGE_CARD}>
-      <div className="space-y-2 pb-4 pt-5">
-        <div className="flex items-center justify-between gap-1 px-5">
-          <Skeleton className="h-5 w-28" />
-          <Skeleton className="h-4 w-4 shrink-0 rounded-sm" />
-        </div>
-        <div className="px-3">
-          <Skeleton
-            className="mx-auto w-full max-w-[200px] rounded-full"
-            style={{ aspectRatio: ZONE_GAUGE_ASPECT_RATIO }}
-          />
-          <Skeleton className="mx-auto mt-2 h-4 w-32" />
-        </div>
-      </div>
-    </Card>
-  );
 }
 
 type DetailKey = "form" | "recovery";
@@ -118,12 +95,7 @@ export function TrainingLoadWidget({ interactive = true }: { interactive?: boole
   const showRecoverySkeleton = (fatigueLoading && !fatigueData) || showDynamicSkeleton;
 
   if (isLoading && !resolvedData) {
-    return (
-      <div className="grid grid-cols-2 gap-3">
-        <GaugeSkeleton />
-        <GaugeSkeleton />
-      </div>
-    );
+    return <TrainingLoadPairSkeleton />;
   }
 
   if (!resolvedData?.points?.length) return null;
@@ -132,27 +104,27 @@ export function TrainingLoadWidget({ interactive = true }: { interactive?: boole
     <>
       <div className="grid grid-cols-2 gap-3">
         {showDynamicSkeleton ? (
-          <GaugeSkeleton />
+          <GaugeCardSkeleton title="Forma" />
         ) : (
           <GaugeCard
-            title="Tu forma hoy"
+            title="Forma"
             onOpen={() => openDetail("form")}
             ariaLabel="Ver el detalle de tu forma"
             interactive={interactive}
           >
-            <FormHero form={totals.form} showTitle={false} />
+            <FormHero form={totals.form} showTitle={false} showAdvice={false} />
           </GaugeCard>
         )}
         {showRecoverySkeleton ? (
-          <GaugeSkeleton />
+          <GaugeCardSkeleton title="Recuperación" />
         ) : (
           <GaugeCard
-            title="Tu recuperación"
+            title="Recuperación"
             onOpen={() => openDetail("recovery")}
             ariaLabel="Ver el detalle de tu fatiga muscular"
             interactive={interactive}
           >
-            <RecoveryHero snapshot={recovery} showTitle={false} />
+            <RecoveryHero snapshot={recovery} showTitle={false} showAdvice={false} />
           </GaugeCard>
         )}
       </div>

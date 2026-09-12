@@ -782,20 +782,84 @@ export function WorkoutDetailsContent({
     <div className={cn(containerClassName)}>
       {isLoading || !workout ? (
         isCompact ? (
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-2/3" />
-            <Skeleton className="h-3 w-1/3" />
-            <Skeleton className="mx-auto h-32 w-full max-w-[280px] rounded-xl" />
+          <div className="space-y-3 p-0">
+            <div className="min-w-0 space-y-1 px-5">
+              <Skeleton className="h-5 w-3/5" />
+              {hideDate ? null : <Skeleton className="h-3 w-24" />}
+            </div>
+            <div className="flex flex-wrap items-start gap-x-8 gap-y-2 px-5">
+              {["Tiempo", "Ejercicios", "Series"].map((label) => (
+                <div key={label} className="shrink-0 text-center">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                  <Skeleton className="mt-0.5 h-[18px] w-10" />
+                </div>
+              ))}
+            </div>
+            <div className="px-5">
+              <Skeleton className="mx-auto h-[253px] w-full max-w-[280px] rounded-xl" />
+            </div>
           </div>
         ) : (
-          <div className={cn("space-y-4", PAGE_STACK_TOP)}>
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-2/3" />
-              <Skeleton className="h-4 w-1/3" />
-            </div>
-            <Skeleton className="h-40 w-full rounded-none" />
-            <Skeleton className="h-56 w-full rounded-none" />
-            <Skeleton className="h-32 w-full rounded-none" />
+          <div className={cn("flex flex-col bg-background", PAGE_CARD_STACK_GAP, PAGE_STACK_TOP)}>
+            {hideHeader ? null : (
+              <div className="space-y-2 px-6">
+                <Skeleton className="h-6 w-2/3" />
+                <Skeleton className="h-4 w-1/3" />
+              </div>
+            )}
+            <Card className={DETAIL_FLAT_CARD}>
+              <CardContent className="px-6 py-6">
+                <div className="mb-4 flex items-baseline justify-between gap-3">
+                  <div className="font-semibold leading-none">Series por grupo muscular</div>
+                  <Skeleton className="h-3 w-16" />
+                </div>
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="space-y-1.5">
+                      <div className="flex items-end justify-between gap-2 text-xs">
+                        <span className="flex min-w-0 items-end gap-2">
+                          <Skeleton className="h-7 w-8 shrink-0" />
+                          <Skeleton className="h-3 w-20" />
+                        </span>
+                        <Skeleton className="h-3 w-14" />
+                      </div>
+                      <Progress value={0} className="h-2.5" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className={DETAIL_FLAT_CARD}>
+              <CardContent className="px-3 py-6 sm:px-6">
+                <div className="mb-3 flex items-baseline justify-between gap-3 px-3 sm:px-0">
+                  <div className="font-semibold leading-none">Peso levantado por grupo</div>
+                  <Skeleton className="h-3 w-16" />
+                </div>
+                <Skeleton
+                  className="w-full rounded-xl"
+                  style={{ aspectRatio: RADAR.aspectRatio }}
+                />
+              </CardContent>
+            </Card>
+            <Card className={DETAIL_FLAT_CARD}>
+              <CardContent className="px-0 py-6">
+                <div className="px-6 pb-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="font-semibold leading-none">Ejercicios realizados</div>
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 px-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="rounded-xl border border-border/40 px-4 py-3">
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="mt-3 h-3 w-full" />
+                      <Skeleton className="mt-2 h-3 w-4/5" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )
       ) : isCompact ? (

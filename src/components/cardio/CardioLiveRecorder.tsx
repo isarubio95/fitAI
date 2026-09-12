@@ -25,6 +25,7 @@ import { MAX_TRACK_POINTS_DB, prepareTrackPointsForStorage } from "@/lib/cardioT
 import { computeRouteProgress, resolveRecordedDistanceM } from "@/lib/cardioRouteProgress";
 import { cardioDisciplineUsesGpsMap } from "@/lib/cardioLiveMap";
 import { getDefaultCardioTitle } from "@/lib/defaultWorkoutTitle";
+import { isCommunityPublishDefaultEnabled } from "@/lib/communityPublishPreferences";
 import { PostWorkoutModal } from "@/components/workout/PostWorkoutModal";
 import type { XPBreakdown } from "@/hooks/useGamification";
 import type { LogroRow } from "@/hooks/useLogros";
@@ -83,6 +84,7 @@ export function CardioLiveRecorder() {
   const [summaryTitulo, setSummaryTitulo] = useState("");
   const [summaryComentarios, setSummaryComentarios] = useState("");
   const [esPublica, setEsPublica] = useState(false);
+  const communityPublishSeededRef = useRef(false);
   const [summaryRpe, setSummaryRpe] = useState<number | null>(null);
   const [postWorkoutData, setPostWorkoutData] = useState<XPBreakdown | null>(null);
   const [postWorkoutLogros, setPostWorkoutLogros] = useState<LogroRow[]>([]);
@@ -191,6 +193,7 @@ export function CardioLiveRecorder() {
       setElevationFrozenM(null);
       setSummaryTitulo("");
       setSummaryComentarios("");
+      communityPublishSeededRef.current = false;
       setEsPublica(false);
       setSummaryRpe(null);
       setConfirmDiscard(false);
@@ -566,6 +569,10 @@ export function CardioLiveRecorder() {
     setDistanceFrozenM(resolveRecordedDistanceM(distanceM, points) || null);
     setElevationFrozenM(resolveRecordedElevationM(elevationGainLive, points) || null);
     setStatsOpen(false);
+    if (!communityPublishSeededRef.current) {
+      setEsPublica(isCommunityPublishDefaultEnabled());
+      communityPublishSeededRef.current = true;
+    }
     setStep("summary");
     void updateLiveCardio({
       sessionId: sessionId!,

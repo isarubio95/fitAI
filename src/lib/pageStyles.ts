@@ -34,12 +34,44 @@ export const PROGRESS_CHART_HEIGHT = 190;
 export const YOU_PROGRESS_PAGE =
   "flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8";
 
+/** Inicio, Comunidad y Salud: el mismo marco que Progreso. */
+export const APP_PAGE_SHELL = YOU_PROGRESS_PAGE;
+
+/** Stack de cards de Inicio / Comunidad / Salud. */
+export const APP_PAGE_STACK = [
+  "flex w-full flex-col bg-background md:bg-transparent",
+  PAGE_CARD_STACK_GAP,
+  PAGE_STACK_INSET,
+  PAGE_STACK_TOP,
+].join(" ");
+
 /** Stack de cards de Progreso: mismos gaps, inset y padding superior que el contenido. */
 export const YOU_PROGRESS_STACK = [
   "flex w-full flex-col bg-background md:bg-transparent",
   PAGE_CARD_STACK_GAP,
   PAGE_STACK_INSET,
   "pt-3 md:pt-3.5",
+].join(" ");
+
+/** Página de Actividades (Tú). */
+export const YOU_ACTIVITIES_PAGE =
+  "flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 max-md:pb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8 md:pt-3";
+
+/** Página de Salud (Tú): el padding inferior lo pone `healthPageBottomPad`. */
+export const YOU_HEALTH_PAGE =
+  "flex w-full min-w-0 flex-1 flex-col bg-background max-md:-mb-24 md:mx-auto md:max-w-2xl md:bg-transparent md:px-8";
+
+/** Página de Rutinas (Biblioteca). */
+export const ROUTINES_PAGE = [
+  "flex w-full min-w-0 max-w-2xl flex-1 flex-col overflow-x-hidden bg-background px-0 pb-6 mx-auto pt-2.5 md:px-8 md:pt-6",
+  PAGE_CARD_STACK_GAP,
+  "max-md:-mb-24 max-md:pb-[calc(var(--app-bottom-nav-inset,5.5rem)+3.5rem)] md:pb-20",
+].join(" ");
+
+/** Página de plantillas cardio. */
+export const CARDIO_ROUTINES_PAGE = [
+  "flex w-full min-w-0 flex-col px-4 md:mx-auto md:max-w-2xl md:px-8 md:pt-6",
+  PAGE_CARD_STACK_GAP,
 ].join(" ");
 
 /** Página de Ejercicios (Biblioteca): mismo marco que el catálogo cargado. */

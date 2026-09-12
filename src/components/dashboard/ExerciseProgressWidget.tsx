@@ -8,7 +8,7 @@ import {
 } from "@/hooks/useExerciseProgress";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ExerciseProgressCardSkeleton } from "@/components/layout/skeletons/blocks";
 import {
   Select,
   SelectContent,
@@ -24,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { PAGE_CARD, PROGRESS_CARD_HEADER, PROGRESS_CARD_HEADER_SKELETON } from "@/lib/pageStyles";
+import { PAGE_CARD, PROGRESS_CARD_HEADER } from "@/lib/pageStyles";
 import {
   Area,
   AreaChart,
@@ -300,19 +300,9 @@ export function ExerciseProgressWidget({
   };
 
   const headerClass = flushHeader ? PROGRESS_CARD_HEADER : "px-5 pt-6 pb-4";
-  const skeletonHeaderClass = flushHeader ? PROGRESS_CARD_HEADER_SKELETON : "px-5 pt-6 pb-2";
 
   if (loadingExercises) {
-    return (
-      <Card className={PAGE_CARD}>
-        <CardHeader className={skeletonHeaderClass}>
-          <Skeleton className="h-5 w-40" />
-        </CardHeader>
-        <CardContent className="px-5 pt-0">
-          <Skeleton className="h-44 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <ExerciseProgressCardSkeleton flushHeader={flushHeader} clockLabel={clockLabel} />;
   }
 
   if (!exercises?.length) return null;

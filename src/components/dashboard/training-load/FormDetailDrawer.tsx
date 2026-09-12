@@ -72,7 +72,7 @@ export function FormDetailDrawer({
       }
     >
       <DetailSection>
-        <FormHero form={totals.form} />
+        <FormHero form={totals.form} showTitle={false} />
       </DetailSection>
 
       <DetailSection
