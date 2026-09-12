@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { Home, User, ClipboardList, CirclePlus, Heart, Users } from "lucide-react";
+import { Home, User, ClipboardList, CirclePlus, Users } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,6 @@ import { useBackCloseLayer } from "@/hooks/useBackCloseLayer";
 import { tapLight } from "@/lib/haptics";
 import { preloadRoute } from "@/lib/routePreload";
 import { markNavDirection } from "@/lib/navDirection";
-import { openHealthLog } from "@/lib/healthLogNav";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
@@ -38,7 +37,6 @@ export function BottomNav({
   onNavigate?: () => void;
 }) {
   const location = useLocation();
-  const navigate = useNavigate();
   const { openNew } = useGlobalWorkoutDrawer();
   const { openLiveSetup } = useGlobalCardioDrawer();
   const reduceMotion = useReducedMotion();
@@ -192,20 +190,6 @@ export function BottomNav({
           <div className="min-w-0">
             <p className="font-medium">Cardio</p>
             <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>
-          </div>
-        </button>
-        <button
-          className="flex w-full items-center gap-3.5 rounded-none px-4 py-3 text-left text-base transition-colors hover:bg-accent/30"
-          onClick={() => {
-            tapLight();
-            openHealthLog(navigate);
-            setIsMenuOpen(false);
-          }}
-        >
-          <Heart className="h-6 w-6" />
-          <div className="min-w-0">
-            <p className="font-medium">Salud</p>
-            <p className="text-xs text-muted-foreground">Peso, sueño, calorías o FC reposo</p>
           </div>
         </button>
       </div>

@@ -1,5 +1,5 @@
-import { NavLink, useNavigate } from "react-router-dom";
-import { Home, User, LogOut, ClipboardList, Heart, Plus, Users, MapPin } from "lucide-react";
+import { NavLink } from "react-router-dom";
+import { Home, User, LogOut, ClipboardList, Plus, Users, MapPin } from "lucide-react";
 import { CardioWorkoutIcon } from "@/components/icons/CardioWorkoutIcon";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { openHealthLog } from "@/lib/healthLogNav";
 
 const navItems = [
   { to: "/", icon: Home, label: "Inicio" },
@@ -29,7 +28,6 @@ const navItems = [
 
 export function DesktopSidebar() {
   const { signOut } = useAuth();
-  const navigate = useNavigate();
   const { openNew } = useGlobalWorkoutDrawer();
   const { openLiveSetup } = useGlobalCardioDrawer();
 
@@ -62,13 +60,6 @@ export function DesktopSidebar() {
               <div className="min-w-0">
                 <p className="font-medium">Cardio</p>
                 <p className="text-xs text-muted-foreground">Registra carrera, bici, cinta, etc.</p>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-base" onClick={() => openHealthLog(navigate)}>
-              <Heart className="h-5 w-5 mr-2" />
-              <div className="min-w-0">
-                <p className="font-medium">Salud</p>
-                <p className="text-xs text-muted-foreground">Peso, sueño, calorías o FC reposo</p>
               </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
