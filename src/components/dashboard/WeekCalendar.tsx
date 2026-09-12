@@ -13,8 +13,7 @@ import { es } from "date-fns/locale";
 import { Pencil, Trash2, Eye } from "lucide-react";
 import { GymWorkoutIcon } from "@/components/icons/GymWorkoutIcon";
 import {
-  CalendarDayCircleContent,
-  getCalendarDayCircleClasses,
+  CalendarDayCell,
   resolveCalendarDayDisplay,
 } from "@/lib/calendarDayDisplay";
 import {
@@ -266,15 +265,6 @@ export function WeekCalendar({
               onDateSelect(day);
             };
 
-            const circleStyles = getCalendarDayCircleClasses({
-              isTrained,
-              isCardioTrained,
-              isScheduled,
-              isPast,
-              today,
-              dataReady: calendarDataReady,
-            });
-
             const dayDisplay = resolveCalendarDayDisplay(
               dayWorkouts,
               pendingPlanned,
@@ -298,24 +288,20 @@ export function WeekCalendar({
                 aria-label={`Día ${format(day, "d")}`}
                 aria-expanded={isSelected}
               >
-                <span className="relative flex items-center justify-center select-none w-8 h-8 rounded-full p-0 bg-transparent">
-                  <span
-                    className={cn(
-                      "relative flex items-center justify-center select-none w-full h-full rounded-full border text-xs font-semibold",
-                      circleStyles.circleFill,
-                      circleStyles.circleText,
-                      circleStyles.circleBorder,
-                      circleStyles.transitionClass,
-                      circleStyles.loadingClass,
-                      isSelected && !today && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background",
-                      today
-                        ? "group-hover:scale-[1.03]"
-                        : "group-hover:scale-[1.03] group-hover:border-primary/28 group-hover:ring-1 group-hover:ring-primary/12 group-hover:ring-offset-0",
-                    )}
-                  >
-                    <CalendarDayCircleContent day={day} display={dayDisplay} today={today} />
-                  </span>
-                </span>
+                <CalendarDayCell
+                  day={day}
+                  display={dayDisplay}
+                  today={today}
+                  isSelected={isSelected}
+                  flags={{
+                    isTrained,
+                    isCardioTrained,
+                    isScheduled,
+                    isPast,
+                    today,
+                    dataReady: calendarDataReady,
+                  }}
+                />
               </button>
             );
           })}

@@ -13,8 +13,7 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 import {
-  CalendarDayCircleContent,
-  getCalendarDayCircleClasses,
+  CalendarDayCell,
   type CalendarDayDisplay,
 } from "@/lib/calendarDayDisplay";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
@@ -134,15 +133,6 @@ export function PlanSchedulePreviewCalendar({
                       const isBottomLeft = isLastWeekRow && colIndex === 0;
                       const isBottomRight = isLastWeekRow && colIndex === 6;
 
-                      const circleStyles = getCalendarDayCircleClasses({
-                        isTrained: false,
-                        isCardioTrained: false,
-                        isScheduled,
-                        isPast,
-                        today,
-                        dataReady: true,
-                      });
-
                       let display: CalendarDayDisplay = { type: "number" };
                       if (isScheduled) {
                         display = {
@@ -167,19 +157,20 @@ export function PlanSchedulePreviewCalendar({
                               : `Día ${format(day, "d")}`
                           }
                         >
-                          <span className="relative flex items-center justify-center select-none w-8 h-8 rounded-full p-0 bg-transparent">
-                            <span
-                              className={cn(
-                                "relative flex items-center justify-center select-none w-full h-full rounded-full border text-xs font-semibold",
-                                circleStyles.circleFill,
-                                circleStyles.circleText,
-                                circleStyles.circleBorder,
-                                circleStyles.transitionClass,
-                              )}
-                            >
-                              <CalendarDayCircleContent day={day} display={display} today={today} />
-                            </span>
-                          </span>
+                          <CalendarDayCell
+                            day={day}
+                            display={display}
+                            today={today}
+                            interactive={false}
+                            flags={{
+                              isTrained: false,
+                              isCardioTrained: false,
+                              isScheduled,
+                              isPast,
+                              today,
+                              dataReady: true,
+                            }}
+                          />
                         </div>
                       );
                     })}
