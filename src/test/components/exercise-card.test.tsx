@@ -459,7 +459,7 @@ describe("ExerciseCard", () => {
 
     expect(rirBadge).toHaveClass("h-7");
     expect(restBadge).toHaveClass("h-7");
-    expect(rirBadge.parentElement).toHaveClass("gap-2");
+    expect(rirBadge.parentElement).toHaveClass("gap-3");
     expect(info).toHaveClass("h-7");
     expect(performance).toHaveClass("h-7");
     expect(group).toContainElement(info);

@@ -17,6 +17,15 @@ const EASING = "ease-in-out";
 
 export type PillCirclePhase = "in" | "settled" | "out";
 
+/** La pill flotante queda tapada por el drawer asentado (o abierto sin círculo). */
+export function isActiveSessionPillCovered(
+  drawerOpen: boolean,
+  phase: PillCirclePhase | null | undefined,
+): boolean {
+  if (!drawerOpen) return false;
+  return phase !== "in" && phase !== "out";
+}
+
 /** Capture pill center in viewport coordinates for a circle reveal origin. */
 export function pillCircleOriginFromElement(el: Element | null): PillCircleOrigin | undefined {
   if (!(el instanceof HTMLElement)) return undefined;

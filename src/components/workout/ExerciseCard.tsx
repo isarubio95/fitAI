@@ -346,7 +346,7 @@ export function ExerciseCard({
             </div>
             <h3 className="truncate text-sm font-semibold">{exercise.nombre}</h3>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <RirMetaBadge
               value={exercise.targetRir}
               editable={!!onUpdateRir}

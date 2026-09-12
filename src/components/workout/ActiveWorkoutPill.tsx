@@ -3,8 +3,9 @@ import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useWorkoutById } from "@/hooks/useWorkouts";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
 import { useDraggablePillPosition } from "@/hooks/useDraggablePillPosition";
-import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
+import { isActiveSessionPillCovered, pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
 import { tapLight } from "@/lib/haptics";
+import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
 
 function formatElapsed(startDate: string): string {
@@ -44,16 +45,23 @@ export function ActiveWorkoutPill() {
     openActiveWorkout(active.id, pillCircleOriginFromElement(drag.elRef.current));
   };
 
-  // Don't show pill if drawer is already open or no active workout
-  if (!active || state.open) return null;
+  if (!active) return null;
+
+  const covered = isActiveSessionPillCovered(state.open, state.pillCirclePhase);
+  const circling = state.pillCirclePhase === "in" || state.pillCirclePhase === "out";
 
   return (
     <div
       ref={drag.elRef}
       data-draggable-pill
       role="button"
-      tabIndex={0}
-      className="fixed bottom-24 left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none cursor-grab active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full max-md:bottom-[calc(var(--app-bottom-nav-inset,5rem)+0.75rem)]"
+      tabIndex={covered || circling ? -1 : 0}
+      aria-hidden={covered || circling}
+      className={cn(
+        "fixed bottom-24 left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none cursor-grab active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full max-md:bottom-[calc(var(--app-bottom-nav-inset,5rem)+0.75rem)]",
+        (covered || circling) && "pointer-events-none",
+        covered && "invisible",
+      )}
       style={drag.style}
       onPointerDown={drag.onPointerDown}
       onPointerMove={drag.onPointerMove}
@@ -61,10 +69,11 @@ export function ActiveWorkoutPill() {
         drag.onPointerUp(e);
         const wasDrag = drag.didDrag();
         drag.resetMovedFlag();
-        if (!wasDrag) openFromPill();
+        if (!wasDrag && !covered && !circling) openFromPill();
       }}
       onPointerCancel={drag.onPointerCancel}
       onKeyDown={(e) => {
+        if (covered || circling) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           openFromPill();

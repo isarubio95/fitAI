@@ -102,7 +102,7 @@ import { restForSet } from "@/lib/seriesPlan";
 import { DEFAULT_TIPO_SERIE, isWorkingSet } from "@/lib/setTypes";
 
 export function WorkoutLogger() {
-  const { state, setOpen, close, openActiveWorkout } = useGlobalWorkoutDrawer();
+  const { state, setOpen, close, openActiveWorkout, setPillCirclePhase } = useGlobalWorkoutDrawer();
   const { open, workoutId, defaultDate, templateExercises, templateTitle, templateRoutineIcon, plannedId, pillOrigin, initialGimnasio } = state;
 
   const { user } = useAuth();
@@ -1916,6 +1916,7 @@ export function WorkoutLogger() {
          */
         const fromSwipe = performance.now() - lastDragAtRef.current < SWIPE_DISMISS_WINDOW_MS;
         if (pillAnim && !fromSwipe) {
+          setPillCirclePhase("out");
           setPillAnim({ origin: pillAnim.origin, phase: "out" });
           if (pillCloseTimerRef.current != null) window.clearTimeout(pillCloseTimerRef.current);
           pillCloseTimerRef.current = window.setTimeout(() => {
@@ -1931,7 +1932,7 @@ export function WorkoutLogger() {
       lastDragAtRef.current = Number.NEGATIVE_INFINITY;
       setOpen(true);
     },
-    [pillAnim, commitDrawerClose, setOpen],
+    [pillAnim, commitDrawerClose, setOpen, setPillCirclePhase],
   );
 
   const saveButtonLabel = isActiveWorkout ? "Finalizar" : isEdit ? "Actualizar" : "Guardar";
@@ -1954,6 +1955,10 @@ export function WorkoutLogger() {
   const pillPhase: PillCirclePhase | null =
     pillAnim?.phase ?? (open && pillOrigin ? "in" : null);
   const pillOriginResolved = pillAnim?.origin ?? pillOrigin ?? null;
+
+  useEffect(() => {
+    setPillCirclePhase(pillPhase);
+  }, [pillPhase, setPillCirclePhase]);
   const pillCircleProps =
     pillPhase && pillOriginResolved
       ? {

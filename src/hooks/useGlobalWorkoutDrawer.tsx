@@ -5,7 +5,7 @@ import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useToast } from "@/hooks/use-toast";
 import { toastActiveWorkoutBlocked } from "@/lib/activeWorkoutGuard";
 import { setWorkoutDrawerOpen } from "@/lib/restTimerNotifications";
-import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
+import type { PillCircleOrigin, PillCirclePhase } from "@/lib/pillCircleTransition";
 
 interface DrawerState {
   open: boolean;
@@ -17,6 +17,8 @@ interface DrawerState {
   plannedId?: string;
   /** Origen de la revelación circular (pill «en curso», botón iniciar rutina, etc.). */
   pillOrigin?: PillCircleOrigin;
+  /** Fase del círculo: la pill flotante sigue visible en `in` / `out`. */
+  pillCirclePhase?: PillCirclePhase | null;
   initialGimnasio?: SelectedGimnasio | null;
 }
 
@@ -38,13 +40,14 @@ interface GlobalWorkoutDrawerContextType {
     plannedDate?: string,
   ) => void;
   openActiveWorkout: (workoutId: string, pillOrigin?: PillCircleOrigin) => void;
+  setPillCirclePhase: (phase: PillCirclePhase | null) => void;
   setOpen: (open: boolean) => void;
   close: () => void;
 }
 
 const GlobalWorkoutDrawerContext = createContext<GlobalWorkoutDrawerContextType | null>(null);
 
-const INITIAL: DrawerState = { open: false, workoutId: null };
+const INITIAL: DrawerState = { open: false, workoutId: null, pillCirclePhase: null };
 
 export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DrawerState>(INITIAL);
@@ -61,7 +64,12 @@ export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode 
       templateRoutineIcon: undefined,
       plannedId: undefined,
       pillOrigin,
+      pillCirclePhase: pillOrigin ? "in" : null,
     });
+  }, []);
+
+  const setPillCirclePhase = useCallback((pillCirclePhase: PillCirclePhase | null) => {
+    setState((prev) => (prev.pillCirclePhase === pillCirclePhase ? prev : { ...prev, pillCirclePhase }));
   }, []);
 
   const blockIfActiveWorkout = useCallback((): boolean => {
@@ -170,6 +178,7 @@ export function GlobalWorkoutDrawerProvider({ children }: { children: ReactNode 
         openFromTemplate,
         openFromPlannedRoutine,
         openActiveWorkout,
+        setPillCirclePhase,
         setOpen,
         close,
       }}

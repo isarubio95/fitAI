@@ -2,6 +2,7 @@ import { useActiveCardioSession } from "@/hooks/useActiveCardioSession";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useGlobalWorkoutDrawer } from "@/hooks/useGlobalWorkoutDrawer";
+import { isActiveSessionPillCovered } from "@/lib/pillCircleTransition";
 
 /** Pills visibles: 0, una (gym o cardio) o las dos apiladas. */
 export type ActiveSessionFabOffset = 0 | 1 | 2;
@@ -12,8 +13,9 @@ export function useActiveSessionFabOffset(): ActiveSessionFabOffset {
   const { data: cardio } = useActiveCardioSession();
   const { state: cardioDrawer } = useGlobalCardioDrawer();
 
-  const gymVisible = !!gym && !gymDrawer.open;
-  const cardioVisible = !!cardio && !cardioDrawer.liveOpen;
+  const gymVisible = !!gym && !isActiveSessionPillCovered(gymDrawer.open, gymDrawer.pillCirclePhase);
+  const cardioVisible =
+    !!cardio && !isActiveSessionPillCovered(cardioDrawer.liveOpen, cardioDrawer.pillCirclePhase);
   if (gymVisible && cardioVisible) return 2;
   if (gymVisible || cardioVisible) return 1;
   return 0;

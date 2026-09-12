@@ -3,8 +3,9 @@ import { useActiveCardioSession } from "@/hooks/useActiveCardioSession";
 import { useGlobalCardioDrawer } from "@/hooks/useGlobalCardioDrawer";
 import { useActiveWorkout } from "@/hooks/useActiveWorkout";
 import { useDraggablePillPosition } from "@/hooks/useDraggablePillPosition";
-import { pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
+import { isActiveSessionPillCovered, pillCircleOriginFromElement } from "@/lib/pillCircleTransition";
 import { tapLight } from "@/lib/haptics";
+import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
 
 function formatElapsed(startDate: string): string {
@@ -41,8 +42,10 @@ export function ActiveCardioPill() {
     return () => clearInterval(interval);
   }, [active?.id, active?.fecha_inicio]);
 
-  if (!active || state.liveOpen) return null;
+  if (!active) return null;
 
+  const covered = isActiveSessionPillCovered(state.liveOpen, state.pillCirclePhase);
+  const circling = state.pillCirclePhase === "in" || state.pillCirclePhase === "out";
   const label = firstDisciplinaNombre(active);
 
   const openFromPill = () => {
@@ -55,12 +58,16 @@ export function ActiveCardioPill() {
       ref={drag.elRef}
       data-draggable-pill
       role="button"
-      tabIndex={0}
-      className={`fixed left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none cursor-grab active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full ${
+      tabIndex={covered || circling ? -1 : 0}
+      aria-hidden={covered || circling}
+      className={cn(
+        "fixed left-1/2 z-50 w-auto max-w-[90vw] touch-none select-none cursor-grab active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-full",
         stackAboveWorkout
           ? "bottom-40 max-md:bottom-[calc(var(--app-bottom-nav-inset,5rem)+0.75rem+4rem)]"
-          : "bottom-24 max-md:bottom-[calc(var(--app-bottom-nav-inset,5rem)+0.75rem)]"
-      }`}
+          : "bottom-24 max-md:bottom-[calc(var(--app-bottom-nav-inset,5rem)+0.75rem)]",
+        (covered || circling) && "pointer-events-none",
+        covered && "invisible",
+      )}
       style={drag.style}
       onPointerDown={drag.onPointerDown}
       onPointerMove={drag.onPointerMove}
@@ -68,10 +75,11 @@ export function ActiveCardioPill() {
         drag.onPointerUp(e);
         const wasDrag = drag.didDrag();
         drag.resetMovedFlag();
-        if (!wasDrag) openFromPill();
+        if (!wasDrag && !covered && !circling) openFromPill();
       }}
       onPointerCancel={drag.onPointerCancel}
       onKeyDown={(e) => {
+        if (covered || circling) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           openFromPill();

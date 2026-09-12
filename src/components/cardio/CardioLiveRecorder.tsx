@@ -52,7 +52,8 @@ import {
 import type { CardioDisciplineCode, CardioSportDetailInput, CardioTrackPointInput, SelectedCardioRoute } from "@/types/cardio";
 
 export function CardioLiveRecorder() {
-  const { state, closeLiveRecording, openEdit, openLiveRecording } = useGlobalCardioDrawer();
+  const { state, closeLiveRecording, openEdit, openLiveRecording, setPillCirclePhase: setCtxPillCirclePhase } =
+    useGlobalCardioDrawer();
   const sessionId = state.liveSessionId;
   const liveOpen = state.liveOpen;
   const isSetup = liveOpen && !sessionId;
@@ -296,6 +297,7 @@ export function CardioLiveRecorder() {
       return;
     }
     if (pillOrigin && pillCirclePhase && pillCirclePhase !== "out") {
+      setCtxPillCirclePhase("out");
       setPillCirclePhase("out");
       if (pillCloseTimerRef.current != null) window.clearTimeout(pillCloseTimerRef.current);
       pillCloseTimerRef.current = window.setTimeout(() => {
@@ -304,7 +306,7 @@ export function CardioLiveRecorder() {
       return;
     }
     closeLiveRecording();
-  }, [isSetup, pillOrigin, pillCirclePhase, closeLiveRecording]);
+  }, [isSetup, pillOrigin, pillCirclePhase, closeLiveRecording, setCtxPillCirclePhase]);
 
   const onSelectSetupDiscipline = useCallback((id: string) => {
     setSetupDisciplineId(id);
@@ -714,6 +716,10 @@ export function CardioLiveRecorder() {
 
   const effectivePillPhase: PillCirclePhase | null =
     pillCirclePhase ?? (open && pillOrigin ? "in" : null);
+
+  useEffect(() => {
+    setCtxPillCirclePhase(effectivePillPhase);
+  }, [effectivePillPhase, setCtxPillCirclePhase]);
 
   // Variables del círculo en el DOM (drawer portaleado; no hereda el clip del full-screen).
   useLayoutEffect(() => {

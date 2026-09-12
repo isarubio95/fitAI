@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import type { CardioRoutineBlockInput } from "@/types/cardio";
-import type { PillCircleOrigin } from "@/lib/pillCircleTransition";
+import type { PillCircleOrigin, PillCirclePhase } from "@/lib/pillCircleTransition";
 
 type CardioDrawerState = {
   open: boolean;
@@ -13,6 +13,8 @@ type CardioDrawerState = {
   templateBlocks?: CardioRoutineBlockInput[];
   /** Origen de la revelación circular al abrir desde la pill «en curso». */
   pillOrigin?: PillCircleOrigin;
+  /** Fase del círculo: la pill flotante sigue visible en `in` / `out`. */
+  pillCirclePhase?: PillCirclePhase | null;
 };
 
 type GlobalCardioDrawerContextType = {
@@ -24,6 +26,7 @@ type GlobalCardioDrawerContextType = {
   /** Abre el mapa en modo setup (sin sesión) para elegir disciplina. */
   openLiveSetup: () => void;
   openLiveRecording: (sessionId: string, pillOrigin?: PillCircleOrigin) => void;
+  setPillCirclePhase: (phase: PillCirclePhase | null) => void;
   closeLiveRecording: () => void;
   setOpen: (open: boolean) => void;
   close: () => void;
@@ -34,6 +37,7 @@ const INITIAL: CardioDrawerState = {
   sessionId: null,
   liveOpen: false,
   liveSessionId: null,
+  pillCirclePhase: null,
 };
 const GlobalCardioDrawerContext = createContext<GlobalCardioDrawerContextType | null>(null);
 
@@ -117,11 +121,22 @@ export function GlobalCardioDrawerProvider({ children }: { children: ReactNode }
       templateTitle: undefined,
       templateDisciplineId: undefined,
       pillOrigin,
+      pillCirclePhase: pillOrigin ? "in" : null,
     });
   }, []);
 
+  const setPillCirclePhase = useCallback((pillCirclePhase: PillCirclePhase | null) => {
+    setState((prev) => (prev.pillCirclePhase === pillCirclePhase ? prev : { ...prev, pillCirclePhase }));
+  }, []);
+
   const closeLiveRecording = useCallback(() => {
-    setState((prev) => ({ ...prev, liveOpen: false, liveSessionId: null, pillOrigin: undefined }));
+    setState((prev) => ({
+      ...prev,
+      liveOpen: false,
+      liveSessionId: null,
+      pillOrigin: undefined,
+      pillCirclePhase: null,
+    }));
   }, []);
 
   const setOpen = useCallback((open: boolean) => {
@@ -140,6 +155,7 @@ export function GlobalCardioDrawerProvider({ children }: { children: ReactNode }
         openFromTemplate,
         openLiveSetup,
         openLiveRecording,
+        setPillCirclePhase,
         closeLiveRecording,
         setOpen,
         close,
