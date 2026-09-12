@@ -325,6 +325,7 @@ function ProfileDrawerSheet() {
     <Drawer direction="right" open={open} onOpenChange={handleProfileOpenChange}>
       <DrawerContent
         side="right"
+        fullBleed
         overlayClassName="z-overlay"
         className="z-drawer flex h-full max-h-dvh flex-col gap-0 overflow-hidden border-0 bg-background p-0 shadow-none"
         onPointerDownOutside={(e) => {
@@ -606,6 +607,7 @@ function ProfileDrawerSheet() {
     >
       <DrawerContent
         side="right"
+        fullBleed
         overlayClassName="z-nested-overlay"
         className="z-nested-drawer flex h-full max-h-dvh flex-col gap-0 overflow-hidden border-0 bg-background p-0 shadow-none"
       >

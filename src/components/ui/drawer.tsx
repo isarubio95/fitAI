@@ -130,6 +130,11 @@ interface DrawerContentProps extends React.ComponentPropsWithoutRef<typeof Drawe
   side?: DrawerSide;
   /** Clases extra para el overlay (p. ej. z-index en drawers anidados). */
   overlayClassName?: string;
+  /**
+   * Laterales a sangre: sin franja de `92vw`/`max-w-md` para pulsar el overlay.
+   * El cierre queda en swipe, botón o atrás; el overlay sigue existiendo detrás.
+   */
+  fullBleed?: boolean;
   /** Réplica en el overlay: el atenuado espera a que el círculo de la pill asiente. */
   "data-open-from-pill"?: boolean;
   "data-pill-circle"?: string;
@@ -144,6 +149,31 @@ function shouldIgnoreDrawerOutside(target: EventTarget | null) {
   );
 }
 
+/** Peek por defecto: un solo `width`, sin `100%` + `max-width` que Vaul mide mal en frío. */
+const SIDE_PEEK_WIDTH = "w-[min(28rem,92vw)]";
+/** `w-full` en un lateral con tope (Ajustes): viewport units, no `100%`. */
+const SIDE_CAPPED_WIDTH = "w-[min(28rem,100dvw)]";
+
+/**
+ * `w-full` (100%) en un lateral se recalcula cuando Radix bloquea el scroll.
+ * A sangre → `w-dvw`. Con tope (Ajustes) → un `min()` estable. No toca `md:w-full`.
+ */
+function stabilizeSideDrawerWidth(
+  className: string | undefined,
+  side: DrawerSide,
+  fullBleed: boolean,
+) {
+  if ((side !== "left" && side !== "right") || !className) return className;
+  const coversViewport = fullBleed || /\bmax-w-none\b/.test(className);
+  if (coversViewport) {
+    return className.replace(/(^|\s)w-full(?=\s|$)/g, "$1w-dvw");
+  }
+  if (/(^|\s)w-full(?=\s|$)/.test(className)) {
+    return className.replace(/(^|\s)w-full(?=\s|$)/g, `$1${SIDE_CAPPED_WIDTH}`);
+  }
+  return className;
+}
+
 const DrawerContent = React.forwardRef<
   React.ComponentRef<typeof DrawerPrimitive.Content>,
   DrawerContentProps
@@ -152,6 +182,7 @@ const DrawerContent = React.forwardRef<
   children,
   side = "bottom",
   overlayClassName,
+  fullBleed = false,
   onPointerDownOutside,
   onInteractOutside,
   "data-open-from-pill": openFromPill,
@@ -172,6 +203,7 @@ const DrawerContent = React.forwardRef<
       ref={ref}
       {...(openFromPill ? { "data-open-from-pill": true } : {})}
       {...(pillCircle ? { "data-pill-circle": pillCircle } : {})}
+      {...(fullBleed ? { "data-drawer-full-bleed": "" } : {})}
       onPointerDownOutside={(e) => {
         if (shouldIgnoreDrawerOutside(e.target)) e.preventDefault();
         onPointerDownOutside?.(e);
@@ -180,30 +212,40 @@ const DrawerContent = React.forwardRef<
         if (shouldIgnoreDrawerOutside(e.target)) e.preventDefault();
         onInteractOutside?.(e);
       }}
-      className={cn(
-        "drawer-mobile-scrollbars-hidden fixed z-50 flex bg-background",
-        // Cards a sangre (logger, sheets): sin radio. Excepción: lista tipo
-        // página (`.surface-region-page`) — mismas esquinas que Comunidad.
-        "**:data-[slot=card]:rounded-none! **:data-drawer-section:rounded-none!",
-        "[&_.surface-region-page>[data-slot=card]]:rounded-2xl! md:[&_.surface-region-page>[data-slot=card]]:rounded-3xl! [&_.surface-region-page>[data-slot=card]]:border-t!",
-        "[&_[data-slot=card]:first-child]:border-t-0!",
-        side === "bottom" &&
-          cn(
-            "inset-x-0 bottom-0 mt-24 max-h-lvh flex-col border-x-0 border-t border-b-0 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.35)] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
-            drawerSheetRadiusTop,
-          ),
-        side === "top" &&
-          cn(
-            "inset-x-0 top-0 mb-24 max-h-lvh flex-col border-x-0 border-b border-t-0 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.35)] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
-            drawerSheetRadiusBottom,
-          ),
-        side === "left" &&
-          // overflow-hidden (no overflow-x-hidden): un solo eje hidden
-          // computa el otro a auto y el panel se vuelve un scrollport extra.
-          "inset-y-0 left-0 h-dvh max-h-dvh w-[92vw] max-w-md flex-col overflow-hidden border-x-0 border-t-0 border-b-0 md:border-r",
-        side === "right" &&
-          "inset-y-0 right-0 h-dvh max-h-dvh w-[92vw] max-w-md flex-col overflow-hidden border-x-0 border-t-0 border-b-0 md:border-l",
-        className,
+      className={stabilizeSideDrawerWidth(
+        cn(
+          "drawer-mobile-scrollbars-hidden fixed z-50 flex bg-background",
+          // Cards a sangre (logger, sheets): sin radio. Excepción: lista tipo
+          // página (`.surface-region-page`) — mismas esquinas que Comunidad.
+          "**:data-[slot=card]:rounded-none! **:data-drawer-section:rounded-none!",
+          "[&_.surface-region-page>[data-slot=card]]:rounded-2xl! md:[&_.surface-region-page>[data-slot=card]]:rounded-3xl! [&_.surface-region-page>[data-slot=card]]:border-t!",
+          "[&_[data-slot=card]:first-child]:border-t-0!",
+          side === "bottom" &&
+            cn(
+              "inset-x-0 bottom-0 mt-24 max-h-lvh flex-col border-x-0 border-t border-b-0 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.35)] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
+              drawerSheetRadiusTop,
+            ),
+          side === "top" &&
+            cn(
+              "inset-x-0 top-0 mb-24 max-h-lvh flex-col border-x-0 border-b border-t-0 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.35)] md:left-1/2 md:right-auto md:w-full md:max-w-2xl md:-translate-x-1/2 md:border md:border-x",
+              drawerSheetRadiusBottom,
+            ),
+          side === "left" &&
+            // overflow-hidden (no overflow-x-hidden): un solo eje hidden
+            // computa el otro a auto y el panel se vuelve un scrollport extra.
+            cn(
+              "inset-y-0 left-0 h-dvh max-h-dvh min-w-0 flex-col overflow-hidden border-x-0 border-t-0 border-b-0",
+              fullBleed ? "w-dvw max-w-none" : `${SIDE_PEEK_WIDTH} md:border-r`,
+            ),
+          side === "right" &&
+            cn(
+              "inset-y-0 right-0 h-dvh max-h-dvh min-w-0 flex-col overflow-hidden border-x-0 border-t-0 border-b-0",
+              fullBleed ? "w-dvw max-w-none" : `${SIDE_PEEK_WIDTH} md:border-l`,
+            ),
+          className,
+        ),
+        side,
+        fullBleed,
       )}
       {...props}
     >

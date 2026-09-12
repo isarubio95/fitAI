@@ -368,6 +368,9 @@
   }
   html {
     scrollbar-gutter: stable;
+    /* Sigue siendo el scrollport al abrir drawers/dialogs: si no, el gutter
+       se cae, el viewport crece y los laterales a sangre saltan de ancho. */
+    overflow-y: scroll;
     background-color: var(--background-fill);
   }
   body {
@@ -999,6 +1002,17 @@ html[data-nav-direction="back"]::view-transition-new(page-content) {
 [data-vaul-drawer][data-vaul-drawer-direction="left"],
 [data-vaul-drawer][data-vaul-drawer-direction="right"] {
   overflow: hidden;
+  min-width: 0;
+}
+
+/*
+ * Solo a sangre: 100dvw. No aplicarlo a Ajustes (`max-w-md`): si no, el
+ * ancho especificado es el viewport y el usado 28rem, y en frío salta.
+ */
+[data-vaul-drawer][data-drawer-full-bleed][data-vaul-drawer-direction="left"],
+[data-vaul-drawer][data-drawer-full-bleed][data-vaul-drawer-direction="right"] {
+  width: 100dvw;
+  max-width: none;
 }
 
 [data-vaul-drawer][data-vaul-drawer-direction="left"] *:not([data-vaul-allow-horizontal-pan]),

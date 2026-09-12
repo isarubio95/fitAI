@@ -130,6 +130,7 @@ export function LogrosDrawer({ open, onOpenChange, userId, isSelf, username }: L
     <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         side="right"
+        fullBleed
         overlayClassName="z-nested-overlay"
         className="z-nested-drawer flex h-full max-h-dvh flex-col gap-0 overflow-hidden border-0 bg-background p-0 shadow-none dark:bg-card"
       >

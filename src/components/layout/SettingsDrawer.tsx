@@ -71,7 +71,7 @@ export function SettingsDrawer() {
       <DrawerContent
         side="right"
         overlayClassName="z-overlay"
-        className="z-drawer flex h-full w-full flex-col border-0 bg-background p-0 shadow-none"
+        className="z-drawer flex h-full w-[min(28rem,100dvw)] flex-col border-0 bg-background p-0 shadow-none"
       >
         <DrawerHeader className="px-6 pt-[calc(1.25rem+var(--app-safe-area-top,env(safe-area-inset-top,0px)))] pr-[max(1.5rem,env(safe-area-inset-right,0px))] text-left">
           <div className="flex items-center justify-between gap-1">
