@@ -16,10 +16,9 @@ function supabasePublicObjectUrl(objectPath: string): string | null {
  * Resuelve rutas `/ejercicios/...` a Supabase Storage (bucket público).
  *
  * Un solo origen para todos los medios del catálogo, en web y en nativo. El
- * bucket `ejercicios` los tiene todos: las demos en WebP animado y los
- * thumbnails de `thumbs/`. Antes se decidía por la extensión —los .gif se
- * servían de `public/ejercicios/` y el resto del bucket—, lo que obligaba a
- * arrastrar 637 MB de GIF en el repo y a excluirlos del bundle de Android.
+ * bucket `ejercicios` los tiene todos: GIFs nativos, WebP animados y
+ * thumbnails de `thumbs/`. No viven en `public/`: copiarlos al repo duplicaba
+ * ~635 MB en cada deploy de Vercel.
  *
  * Si falta `VITE_SUPABASE_URL` se devuelve la ruta relativa: no sirve de nada,
  * pero no rompe el render.

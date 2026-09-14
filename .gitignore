@@ -25,6 +25,10 @@ scripts/.gym-address-enrich.json
 dist
 dist-ssr
 *.local
+
+# Catálogo de demos (~635 MB de GIF). Viven en el bucket público `ejercicios`
+# de Supabase Storage. Copiarlos aquí duplica el peso en cada deploy de Vercel.
+public/ejercicios/
 sql/*.sql
 TODO.md
 *.txt

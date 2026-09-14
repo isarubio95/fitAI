@@ -1,8 +1,8 @@
 /**
- * Quita assets pesados del bundle Android (límite Play: 500 MB comprimidos).
- * Los GIFs de ejercicios (~635 MB) se sirven en web desde public/; en nativo
- * no deben empaquetarse. Las filas con gif_url=/ejercicios/... no mostrarán
- * demo hasta hostearlos en CDN/Storage o VITE_EXERCISE_MEDIA_ORIGIN.
+ * Cinturón de seguridad del AAB (límite Play: 500 MB comprimidos).
+ * Los GIFs del catálogo (~635 MB) viven en el bucket `ejercicios` de Storage,
+ * no en public/. Si reaparecen en dist/ o en assets de Capacitor, se borran
+ * aquí para no colarlos en el paquete.
  */
 import fs from "node:fs";
 import path from "node:path";

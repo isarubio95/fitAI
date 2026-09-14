@@ -1,8 +1,11 @@
 /**
- * Sube public/ejercicios/*.gif al bucket público `ejercicios` de Supabase Storage.
+ * Sube GIF locales al bucket público `ejercicios` de Supabase Storage.
  *
- * Uso:
- *   set SUPABASE_SERVICE_ROLE_KEY=eyJ...   (Dashboard → Project Settings → API)
+ * `public/ejercicios/` ya no está en el repo (cada deploy de Vercel copiaba
+ * ~635 MB). Si hace falta re-subir, restaura la carpeta desde un commit
+ * anterior y ejecuta:
+ *
+ *   $env:SUPABASE_SERVICE_ROLE_KEY="..."
  *   node scripts/upload-ejercicios-to-storage.mjs
  *
  * Requiere VITE_SUPABASE_URL en .env (o SUPABASE_URL).

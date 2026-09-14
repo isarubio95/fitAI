@@ -15,9 +15,8 @@
  *   Lyfta             1 PNG estático de 184×175 → WebP estático.
  *                     Es lo único que expone su CDN público.
  *
- * Los ficheros NO van a `public/ejercicios/`: esa carpeta ya pesa 635 MB con
- * los 749 GIF originales y se excluye del AAB. Van solo al bucket `ejercicios`
- * de Supabase Storage, que ya acepta image/webp.
+ * Los ficheros NO van a `public/ejercicios/` (gitignored: ~635 MB de GIF
+ * duplicaban cada deploy de Vercel). Van al bucket `ejercicios` de Storage.
  *
  * Es reanudable: lo ya convertido se salta salvo --force.
  */

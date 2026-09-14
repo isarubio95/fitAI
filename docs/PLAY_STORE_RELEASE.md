@@ -15,15 +15,10 @@ npm run android:assets
 npm run android:sync
 ```
 
-`android:sync` excluye automaticamente `public/ejercicios` (~635 MB de GIFs) del AAB
-para respetar el limite de 500 MB de Google Play. En web local siguen disponibles.
-En Android la app resuelve `/ejercicios/...` contra el bucket publico de Storage
-`ejercicios` (ver `resolveExerciseMediaUrl`). Para (re)subir GIFs:
-
-```bash
-# SUPABASE_SERVICE_ROLE_KEY en .env
-npm run ejercicios:upload
-```
+`android:sync` vuelve a borrar `dist/ejercicios` si reaparece, para no colar
+~635 MB de GIFs en el AAB. Los medios se sirven desde el bucket publico
+`ejercicios` (ver `resolveExerciseMediaUrl`). `public/ejercicios/` no esta en
+el repo.
 
 ## 3) Generar App Bundle (.aab)
 

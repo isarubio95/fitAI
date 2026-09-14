@@ -4,9 +4,8 @@ import { resolveExerciseMediaUrl } from "@/lib/exerciseMediaUrl";
 
 describe("resolveExerciseMediaUrl", () => {
   it("resuelve todo /ejercicios contra Storage, sea .webp o .gif", () => {
-    // Un solo origen: el bucket tiene las demos en WebP y los thumbs. Antes se
-    // decidía por la extensión y los .gif se servían de public/ejercicios/,
-    // que es lo que obligaba a arrastrar 637 MB en el repo.
+    // Un solo origen: el bucket tiene GIFs, WebP y thumbs. Los GIF ya no
+    // viven en public/ejercicios/ (inflaban cada deploy de Vercel).
     const webp = resolveExerciseMediaUrl("/ejercicios/fdb-Lateral_Bound.webp");
     expect(webp).toContain("/storage/v1/object/public/ejercicios/");
     expect(webp).toContain("fdb-Lateral_Bound.webp");

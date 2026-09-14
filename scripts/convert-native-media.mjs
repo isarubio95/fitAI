@@ -1,7 +1,10 @@
 /**
- * Convierte los GIF nativos de `public/ejercicios/` a WebP animado y los sube
- * al bucket `ejercicios`, para que TODO el catálogo tenga un solo formato y un
- * solo origen.
+ * Convierte los GIF nativos a WebP animado y los sube al bucket `ejercicios`,
+ * para que TODO el catálogo tenga un solo formato y un solo origen.
+ *
+ * Los GIF ya no están en el repo (`public/ejercicios/` está gitignored).
+ * Para reconvertir, restaura la carpeta desde un commit anterior:
+ *   git checkout <sha> -- public/ejercicios
  *
  *   node scripts/convert-native-media.mjs                # convierte a staging
  *   node scripts/convert-native-media.mjs --limit 20     # solo las 20 primeras
@@ -118,7 +121,11 @@ async function main() {
     return;
   }
   if (!fs.existsSync(LOCAL_DIR)) {
-    console.error(`No existe ${LOCAL_DIR}.`);
+    console.error(
+      `No existe ${LOCAL_DIR}. Los GIF nativos se quitaron del repo;\n` +
+        `viven en el bucket ejercicios. Para reconvertir:\n` +
+        `  git checkout <sha-anterior> -- public/ejercicios`,
+    );
     process.exitCode = 1;
     return;
   }

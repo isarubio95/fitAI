@@ -1,0 +1,3 @@
+# Cinturón de seguridad: los GIF del catálogo no deben entrar en el output.
+# El origen canónico es el bucket público `ejercicios` de Supabase Storage.
+public/ejercicios
