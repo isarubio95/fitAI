@@ -37,7 +37,8 @@
     "catalogo:duplicados": "node scripts/report-duplicates.mjs",
     "komoot:la-rioja": "node scripts/download-komoot-la-rioja.mjs",
     "komoot:sync-public": "node -e \"const fs=require('fs');const p=require('path');const src='data/komoot-la-rioja';const dst='public/predefined-routes/la-rioja';if(!fs.existsSync(src)){console.error('Falta',src);process.exit(1);}fs.cpSync(src,dst,{recursive:true});console.log('OK',dst);\"",
-    "supabase:types": "node scripts/gen-supabase-types.mjs"
+    "supabase:types": "node scripts/gen-supabase-types.mjs",
+    "csp:hash": "node scripts/csp-hash.mjs"
   },
   "dependencies": {
     "@capacitor-community/bluetooth-le": "^8.2.0",

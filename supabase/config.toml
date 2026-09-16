@@ -1,4 +1,67 @@
 project_id = "ugbhwarfkaeobaycxlwp"
 
+# ⚠️  ESTE FICHERO SOLO CONFIGURA EL SUPABASE LOCAL (`supabase start`).
+#
+# Producción se configura en el Dashboard: Authentication → Rate Limits y
+# Authentication → Providers → Email. Los valores de abajo son la paridad local
+# y la documentación de qué debe estar puesto arriba; cambiarlos aquí NO protege
+# producción.
+#
+# NO ejecutes `supabase config push` con este fichero tal cual: empujaría toda la
+# sección [auth] y los campos que no están declarados (`site_url`,
+# `additional_redirect_urls`, proveedores OAuth…) se sobrescribirían con los
+# valores por defecto del CLI, rompiendo el redirect de login en producción y el
+# deep link `com.trackgym.app://auth-callback` del APK. Si algún día se quiere
+# usar `config push`, primero hay que declarar aquí esos campos.
+
+[auth]
+# Longitud mínima de contraseña. Supabase acepta desde 6; 8 es el mínimo
+# razonable. Solo afecta a contraseñas nuevas: los usuarios existentes siguen
+# entrando con la suya.
+minimum_password_length = 8
+
+# Sin requisitos de composición a propósito. Obligar a símbolos y mayúsculas
+# empeora las contraseñas reales (la gente acaba en `Password1!`) sin subir la
+# entropía. La defensa que sí importa es rechazar contraseñas ya filtradas:
+# se activa en el Dashboard (ver abajo).
+# Valores posibles: "", "letters_digits", "lower_upper_letters_digits",
+# "lower_upper_letters_digits_symbols".
+password_requirements = ""
+
+[auth.rate_limit]
+# Emails por hora (confirmación de registro y recuperación). Con el SMTP por
+# defecto de Supabase el límite real es más bajo; subir este número solo tiene
+# efecto con SMTP propio.
+email_sent = 60
+
+# Registros e inicios de sesión por IP en 5 minutos.
+#
+# Se deja en el valor por defecto a propósito. Track Gym es una app móvil y la
+# mayoría de usuarios entran por CGNAT del operador, donde miles de personas
+# comparten IP de salida: apretar este número no frena el credential stuffing
+# (el atacante rota IPs) y sí bloquea a usuarios legítimos. El control efectivo
+# contra fuerza bruta es el CAPTCHA + la protección de contraseñas filtradas.
+sign_in_sign_ups = 30
+
+# Verificaciones de OTP / magic link por IP en 5 minutos.
+token_verifications = 30
+
+# Refrescos de sesión por IP en 5 minutos. Bajarlo expulsa a usuarios legítimos
+# con varias pestañas o dispositivos: 150 es el valor sano.
+token_refresh = 150
+
+# La app no usa login anónimo (`enable_anonymous_sign_ins` está desactivado).
+# Se deja declarado y bajo por si alguien lo activa en el futuro.
+anonymous_users = 10
+
+# CAPTCHA: es la protección real contra fuerza bruta y registro automatizado,
+# porque no depende de la IP. Requiere cuenta en hCaptcha o Cloudflare Turnstile
+# y añadir el widget en `src/pages/Auth.tsx`, así que queda como decisión de
+# producto. Ver docs/AUDITORIA_SEGURIDAD.md, bloque 1.1.
+# [auth.captcha]
+# enabled = true
+# provider = "hcaptcha"
+# secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
+
 [functions.lyfta-proxy]
 verify_jwt = true

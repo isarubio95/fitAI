@@ -31,6 +31,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: CSP hash de index.html al dia
+        run: npm run csp:hash -- --check
+
       - name: Test
         run: npm test
         env:

@@ -1,0 +1,4 @@
+# El hash CSP de `script-src` en vercel.json se calcula sobre los bytes exactos
+# del script inline de index.html. Con CRLF el hash cambia y el script deja de
+# ejecutarse bajo CSP, así que fijamos LF pase lo que pase en `core.autocrlf`.
+index.html text eol=lf

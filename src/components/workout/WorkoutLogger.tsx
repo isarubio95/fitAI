@@ -44,6 +44,7 @@ import {
 import { serializeWorkoutFormSnapshot } from "./workout-logger/serializeWorkoutFormSnapshot";
 import {
   isReopeningKnownActiveWorkout,
+  mergeServerExercisesIntoForm,
   sessionHasStartedForDrawer,
   shouldShowWorkoutEmptyStart,
 } from "./workout-logger/activeSessionRestore";
@@ -326,12 +327,13 @@ export function WorkoutLogger() {
   useEffect(() => {
     if (!open || !isEdit || !existingWorkout || templateExercises) return;
     if (hydratedWorkoutIdRef.current !== existingWorkout.id) return;
-    const known = new Set(exercises.map((e) => e.id).filter(Boolean));
-    const extra = existingWorkout.ejercicios.filter((ej) => !known.has(ej.id));
-    if (extra.length === 0) return;
-    setExercises((prev) => [...prev, ...extra.map(mapWorkoutExerciseToFormData)]);
-    if (!existingWorkout.fecha_fin) armSessionClock(existingWorkout.fecha);
-  }, [open, isEdit, existingWorkout, templateExercises, exercises, armSessionClock]);
+    setExercises((prev) =>
+      mergeServerExercisesIntoForm(prev, existingWorkout.ejercicios, mapWorkoutExerciseToFormData),
+    );
+    if (!existingWorkout.fecha_fin && existingWorkout.ejercicios.length > 0) {
+      armSessionClock(existingWorkout.fecha);
+    }
+  }, [open, isEdit, existingWorkout, templateExercises, armSessionClock]);
 
   // Crear sesión activa al abrir (desde rutina/plan o entreno en blanco)
   useEffect(() => {

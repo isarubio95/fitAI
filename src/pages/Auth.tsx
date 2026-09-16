@@ -18,14 +18,40 @@ import {
 } from "@/lib/authStyles";
 import { cn } from "@/lib/utils";
 
+/**
+ * Mínimo exigido en el cliente. Debe ir igual o por encima de
+ * `auth.minimum_password_length` (Dashboard → Authentication, y
+ * `supabase/config.toml` para el entorno local). Pasarse de largo aquí solo
+ * adelanta el error; quedarse corto obliga a un viaje al servidor para nada.
+ */
+const MIN_PASSWORD_LENGTH = 8;
+
 function translateAuthError(msg: string, isLogin: boolean): { title: string; description: string } {
   const lower = msg.toLowerCase();
   if (lower.includes("user already registered"))
     return { title: "Cuenta ya registrada", description: "Este correo ya tiene cuenta. Por favor, inicia sesión." };
   if (lower.includes("invalid login credentials"))
     return { title: "Error de inicio de sesión", description: "Email o contraseña incorrectos." };
-  if (lower.includes("password should be at least"))
-    return { title: "Contraseña muy corta", description: "La contraseña debe tener al menos 6 caracteres." };
+  if (lower.includes("password should be at least")) {
+    // El mínimo lo decide el servidor: lo leemos del mensaje en vez de fijarlo
+    // aquí, para que subirlo en el Dashboard no deje este texto desfasado.
+    const serverMin = msg.match(/\d+/)?.[0] ?? String(MIN_PASSWORD_LENGTH);
+    return {
+      title: "Contraseña muy corta",
+      description: `La contraseña debe tener al menos ${serverMin} caracteres.`,
+    };
+  }
+  if (lower.includes("known to be weak") || lower.includes("weak password") || lower.includes("pwned"))
+    return {
+      title: "Contraseña insegura",
+      description:
+        "Esta contraseña aparece en filtraciones públicas conocidas. Elige otra que no uses en ningún otro sitio.",
+    };
+  if (lower.includes("password should contain"))
+    return {
+      title: "Contraseña poco robusta",
+      description: "La contraseña debe combinar letras y números. Prueba con una más larga.",
+    };
   if (lower.includes("email not confirmed"))
     return { title: "Email no confirmado", description: "Revisa tu bandeja de entrada y confirma tu email antes de iniciar sesión." };
   if (lower.includes("email rate limit exceeded") || lower.includes("rate limit"))
@@ -89,6 +115,16 @@ const Auth = () => {
           toast({
             title: "Debes aceptar la política de privacidad",
             description: "Lee y acepta la política de privacidad para crear tu cuenta.",
+            variant: "destructive",
+          });
+          return;
+        }
+        // Solo en registro: los usuarios que ya tienen una contraseña más corta
+        // deben poder seguir entrando.
+        if (password.length < MIN_PASSWORD_LENGTH) {
+          toast({
+            title: "Contraseña muy corta",
+            description: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`,
             variant: "destructive",
           });
           return;
