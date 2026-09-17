@@ -182,6 +182,27 @@ function remapSupersetIds<T extends { superset_id: string | null }>(
 }
 
 /**
+ * Campos que se copian de un plan por serie.
+ *
+ * Se tipa estructuralmente, y no como `Tables<"rutina_ejercicio_serie">`, para
+ * admitir también planes que aún no existen en BD (los que genera
+ * `buildVariantPlan` al clonar una plantilla en modo piramidal): `id` y
+ * `rutina_ejercicio_id` nunca se leen aquí.
+ */
+type SeriesPlanSource = Pick<
+  Tables<"rutina_ejercicio_serie">,
+  | "orden"
+  | "tipo_serie"
+  | "repes_min"
+  | "repes_max"
+  | "rir"
+  | "peso_objetivo_kg"
+  | "descanso"
+  | "duracion_objetivo_seg"
+  | "ritmo_objetivo_seg_km"
+>;
+
+/**
  * Copia el plan por serie a los rutina_ejercicio recién insertados.
  *
  * `sourceByOrden` debe estar indexado por el mismo `orden` con el que se
@@ -189,7 +210,7 @@ function remapSupersetIds<T extends { superset_id: string | null }>(
  * PostgREST no garantiza el orden de las filas devueltas.
  */
 export async function copySeriesPlans(
-  sourceByOrden: Array<Tables<"rutina_ejercicio_serie">[] | null | undefined>,
+  sourceByOrden: Array<readonly SeriesPlanSource[] | null | undefined>,
   insertedRows: Array<{ id: string; orden: number }>,
 ): Promise<void> {
   const planInserts: TablesInsert<"rutina_ejercicio_serie">[] = [];

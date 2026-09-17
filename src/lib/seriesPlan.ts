@@ -8,6 +8,7 @@ import {
   defaultSetForMode,
   formatRitmoSegKmLabel,
   normalizeRegistroSeries,
+  registroUsesWeight,
 } from "@/types/workout";
 import { DEFAULT_TIPO_SERIE, normalizeTipoSerie, type TipoSerie } from "@/lib/setTypes";
 
@@ -260,11 +261,39 @@ const POWER_REPS_MAX = 5;
 const POWER_RIR = 5;
 const POWER_REST_SEC = 180;
 
+/**
+ * Reps mínimas de una serie generada por un preset.
+ *
+ * En el editor manual el usuario ve el resultado y lo corrige; al aplicar una
+ * variante a una rutina entera (ver `buildVariantPlan`) nadie lo revisa, y el
+ * `Math.max(1, …)` por campo degeneraba: 5 series desde 6-8 daban mins
+ * [6,4,2,1,1]. Por debajo de este suelo la serie ya no entrena lo que la rutina
+ * pretendía.
+ */
+export const MIN_PYRAMID_REPS = 4;
+
+/**
+ * Desplaza el rango de una serie conservando su anchura.
+ *
+ * El suelo actúa sobre el mínimo y el máximo se mueve LO MISMO que se haya
+ * podido mover el mínimo, no `delta` a secas: así un rango estrecho no se
+ * invierte (`repes_max < repes_min`) al toparse con el suelo.
+ * Un ejercicio que ya prescribe menos reps que el suelo se respeta tal cual.
+ */
 function shiftReps(plan: RoutineSetPlan, delta: number): RoutineSetPlan {
+  if (plan.repes_min == null) {
+    return {
+      ...plan,
+      repes_max: plan.repes_max != null ? Math.max(1, plan.repes_max + delta) : null,
+    };
+  }
+  const floor = Math.min(MIN_PYRAMID_REPS, plan.repes_min);
+  const min = Math.max(floor, plan.repes_min + delta);
+  const applied = min - plan.repes_min;
   return {
     ...plan,
-    repes_min: plan.repes_min != null ? Math.max(1, plan.repes_min + delta) : null,
-    repes_max: plan.repes_max != null ? Math.max(1, plan.repes_max + delta) : null,
+    repes_min: min,
+    repes_max: plan.repes_max != null ? Math.max(min, plan.repes_max + applied) : null,
   };
 }
 
@@ -505,6 +534,117 @@ export function restForSet(
 ): number {
   if (set.descanso != null && Number.isFinite(set.descanso)) return set.descanso;
   return exerciseRest ?? DEFAULT_REST_SEC;
+}
+
+// ---------------------------------------------------------------------------
+// Variantes de rutina
+//
+// El catálogo de plantillas está escrito en modo plano (mismo rango en todas
+// las series). En vez de triplicarlo en base de datos, la variante piramidal se
+// materializa al CLONAR la plantilla: se reutilizan los presets de arriba para
+// generar `rutina_ejercicio_serie` en la copia del usuario.
+// ---------------------------------------------------------------------------
+
+/** Formato de series que el usuario elige al añadir una rutina predefinida. */
+export type RoutineVariant = "recta" | "piramidal_desc" | "piramidal_asc";
+
+export interface RoutineVariantOption {
+  key: RoutineVariant;
+  label: string;
+  /** Una línea en cristiano: el usuario puede no saber qué es una pirámide. */
+  description: string;
+  /** Sufijo del nombre de la copia, para distinguirla en "Mis rutinas". */
+  suffix: string;
+}
+
+export const ROUTINE_VARIANTS: readonly RoutineVariantOption[] = [
+  {
+    key: "recta",
+    label: "Normal",
+    description: "Todas las series con el mismo rango de repeticiones",
+    suffix: "",
+  },
+  {
+    key: "piramidal_desc",
+    label: "Piramidal",
+    description: "Bajan las repeticiones en cada serie para poder subir el peso",
+    suffix: " (Pirámide ↓)",
+  },
+  {
+    key: "piramidal_asc",
+    label: "Piramidal inversa",
+    description: "Empiezas por la serie más pesada y ganas repeticiones al bajar carga",
+    suffix: " (Pirámide ↑)",
+  },
+] as const;
+
+export function variantSuffix(variant: RoutineVariant): string {
+  return ROUTINE_VARIANTS.find((v) => v.key === variant)?.suffix ?? "";
+}
+
+/**
+ * Forma mínima de un ejercicio para decidir su variante. La cumple tanto la
+ * fila de `rutina_ejercicio` como el proyectado de la plantilla.
+ */
+export interface VariantSourceExercise {
+  series_objetivo: number;
+  repes_min: number | null;
+  repes_max: number | null;
+  rir?: number | null;
+  descanso?: number | null;
+  registro_series?: string | null;
+  duracion_objetivo_seg?: number | null;
+  ritmo_objetivo_seg_km?: number | null;
+}
+
+/**
+ * Si tiene sentido piramidar este ejercicio.
+ *
+ * Una pirámide es un intercambio entre repeticiones y carga, así que solo
+ * aplica donde hay carga externa que mover:
+ *  - `duracion` / `duracion_ritmo` no cuentan repeticiones que desplazar.
+ *  - `solo_reps` es trabajo balístico SIN carga externa (saltos, pliometría):
+ *    bajar repeticiones ahí es perder volumen a cambio de nada. Ese trabajo ya
+ *    tiene su propio preset, `potencia`.
+ * Y hace falta margen real: con una sola serie, o partiendo ya del suelo de
+ * repeticiones, la "pirámide" saldría plana y solo añadiría filas hijas que el
+ * usuario tendría que entender para nada.
+ */
+export function supportsVariant(ej: VariantSourceExercise): boolean {
+  if (!registroUsesWeight(normalizeRegistroSeries(ej.registro_series))) return false;
+  if (!(Math.round(ej.series_objetivo) > 1)) return false;
+  if (ej.repes_min == null || ej.repes_min <= MIN_PYRAMID_REPS) return false;
+  if (ej.repes_max != null && ej.repes_max < ej.repes_min) return false;
+  return true;
+}
+
+/**
+ * Plan por serie para la variante elegida, o `null` para clonar el ejercicio
+ * tal cual (modo simple, comportamiento histórico).
+ *
+ * `existingPlan` es lo que la plantilla ya prescribía: si trae algo, se respeta
+ * sin tocar. Esas filas son una decisión deliberada de su autor (calentamiento,
+ * dropset, AMRAP) y aplicarles una pirámide encima reescribiría la intención en
+ * silencio, además de desplazar cada serie respecto a su propio valor.
+ */
+export function buildVariantPlan(
+  ej: VariantSourceExercise,
+  existingPlan: RoutineSetPlan[] | null,
+  variant: RoutineVariant,
+): RoutineSetPlan[] | null {
+  if (existingPlan?.length) return existingPlan;
+  if (variant === "recta" || !supportsVariant(ej)) return null;
+
+  const scalars: ExerciseScalars = {
+    series_objetivo: ej.series_objetivo,
+    repes_min: ej.repes_min!,
+    repes_max: ej.repes_max ?? ej.repes_min!,
+    rir: ej.rir ?? DEFAULT_TARGET_RIR,
+    descanso: ej.descanso ?? DEFAULT_REST_SEC,
+    duracion_objetivo_seg: ej.duracion_objetivo_seg ?? null,
+    ritmo_objetivo_seg_km: ej.ritmo_objetivo_seg_km ?? null,
+  };
+  return applyPlanPreset(variant, buildSimplePlan(scalars), scalars);
 }
 
 export type { TipoSerie };

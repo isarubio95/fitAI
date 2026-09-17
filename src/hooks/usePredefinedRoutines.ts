@@ -4,6 +4,14 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "./useAuth";
 import { copySeriesPlans } from "./useRoutines";
 import { toast } from "@/hooks/use-toast";
+import {
+  buildVariantPlan,
+  planFromRows,
+  summarizeSeriesPlan,
+  variantSuffix,
+  type RoutineVariant,
+} from "@/lib/seriesPlan";
+import type { RoutineSetPlan } from "@/types/routine";
 
 export interface PredefinedRoutine {
   id: string;
@@ -125,12 +133,27 @@ export function usePredefinedRoutines(filters?: PredefinedRoutinesFilters) {
   });
 }
 
+export interface CloneRoutineArgs {
+  templateId: string;
+  /** Formato de series de la copia. Por defecto, la plantilla tal cual. */
+  variant?: RoutineVariant;
+}
+
+export interface CloneRoutineResult {
+  id: string;
+  variant: RoutineVariant;
+  /** Ejercicios a los que se les materializó la pirámide. */
+  applied: number;
+  /** Ejercicios de la rutina. */
+  total: number;
+}
+
 export function useCloneRoutine() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (templateId: string) => {
+  return useMutation<CloneRoutineResult, Error, CloneRoutineArgs>({
+    mutationFn: async ({ templateId, variant = "recta" }) => {
       if (!user) throw new Error("No autenticado");
 
       // Fetch the template
@@ -150,14 +173,23 @@ export function useCloneRoutine() {
         .order("orden");
       if (eErr) throw eErr;
 
-      // Clone the routine
+      // Clone the routine. El sufijo distingue en "Mis rutinas" la misma
+      // plantilla añadida en varios formatos; `rutina` no tiene columna donde
+      // guardar la variante.
       const { data: newRutina, error: insertErr } = await supabase
         .from("rutina")
         .insert({
-          nombre: template.nombre,
+          nombre: `${template.nombre}${variantSuffix(variant)}`,
           descripcion: template.descripcion,
           usuario_id: user.id,
           icono: template.icono,
+          // Se copian como en useDuplicateRoutine: sin esto la copia perdía
+          // nivel/duración/grupo, y es_plantilla quedaba al default de la
+          // columna, con riesgo de listarse como plantilla.
+          es_plantilla: false,
+          nivel: template.nivel,
+          duracion_minutos: template.duracion_minutos,
+          grupo_muscular: template.grupo_muscular,
         })
         .select("id")
         .single();
@@ -166,8 +198,14 @@ export function useCloneRoutine() {
       // Clone exercises. Se copian TODOS los campos: antes se perdían
       // registro_series, superset_id y los objetivos de duración/ritmo, así que
       // una plantilla de cardio o con superseries se clonaba degradada.
+      let applied = 0;
+
       if (ejercicios?.length) {
         const supersetRemap = new Map<string, string>();
+        // Plan resultante por `orden`: el de la variante, el que ya traía la
+        // plantilla, o null (modo simple).
+        const plansByOrden: Array<RoutineSetPlan[] | null> = [];
+
         const clonedEjercicios = ejercicios.map((ej) => {
           const sid = ej.superset_id?.trim() || null;
           let newSid: string | null = null;
@@ -175,20 +213,41 @@ export function useCloneRoutine() {
             newSid = supersetRemap.get(sid) ?? crypto.randomUUID();
             supersetRemap.set(sid, newSid);
           }
-          return {
-            rutina_id: newRutina.id,
-            tipo_ejercicio_id: ej.tipo_ejercicio_id,
-            usuario_ejercicio_id: ej.usuario_ejercicio_id,
+
+          const existingPlan = planFromRows(ej.rutina_ejercicio_serie);
+          const plan = buildVariantPlan(ej, existingPlan, variant);
+          plansByOrden[ej.orden] = plan;
+          if (plan && plan !== existingPlan) applied += 1;
+
+          const base = {
             series_objetivo: ej.series_objetivo,
             repes_min: ej.repes_min,
             repes_max: ej.repes_max,
             rir: ej.rir,
-            orden: ej.orden,
             descanso: ej.descanso,
-            superset_id: newSid,
-            registro_series: ej.registro_series,
             duracion_objetivo_seg: ej.duracion_objetivo_seg,
             ritmo_objetivo_seg_km: ej.ritmo_objetivo_seg_km,
+          };
+          // Con plan, los escalares pasan a ser su resumen derivado: los siguen
+          // leyendo la tarjeta de rutina, el volumen por grupo muscular y la
+          // duración estimada. Sin plan se copian tal cual, nulos incluidos:
+          // la variante recta tiene que clonar exactamente como antes.
+          const scalars = plan
+            ? summarizeSeriesPlan(plan, {
+                ...base,
+                rir: ej.rir ?? 1,
+                descanso: ej.descanso ?? 120,
+              })
+            : base;
+
+          return {
+            rutina_id: newRutina.id,
+            tipo_ejercicio_id: ej.tipo_ejercicio_id,
+            usuario_ejercicio_id: ej.usuario_ejercicio_id,
+            orden: ej.orden,
+            superset_id: newSid,
+            registro_series: ej.registro_series,
+            ...scalars,
           };
         });
         const { data: insertedRows, error: ejInsertErr } = await supabase
@@ -197,18 +256,24 @@ export function useCloneRoutine() {
           .select("id, orden");
         if (ejInsertErr) throw ejInsertErr;
 
-        const plansByOrden: Array<Tables<"rutina_ejercicio_serie">[] | null> = [];
-        ejercicios.forEach((ej) => {
-          plansByOrden[ej.orden] = ej.rutina_ejercicio_serie ?? null;
-        });
         await copySeriesPlans(plansByOrden, insertedRows ?? []);
       }
 
-      return newRutina.id;
+      return { id: newRutina.id, variant, applied, total: ejercicios?.length ?? 0 };
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["routines"] });
-      toast({ title: "✅ Rutina guardada en tu perfil" });
+      toast({
+        title: "✅ Rutina guardada en tu perfil",
+        // El caso `applied === 0` no puede pasar en silencio: el usuario eligió
+        // pirámide y la rutina se guardó recta.
+        description:
+          res.variant === "recta"
+            ? undefined
+            : res.applied === 0
+              ? "Ningún ejercicio admitía pirámide; se guardó con series rectas."
+              : `Pirámide aplicada a ${res.applied} de ${res.total} ejercicios.`,
+      });
     },
     onError: (err: unknown) => {
       const message = err instanceof Error ? err.message : String(err);

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyPlanPreset,
   buildSimplePlan,
+  buildVariantPlan,
   expandExerciseToSets,
   formatRepTarget,
   parseRepTarget,
@@ -9,8 +10,12 @@ import {
   restForSet,
   routineExercisesToFormData,
   summarizeSeriesPlan,
+  supportsVariant,
+  variantSuffix,
   withSeriesPlan,
+  MIN_PYRAMID_REPS,
   type RoutineExerciseLike,
+  type VariantSourceExercise,
 } from "@/lib/seriesPlan";
 import { isWorkingSet, normalizeTipoSerie } from "@/lib/setTypes";
 import type { RoutineExerciseFormData, RoutineSetPlan } from "@/types/routine";
@@ -201,12 +206,118 @@ describe("presets", () => {
     expect(isWorkingSet(last.tipo_serie)).toBe(true);
   });
 
+  it("ninguna serie baja del suelo de repeticiones", () => {
+    // 5 series desde 6-8: antes del suelo degeneraba a mins [6,4,2,1,1].
+    const estrecho = { ...scalars, series_objetivo: 5, repes_min: 6, repes_max: 8 };
+    for (const key of ["piramidal_desc", "piramidal_asc"] as const) {
+      const plan = applyPlanPreset(key, buildSimplePlan(estrecho), estrecho);
+      for (const s of plan) {
+        expect(s.repes_min).toBeGreaterThanOrEqual(MIN_PYRAMID_REPS);
+        expect(s.repes_max!).toBeGreaterThanOrEqual(s.repes_min!);
+      }
+    }
+  });
+
+  it("no desplaza un ejercicio que ya prescribe menos reps que el suelo", () => {
+    const pesado = { ...scalars, repes_min: 3, repes_max: 5 };
+    const plan = applyPlanPreset("piramidal_desc", buildSimplePlan(pesado), pesado);
+
+    expect(plan.map((s) => s.repes_min)).toEqual([3, 3, 3]);
+    expect(plan.map((s) => s.repes_max)).toEqual([5, 5, 5]);
+  });
+
+  it("el rango nunca se invierte, sea cual sea la base", () => {
+    for (const series_objetivo of [2, 3, 4, 5, 6, 8]) {
+      for (const [repes_min, repes_max] of [
+        [5, 8],
+        [6, 8],
+        [8, 12],
+        [10, 15],
+        [12, 20],
+      ]) {
+        const base = { ...scalars, series_objetivo, repes_min, repes_max };
+        for (const key of ["piramidal_desc", "piramidal_asc"] as const) {
+          for (const s of applyPlanPreset(key, buildSimplePlan(base), base)) {
+            expect(s.repes_min).toBeGreaterThanOrEqual(Math.min(MIN_PYRAMID_REPS, repes_min));
+            expect(s.repes_max!).toBeGreaterThanOrEqual(s.repes_min!);
+          }
+        }
+      }
+    }
+  });
+
   it("recta iguala todas las series manteniendo los tipos", () => {
     const conWarmup = applyPlanPreset("con_calentamiento", buildSimplePlan(scalars), scalars);
     const recta = applyPlanPreset("recta", conWarmup, scalars);
 
     expect(recta[0].tipo_serie).toBe("calentamiento");
     expect(new Set(recta.map((s) => s.repes_min)).size).toBe(1);
+  });
+});
+
+describe("variantes de rutina", () => {
+  const source: VariantSourceExercise = {
+    series_objetivo: 3,
+    repes_min: 8,
+    repes_max: 12,
+    rir: 1,
+    descanso: 120,
+    registro_series: "peso_reps",
+  };
+
+  it("la variante recta no materializa plan: la rutina se clona tal cual", () => {
+    expect(buildVariantPlan(source, null, "recta")).toBeNull();
+  });
+
+  it("piramida un ejercicio de fuerza con los escalones del preset", () => {
+    const plan = buildVariantPlan(source, null, "piramidal_desc")!;
+
+    expect(plan.map((s) => s.repes_min)).toEqual([8, 6, 4]);
+    expect(plan.map((s) => s.repes_max)).toEqual([12, 10, 8]);
+    expect(plan.map((s) => s.orden)).toEqual([0, 1, 2]);
+    expect(plan.every((s) => s.tipo_serie === "efectiva")).toBe(true);
+  });
+
+  it("excluye los modos sin carga externa que desplazar", () => {
+    // duracion / duracion_ritmo no cuentan repeticiones; solo_reps es trabajo
+    // balístico sin carga, donde bajar reps no compra nada.
+    for (const registro_series of ["duracion", "duracion_ritmo", "solo_reps"]) {
+      const ej = { ...source, registro_series };
+      expect(supportsVariant(ej)).toBe(false);
+      expect(buildVariantPlan(ej, null, "piramidal_desc")).toBeNull();
+    }
+  });
+
+  it("excluye los ejercicios sin margen para una pirámide", () => {
+    // Una sola serie, o partiendo ya del suelo: saldría plana.
+    expect(supportsVariant({ ...source, series_objetivo: 1 })).toBe(false);
+    expect(supportsVariant({ ...source, repes_min: MIN_PYRAMID_REPS })).toBe(false);
+    expect(supportsVariant({ ...source, repes_min: null })).toBe(false);
+    expect(supportsVariant({ ...source, repes_min: 12, repes_max: 8 })).toBe(false);
+  });
+
+  it("respeta el plan que la plantilla ya prescribía", () => {
+    const prescrito = [planRow(0, { tipo_serie: "calentamiento" }), planRow(1)];
+
+    expect(buildVariantPlan(source, prescrito, "piramidal_desc")).toBe(prescrito);
+    expect(buildVariantPlan(source, prescrito, "recta")).toBe(prescrito);
+  });
+
+  it("los escalares resumen del plan piramidal cubren todo el rango", () => {
+    const plan = buildVariantPlan(source, null, "piramidal_desc")!;
+    const resumen = summarizeSeriesPlan(plan, { ...scalars });
+
+    // La tarjeta de rutina y la duración estimada leen estos escalares.
+    expect(resumen.series_objetivo).toBe(3);
+    expect(resumen.repes_min).toBe(4);
+    expect(resumen.repes_max).toBe(12);
+    expect(resumen.descanso).toBe(120);
+  });
+
+  it("solo las pirámides añaden sufijo al nombre de la copia", () => {
+    expect(variantSuffix("recta")).toBe("");
+    expect(variantSuffix("piramidal_desc")).not.toBe("");
+    expect(variantSuffix("piramidal_asc")).not.toBe(variantSuffix("piramidal_desc"));
   });
 });
 

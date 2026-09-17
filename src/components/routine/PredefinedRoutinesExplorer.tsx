@@ -9,6 +9,13 @@ import {
   useCloneRoutine,
   type PredefinedRoutine,
 } from "@/hooks/usePredefinedRoutines";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ROUTINE_VARIANTS, type RoutineVariant } from "@/lib/seriesPlan";
 import { resolveRoutineIcon } from "@/lib/routineIcons";
 import {
   ArrowLeft,
@@ -23,6 +30,7 @@ import {
   Loader2,
   Plus,
   Sparkles,
+  ChevronDown,
 } from "lucide-react";
 import { filterChipActive, filterChipInactive } from "@/lib/filter-pill-styles";
 import { cn } from "@/lib/utils";
@@ -73,8 +81,8 @@ export function PredefinedRoutinesExplorer({ open, onOpenChange }: Props) {
   const cloneRoutine = useCloneRoutine();
   const source = routines || [];
 
-  const handleClone = async (id: string) => {
-    await cloneRoutine.mutateAsync(id);
+  const handleClone = async (id: string, variant: RoutineVariant) => {
+    await cloneRoutine.mutateAsync({ templateId: id, variant });
     // Mantenemos el modal abierto para poder añadir más rutinas
   };
 
@@ -221,7 +229,7 @@ function RoutineCard({
 }: {
   routine: PredefinedRoutine;
   nivelColor: (n: string | null) => string;
-  onClone: (id: string) => void;
+  onClone: (id: string, variant: RoutineVariant) => void;
   isCloning: boolean;
 }) {
   const RoutineTitleIcon = resolveRoutineIcon(r.icono);
@@ -283,19 +291,35 @@ function RoutineCard({
         )}
       </div>
 
-      <Button
-        size="sm"
-        className="w-full gap-1.5"
-        disabled={isCloning}
-        onClick={() => onClone(r.id)}
-      >
-        {isCloning ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Plus className="h-4 w-4" />
-        )}
-        Añadir a mis rutinas
-      </Button>
+      {/* El formato se elige al añadir: la pirámide se genera al clonar, sin
+          duplicar la plantilla en base de datos. */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm" className="w-full gap-1.5" disabled={isCloning}>
+            {isCloning ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            Añadir a mis rutinas
+            <ChevronDown className="h-4 w-4 opacity-70" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center" className="w-72 bg-popover">
+          {ROUTINE_VARIANTS.map((v) => (
+            <DropdownMenuItem
+              key={v.key}
+              className="flex-col items-start gap-0.5 py-2"
+              onClick={() => onClone(r.id, v.key)}
+            >
+              <span className="font-medium">{v.label}</span>
+              <span className="text-[11px] leading-snug text-muted-foreground whitespace-normal">
+                {v.description}
+              </span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </motion.div>
   );
 }
