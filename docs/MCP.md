@@ -35,6 +35,7 @@ porque saltarse RLS ahí sería invisible hasta que un usuario leyera datos de o
 | Pantalla de consentimiento | `src/pages/OAuthConsent.tsx` |
 | Retorno tras login | `src/components/auth/OAuthConsentReturn.tsx`, `src/lib/oauthConsent.ts` |
 | Accesos conectados (Ajustes) | `src/components/layout/ConnectedAppsSettings.tsx`, `src/hooks/useOAuthGrants.ts` |
+| Destacado e instrucciones (Inicio) | `src/components/dashboard/McpSpotlightCard.tsx`, `src/lib/mcp.ts` |
 | Invariantes de datos | `supabase/migrations/20260918100000_data_integrity_constraints.sql` |
 | Agregados de lectura | `supabase/migrations/20260918101000_analytics_read_rpcs.sql` |
 | Escritura de rutinas | `supabase/migrations/20260918102000_routine_write_rpcs.sql` |
@@ -148,8 +149,13 @@ autoriza el Inspector como A, pide `list_workouts` y comprueba que solo salen se
 claude mcp add --transport http track-gym https://<ref>.supabase.co/functions/v1/mcp
 ```
 
-En Claude web, ChatGPT o Cursor se pega la misma URL en su pantalla de conectores. La app la
-muestra con un botón de copiar en Ajustes → Aplicaciones conectadas.
+En Claude web, ChatGPT, Gemini o Cursor se pega la misma URL en su pantalla de conectores. La app
+la muestra con un botón de copiar en dos sitios: Ajustes → Aplicaciones conectadas y la tarjeta
+destacada de Inicio (`src/components/dashboard/McpSpotlightCard.tsx`), que además lleva las
+instrucciones concretas de cada asistente. Los dos leen `MCP_URL` de `src/lib/mcp.ts`.
+
+Si alguno de esos cuatro clientes cambia sus menús, esas instrucciones son lo primero que se
+queda obsoleto: son rótulos literales de una interfaz ajena, no algo que este repo controle.
 
 ## Herramientas
 

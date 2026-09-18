@@ -1131,3 +1131,80 @@ html[data-nav-direction="back"]::view-transition-new(page-content) {
   color: hsl(var(--success-foreground)) !important;
   cursor: pointer;
 }
+
+/*
+ * Anillo luminoso que recorre el borde de una card (destacado de Inicio).
+ *
+ * El arco claro se mueve girando el ángulo de un `conic-gradient`, no rotando
+ * un elemento dentro de la card: así sigue recorriendo el filo exacto cuando la
+ * card cambia de alto al abrirse el desplegable, sin tener que dimensionar un
+ * cuadrado que la cubra en todos los tamaños.
+ *
+ * `--spotlight-angle` se declara además como propiedad normal en la clase: si
+ * el motor no soporta `@property`, el `var()` sigue resolviendo y el borde
+ * queda quieto en lugar de desaparecer entero por declaración inválida.
+ *
+ * El ::before pinta solo el filo: `padding: 1px` más una máscara que descuenta
+ * la caja de contenido deja un aro de 1px, justo encima del borde de
+ * `.surface-card`, que hace de base apagada cuando el arco no está pasando.
+ */
+@property --spotlight-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes spotlight-sweep {
+  to {
+    --spotlight-angle: 360deg;
+  }
+}
+
+.spotlight-ring {
+  --spotlight-angle: 0deg;
+  /* En claro el núcleo del arco es el verde de marca: el `--foreground` de este
+     tema es casi negro y sobre el borde gris se leía como una mancha sucia. */
+  --spotlight-core: hsl(var(--primary) / 0.9);
+  --spotlight-halo: hsl(var(--primary) / 0.3);
+  position: relative;
+}
+
+:where(.dark) .spotlight-ring {
+  --spotlight-core: hsl(var(--foreground) / 0.72);
+  --spotlight-halo: hsl(var(--primary) / 0.35);
+}
+
+.spotlight-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--spotlight-angle),
+    transparent 0deg,
+    transparent 24deg,
+    var(--spotlight-halo) 48deg,
+    var(--spotlight-core) 66deg,
+    var(--spotlight-halo) 84deg,
+    transparent 108deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: spotlight-sweep 6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-ring::before {
+    animation: none;
+  }
+}

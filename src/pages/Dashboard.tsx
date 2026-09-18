@@ -16,6 +16,7 @@ import { CalendarPeriodPicker } from "@/components/dashboard/CalendarPeriodPicke
 import { ExerciseProgressWidget } from "@/components/dashboard/ExerciseProgressWidget";
 import { TrainingLoadWidget } from "@/components/dashboard/TrainingLoadWidget";
 import { GamificationWidget } from "@/components/dashboard/GamificationWidget";
+import { McpSpotlightCard } from "@/components/dashboard/McpSpotlightCard";
 import { AnimatedTabsList, pillTabsListClass, pillTabsTriggerClass, Tabs, TabsTrigger } from "@/components/ui/tabs";
 import { WorkoutDetailsSheet } from "@/components/dashboard/WorkoutDetailsSheet";
 import { CardioDetailsSheet } from "@/components/cardio/CardioDetailsSheet";
@@ -24,7 +25,7 @@ import { format, startOfMonth, startOfWeek, isSameDay, subYears, addYears, addMo
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { APP_PAGE_SHELL, APP_PAGE_STACK, PAGE_CARD } from "@/lib/pageStyles";
+import { APP_PAGE_SHELL, APP_PAGE_STACK, PAGE_CARD, PAGE_STACK_INSET, PAGE_STACK_TOP } from "@/lib/pageStyles";
 import { usePlannedRoutines, useDeleteAllPlannedRoutines, type PlannedRoutine } from "@/hooks/useWorkoutPlan";
 import {
   Dialog,
@@ -616,6 +617,12 @@ const Dashboard = () => {
           </Button>,
           headerActionsSlot
         )}
+
+      {/* Destacado: va antes del stack reordenable, no dentro. Es un aviso, no un
+          widget de datos, y arrastrarlo o enterrarlo no tendría sentido. */}
+      <div className={cn("flex w-full flex-col bg-background md:bg-transparent", PAGE_STACK_INSET, PAGE_STACK_TOP)}>
+        <McpSpotlightCard />
+      </div>
 
       <DndContext 
         sensors={sensors}

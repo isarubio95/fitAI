@@ -14,15 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { useOAuthGrants, type OAuthGrant } from "@/hooks/useOAuthGrants";
 import { useToast } from "@/hooks/use-toast";
+import { MCP_URL } from "@/lib/mcp";
 import { hostOf, scopeLabel } from "@/lib/oauthConsent";
 import { cn } from "@/lib/utils";
 
 const settingsSectionCardClass = cn(
   "space-y-4 rounded-xl border border-border/60 bg-card p-4",
 );
-
-/** URL que el usuario pega en su asistente. Derivada del proyecto Supabase. */
-const MCP_URL = `${import.meta.env.VITE_SUPABASE_URL ?? ""}/functions/v1/mcp`;
 
 function formatearFecha(iso: string): string {
   const fecha = new Date(iso);
