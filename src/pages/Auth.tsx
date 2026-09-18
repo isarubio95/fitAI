@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, ChevronLeft, KeyRound, Loader2, Mail } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,7 @@ import {
   AUTH_LINK_CLASS,
   AUTH_SOFT_BUTTON_CLASS,
 } from "@/lib/authStyles";
+import { safeNextPath } from "@/lib/oauthConsent";
 import { cn } from "@/lib/utils";
 
 /**
@@ -69,6 +70,7 @@ const WELCOME_SEEN_KEY = "trackgym-auth-welcome-seen";
 const Auth = () => {
   const { user, loading } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState<AuthStep>(() =>
     localStorage.getItem(WELCOME_SEEN_KEY) ? "login" : "welcome",
   );
@@ -100,7 +102,11 @@ const Auth = () => {
     );
   }
 
-  if (user) return <Navigate to="/" replace />;
+  // `?next=` solo se honra si apunta al consentimiento OAuth (`safeNextPath` lo
+  // valida): aceptar cualquier destino convertiría el login en un redirector
+  // abierto. El caso de Google, que vuelve al origen y no a esta pantalla, lo
+  // cubre `OAuthConsentReturn`.
+  if (user) return <Navigate to={safeNextPath(searchParams.get("next")) ?? "/"} replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

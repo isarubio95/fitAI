@@ -8,13 +8,25 @@ project_id = "ugbhwarfkaeobaycxlwp"
 # producción.
 #
 # NO ejecutes `supabase config push` con este fichero tal cual: empujaría toda la
-# sección [auth] y los campos que no están declarados (`site_url`,
-# `additional_redirect_urls`, proveedores OAuth…) se sobrescribirían con los
-# valores por defecto del CLI, rompiendo el redirect de login en producción y el
-# deep link `com.trackgym.app://auth-callback` del APK. Si algún día se quiere
-# usar `config push`, primero hay que declarar aquí esos campos.
+# sección [auth] y los campos que no están declarados (`additional_redirect_urls`,
+# proveedores OAuth…) se sobrescribirían con los valores por defecto del CLI,
+# rompiendo el redirect de login en producción y el deep link
+# `com.trackgym.app://auth-callback` del APK. Si algún día se quiere usar
+# `config push`, primero hay que declarar aquí esos campos.
+#
+# ⚠️  La guía oficial de Supabase para el servidor OAuth 2.1 dice literalmente
+# «push the Auth settings from config.toml». Aquí NO: `[auth.oauth_server]` se
+# activa a mano en el Dashboard (Authentication → OAuth Server), por la misma
+# razón de arriba. Lo de abajo solo levanta el servidor OAuth en local.
 
 [auth]
+# Prefijo al que GoTrue redirige tras /oauth/authorize para pedir el
+# consentimiento: `<site_url><authorization_url_path>`. El default del CLI es
+# localhost:3000 y Vite sirve en 8080 (vite.config.ts → server.port), así que
+# sin esto el consentimiento local cae en un puerto vacío. En producción este
+# valor vive en el Dashboard (Authentication → URL Configuration).
+site_url = "http://localhost:8080"
+
 # Longitud mínima de contraseña. Supabase acepta desde 6; 8 es el mínimo
 # razonable. Solo afecta a contraseñas nuevas: los usuarios existentes siguen
 # entrando con la suya.
@@ -63,5 +75,24 @@ anonymous_users = 10
 # provider = "hcaptcha"
 # secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
 
+# Servidor OAuth 2.1 de Supabase Auth: es lo que permite que un cliente MCP
+# (Claude, ChatGPT, Cursor…) obtenga un token del usuario sin ver su contraseña.
+# La pantalla de consentimiento la sirve la propia SPA en /oauth/consent.
+[auth.oauth_server]
+enabled = true
+authorization_url_path = "/oauth/consent"
+# Los conectores remotos de Claude y ChatGPT no se pueden registrar a mano: se
+# registran solos al conectar. Registrarse NO da acceso a ningún dato; el acceso
+# lo concede el usuario en /oauth/consent y lo revoca en Ajustes.
+allow_dynamic_registration = true
+
 [functions.lyfta-proxy]
 verify_jwt = true
+
+# A propósito en false, al revés que lyfta-proxy: aquí autentica
+# `withSupabase({ auth: 'user' })` dentro de la función. Si el gateway verificara
+# el JWT, rechazaría la petición de descubrimiento sin token (que es como empieza
+# todo cliente MCP) antes de que `withOAuthProtectedResource` pudiera responderla
+# con el reto WWW-Authenticate, y nadie podría conectarse.
+[functions.mcp]
+verify_jwt = false

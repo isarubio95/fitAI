@@ -28,7 +28,11 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ['favicon.ico', 'robots.txt', 'logo.svg'],
       workbox: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        navigateFallbackDenylist: [/^\/~oauth/],
+        // El consentimiento OAuth se abre en una pestaña nueva desde el cliente
+        // MCP. Sin esto, una PWA ya instalada serviría el index.html cacheado de
+        // un deploy anterior, cuyo bundle no conoce la ruta: el usuario vería un
+        // 404 y el flujo moriría sin explicación. Va siempre a red.
+        navigateFallbackDenylist: [/^\/oauth\//],
         runtimeCaching: [
           {
             urlPattern: ({ request, url }) =>

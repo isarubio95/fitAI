@@ -10,6 +10,7 @@ import { queryClient } from "@/lib/queryClient";
 import { Capacitor } from "@capacitor/core";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { OAuthConsentReturn } from "@/components/auth/OAuthConsentReturn";
 import { useHideSplashWhenReady } from "@/hooks/useHideSplashWhenReady";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { RestTimerProvider } from "@/components/workout/RestTimerProvider";
@@ -34,6 +35,7 @@ const Gyms = lazy(routeLoaders["/gimnasios"] as PageLoader);
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 
 const isNative = Capacitor.isNativePlatform();
 
@@ -69,11 +71,16 @@ const App = () => {
               {!isNative && <SpeedInsights />}
               <BrowserRouter>
                 <ScrollManager />
+                {/* Dentro del router: necesita navegar al volver del login. */}
+                <OAuthConsentReturn />
                 <Suspense fallback={null}>
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/privacidad" element={<PrivacyPolicy />} />
                     <Route path="/eliminar-cuenta" element={<DeleteAccount />} />
+                    {/* Fuera de AppLayout: su guard redirige con `replace` y
+                        perdería el authorization_id de la URL. */}
+                    <Route path="/oauth/consent" element={<OAuthConsent />} />
                     <Route element={<AppLayout />}>
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/routines" element={<Library />} />

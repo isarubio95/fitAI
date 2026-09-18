@@ -80,7 +80,10 @@ La app funciona como SPA con un `AppLayout` común y páginas por dominio:
 ├─ supabase/
 │  ├─ config.toml
 │  └─ functions/
-│     └─ delete-account/
+│     ├─ _shared/domain/    # código compartido entre la app y el servidor MCP
+│     ├─ delete-account/
+│     ├─ lyfta-proxy/
+│     └─ mcp/               # servidor MCP remoto (ver docs/MCP.md)
 ├─ .env.example
 ├─ vite.config.ts
 ├─ vitest.config.ts
@@ -103,6 +106,8 @@ La app funciona como SPA con un `AppLayout` común y páginas por dominio:
 - **Planificación:** wizard y calendario mensual para hoja de ruta.
 - **Evolución y analítica:** historial, métricas y widgets.
 - **Comunidad:** feed/perfil/seguimientos/notificaciones.
+- **Servidor MCP:** el usuario conecta Claude, ChatGPT o Cursor a su diario por OAuth 2.1 y
+  consulta entrenos, rutinas y progreso desde ahí. Ver [docs/MCP.md](docs/MCP.md).
 
 ## 7) Entorno y Configuración
 

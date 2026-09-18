@@ -24,7 +24,16 @@ import fs from "node:fs";
 import path from "node:path";
 
 const PROJECT_ID = "ugbhwarfkaeobaycxlwp";
-const DESTINO = path.join("src", "integrations", "supabase", "types.ts");
+/**
+ * Dos copias del mismo esquema, a propósito. La Edge Function del servidor MCP
+ * no puede importar de `src/`: `supabase functions deploy` construye el bundle
+ * desde el grafo de módulos con raíz en `supabase/functions`, y salir de ahí es
+ * el caso que rompe. Generarlas a la vez es lo que evita que se desincronicen.
+ */
+const DESTINOS = [
+  path.join("src", "integrations", "supabase", "types.ts"),
+  path.join("supabase", "functions", "mcp", "database.types.ts"),
+];
 /** Por debajo de esto la salida no puede ser un esquema real: son ~1.800 líneas. */
 const MINIMO_LINEAS = 200;
 const CLI_JS = path.join("node_modules", "supabase", "dist", "supabase.js");
@@ -164,11 +173,14 @@ function escribirSiValida(salida) {
     return;
   }
 
-  const previo = fs.existsSync(DESTINO) ? fs.readFileSync(DESTINO, "utf8") : null;
-  if (previo !== null && previo.replace(/\r\n/g, "\n") === salida.replace(/\r\n/g, "\n")) {
-    console.log(`${DESTINO} ya estaba al día (${lineas} líneas).`);
-  } else {
-    fs.writeFileSync(DESTINO, salida, "utf8");
-    console.log(`Escrito ${DESTINO} (${lineas} líneas).`);
+  for (const destino of DESTINOS) {
+    fs.mkdirSync(path.dirname(destino), { recursive: true });
+    const previo = fs.existsSync(destino) ? fs.readFileSync(destino, "utf8") : null;
+    if (previo !== null && previo.replace(/\r\n/g, "\n") === salida.replace(/\r\n/g, "\n")) {
+      console.log(`${destino} ya estaba al día (${lineas} líneas).`);
+    } else {
+      fs.writeFileSync(destino, salida, "utf8");
+      console.log(`Escrito ${destino} (${lineas} líneas).`);
+    }
   }
 }

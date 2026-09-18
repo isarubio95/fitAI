@@ -42,6 +42,14 @@ const LyftaImportSettings = lazy(() =>
   import("@/components/layout/LyftaImportSettings").then((m) => ({ default: m.LyftaImportSettings })),
 );
 
+/** Lazy de verdad: la mayoría de usuarios no conectará nunca un asistente, y
+ *  la sección arrastra una consulta de red al abrirse. */
+const ConnectedAppsSettings = lazy(() =>
+  import("@/components/layout/ConnectedAppsSettings").then((m) => ({
+    default: m.ConnectedAppsSettings,
+  })),
+);
+
 export function SettingsDrawer() {
   const { signOut } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -205,6 +213,10 @@ export function SettingsDrawer() {
 
           <Suspense fallback={null}>
             <LyftaImportSettings resetToken={open} />
+          </Suspense>
+
+          <Suspense fallback={null}>
+            <ConnectedAppsSettings />
           </Suspense>
 
           <div className="border-t border-border/40 pt-5">
