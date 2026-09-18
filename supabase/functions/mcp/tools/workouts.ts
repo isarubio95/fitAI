@@ -13,6 +13,7 @@ import { isWorkingSet } from "../../_shared/domain/setTypes.ts";
 import { ok, fail, failFromPostgrest, type ToolResult } from "../lib/respond.ts";
 import { clamp, rangeDays, MAX_RANGE_DAYS, MAX_HISTORY_MONTHS, MAX_RAW_SETS } from "../lib/limits.ts";
 import { userText } from "../lib/untrusted.ts";
+import { fetchAllByIds } from "../lib/paginate.ts";
 import { exerciseInputSchema, resolveAll, tooManySets, type ExerciseInput } from "./shared.ts";
 import type { ResolvedExercise } from "./exercises.ts";
 import type { Database } from "../database.types.ts";
@@ -135,26 +136,46 @@ export function registerWorkoutTools(server: McpServer, supabase: Supabase): voi
       const sesiones = data ?? [];
       if (!sesiones.length) return ok([], { nextOffset: null });
 
-      // Agregados en una sola consulta para las sesiones de esta página.
+      // Agregados para las sesiones de esta página. Se pagina y se trocea: 50
+      // sesiones son cientos de ejercicios y miles de series, y tanto `max-rows`
+      // como la longitud de la URL recortarían sin avisar. Un tonelaje corto no
+      // se distingue de un mes flojo, así que aquí el silencio es el peligro.
       const ids = sesiones.map((s) => s.id);
-      const { data: ejercicios, error: ejError } = await supabase
-        .from("ejercicio")
-        .select("id, actividad_id")
-        .in("actividad_id", ids);
-      if (ejError) return failFromPostgrest(ejError);
+
+      let ejercicios: { id: string; actividad_id: string }[];
+      let series: Pick<SerieRow, "ejercicio_id" | "peso_kg" | "repeticiones" | "tipo_serie">[] = [];
+      try {
+        ejercicios = await fetchAllByIds<{ id: string; actividad_id: string }>(
+          ids,
+          (chunk, from, to) =>
+            supabase
+              .from("ejercicio")
+              .select("id, actividad_id")
+              .in("actividad_id", chunk)
+              .order("id")
+              .range(from, to),
+        );
+
+        if (ejercicios.length) {
+          series = await fetchAllByIds<
+            Pick<SerieRow, "ejercicio_id" | "peso_kg" | "repeticiones" | "tipo_serie">
+          >(
+            ejercicios.map((e) => e.id),
+            (chunk, from, to) =>
+              supabase
+                .from("serie")
+                .select("ejercicio_id, peso_kg, repeticiones, tipo_serie")
+                .in("ejercicio_id", chunk)
+                .order("id")
+                .range(from, to),
+          );
+        }
+      } catch (e) {
+        return failFromPostgrest(e as { code?: string; message: string });
+      }
 
       const porEjercicio = new Map<string, string>();
-      for (const e of ejercicios ?? []) porEjercicio.set(e.id, e.actividad_id);
-
-      let series: Pick<SerieRow, "ejercicio_id" | "peso_kg" | "repeticiones" | "tipo_serie">[] = [];
-      if (porEjercicio.size) {
-        const { data: s, error: sError } = await supabase
-          .from("serie")
-          .select("ejercicio_id, peso_kg, repeticiones, tipo_serie")
-          .in("ejercicio_id", [...porEjercicio.keys()]);
-        if (sError) return failFromPostgrest(sError);
-        series = s ?? [];
-      }
+      for (const e of ejercicios) porEjercicio.set(e.id, e.actividad_id);
 
       const agregados = new Map<string, { sets: number; tonnage: number; reps: number }>();
       for (const s of series) {
@@ -169,7 +190,7 @@ export function registerWorkoutTools(server: McpServer, supabase: Supabase): voi
       }
 
       const ejerciciosPorSesion = new Map<string, number>();
-      for (const e of ejercicios ?? []) {
+      for (const e of ejercicios) {
         ejerciciosPorSesion.set(e.actividad_id, (ejerciciosPorSesion.get(e.actividad_id) ?? 0) + 1);
       }
 

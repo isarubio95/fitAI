@@ -12,6 +12,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { rankExercises } from "../../_shared/domain/exerciseSearch.ts";
 import { ok, fail, failFromPostgrest, type ToolResult } from "../lib/respond.ts";
 import { clamp } from "../lib/limits.ts";
+import { fetchAllRows } from "../lib/paginate.ts";
 import { userText } from "../lib/untrusted.ts";
 import type { Supabase } from "./registry.ts";
 
@@ -22,7 +23,7 @@ const USER_COLUMNS =
   "id, nombre, grupo_muscular, equipment, equipment_list, musculos_involucrados, registro_series, tipo";
 
 /**
- * El catálogo global son ~750 filas idénticas para todos y que casi nunca
+ * El catálogo global son ~2.300 filas idénticas para todos y que casi nunca
  * cambian: se cachea en el isolate. Mismo TTL que `CATALOG_STALE_MS` en la app.
  * Los ejercicios propios NO se cachean nunca: son de un usuario concreto y
  * mezclarlos entre peticiones sería una fuga de datos.
@@ -49,14 +50,10 @@ async function loadCatalog(supabase: Supabase): Promise<CatalogRow[]> {
   if (catalogCache && Date.now() - catalogCache.at < CATALOG_TTL_MS) {
     return catalogCache.rows;
   }
-  const { data, error } = await supabase
-    .from("tipo_ejercicio")
-    .select(CATALOG_COLUMNS)
-    .order("nombre");
+  const rows = await fetchAllRows<CatalogRow>((from, to) =>
+    supabase.from("tipo_ejercicio").select(CATALOG_COLUMNS).order("id").range(from, to),
+  );
 
-  if (error) throw error;
-
-  const rows = (data ?? []) as CatalogRow[];
   catalogCache = { rows, at: Date.now() };
   return rows;
 }
@@ -64,14 +61,14 @@ async function loadCatalog(supabase: Supabase): Promise<CatalogRow[]> {
 async function loadCandidates(supabase: Supabase): Promise<Candidate[]> {
   const [catalogo, propios] = await Promise.all([
     loadCatalog(supabase),
-    supabase.from("usuario_ejercicio").select(USER_COLUMNS).order("nombre"),
+    fetchAllRows<CatalogRow>((from, to) =>
+      supabase.from("usuario_ejercicio").select(USER_COLUMNS).order("id").range(from, to),
+    ),
   ]);
-
-  if (propios.error) throw propios.error;
 
   return [
     ...catalogo.map((row) => ({ ...row, source: "catalog" as const })),
-    ...((propios.data ?? []) as CatalogRow[]).map((row) => ({ ...row, source: "user" as const })),
+    ...propios.map((row) => ({ ...row, source: "user" as const })),
   ];
 }
 
