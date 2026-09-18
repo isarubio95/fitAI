@@ -280,3 +280,8 @@ Crear ejercicios personalizados (un modelo que no encuentra algo duplicaría el 
 buscar mejor) · controlar la sesión activa en vivo (compite con el cronómetro, el temporizador de
 descanso y el pulsómetro de la app) · GPS y rutas · rutinas de cardio · likes, comentarios y
 seguimientos · favoritos y preferencias · conceder logros.
+
+## Qué viene después
+
+Las mejoras propuestas sobre este servidor —prompts y resources, nutrición, gimnasios y rutas,
+deep links— están en [MEJORAS-MCP.md](MEJORAS-MCP.md), con el criterio que decide qué entra.
