@@ -6,7 +6,7 @@
         "-y",
         "@playwright/mcp@latest",
         "--user-data-dir",
-        "C:\\Users\\PANOi\\Desktop\\fitAI\\.playwright-mcp-profile",
+        "/home/isaias/Escritorio/fitAI/.playwright-mcp-profile",
         "--caps=storage"
       ]
     },
