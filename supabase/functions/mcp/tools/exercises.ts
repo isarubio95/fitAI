@@ -280,14 +280,26 @@ export function registerExerciseTools(server: McpServer, supabase: Supabase): vo
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async (): Promise<ToolResult> => {
+      // `perfil` y `usuario_logro` tienen SELECT abierto a autenticados (el feed
+      // muestra perfiles y logros ajenos), así que RLS no acota estas consultas
+      // al usuario: sin el filtro explícito el `maybeSingle` recibe todas las
+      // filas y falla con PGRST116, y el contador sumaría los logros de todos.
+      const { data: usuario } = await supabase.auth.getUser();
+      const usuarioId = usuario?.user?.id;
+      if (!usuarioId) return fail("UNAUTHENTICATED", "No user session.");
+
       const [perfil, logros] = await Promise.all([
         supabase
           .from("perfil")
           .select(
             "username, nivel, xp_total, racha_actual, racha_maxima, ultima_actividad_fecha, fc_max, fc_reposo, ftp_w, fecha_nacimiento",
           )
+          .eq("id", usuarioId)
           .maybeSingle(),
-        supabase.from("usuario_logro").select("id", { count: "exact", head: true }),
+        supabase
+          .from("usuario_logro")
+          .select("id", { count: "exact", head: true })
+          .eq("usuario_id", usuarioId),
       ]);
 
       if (perfil.error) return failFromPostgrest(perfil.error);
