@@ -17,6 +17,9 @@
     "shadcn": {
       "command": "npx",
       "args": ["-y", "shadcn@latest", "mcp"]
+    },
+    "track-gym": {
+      "url": "https://ugbhwarfkaeobaycxlwp.supabase.co/functions/v1/mcp"
     }
   }
 }
