@@ -14,13 +14,21 @@ import { ok, fail, failFromPostgrest, type ToolResult } from "../lib/respond.ts"
 import { clamp, rangeDays, MAX_RANGE_DAYS, MAX_HISTORY_MONTHS, MAX_RAW_SETS } from "../lib/limits.ts";
 import { userText } from "../lib/untrusted.ts";
 import { fetchAllByIds } from "../lib/paginate.ts";
-import { exerciseInputSchema, resolveAll, tooManySets, type ExerciseInput } from "./shared.ts";
+import {
+  createSupersetIdMapper,
+  exerciseInputSchema,
+  resolveAll,
+  tooManySets,
+  type ExerciseInput,
+} from "./shared.ts";
 import type { ResolvedExercise } from "./exercises.ts";
 import type { Database } from "../database.types.ts";
 import type { Supabase } from "./registry.ts";
 
 /** Traduce la lista que manda el modelo al payload jsonb que espera la RPC. */
 function toRpcExercises(entradas: ExerciseInput[], resueltos: ResolvedExercise[]) {
+  const supersetId = createSupersetIdMapper();
+
   return entradas.map((e, i) => ({
     tipo_ejercicio_id: resueltos[i].tipo_ejercicio_id,
     usuario_ejercicio_id: resueltos[i].usuario_ejercicio_id,
@@ -30,7 +38,7 @@ function toRpcExercises(entradas: ExerciseInput[], resueltos: ResolvedExercise[]
     descanso: e.rest_seconds ?? null,
     rep_range: e.rep_range ?? null,
     rir_objetivo: e.target_rir ?? null,
-    superset_id: e.superset_id ?? null,
+    superset_id: supersetId(e.superset_id),
     series: e.sets.map((s) => ({
       repeticiones: s.reps,
       peso_kg: s.weight_kg,

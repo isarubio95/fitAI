@@ -102,6 +102,35 @@ export type RoutineExerciseInput = z.infer<typeof routineExerciseInputSchema>;
 /** Tope de series por llamada, por encima del tope por ejercicio. */
 export const MAX_SETS_PER_CALL = 300;
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Traduce las etiquetas de superserie del modelo a uuids reales.
+ *
+ * Al modelo se le pide solo "misma etiqueta = misma superserie", pero la columna
+ * `superset_id` es `uuid`: mandarle `"A"` tal cual aborta la escritura entera con
+ * `invalid input syntax for type uuid`. El importador de Lyfta hace este mismo
+ * remapeo con las claves de su export (`remapSupersetKeys`).
+ *
+ * El mapa vive por llamada, que es justo el ámbito en el que la agrupación
+ * significa algo: los ejercicios de una misma rutina o sesión.
+ */
+export function createSupersetIdMapper(): (etiqueta?: string) => string | null {
+  const uuids = new Map<string, string>();
+  return (etiqueta?: string) => {
+    if (!etiqueta) return null;
+    // Un uuid ya válido se respeta: el modelo suele reenviar el que acaba de
+    // leer con get_routine/get_workout y no hay razón para rotarlo.
+    if (UUID_RE.test(etiqueta)) return etiqueta;
+    let id = uuids.get(etiqueta);
+    if (!id) {
+      id = crypto.randomUUID();
+      uuids.set(etiqueta, id);
+    }
+    return id;
+  };
+}
+
 /**
  * Resuelve los ejercicios de una lista a ids reales. Se para en el primero que
  * falle: escribir media sesión y devolver un error dejaría al modelo sin saber

@@ -12,7 +12,12 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { ok, fail, failFromPostgrest, type ToolResult } from "../lib/respond.ts";
 import { clamp, rangeDays, MAX_RANGE_DAYS } from "../lib/limits.ts";
 import { userText } from "../lib/untrusted.ts";
-import { resolveAll, routineExerciseInputSchema, type RoutineExerciseInput } from "./shared.ts";
+import {
+  createSupersetIdMapper,
+  resolveAll,
+  routineExerciseInputSchema,
+  type RoutineExerciseInput,
+} from "./shared.ts";
 import type { ResolvedExercise } from "./exercises.ts";
 import type { Supabase } from "./registry.ts";
 
@@ -21,6 +26,8 @@ function toRpcRoutineExercises(
   entradas: RoutineExerciseInput[],
   resueltos: ResolvedExercise[],
 ) {
+  const supersetId = createSupersetIdMapper();
+
   return entradas.map((e, i) => ({
     tipo_ejercicio_id: resueltos[i].tipo_ejercicio_id,
     usuario_ejercicio_id: resueltos[i].usuario_ejercicio_id,
@@ -30,7 +37,7 @@ function toRpcRoutineExercises(
     repes_max: e.reps_max,
     rir: e.rir ?? null,
     descanso: e.rest_seconds ?? null,
-    superset_id: e.superset_id ?? null,
+    superset_id: supersetId(e.superset_id),
     duracion_objetivo_seg: e.target_duration_seconds ?? null,
     ritmo_objetivo_seg_km: e.target_pace_seconds_per_km ?? null,
     set_plan: e.set_plan?.map((s) => ({
