@@ -13,6 +13,15 @@ import { resolveExerciseRef, type ExerciseRef, type ResolvedExercise } from "./e
 import { fail, type ToolResult } from "../lib/respond.ts";
 import type { Supabase } from "./registry.ts";
 
+/**
+ * Modos de registro de un ejercicio. Los mismos cuatro valores que el CHECK de
+ * `tipo_ejercicio.registro_series` y `usuario_ejercicio.registro_series`. Viven
+ * aquí como constante, y no repetidos en cada `z.enum`, porque el resource
+ * `modos-de-registro` los publica: una lista que se le enseña al modelo y otra
+ * que se valida divergirían en silencio.
+ */
+export const LOGGING_MODES = ["peso_reps", "solo_reps", "duracion", "duracion_ritmo"] as const;
+
 /** Una serie tal como la manda el modelo. */
 export const setInputSchema = z.object({
   reps: z.number().int().min(0).max(1000).default(0),
@@ -45,7 +54,7 @@ export const exerciseRefSchema = {
 
 export const exerciseInputSchema = z.object({
   ...exerciseRefSchema,
-  logging_mode: z.enum(["peso_reps", "solo_reps", "duracion", "duracion_ritmo"]).optional(),
+  logging_mode: z.enum(LOGGING_MODES).optional(),
   rest_seconds: z.number().int().min(0).max(600).optional(),
   rep_range: z.string().max(20).optional(),
   target_rir: z.number().int().min(0).max(10).optional(),
@@ -64,7 +73,7 @@ export const routineExerciseInputSchema = z.object({
   reps_max: z.number().int().min(1).max(100).default(12),
   rir: z.number().int().min(0).max(10).optional(),
   rest_seconds: z.number().int().min(0).max(600).optional(),
-  logging_mode: z.enum(["peso_reps", "solo_reps", "duracion", "duracion_ritmo"]).optional(),
+  logging_mode: z.enum(LOGGING_MODES).optional(),
   superset_id: z.string().max(64).optional(),
   target_duration_seconds: z.number().int().min(1).max(86400).optional(),
   target_pace_seconds_per_km: z.number().int().min(60).max(3600).optional(),

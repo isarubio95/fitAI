@@ -44,9 +44,29 @@ export type CatalogRow = {
 
 type Candidate = CatalogRow & { source: "catalog" | "user" };
 
+/**
+ * Normalizado de los filtros de texto de `search_exercises`: sin acentos y en
+ * minúsculas, para comparar por subcadena. Se exporta porque el resource
+ * `taxonomia-muscular` publica el valor ya normalizado de cada grupo muscular,
+ * y ese valor solo sirve si es exactamente el que aplica el filtro.
+ */
+export function normalizeFilter(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 let catalogCache: { rows: CatalogRow[]; at: number } | null = null;
 
-async function loadCatalog(supabase: Supabase): Promise<CatalogRow[]> {
+/**
+ * Se exporta porque el resource `taxonomia-muscular` enumera los grupos y
+ * músculos que trae el catálogo real en vez de llevar su propia lista: una
+ * taxonomía escrita a mano se queda desfasada en cuanto se importan ejercicios
+ * nuevos, y el modelo la creería igual. Comparte la caché de isolate con
+ * `search_exercises`, así que leer el resource no cuesta una consulta extra.
+ */
+export async function loadCatalog(supabase: Supabase): Promise<CatalogRow[]> {
   if (catalogCache && Date.now() - catalogCache.at < CATALOG_TTL_MS) {
     return catalogCache.rows;
   }
@@ -233,22 +253,16 @@ export function registerExerciseTools(server: McpServer, supabase: Supabase): vo
         return failFromPostgrest(e as { code?: string; message: string });
       }
 
-      const normaliza = (v: unknown) =>
-        String(v ?? "")
-          .normalize("NFD")
-          .replace(/[̀-ͯ]/g, "")
-          .toLowerCase();
-
       if (args.muscle_group) {
-        const buscado = normaliza(args.muscle_group);
-        candidatos = candidatos.filter((c) => normaliza(c.grupo_muscular).includes(buscado));
+        const buscado = normalizeFilter(args.muscle_group);
+        candidatos = candidatos.filter((c) => normalizeFilter(c.grupo_muscular).includes(buscado));
       }
       if (args.equipment) {
-        const buscado = normaliza(args.equipment);
+        const buscado = normalizeFilter(args.equipment);
         candidatos = candidatos.filter(
           (c) =>
-            normaliza(c.equipment).includes(buscado) ||
-            (c.equipment_list ?? []).some((e) => normaliza(e).includes(buscado)),
+            normalizeFilter(c.equipment).includes(buscado) ||
+            (c.equipment_list ?? []).some((e) => normalizeFilter(e).includes(buscado)),
         );
       }
 

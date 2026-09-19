@@ -2,8 +2,8 @@
 
 Qué construir a continuación alrededor del servidor MCP, y por qué esas cosas y no otras.
 
-El servidor ya está en producción: 25 herramientas, OAuth 2.1, RLS como única autorización
-(ver [MCP.md](MCP.md)). Este documento es lo que viene después.
+El servidor ya está en producción: 25 herramientas, 5 prompts, 3 resources, OAuth 2.1 y RLS como
+única autorización (ver [MCP.md](MCP.md)). Este documento es lo que viene después.
 
 ---
 
@@ -31,8 +31,8 @@ mascota, ni iOS»): el MCP no vende IA, vende una puerta.
 
 ```text
 tools      25  ✅  (13 lectura, 12 escritura)
-prompts     0  ❌  el protocolo lo soporta; no está implementado
-resources   0  ❌  ídem
+prompts     5  ✅  supabase/functions/mcp/prompts/
+resources   3  ✅  supabase/functions/mcp/resources/
 ```
 
 Las 25 herramientas están en `supabase/functions/mcp/tools/`, registradas en `registry.ts`:
@@ -49,62 +49,30 @@ logros y nutrición (que no existe en ninguna parte del producto).
 
 ---
 
-## 3) Prompts y resources — la mitad del protocolo que falta
+## 3) Prompts y resources — hecho
 
-**Prioridad: P0.** Es lo más barato de la lista y lo que más rinde.
+**Estado: construido.** Cinco prompts y tres resources, documentados en
+[MCP.md](MCP.md#prompts-5). Lo que se aprendió al hacerlo, que no estaba en la propuesta:
 
-### Qué
+- **`server.registerPrompt` / `server.registerResource` existen tal cual** en
+  `npm:@modelcontextprotocol/server@2.0.0`, con la forma `(name, config, callback)`. Las
+  capacidades `prompts` y `resources` las declara el SDK solo al registrar la primera de cada
+  tipo: no hay que anunciarlas en `new McpServer()`.
+- **Ningún prompt lleva argumentos.** No es una simplificación: `prompts/get` valida
+  `params.arguments` tal cual llega, sin el `?? {}` que sí hace `callTool`, así que un esquema
+  de argumentos —aunque fueran todos opcionales— falla con `InvalidParams` cuando el cliente
+  invoca el comando sin mandar nada, que es el caso normal de un comando de un clic.
+- **Las fechas las calcula el servidor** y salen escritas en el texto del prompt. Pedirle al
+  modelo «los últimos 30 días» falla en silencio: devuelve un resumen impecable del mes
+  equivocado.
+- **Los resources no se escriben a mano.** La taxonomía muscular se construye leyendo el
+  catálogo; los tipos de serie salen de `_shared/domain/setTypes.ts`; los modos de registro, de
+  una constante nueva `LOGGING_MODES` en `tools/shared.ts` que además valida las escrituras. Una
+  lista que se le enseña al modelo y otra que se valida divergirían en silencio.
 
-- **Prompts:** plantillas que el cliente MCP enseña como comandos (en Claude aparecen en el menú
-  de la conexión). El usuario elige *«Analiza mi mes»* en vez de tener que inventarse la pregunta.
-- **Resources:** contexto estático que el modelo puede leer una vez en lugar de deducirlo a base
-  de llamadas.
-
-### Por qué
-
-Hoy el valor del servidor depende de que el usuario **sepa qué preguntar**. La mayoría abre su
-asistente, escribe «¿cómo voy?» y se queda en la superficie de un servidor que sabe responder
-mucho más: progresión por ejercicio, PRs por 1RM estimado, volumen por músculo, adherencia al
-calendario. Veinticinco herramientas sin un solo punto de entrada sugerido es una API, no un
-producto.
-
-Además **no cuesta contexto**. La cabecera de `registry.ts` avisa de que cada tool gasta
-~120-200 tokens de esquema en *cada* turno; por eso el catálogo se mantiene corto. Los prompts
-no: se listan bajo demanda. Es valor que no compite por el presupuesto que limita las tools.
-
-### Cómo
-
-Módulo nuevo `supabase/functions/mcp/prompts/` con el mismo patrón que las tools: un fichero por
-dominio y un `registry.ts` que los agrupa, invocado desde `registerAllTools` (o un
-`registerAll` hermano) en `index.ts`. La API es `server.registerPrompt` /
-`server.registerResource` — **verificar la firma exacta contra
-`npm:@modelcontextprotocol/server@2.0.0`** antes de escribir; es el mismo patrón que
-`registerTool` pero no está probado en este repo.
-
-Catálogo inicial propuesto (pocos y buenos, igual que las tools):
-
-| Prompt | Qué hace | Tools que encadena |
-|---|---|---|
-| `analiza-mi-mes` | Volumen, adherencia, PRs y qué ha cambiado respecto al mes anterior | `get_training_summary`, `get_personal_records`, `get_schedule` |
-| `donde-me-he-estancado` | Ejercicios sin progreso en N semanas, con el dato que lo demuestra | `get_personal_records`, `get_exercise_progress` |
-| `planifica-la-semana` | Propone y **programa** la semana leyendo lo que ya se entrenó | `get_training_summary`, `list_routines`, `schedule_routine` |
-| `revisa-mi-rutina` | Equilibrio de grupos musculares y volumen por sesión de una rutina | `get_routine`, `get_training_summary` |
-| `resumen-fuerza-y-cardio` | El cruce que ninguna app de la competencia hace | `get_training_summary`, `list_cardio_sessions` |
-
-Resources iniciales:
-
-| Resource | Contenido | Ahorra |
-|---|---|---|
-| `taxonomia-muscular` | Grupos musculares y su mapeo | Llamadas de tanteo a `search_exercises` |
-| `tipos-de-serie` | `isWorkingSet` y qué cuenta para volumen (`_shared/domain/setTypes.ts`) | Que el modelo se invente el criterio |
-| `modos-de-registro` | `peso_reps` / `duracion` / `duracion_ritmo` | Payloads inválidos en `log_workout` |
-
-### Criterio
-
-- Cada prompt produce una respuesta útil **sin que el usuario añada nada**.
-- Ningún prompt pide a la IA que invente datos que el servidor no ha devuelto.
-- `src/test/mcp-server-guards.test.ts` sigue verde (nada de service role).
-- La tarjeta de Inicio (`McpSpotlightCard.tsx`) menciona que existen comandos.
+Quedó fuera a propósito: un resource de equipamiento. `search_exercises` también filtra por
+`equipment` sin que se enumere en ningún sitio, así que tiene el mismo problema de tanteo que
+los grupos musculares y sería el siguiente candidato obvio.
 
 ---
 
@@ -288,11 +256,11 @@ asistente lo explique, eso ya lo cubre el prompt `donde-me-he-estancado` del §3
 
 ## 11) Orden de ejecución
 
-1. **Prompts + resources** (§3) — poco trabajo, multiplica lo ya construido.
+1. ~~**Prompts + resources** (§3)~~ — hecho.
 2. **Documentar la importación** (§8) — un párrafo.
 3. **Nutrición, agregado diario** (§4) — la apuesta.
 4. **Gimnasios y rutas** (§5) y **deep links** (§6).
 5. **Forma y carga** (§7) — solo tras mover `trainingLoad.ts` a `_shared/domain/`.
 
-Siguiente recomendada: **los prompts**, porque hoy el servidor sabe responder más de lo que a
-nadie se le ocurre preguntarle.
+Siguiente recomendada: **documentar la importación** (§8), que sigue siendo lo mejor pagado del
+documento: un migrador desde cualquier app de la competencia que ya funciona y no sabe nadie.

@@ -12,6 +12,11 @@
  * son las que deciden qué se puede leer y escribir. Por eso en este directorio
  * no se usa nunca la service role key: sería saltarse el único control que hay.
  *
+ * Expone las tres primitivas de MCP: `tools/` (consultar y escribir), `prompts/`
+ * (comandos sugeridos, para que el valor del servidor no dependa de que el
+ * usuario acierte la pregunta) y `resources/` (las reglas del dominio, leídas
+ * una vez en lugar de deducidas a base de llamadas).
+ *
  * Ver el flujo completo y los pasos de despliegue en docs/MCP.md.
  */
 
@@ -20,6 +25,8 @@ import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { pipeline } from "@supabase/middleware";
 import { withOAuthProtectedResource, withSupabase } from "@supabase/server";
 import type { Database } from "./database.types.ts";
+import { registerAllPrompts } from "./prompts/registry.ts";
+import { registerAllResources } from "./resources/registry.ts";
 import { registerAllTools } from "./tools/registry.ts";
 
 const SERVER_INFO = { name: "track-gym", version: "1.0.0" } as const;
@@ -41,7 +48,12 @@ Deno.serve(
       const handler = createMcpHandler(
         () => {
           const server = new McpServer(SERVER_INFO);
+          // Las tres primitivas del protocolo, cada una con su registro. Las
+          // capacidades (`tools`, `prompts`, `resources`) las declara el SDK al
+          // registrar la primera de cada tipo: no hay que anunciarlas aquí.
           registerAllTools(server, supabase);
+          registerAllPrompts(server);
+          registerAllResources(server, supabase);
           return server;
         },
         { onerror: (e: unknown) => console.error("MCP request failed", e) },

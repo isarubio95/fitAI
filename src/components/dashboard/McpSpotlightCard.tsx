@@ -212,6 +212,22 @@ const GUIAS: Guia[] = [
 ];
 
 /**
+ * Los comandos que publica el servidor como prompts MCP.
+ *
+ * Es una copia deliberada de lo que registra `supabase/functions/mcp/prompts/`:
+ * la tarjeta no puede consultar el servidor sin que el usuario lo haya
+ * conectado ya, y el problema que resuelve es justo el de antes de conectarlo.
+ * Si se añade o se renombra un prompt allí, esta lista se actualiza aquí.
+ */
+const COMANDOS: { nombre: string; que: string }[] = [
+  { nombre: "Analiza mi mes", que: "volumen, reparto por músculo, adherencia y récords" },
+  { nombre: "Dónde me he estancado", que: "ejercicios que llevan semanas sin mejorar" },
+  { nombre: "Planifica la semana", que: "propone la semana y, si la apruebas, la programa" },
+  { nombre: "Revisa mi rutina", que: "equilibrio de grupos y carga por sesión" },
+  { nombre: "Fuerza y cardio juntos", que: "las dos mitades del diario, semana a semana" },
+];
+
+/**
  * Destacado de Inicio: la integración con MCP.
  *
  * Va siempre la primera y fuera del reordenable porque es un aviso, no un
@@ -300,6 +316,24 @@ export function McpSpotlightCard() {
                     </AccordionItem>
                   ))}
                 </Accordion>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-foreground">Comandos que ya trae</p>
+                <ul className="space-y-1.5 text-xs leading-relaxed text-muted-foreground">
+                  {COMANDOS.map((comando) => (
+                    <li key={comando.nombre}>
+                      <span className="font-medium text-foreground">{comando.nombre}</span>
+                      {" — "}
+                      {comando.que}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  No hace falta que sepas qué preguntar: tu asistente los enseña al conectar Track
+                  Gym. En Claude salen en el menú de la conexión; en Claude Code y Gemini CLI, como{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-[11px]">/comandos</code>.
+                </p>
               </div>
 
               <p className="text-xs leading-relaxed text-muted-foreground">

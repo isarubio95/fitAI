@@ -18,6 +18,11 @@ Cliente MCP  ──HTTP──►  Edge Function `mcp` (Deno)
                           └─► redirige a la SPA: /oauth/consent?authorization_id=…
 ```
 
+El servidor expone las tres primitivas del protocolo: **tools** (consultar y
+escribir), **prompts** (comandos sugeridos) y **resources** (las reglas del dominio).
+Las capacidades las declara el SDK al registrar la primera de cada tipo; `index.ts`
+solo llama a los tres `registerAll*`.
+
 **La autorización no se programa.** `withSupabase({ auth: 'user' })` entrega un cliente Supabase
 con el token del usuario, así que las políticas RLS ya auditadas son las que deciden qué se ve y
 qué se toca. De ahí la regla dura del directorio: **la service role key no se usa nunca** dentro
@@ -30,6 +35,8 @@ porque saltarse RLS ahí sería invisible hasta que un usuario leyera datos de o
 |---|---|
 | Función | `supabase/functions/mcp/index.ts` |
 | Herramientas | `supabase/functions/mcp/tools/` (una por dominio, registradas en `registry.ts`) |
+| Prompts | `supabase/functions/mcp/prompts/` (mismo patrón: un fichero por dominio y su `registry.ts`) |
+| Resources | `supabase/functions/mcp/resources/` |
 | Formato de salida y límites | `supabase/functions/mcp/lib/` |
 | Código compartido con la app | `supabase/functions/_shared/domain/` |
 | Pantalla de consentimiento | `src/pages/OAuthConsent.tsx` |
@@ -235,6 +242,55 @@ El texto libre que sí viaja (títulos, comentarios, notas, nombres de ejercicio
 `lib/untrusted.ts`: se recorta, se le quitan caracteres de control y la respuesta lleva una nota
 que le dice al modelo que son datos, no instrucciones.
 
+## Prompts (5)
+
+Plantillas que el cliente enseña como comandos: en Claude aparecen en el menú de la conexión.
+Existen porque el valor del servidor dependía de que el usuario supiera qué preguntar. Y no
+cuestan contexto: a diferencia de las herramientas, se listan solo cuando el cliente los pide.
+
+| Prompt | Qué hace | Tools que encadena |
+|---|---|---|
+| `analiza-mi-mes` | Volumen, reparto por músculo, adherencia y levantamientos del mes, contra el mes anterior | `get_training_summary` (×3), `get_personal_records`, `get_schedule` |
+| `donde-me-he-estancado` | Ejercicios sin progreso, con la progresión que lo demuestra | `get_personal_records`, `get_exercise_progress` |
+| `planifica-la-semana` | Propone la semana que viene y, tras aprobarla, la programa | `get_training_summary` (×2), `get_schedule`, `list_routines`, `schedule_routine` |
+| `revisa-mi-rutina` | Equilibrio de grupos, carga por sesión y contraste con lo entrenado | `list_routines`, `get_routine`, `get_training_summary` |
+| `resumen-fuerza-y-cardio` | Las dos mitades del diario semana a semana | `get_training_summary`, `list_cardio_sessions` |
+
+Dos decisiones que conviene no revertir sin querer:
+
+- **El texto va en español.** Un prompt es un turno de usuario que el cliente inserta en la
+  conversación: es lo que el usuario habría escrito, y llega en el idioma en el que quiere la
+  respuesta. Los nombres de herramienta y de parámetro van literales, que son del modelo.
+- **Ninguno lleva argumentos.** Por producto, un comando de un clic tiene que responder sin que
+  el usuario rellene nada. Y por el SDK: `prompts/get` valida `params.arguments` tal cual llega,
+  sin el `?? {}` que sí hacen las tools, así que un esquema de argumentos —aunque fueran todos
+  opcionales— falla con `InvalidParams` en cuanto un cliente invoca el comando sin mandar nada.
+
+Las fechas las calcula el servidor y salen ya escritas en el texto (`prompts/dates.ts`, en UTC
+como el SQL). Pedirle al modelo «los últimos 30 días» falla en silencio: devuelve un resumen
+impecable del mes equivocado.
+
+## Resources (3)
+
+Contexto que el modelo lee una vez en lugar de deducirlo a base de llamadas. Tampoco gastan
+presupuesto por turno.
+
+| Resource | Contenido | Ahorra |
+|---|---|---|
+| `trackgym://taxonomia-muscular` | Los `grupo_muscular` que existen de verdad en el catálogo, con cuántos ejercicios y qué músculos implican | Llamadas de tanteo a `search_exercises`: «piernas» no falla, devuelve cero |
+| `trackgym://tipos-de-serie` | `set_type` y cuáles cuentan como trabajo | Que el modelo se invente el criterio de volumen |
+| `trackgym://modos-de-registro` | `peso_reps` / `solo_reps` / `duracion` / `duracion_ritmo` y qué campos usa cada uno | Payloads válidos para la BD e inservibles en la app |
+
+Los tres se derivan de su fuente en vez de repetirla: la taxonomía se construye leyendo el
+catálogo (comparte la caché de isolate de `search_exercises`, así que no cuesta una consulta
+extra), los tipos de serie salen de `_shared/domain/setTypes.ts` y los modos de registro de la
+constante `LOGGING_MODES` que valida las escrituras. Una lista que se le enseña al modelo y otra
+que se valida divergirían en silencio.
+
+La taxonomía incluye **solo el catálogo compartido**. Los ejercicios propios llevan grupo
+muscular escrito por el usuario, y un resource se lee sin la nota de `lib/untrusted.ts` que
+acompaña a las respuestas de las herramientas.
+
 ## Por qué las escrituras van por RPC
 
 No es purismo. `WorkoutLogger.createActiveWorkout` y `handleCreate` crean una sesión en tres
@@ -283,5 +339,6 @@ seguimientos · favoritos y preferencias · conceder logros.
 
 ## Qué viene después
 
-Las mejoras propuestas sobre este servidor —prompts y resources, nutrición, gimnasios y rutas,
-deep links— están en [MEJORAS-MCP.md](MEJORAS-MCP.md), con el criterio que decide qué entra.
+Las mejoras propuestas sobre este servidor —nutrición, gimnasios y rutas, deep links, forma y
+carga— están en [MEJORAS-MCP.md](MEJORAS-MCP.md), con el criterio que decide qué entra. Los
+prompts y los resources de esa lista ya están construidos.
